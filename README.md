@@ -127,8 +127,8 @@ This workspace was built in one focused session covering the full architecture p
 components (not all ~130 a mature library would eventually have). Deliberate scope cuts, so nothing here is
 a silent gap:
 
-- **Only 5 components** are implemented. The generator + conventions are proven; scaling to the rest of a
-  PrimeNG-sized surface is now a repetitive, well-defined task, not an architectural unknown.
+- **Only 5 components** are implemented. The generator + conventions are proven; scaling to a much larger
+  component surface is now a repetitive, well-defined task, not an architectural unknown.
 - **`@dynamong/theme-aura` ships `AURA_THEME_CSS` as a TS export**, not yet a prebuilt `theme.css` asset file
   in `dist/`. The token→CSS derivation is real and tested; only the "copy compiled CSS into the published
   package" build step is unbuilt. `apps/demo`/`apps/docs` inject it via a `<style>` tag in `main.ts` as a

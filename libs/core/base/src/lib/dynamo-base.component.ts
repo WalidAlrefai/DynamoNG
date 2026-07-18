@@ -5,8 +5,8 @@ import { Directive, inject, input } from '@angular/core';
 
 /**
  * Shared base for every DynamoNG component. Provides the three customization escape
- * hatches every component exposes (`styleClass`, `pt`, `unstyled` — DynamoNG's equivalent
- * of PrimeNG's `dt`/`pt`/`unstyled` inputs) plus access to global config and id generation.
+ * hatches every component exposes (`styleClass`, `pt`, `unstyled`) plus access to global
+ * config and id generation.
  *
  * `TPart` is the union of named internal DOM "parts" the concrete component supports
  * passthrough attributes for, e.g. `DynamoBaseComponent<'root' | 'icon' | 'label'>`.

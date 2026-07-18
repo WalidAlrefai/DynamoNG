@@ -3,8 +3,8 @@ export type DynamoPassThroughAttrs = Record<string, unknown> & { class?: string 
 
 /**
  * Maps each named internal part of a component (e.g. `'root' | 'label' | 'icon'`) to the
- * extra attributes/classes that should be merged onto it. This is DynamoNG's equivalent of
- * PrimeNG's `pt` passthrough API: an escape hatch for DOM-level customization that doesn't
- * require overriding the component's template.
+ * extra attributes/classes that should be merged onto it. This is DynamoNG's passthrough
+ * API: an escape hatch for DOM-level customization that doesn't require overriding the
+ * component's template.
  */
 export type DynamoPassThrough<Part extends string> = Partial<Record<Part, DynamoPassThroughAttrs>>;
