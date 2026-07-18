@@ -1,0 +1,19 @@
+{
+  "name": "theme-aura",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/theme/presets/aura/src",
+  "projectType": "library",
+  "tags": ["type:theme", "scope:public"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/theme/presets/aura",
+        "main": "libs/theme/presets/aura/src/index.ts",
+        "tsConfig": "libs/theme/presets/aura/tsconfig.lib.json",
+        "assets": ["libs/theme/presets/aura/*.md"]
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "generators": {
+    "component": {
+      "factory": "./src/generators/component/component",
+      "schema": "./src/generators/component/schema.json",
+      "description": "Scaffolds a new DynamoNG UI component library"
+    }
+  }
+}

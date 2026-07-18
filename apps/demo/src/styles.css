@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+/*
+ * Workspace-internal relative import: npm workspaces symlink @dynamong/theme
+ * to its SOURCE directory (libs/theme), not its built dist output, so the
+ * published subpath "@dynamong/theme/tailwind-preset/preset.css" (which
+ * matches the *dist* layout) isn't resolvable here. A real external consumer
+ * installing the published package uses the bare-specifier import shown in
+ * the README instead of this relative path.
+ */
+@import "../../../libs/theme/tailwind-preset/src/preset.css";

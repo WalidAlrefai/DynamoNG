@@ -1,0 +1,21 @@
+<div class="mx-auto flex min-h-screen max-w-5xl gap-8 p-8">
+  <nav class="w-48 shrink-0">
+    <a routerLink="/" class="mb-4 block text-lg font-bold text-text-primary">DynamoNG</a>
+    <ul class="space-y-1">
+      @for (entry of components; track entry.slug) {
+        <li>
+          <a
+            [routerLink]="['/components', entry.slug]"
+            routerLinkActive="bg-surface-100 text-primary"
+            class="block rounded-md px-3 py-1.5 text-sm text-text-primary hover:bg-surface-100"
+          >
+            {{ entry.name }}
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+  <div class="min-w-0 flex-1">
+    <router-outlet />
+  </div>
+</div>

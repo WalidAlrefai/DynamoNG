@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "declaration": true,
+    "declarationMap": true,
+    "inlineSources": true,
+    "types": []
+  },
+  "include": [
+    "src/**/*.ts",
+    "tokens/src/**/*.ts",
+    "tailwind-preset/src/**/*.ts",
+    "tailwind-preset/tokens/src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "tokens/src/**/*.spec.ts",
+    "tokens/src/**/*.test.ts",
+    "tailwind-preset/src/**/*.spec.ts",
+    "tailwind-preset/src/**/*.test.ts",
+    "tailwind-preset/tokens/src/**/*.spec.ts",
+    "tailwind-preset/tokens/src/**/*.test.ts"
+  ]
+}

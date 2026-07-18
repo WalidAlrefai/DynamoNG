@@ -1,0 +1,51 @@
+<main class="mx-auto max-w-3xl space-y-10 p-8">
+  <header>
+    <h1 class="text-2xl font-bold text-text-primary">DynamoNG Demo</h1>
+    <p class="text-text-muted">A kitchen-sink app consuming @dynamong/* packages the way a real app would.</p>
+  </header>
+
+  <section class="space-y-4 rounded-lg border border-border p-6">
+    <h2 class="text-lg font-semibold text-text-primary">Buttons</h2>
+    @for (severity of severities; track severity) {
+      <div class="flex flex-wrap items-center gap-2">
+        @for (variant of variants; track variant) {
+          <dg-button [severity]="severity" [variant]="variant" size="sm">{{ severity }} / {{ variant }}</dg-button>
+        }
+      </div>
+    }
+    <div class="flex gap-2">
+      <dg-button [loading]="true">Loading</dg-button>
+      <dg-button [disabled]="true">Disabled</dg-button>
+    </div>
+  </section>
+
+  <section class="space-y-4 rounded-lg border border-border p-6">
+    <h2 class="text-lg font-semibold text-text-primary">Profile form</h2>
+
+    <div class="block space-y-1">
+      <span class="text-sm font-medium text-text-primary">Name</span>
+      <dg-input-text [(ngModel)]="name" name="name" placeholder="Ada Lovelace" ariaLabel="Name" />
+    </div>
+
+    <div class="block space-y-1">
+      <span class="text-sm font-medium text-text-primary">Email</span>
+      <dg-input-text [(ngModel)]="email" name="email" type="email" placeholder="ada@example.com" ariaLabel="Email" />
+    </div>
+
+    <div class="block space-y-1">
+      <span class="text-sm font-medium text-text-primary">Country</span>
+      <dg-select [options]="countryOptions" [(value)]="country" ariaLabel="Country" placeholder="Choose a country" />
+    </div>
+
+    <dg-checkbox [(checked)]="subscribe">Subscribe to product updates</dg-checkbox>
+
+    <dg-button (click)="submit()" [loading]="submitting()">Submit</dg-button>
+  </section>
+
+  <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
+    <p class="text-text-primary">Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.</p>
+    <div class="mt-4 flex justify-end">
+      <dg-button (click)="confirmationOpen.set(false)">Close</dg-button>
+    </div>
+  </dg-dialog>
+</main>

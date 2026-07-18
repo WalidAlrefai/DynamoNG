@@ -1,0 +1,14 @@
+{
+  "name": "@dynamong/testing",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^22.0.0",
+    "@dynamong/core": "0.0.1"
+  },
+  "dependencies": {
+    "@testing-library/user-event": "14.6.1",
+    "axe-core": "4.12.1",
+    "vitest": "~4.1.0"
+  },
+  "sideEffects": false
+}

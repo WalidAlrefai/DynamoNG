@@ -1,0 +1,39 @@
+<div class="relative inline-block w-full">
+  <button
+    type="button"
+    role="combobox"
+    [id]="triggerId"
+    [class]="triggerClasses()"
+    [disabled]="disabled()"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="isOpen() ? listboxId : null"
+    [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
+    [attr.aria-label]="ariaLabel() ?? null"
+    (click)="toggle()"
+    (keydown)="onTriggerKeydown($event)"
+  >
+    <span>{{ selectedLabel() }}</span>
+  </button>
+
+  @if (isOpen()) {
+    <ul [id]="listboxId" role="listbox" [class]="listboxClasses" [attr.aria-label]="ariaLabel() ?? 'Options'">
+      @for (option of options(); track option.value; let i = $index) {
+        <li
+          [id]="optionId(i)"
+          role="option"
+          tabindex="-1"
+          [attr.aria-selected]="isSelected(option)"
+          [attr.aria-disabled]="option.disabled ? 'true' : null"
+          [class]="optionClasses(option, i)"
+          (click)="selectOption(option)"
+          (keydown.enter)="selectOption(option)"
+          (keydown.space)="selectOption(option)"
+          (mouseenter)="activeIndex.set(i)"
+        >
+          {{ option.label }}
+        </li>
+      }
+    </ul>
+  }
+</div>

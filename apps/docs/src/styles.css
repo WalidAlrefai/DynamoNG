@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+/* Workspace-internal relative import — see apps/demo/src/styles.css for why. */
+@import "../../../libs/theme/tailwind-preset/src/preset.css";

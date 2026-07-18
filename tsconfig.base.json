@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "importHelpers": true,
+    "isolatedModules": true,
+    "lib": ["es2022", "dom"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2022",
+    "customConditions": ["@dynamong/source"],
+    "noUncheckedSideEffectImports": false,
+    "types": ["*"],
+    "paths": {
+      "@dynamong/core": ["./libs/core/src/index.ts"],
+      "@dynamong/core/config": ["./libs/core/config/src/index.ts"],
+      "@dynamong/core/base": ["./libs/core/base/src/index.ts"],
+      "@dynamong/core/api": ["./libs/core/api/src/index.ts"],
+      "@dynamong/core/a11y": ["./libs/core/a11y/src/index.ts"],
+      "@dynamong/utils": ["./libs/utils/src/index.ts"],
+      "@dynamong/utils/dom": ["./libs/utils/dom/src/index.ts"],
+      "@dynamong/utils/class-merge": ["./libs/utils/class-merge/src/index.ts"],
+      "@dynamong/theme": ["./libs/theme/src/index.ts"],
+      "@dynamong/theme/tokens": ["./libs/theme/tokens/src/index.ts"],
+      "@dynamong/theme/tailwind-preset": [
+        "./libs/theme/tailwind-preset/src/index.ts"
+      ],
+      "@dynamong/theme-aura": ["./libs/theme/presets/aura/src/index.ts"],
+      "@dynamong/testing": ["./libs/testing/src/index.ts"],
+      "@dynamong/workspace-plugin": ["./tools/workspace-plugin/src/index.ts"],
+      "@dynamong/button": ["./libs/components/forms/button/src/index.ts"],
+      "@dynamong/checkbox": ["./libs/components/forms/checkbox/src/index.ts"],
+      "@dynamong/input-text": [
+        "./libs/components/forms/input-text/src/index.ts"
+      ],
+      "@dynamong/dialog": ["./libs/components/overlay/dialog/src/index.ts"],
+      "@dynamong/select": ["./libs/components/forms/select/src/index.ts"]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+<input
+  [type]="type()"
+  [class]="inputClasses()"
+  [placeholder]="placeholder()"
+  [disabled]="disabled()"
+  [attr.aria-invalid]="invalid() ? 'true' : null"
+  [attr.aria-label]="ariaLabel() ?? null"
+  [value]="value()"
+  (input)="onInput($event)"
+  (blur)="onBlur()"
+/>

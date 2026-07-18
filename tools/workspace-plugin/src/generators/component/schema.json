@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "DynamoComponent",
+  "title": "Scaffold a DynamoNG UI component library",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Component name in kebab-case, e.g. \"button\" or \"input-text\".",
+      "$default": { "$source": "argv", "index": 0 },
+      "x-prompt": "What is the component's name (kebab-case)?"
+    },
+    "domain": {
+      "type": "string",
+      "description": "The domain this component belongs to (used for source folder grouping and the domain:* module-boundary tag).",
+      "enum": ["forms", "overlay", "data", "panel", "menu"],
+      "x-prompt": {
+        "message": "Which domain does this component belong to?",
+        "type": "list",
+        "items": [
+          { "value": "forms", "label": "forms (button, input, checkbox, select, ...)" },
+          { "value": "overlay", "label": "overlay (dialog, tooltip, popover, ...)" },
+          { "value": "data", "label": "data (table, paginator, ...)" },
+          { "value": "panel", "label": "panel" },
+          { "value": "menu", "label": "menu" }
+        ]
+      }
+    },
+    "selector": {
+      "type": "string",
+      "description": "Component HTML selector. Defaults to `dg-<name>`.",
+      "x-priority": "internal"
+    },
+    "description": {
+      "type": "string",
+      "description": "One-line description used in the generated README.",
+      "x-priority": "internal"
+    }
+  },
+  "required": ["name", "domain"]
+}

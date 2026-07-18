@@ -1,0 +1,59 @@
+/*
+ * DynamoNG Tailwind v4 preset.
+ *
+ * Maps Tailwind's utility theme scale onto DynamoNG's `--dg-*` design-token custom
+ * properties, never onto hardcoded values. This is what keeps Tailwind a *utility
+ * layer* rather than a hard dependency: swapping a theme means swapping the `--dg-*`
+ * values at `:root` (see `@dynamong/theme-aura` or another preset package), not
+ * touching a single class name in any DynamoNG component template.
+ *
+ * Usage in a consumer app's global stylesheet:
+ *
+ *   @import "tailwindcss";
+ *   @import "@dynamong/theme/tailwind-preset/preset.css";
+ *   @import "@dynamong/theme-aura/theme.css";
+ */
+
+@theme {
+  --color-primary: var(--dg-color-primary);
+  --color-primary-hover: var(--dg-color-primary-hover);
+  --color-on-primary: var(--dg-color-on-primary);
+
+  --color-secondary: var(--dg-color-secondary);
+  --color-secondary-hover: var(--dg-color-secondary-hover);
+  --color-on-secondary: var(--dg-color-on-secondary);
+
+  --color-success: var(--dg-color-success);
+  --color-success-hover: var(--dg-color-success-hover);
+  --color-on-success: var(--dg-color-on-success);
+
+  --color-info: var(--dg-color-info);
+  --color-info-hover: var(--dg-color-info-hover);
+  --color-on-info: var(--dg-color-on-info);
+
+  --color-warning: var(--dg-color-warning);
+  --color-warning-hover: var(--dg-color-warning-hover);
+  --color-on-warning: var(--dg-color-on-warning);
+
+  --color-danger: var(--dg-color-danger);
+  --color-danger-hover: var(--dg-color-danger-hover);
+  --color-on-danger: var(--dg-color-on-danger);
+
+  --color-surface-0: var(--dg-color-surface-0);
+  --color-surface-50: var(--dg-color-surface-50);
+  --color-surface-100: var(--dg-color-surface-100);
+  --color-surface-200: var(--dg-color-surface-200);
+  --color-surface-700: var(--dg-color-surface-700);
+  --color-surface-800: var(--dg-color-surface-800);
+  --color-surface-900: var(--dg-color-surface-900);
+
+  --color-text-primary: var(--dg-color-text-primary);
+  --color-text-muted: var(--dg-color-text-muted);
+  --color-border: var(--dg-color-border);
+  --color-ring: var(--dg-color-ring);
+
+  --radius-sm: var(--dg-radius-sm);
+  --radius-md: var(--dg-radius-md);
+  --radius-lg: var(--dg-radius-lg);
+  --radius-full: var(--dg-radius-full);
+}

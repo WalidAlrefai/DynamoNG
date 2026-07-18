@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "declaration": true,
+    "declarationMap": true,
+    "inlineSources": true,
+    "types": []
+  },
+  "include": [
+    "src/**/*.ts",
+    "dom/src/**/*.ts",
+    "class-merge/src/**/*.ts",
+    "class-merge/dom/src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "dom/src/**/*.spec.ts",
+    "dom/src/**/*.test.ts",
+    "class-merge/src/**/*.spec.ts",
+    "class-merge/src/**/*.test.ts",
+    "class-merge/dom/src/**/*.spec.ts",
+    "class-merge/dom/src/**/*.test.ts"
+  ]
+}
