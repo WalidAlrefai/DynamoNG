@@ -198,3 +198,9 @@ describe('${dynamoClassName}', () => {
 function toCamelCase(pascalName: string): string {
   return pascalName.charAt(0).toLowerCase() + pascalName.slice(1);
 }
+
+// Nx's `nx g` CLI generator runner resolves the factory module and calls it
+// as a function; a CommonJS build with only a named export resolves to an
+// object, not a callable, and fails with "implementation is not a function".
+// `component.spec.ts` imports the named export directly and is unaffected.
+export default componentGenerator;

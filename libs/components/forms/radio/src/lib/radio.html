@@ -1,0 +1,20 @@
+<label [class]="rootClasses()" [for]="inputId">
+  <input
+    type="radio"
+    class="peer sr-only"
+    [id]="inputId"
+    [name]="name()"
+    [value]="value()"
+    [checked]="checked()"
+    [disabled]="disabled()"
+    (change)="onNativeChange($event)"
+  />
+  <span [class]="circleClasses()" [attr.aria-hidden]="true">
+    @if (checked()) {
+      <span [class]="dotClasses()"></span>
+    }
+  </span>
+  <span class="text-sm">
+    <ng-content />
+  </span>
+</label>

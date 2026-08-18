@@ -5,7 +5,8 @@
     "@angular/core": "^22.0.0",
     "@angular/cdk": "^22.0.0",
     "@dynamong/core": "0.0.1",
-    "@dynamong/utils": "0.0.1"
+    "@dynamong/utils": "0.0.1",
+    "@dynamong/icons": "0.0.1"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1"

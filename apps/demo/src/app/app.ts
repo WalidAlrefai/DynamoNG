@@ -4,6 +4,7 @@ import { DynamoButton } from '@dynamong/button';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoDialog } from '@dynamong/dialog';
 import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoRadio } from '@dynamong/radio';
 import { DynamoSelect } from '@dynamong/select';
 import type { DynamoSelectOption } from '@dynamong/select';
 import type { DynamoSeverity } from '@dynamong/core/api';
@@ -23,7 +24,7 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   selector: 'demo-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoButton, DynamoCheckbox, DynamoDialog, DynamoInputText, DynamoSelect, FormsModule],
+  imports: [DynamoButton, DynamoCheckbox, DynamoDialog, DynamoInputText, DynamoRadio, DynamoSelect, FormsModule],
   templateUrl: './app.html',
 })
 export class App {
@@ -35,6 +36,7 @@ export class App {
   protected readonly email = signal('');
   protected readonly subscribe = signal(false);
   protected readonly country = signal<string | null>(null);
+  protected readonly plan = signal<'free' | 'pro' | 'enterprise'>('free');
   protected readonly submitting = signal(false);
   protected readonly confirmationOpen = signal(false);
 

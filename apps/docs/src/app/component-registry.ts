@@ -26,6 +26,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description: 'A tri-state (checked / unchecked / indeterminate) toggle control.',
   },
   {
+    slug: 'radio',
+    name: 'Radio',
+    domain: 'forms',
+    description: 'A single-selection control among a group of native radio inputs sharing a name.',
+  },
+  {
     slug: 'input-text',
     name: 'Input Text',
     domain: 'forms',

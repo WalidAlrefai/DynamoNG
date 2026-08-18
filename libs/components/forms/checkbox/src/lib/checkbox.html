@@ -13,9 +13,7 @@
     @if (indeterminate()) {
       <span class="block h-0.5 w-2.5 bg-current"></span>
     } @else if (checked()) {
-      <svg viewBox="0 0 16 16" class="h-3 w-3 fill-current">
-        <path d="M6.5 11.5 3 8l1.4-1.4L6.5 8.7l5.1-5.1L13 5z" />
-      </svg>
+      <dg-icon-check [size]="size()" />
     }
   </span>
   <span class="text-sm">

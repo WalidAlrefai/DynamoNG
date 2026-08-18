@@ -14,6 +14,10 @@ export const appRoutes: Route[] = [
     loadComponent: () => import('./pages/checkbox-doc').then((m) => m.CheckboxDocPage),
   },
   {
+    path: 'components/radio',
+    loadComponent: () => import('./pages/radio-doc').then((m) => m.RadioDocPage),
+  },
+  {
     path: 'components/input-text',
     loadComponent: () => import('./pages/input-text-doc').then((m) => m.InputTextDocPage),
   },

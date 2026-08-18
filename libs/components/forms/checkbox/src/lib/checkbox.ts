@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
+import { DynamoCheckIcon } from '@dynamong/icons';
 import { checkboxBoxStyles, checkboxRootStyles } from './checkbox.styles';
 import type { DynamoCheckboxPart, DynamoCheckboxSize } from './checkbox.types';
 
@@ -8,6 +9,7 @@ import type { DynamoCheckboxPart, DynamoCheckboxSize } from './checkbox.types';
   selector: 'dg-checkbox',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoCheckIcon],
   templateUrl: './checkbox.html',
 })
 export class DynamoCheckbox extends DynamoBaseComponent<DynamoCheckboxPart> {

@@ -14,6 +14,16 @@
         "tsConfig": "libs/theme/presets/aura/tsconfig.lib.json",
         "assets": ["libs/theme/presets/aura/*.md"]
       }
+    },
+    "build-css": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "inputs": ["default", "{workspaceRoot}/tsconfig.base.json", "{workspaceRoot}/libs/theme/tokens/src/**/*.ts"],
+      "outputs": ["{workspaceRoot}/dist/libs/theme/presets/aura/theme.css"],
+      "options": {
+        "command": "node --require @swc-node/register libs/theme/presets/aura/scripts/build-theme-css.ts",
+        "cwd": "{workspaceRoot}"
+      }
     }
   }
 }

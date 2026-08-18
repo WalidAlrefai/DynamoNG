@@ -33,10 +33,12 @@
         "./libs/theme/tailwind-preset/src/index.ts"
       ],
       "@dynamong/theme-aura": ["./libs/theme/presets/aura/src/index.ts"],
+      "@dynamong/icons": ["./libs/icons/src/index.ts"],
       "@dynamong/testing": ["./libs/testing/src/index.ts"],
       "@dynamong/workspace-plugin": ["./tools/workspace-plugin/src/index.ts"],
       "@dynamong/button": ["./libs/components/forms/button/src/index.ts"],
       "@dynamong/checkbox": ["./libs/components/forms/checkbox/src/index.ts"],
+      "@dynamong/radio": ["./libs/components/forms/radio/src/index.ts"],
       "@dynamong/input-text": [
         "./libs/components/forms/input-text/src/index.ts"
       ],

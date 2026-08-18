@@ -18,7 +18,7 @@ describe('App', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const links = compiled.querySelectorAll('nav a');
-    // 1 home link + 5 component links.
-    expect(links).toHaveLength(6);
+    // 1 home link + 6 component links.
+    expect(links).toHaveLength(7);
   });
 });

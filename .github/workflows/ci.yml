@@ -26,11 +26,13 @@ jobs:
 
       - run: npm ci
 
+      - run: npx playwright install --with-deps
+
       - run: npx nx format:check --base=origin/${{ github.base_ref }}
 
       # Only touched projects and their dependents run — keeps PR CI fast
       # even as the component count grows toward 100+.
-      - run: npx nx affected -t lint test build --base=origin/${{ github.base_ref }} --parallel=3
+      - run: npx nx affected -t lint test build build-css e2e --base=origin/${{ github.base_ref }} --parallel=3
 
   main:
     if: github.event_name == 'push'
@@ -48,5 +50,7 @@ jobs:
 
       - run: npm ci
 
+      - run: npx playwright install --with-deps
+
       # Full workspace validation before anything is published from main.
-      - run: npx nx run-many -t lint test build --parallel=3
+      - run: npx nx run-many -t lint test build build-css e2e --parallel=3

@@ -36,17 +36,19 @@ DynamoNG/
 ├── libs/
 │   ├── core/               # @dynamong/core — config, base, api, a11y (secondary entry points)
 │   ├── utils/               # @dynamong/utils — dom, class-merge (secondary entry points)
+│   ├── icons/                # @dynamong/icons — shared icon components (currently: check)
 │   ├── theme/                # @dynamong/theme — tokens, tailwind-preset (secondary entry points)
 │   │   └── presets/aura/       # @dynamong/theme-aura — a concrete theme preset
 │   ├── testing/              # @dynamong/testing — shared test utilities
 │   └── components/
-│       ├── forms/               # button, checkbox, input-text, select
+│       ├── forms/               # button, checkbox, radio, input-text, select
 │       └── overlay/             # dialog
 ├── apps/
-│   ├── demo/                 # kitchen-sink app consuming @dynamong/* as installed packages
+│   ├── demo/                 # kitchen-sink app consuming @dynamong/* as installed packages, incl. a Playwright e2e/visual-regression target
 │   └── docs/                  # per-component documentation site
 └── tools/
-    └── workspace-plugin/     # local Nx plugin hosting the custom `component` generator
+    ├── workspace-plugin/     # local Nx plugin hosting the custom `component` generator
+    └── typedoc/               # generates apps/docs' API tables from source for migrated components
 ```
 
 Each `@dynamong/*` package installs independently (`npm i @dynamong/button`); components never depend on
@@ -58,7 +60,8 @@ the root `eslint.config.mjs`.
 | Component | Package | Validates |
 |---|---|---|
 | Button | `@dynamong/button` | Base class + `cva` variant pattern |
-| Checkbox | `@dynamong/checkbox` | `model()` two-way binding |
+| Checkbox | `@dynamong/checkbox` | `model()` two-way binding; consumes `@dynamong/icons` |
+| Radio | `@dynamong/radio` | Native radio-group semantics via a split `[checked]`/`(checkedChange)` binding — no `RadioGroup` container |
 | Input Text | `@dynamong/input-text` | `ControlValueAccessor` / reactive forms |
 | Select | `@dynamong/select` | Composite combobox pattern, full keyboard nav, CVA |
 | Dialog | `@dynamong/dialog` | CDK focus trapping, modal semantics |
@@ -113,32 +116,35 @@ template: `.ts`/`.html`/`.types.ts`/`.styles.ts`/`.harness.ts`/`.spec.ts` with a
 pre-populated) so every future component starts from the same shape. Its logic is validated by its own unit
 tests (`nx test workspace-plugin`).
 
-**Known limitation**: direct invocation via `npx nx g @dynamong/workspace-plugin:component ...` currently
-fails in this environment with a TS-loading error from Nx's generator runner (`implementation is not a
-function`), independent of the generator's own logic — it's very likely related to this environment's Node
-version (24.13.0) sitting just below Angular tooling's stated minimum (24.15.0). Upgrade Node and retry
-before assuming the generator itself is broken; its behavior is fully covered by `component.spec.ts`. Until
-then, use the same manual flow all 5 shipped components followed: `nx g @nx/angular:library` with the flags
-in that spec file's expectations, then hand-write the file set the generator would have produced.
+`npx nx g @dynamong/workspace-plugin:component <name> --domain=<domain>` now works directly — the earlier
+"implementation is not a function" failure was two real, environment-independent bugs, not a Node version
+issue: the plugin package was missing from root `package.json`'s `workspaces` array (so it wasn't resolvable
+at all once installed), and `component.ts` only had a named export where Nx's CLI generator runner needs a
+callable default export. Both are fixed. Note the generator only produces the generic per-component
+boilerplate shape (a plain single-size-variant component) — it does not know about a component's actual
+design (e.g. Radio's group-aware API), which still needs hand-authoring on top, same as before.
 
 ## Known simplifications (honest follow-up list)
 
-This workspace was built in one focused session covering the full architecture plus 5 real, fully-tested
-components (not all ~130 a mature library would eventually have). Deliberate scope cuts, so nothing here is
-a silent gap:
+This workspace was built across a few focused sessions. Deliberate scope cuts, so nothing here is a silent
+gap:
 
-- **Only 5 components** are implemented. The generator + conventions are proven; scaling to a much larger
-  component surface is now a repetitive, well-defined task, not an architectural unknown.
-- **`@dynamong/theme-aura` ships `AURA_THEME_CSS` as a TS export**, not yet a prebuilt `theme.css` asset file
-  in `dist/`. The token→CSS derivation is real and tested; only the "copy compiled CSS into the published
-  package" build step is unbuilt. `apps/demo`/`apps/docs` inject it via a `<style>` tag in `main.ts` as a
-  stand-in — see the comment there.
+- **Only 6 components** are implemented (Button, Checkbox, Radio, Input Text, Select, Dialog) out of the
+  ~130 a mature library would eventually have. The generator + conventions are proven; scaling to a much
+  larger component surface is now a repetitive, well-defined task, not an architectural unknown.
+- **`@dynamong/icons` has exactly one icon** (the checkmark, migrated out of `DynamoCheckbox`'s previously
+  inline `<svg>`) — proves the library's shared-icon pattern (`DynamoIconBase` + per-icon component) is
+  integrated, but PrimeNG's ~55-icon set has not been ported.
+- **Visual regression testing is scaffolded, not yet a working gate**: `apps/demo` has a Playwright `e2e`
+  target with one screenshot per component, but no baseline images are committed yet — they need to come
+  from an actual `ubuntu-latest` CI run (`--update-snapshots`), not this/any Windows dev machine, since
+  cross-platform font rendering would produce false-positive diffs.
+- **TypeDoc-based API extraction covers 2 of 6 components** (Checkbox, Radio) — `tools/typedoc` generates
+  their docs-page API tables from real source (`apps/docs/src/app/generated/api/*.json`, regenerated by the
+  `docs-api` Nx target on every build/test/serve of `docs`). Button/Input Text/Select/Dialog's tables are
+  still hand-written; migrating them is now a fast, mechanical repeat of the same pattern.
 - **`eslint-plugin-tailwindcss`'s class-order/no-conflicting-class rules are installed but disabled** (see
   `eslint.config.mjs`) — the plugin's Tailwind v4 config resolution didn't cooperate with this monorepo's
   per-library source layout in the time available. The convention itself (Tailwind classes only in
   `*.styles.ts`) is still enforced by the generator template and code review.
-- **No TypeDoc-based API extraction** — the docs app's API tables are hand-written per component rather than
-  generated from JSDoc comments.
-- **No `libs/icons` package** — not needed by the 5 shipped components.
-- **No visual regression testing** — flagged in the plan as a Phase 4 item, not yet wired.
 - **Nx Cloud is intentionally not connected** (user's explicit choice) — local caching only.
