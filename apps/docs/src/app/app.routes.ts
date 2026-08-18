@@ -45,4 +45,13 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/dialog-doc').then((m) => m.DialogDocPage),
   },
+  {
+    path: 'components/tooltip',
+    loadComponent: () =>
+      import('./pages/tooltip-doc').then((m) => m.TooltipDocPage),
+  },
+  {
+    path: 'components/tabs',
+    loadComponent: () => import('./pages/tabs-doc').then((m) => m.TabsDocPage),
+  },
 ];

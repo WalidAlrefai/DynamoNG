@@ -1,7 +1,7 @@
 export interface DocComponentEntry {
   slug: string;
   name: string;
-  domain: 'forms' | 'overlay';
+  domain: 'forms' | 'overlay' | 'panel';
   description: string;
 }
 
@@ -67,5 +67,19 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'overlay',
     description:
       'A modal dialog with CDK-powered focus trapping and Escape/backdrop-to-close.',
+  },
+  {
+    slug: 'tooltip',
+    name: 'Tooltip',
+    domain: 'overlay',
+    description:
+      'A hover/focus-triggered hint positioned by CDK Overlay with viewport-collision flipping.',
+  },
+  {
+    slug: 'tabs',
+    name: 'Tabs',
+    domain: 'panel',
+    description:
+      'A tabbed content switcher with full keyboard navigation and ARIA tabs semantics.',
   },
 ];

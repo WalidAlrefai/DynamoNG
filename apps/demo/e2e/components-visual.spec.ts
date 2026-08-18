@@ -41,3 +41,20 @@ test('dialog renders as expected', async ({ page }) => {
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveScreenshot();
 });
+
+test('tooltip renders as expected', async ({ page }) => {
+  // The tooltip's content is portaled by CDK Overlay into a
+  // `.cdk-overlay-container` appended near document.body — outside the
+  // `dg-tooltip` host's own layout box, same issue as Dialog above — so
+  // target it by ARIA role instead of a data-testid. Focus (not hover) is
+  // used to trigger it: deterministic in CI (no real cursor position) and
+  // doubles as a check that the tooltip is reachable by keyboard alone.
+  await page.getByRole('button', { name: 'Submit' }).focus();
+  const tooltip = page.getByRole('tooltip');
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toHaveScreenshot();
+});
+
+test('tabs render as expected', async ({ page }) => {
+  await expect(page.getByTestId('tabs-section')).toHaveScreenshot();
+});

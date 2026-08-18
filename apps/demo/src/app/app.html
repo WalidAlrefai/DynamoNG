@@ -113,7 +113,31 @@
       </div>
     </div>
 
-    <dg-button (click)="submit()" [loading]="submitting()">Submit</dg-button>
+    <dg-tooltip
+      content="Save your profile"
+      position="top"
+      data-testid="tooltip-demo"
+    >
+      <dg-button (click)="submit()" [loading]="submitting()">Submit</dg-button>
+    </dg-tooltip>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="tabs-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Tabs</h2>
+    <dg-tabs [(value)]="activeTab" ariaLabel="Demo tabs">
+      <dg-tab value="profile" label="Profile">
+        <p class="text-text-primary">Profile panel content.</p>
+      </dg-tab>
+      <dg-tab value="settings" label="Settings">
+        <p class="text-text-primary">Settings panel content.</p>
+      </dg-tab>
+      <dg-tab value="billing" label="Billing" [disabled]="true">
+        <p class="text-text-primary">Billing panel content.</p>
+      </dg-tab>
+    </dg-tabs>
   </section>
 
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
