@@ -15,21 +15,37 @@ import radioApiRows from '../generated/api/radio.json';
       description="A single-selection control among a group of native radio inputs sharing a name."
     >
       <div demo class="flex flex-col gap-1">
-        <dg-radio name="plan" value="free" [checked]="plan() === 'free'" (checkedChange)="plan.set('free')">
+        <dg-radio
+          name="plan"
+          value="free"
+          [checked]="plan() === 'free'"
+          (checkedChange)="plan.set('free')"
+        >
           Free
         </dg-radio>
-        <dg-radio name="plan" value="pro" [checked]="plan() === 'pro'" (checkedChange)="plan.set('pro')">
+        <dg-radio
+          name="plan"
+          value="pro"
+          [checked]="plan() === 'pro'"
+          (checkedChange)="plan.set('pro')"
+        >
           Pro
         </dg-radio>
-        <dg-radio [disabled]="true" name="plan" value="enterprise">Enterprise (disabled)</dg-radio>
+        <dg-radio [disabled]="true" name="plan" value="enterprise"
+          >Enterprise (disabled)</dg-radio
+        >
       </div>
-      <div code>&lt;dg-radio name="plan" value="free" [checked]="plan() === 'free'" (checkedChange)="plan.set('free')"&gt;Free&lt;/dg-radio&gt;</div>
+      <div code>
+        &lt;dg-radio name="plan" value="free" [checked]="plan() === 'free'"
+        (checkedChange)="plan.set('free')"&gt;Free&lt;/dg-radio&gt;
+      </div>
       <docs-api-table api [rows]="apiRows" />
       <p class="mt-4 text-sm text-text-muted">
-        There is no <code>RadioGroup</code> container — give sibling radios the same
-        <code>name</code> for native grouping, and drive them from one shared selection signal using the
-        split-binding form shown above (not full <code>[(checked)]</code>, which would desync a deselected
-        sibling since native radios never fire <code>change</code> on deselection).
+        There is no <code>RadioGroup</code> container — give sibling radios the
+        same <code>name</code> for native grouping, and drive them from one
+        shared selection signal using the split-binding form shown above (not
+        full <code>[(checked)]</code>, which would desync a deselected sibling
+        since native radios never fire <code>change</code> on deselection).
       </p>
     </docs-page-shell>
   `,

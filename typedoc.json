@@ -1,6 +1,9 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["libs/components/forms/checkbox/src/index.ts", "libs/components/forms/radio/src/index.ts"],
+  "entryPoints": [
+    "libs/components/forms/checkbox/src/index.ts",
+    "libs/components/forms/radio/src/index.ts"
+  ],
   "tsconfig": "tsconfig.base.json",
   "out": "dist/typedoc",
   "skipErrorChecking": true,

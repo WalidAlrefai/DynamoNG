@@ -18,7 +18,11 @@
     "build-css": {
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
-      "inputs": ["default", "{workspaceRoot}/tsconfig.base.json", "{workspaceRoot}/libs/theme/tokens/src/**/*.ts"],
+      "inputs": [
+        "default",
+        "{workspaceRoot}/tsconfig.base.json",
+        "{workspaceRoot}/libs/theme/tokens/src/**/*.ts"
+      ],
       "outputs": ["{workspaceRoot}/dist/libs/theme/presets/aura/theme.css"],
       "options": {
         "command": "node --require @swc-node/register libs/theme/presets/aura/scripts/build-theme-css.ts",

@@ -2,15 +2,18 @@ import { cva } from 'class-variance-authority';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — radio.html only ever binds `[class]="...Classes()"`.
-export const radioRootStyles = cva('inline-flex items-center gap-2 select-none', {
-  variants: {
-    disabled: {
-      true: 'cursor-not-allowed opacity-60',
-      false: 'cursor-pointer',
+export const radioRootStyles = cva(
+  'inline-flex items-center gap-2 select-none',
+  {
+    variants: {
+      disabled: {
+        true: 'cursor-not-allowed opacity-60',
+        false: 'cursor-pointer',
+      },
     },
+    defaultVariants: { disabled: false },
   },
-  defaultVariants: { disabled: false },
-});
+);
 
 export const radioCircleStyles = cva(
   'flex items-center justify-center rounded-full border shrink-0 transition-colors ' +

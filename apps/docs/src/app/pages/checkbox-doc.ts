@@ -16,10 +16,15 @@ import checkboxApiRows from '../generated/api/checkbox.json';
     >
       <div demo class="flex flex-col gap-3">
         <dg-checkbox [checked]="true">Accept terms and conditions</dg-checkbox>
-        <dg-checkbox [indeterminate]="true">Select all (partially selected)</dg-checkbox>
+        <dg-checkbox [indeterminate]="true"
+          >Select all (partially selected)</dg-checkbox
+        >
         <dg-checkbox [disabled]="true">Disabled option</dg-checkbox>
       </div>
-      <div code>&lt;dg-checkbox [(checked)]="accepted"&gt;Accept terms and conditions&lt;/dg-checkbox&gt;</div>
+      <div code>
+        &lt;dg-checkbox [(checked)]="accepted"&gt;Accept terms and
+        conditions&lt;/dg-checkbox&gt;
+      </div>
       <docs-api-table api [rows]="apiRows" />
     </docs-page-shell>
   `,

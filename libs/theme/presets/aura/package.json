@@ -12,7 +12,11 @@
     },
     "./theme.css": "./theme.css"
   },
-  "files": ["src", "theme.css", "README.md"],
+  "files": [
+    "src",
+    "theme.css",
+    "README.md"
+  ],
   "dependencies": {
     "tslib": "^2.3.0",
     "@dynamong/theme": "0.0.1"

@@ -28,9 +28,19 @@ const TARGETS: ComponentTarget[] = [
     sourceFile: 'libs/components/forms/radio/src/lib/radio.ts',
     outFile: 'apps/docs/src/app/generated/api/radio.json',
   },
+  {
+    entryPoint: 'libs/components/forms/switch/src/index.ts',
+    className: 'DynamoSwitch',
+    sourceFile: 'libs/components/forms/switch/src/lib/switch.ts',
+    outFile: 'apps/docs/src/app/generated/api/switch.json',
+  },
 ];
 
-const SIGNAL_INPUT_KINDS = new Set(['ModelSignal', 'InputSignal', 'InputSignalWithTransform']);
+const SIGNAL_INPUT_KINDS = new Set([
+  'ModelSignal',
+  'InputSignal',
+  'InputSignalWithTransform',
+]);
 
 // TypeDoc's `defaultValue` for a signal-initializer expression like
 // `model(false)` is just the placeholder string "...", not the real value —
@@ -41,14 +51,24 @@ const SIGNAL_INPUT_KINDS = new Set(['ModelSignal', 'InputSignal', 'InputSignalWi
 // component's own source instead. This only needs to handle the simple,
 // single-line `readonly x = input(...)`/`model(...)` shape every component
 // in this repo already follows — not general TS expression parsing.
-function scanSourceDefaults(sourceFile: string): Map<string, { kind: 'model' | 'input' | 'input.required'; defaultText: string | null }> {
+function scanSourceDefaults(
+  sourceFile: string,
+): Map<
+  string,
+  { kind: 'model' | 'input' | 'input.required'; defaultText: string | null }
+> {
   const source = readFileSync(sourceFile, 'utf8');
-  const result = new Map<string, { kind: 'model' | 'input' | 'input.required'; defaultText: string | null }>();
-  const pattern = /readonly\s+(\w+)\s*=\s*(model|input)(\.required)?(?:<[^>]*>)?\(([^)]*)\)/g;
+  const result = new Map<
+    string,
+    { kind: 'model' | 'input' | 'input.required'; defaultText: string | null }
+  >();
+  const pattern =
+    /readonly\s+(\w+)\s*=\s*(model|input)(\.required)?(?:<[^>]*>)?\(([^)]*)\)/g;
   for (const match of source.matchAll(pattern)) {
     const [, name, base, required, rawArgs] = match;
     const kind = required ? 'input.required' : (base as 'model' | 'input');
-    const defaultText = rawArgs && rawArgs.trim().length > 0 ? rawArgs.trim() : null;
+    const defaultText =
+      rawArgs && rawArgs.trim().length > 0 ? rawArgs.trim() : null;
     result.set(name, { kind, defaultText });
   }
   return result;
@@ -70,7 +90,9 @@ function renderType(node: any, project: any): string {
       return node.name;
     }
     case 'literal':
-      return typeof node.value === 'string' ? `'${node.value}'` : String(node.value);
+      return typeof node.value === 'string'
+        ? `'${node.value}'`
+        : String(node.value);
     case 'union':
       return node.types.map((t: any) => renderType(t, project)).join(' | ');
     default:
@@ -83,7 +105,10 @@ async function run() {
     // libs/core/api is included so shared type aliases (e.g. `DynamoSize`) used
     // by component inputs get a resolvable reflection — see renderType()'s
     // 'reference' case — rather than rendering as the opaque alias name.
-    entryPoints: [...TARGETS.map((t) => t.entryPoint), 'libs/core/api/src/index.ts'],
+    entryPoints: [
+      ...TARGETS.map((t) => t.entryPoint),
+      'libs/core/api/src/index.ts',
+    ],
     tsconfig: 'tsconfig.base.json',
     skipErrorChecking: true,
     excludeExternals: true,
@@ -97,26 +122,41 @@ async function run() {
   for (const target of TARGETS) {
     const classReflection = findClass(project, target.className);
     if (!classReflection) {
-      throw new Error(`Could not find class ${target.className} in TypeDoc output`);
+      throw new Error(
+        `Could not find class ${target.className} in TypeDoc output`,
+      );
     }
 
     const defaults = scanSourceDefaults(target.sourceFile);
     const rows: ApiTableRow[] = [];
 
     for (const child of classReflection.children ?? []) {
-      if (child.flags?.isInherited || child.flags?.isProtected || child.flags?.isPrivate) continue;
+      if (
+        child.flags?.isInherited ||
+        child.flags?.isProtected ||
+        child.flags?.isPrivate
+      )
+        continue;
       const typeName = child.type?.name;
       if (!SIGNAL_INPUT_KINDS.has(typeName)) continue;
 
       const valueType = child.type?.typeArguments?.[0];
       const renderedType = renderType(valueType, project);
       const scanned = defaults.get(child.name);
-      const suffix = scanned?.kind === 'model' ? ' (model)' : scanned?.kind === 'input.required' ? ' (required)' : '';
+      const suffix =
+        scanned?.kind === 'model'
+          ? ' (model)'
+          : scanned?.kind === 'input.required'
+            ? ' (required)'
+            : '';
 
       rows.push({
         name: child.name,
         type: `${renderedType}${suffix}`,
-        default: scanned?.kind === 'input.required' ? '—' : (scanned?.defaultText ?? '—'),
+        default:
+          scanned?.kind === 'input.required'
+            ? '—'
+            : (scanned?.defaultText ?? '—'),
       });
     }
 

@@ -11,9 +11,9 @@
   />
   <span [class]="boxClasses()" [attr.aria-hidden]="true">
     @if (indeterminate()) {
-      <span class="block h-0.5 w-2.5 bg-current"></span>
+    <span class="block h-0.5 w-2.5 bg-current"></span>
     } @else if (checked()) {
-      <dg-icon-check [size]="size()" />
+    <dg-icon-check [size]="size()" />
     }
   </span>
   <span class="text-sm">

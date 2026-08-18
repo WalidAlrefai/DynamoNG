@@ -1,18 +1,16 @@
 <label [class]="rootClasses()" [for]="inputId">
   <input
-    type="radio"
+    type="checkbox"
+    role="switch"
     class="peer sr-only"
     [id]="inputId"
-    [name]="name()"
-    [value]="value()"
     [checked]="checked()"
     [disabled]="disabled()"
+    [attr.aria-checked]="checked()"
     (change)="onNativeChange($event)"
   />
-  <span [class]="circleClasses()" [attr.aria-hidden]="true">
-    @if (checked()) {
-    <span [class]="dotClasses()"></span>
-    }
+  <span [class]="trackClasses()" [attr.aria-hidden]="true">
+    <span [class]="thumbClasses()"></span>
   </span>
   <span class="text-sm">
     <ng-content />

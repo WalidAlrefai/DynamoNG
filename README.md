@@ -57,16 +57,16 @@ the root `eslint.config.mjs`.
 
 ## Components
 
-| Component | Package | Validates |
-|---|---|---|
-| Button | `@dynamong/button` | Base class + `cva` variant pattern |
-| Checkbox | `@dynamong/checkbox` | `model()` two-way binding; consumes `@dynamong/icons` |
-| Radio | `@dynamong/radio` | Native radio-group semantics via a split `[checked]`/`(checkedChange)` binding — no `RadioGroup` container |
-| Input Text | `@dynamong/input-text` | `ControlValueAccessor` / reactive forms |
-| Select | `@dynamong/select` | Composite combobox pattern, full keyboard nav, CVA |
-| Dialog | `@dynamong/dialog` | CDK focus trapping, modal semantics |
+| Component  | Package                | Validates                                                                                                  |
+| ---------- | ---------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Button     | `@dynamong/button`     | Base class + `cva` variant pattern                                                                         |
+| Checkbox   | `@dynamong/checkbox`   | `model()` two-way binding; consumes `@dynamong/icons`                                                      |
+| Radio      | `@dynamong/radio`      | Native radio-group semantics via a split `[checked]`/`(checkedChange)` binding — no `RadioGroup` container |
+| Input Text | `@dynamong/input-text` | `ControlValueAccessor` / reactive forms                                                                    |
+| Select     | `@dynamong/select`     | Composite combobox pattern, full keyboard nav, CVA                                                         |
+| Dialog     | `@dynamong/dialog`     | CDK focus trapping, modal semantics                                                                        |
 
-Every component ships: a standalone `OnPush` component, a `*.styles.ts` file (the *only* place Tailwind
+Every component ships: a standalone `OnPush` component, a `*.styles.ts` file (the _only_ place Tailwind
 utility classes live, via `class-variance-authority`), a `*.types.ts` file, a CDK `ComponentHarness` for
 consumer testing, and a `*.spec.ts` covering creation, default behavior, inputs, outputs, user interactions,
 conditional rendering, template behavior, accessibility, state changes, and edge cases.
@@ -90,7 +90,7 @@ Swapping a theme means swapping the `--dg-*` values at `:root`, never touching a
 **Consumer installation** (published-package scenario): install Tailwind, `@import` `tailwindcss` and
 `@dynamong/theme/tailwind-preset/preset.css` in your global stylesheet, import a compiled theme stylesheet,
 and call `provideDynamoNG({ theme: 'aura' })` in `app.config.ts`. See `apps/demo/src/styles.css` for a
-working example — note that within *this* monorepo it uses a relative import instead of the bare package
+working example — note that within _this_ monorepo it uses a relative import instead of the bare package
 specifier (see the comment there for why).
 
 ## Testing

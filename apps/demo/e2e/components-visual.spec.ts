@@ -24,6 +24,10 @@ test('radio group renders as expected', async ({ page }) => {
   await expect(page.getByTestId('radio-group')).toHaveScreenshot();
 });
 
+test('switch renders as expected', async ({ page }) => {
+  await expect(page.getByTestId('switch-field')).toHaveScreenshot();
+});
+
 test('dialog renders as expected', async ({ page }) => {
   await page.getByRole('button', { name: 'Submit' }).click();
   // The `dg-dialog` host element's visible content uses `position: fixed`,

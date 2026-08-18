@@ -1,8 +1,17 @@
-import { formatFiles, joinPathFragments, logger, names, type Tree } from '@nx/devkit';
+import {
+  formatFiles,
+  joinPathFragments,
+  logger,
+  names,
+  type Tree,
+} from '@nx/devkit';
 import { libraryGenerator, UnitTestRunner } from '@nx/angular/generators';
 import type { ComponentGeneratorSchema } from './schema';
 
-export async function componentGenerator(tree: Tree, options: ComponentGeneratorSchema) {
+export async function componentGenerator(
+  tree: Tree,
+  options: ComponentGeneratorSchema,
+) {
   const { name, domain } = options;
   const { className: pascalName } = names(name);
   const dynamoClassName = `Dynamo${pascalName}`;
@@ -34,9 +43,18 @@ export async function componentGenerator(tree: Tree, options: ComponentGenerator
     tree.delete(joinPathFragments(libDir, child));
   }
 
-  tree.write(joinPathFragments(projectRoot, 'src/index.ts'), indexFileContent(name));
-  tree.write(joinPathFragments(libDir, `${name}.types.ts`), typesFileContent(name, pascalName));
-  tree.write(joinPathFragments(libDir, `${name}.styles.ts`), stylesFileContent(name, pascalName));
+  tree.write(
+    joinPathFragments(projectRoot, 'src/index.ts'),
+    indexFileContent(name),
+  );
+  tree.write(
+    joinPathFragments(libDir, `${name}.types.ts`),
+    typesFileContent(name, pascalName),
+  );
+  tree.write(
+    joinPathFragments(libDir, `${name}.styles.ts`),
+    stylesFileContent(name, pascalName),
+  );
   tree.write(
     joinPathFragments(libDir, `${name}.html`),
     templateFileContent(dynamoClassName),
@@ -49,7 +67,10 @@ export async function componentGenerator(tree: Tree, options: ComponentGenerator
     joinPathFragments(libDir, `${name}.harness.ts`),
     harnessFileContent(name, pascalName, selector),
   );
-  tree.write(joinPathFragments(libDir, `${name}.spec.ts`), specFileContent(name, pascalName, dynamoClassName));
+  tree.write(
+    joinPathFragments(libDir, `${name}.spec.ts`),
+    specFileContent(name, pascalName, dynamoClassName),
+  );
 
   await formatFiles(tree);
 
@@ -130,7 +151,11 @@ export class ${dynamoClassName} extends DynamoBaseComponent<Dynamo${pascalName}P
 `;
 }
 
-function harnessFileContent(name: string, pascalName: string, selector: string): string {
+function harnessFileContent(
+  name: string,
+  pascalName: string,
+  selector: string,
+): string {
   return `import { ComponentHarness } from '@angular/cdk/testing';
 
 /** Refactor-safe interaction API for ${pascalName}, for use in consumer app tests. */
@@ -140,7 +165,11 @@ export class Dynamo${pascalName}Harness extends ComponentHarness {
 `;
 }
 
-function specFileContent(name: string, pascalName: string, dynamoClassName: string): string {
+function specFileContent(
+  name: string,
+  pascalName: string,
+  dynamoClassName: string,
+): string {
   return `import { renderDynamoComponent } from '@dynamong/testing';
 import { expectNoA11yViolations } from '@dynamong/testing';
 import { describe, expect, it } from 'vitest';

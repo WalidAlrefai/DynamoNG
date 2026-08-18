@@ -1,6 +1,9 @@
 import { Component, model, signal } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -24,10 +27,18 @@ class RadioTwoWayHostComponent {
   standalone: true,
   imports: [DynamoRadio],
   template: `
-    <dg-radio name="fruit" value="apple" [checked]="fruit() === 'apple'" (checkedChange)="fruit.set('apple')"
+    <dg-radio
+      name="fruit"
+      value="apple"
+      [checked]="fruit() === 'apple'"
+      (checkedChange)="fruit.set('apple')"
       >Apple</dg-radio
     >
-    <dg-radio name="fruit" value="banana" [checked]="fruit() === 'banana'" (checkedChange)="fruit.set('banana')"
+    <dg-radio
+      name="fruit"
+      value="banana"
+      [checked]="fruit() === 'banana'"
+      (checkedChange)="fruit.set('banana')"
       >Banana</dg-radio
     >
   `,
@@ -39,7 +50,9 @@ class RadioGroupHostComponent {
 describe('DynamoRadio', () => {
   describe('creation', () => {
     it('renders without errors with a native radio input', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
 
       expect(within(container).getByRole('radio')).toBeTruthy();
     });
@@ -51,7 +64,9 @@ describe('DynamoRadio', () => {
     });
 
     it('associates the label with the input via a generated id', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
 
       const input = within(container).getByRole('radio') as HTMLInputElement;
       const label = container.querySelector('label');
@@ -61,45 +76,72 @@ describe('DynamoRadio', () => {
 
   describe('default behavior', () => {
     it('defaults to unchecked', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
 
-      expect((within(container).getByRole('radio') as HTMLInputElement).checked).toBe(false);
+      expect(
+        (within(container).getByRole('radio') as HTMLInputElement).checked,
+      ).toBe(false);
     });
 
     it('defaults to not disabled', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
 
-      expect((within(container).getByRole('radio') as HTMLInputElement).disabled).toBe(false);
+      expect(
+        (within(container).getByRole('radio') as HTMLInputElement).disabled,
+      ).toBe(false);
     });
   });
 
   describe('input properties', () => {
     it('reflects the checked input onto the native input element', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test', checked: true } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test', checked: true },
+      });
 
-      expect((within(container).getByRole('radio') as HTMLInputElement).checked).toBe(true);
+      expect(
+        (within(container).getByRole('radio') as HTMLInputElement).checked,
+      ).toBe(true);
     });
 
     it('reflects the name input onto the native input element (drives native grouping)', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'fruit' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'fruit' },
+      });
 
-      expect((within(container).getByRole('radio') as HTMLInputElement).name).toBe('fruit');
+      expect(
+        (within(container).getByRole('radio') as HTMLInputElement).name,
+      ).toBe('fruit');
     });
 
     it('reflects the value input onto the native input element', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test', value: 'apple' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test', value: 'apple' },
+      });
 
-      expect((within(container).getByRole('radio') as HTMLInputElement).value).toBe('apple');
+      expect(
+        (within(container).getByRole('radio') as HTMLInputElement).value,
+      ).toBe('apple');
     });
 
     it('reflects the disabled input onto the native input element', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test', disabled: true } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test', disabled: true },
+      });
 
-      expect((within(container).getByRole('radio') as HTMLInputElement).disabled).toBe(true);
+      expect(
+        (within(container).getByRole('radio') as HTMLInputElement).disabled,
+      ).toBe(true);
     });
 
     it('accepts every documented size without throwing', () => {
-      const { componentInstance, setInputs } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { componentInstance, setInputs } = renderDynamoComponent(
+        DynamoRadio,
+        { inputs: { name: 'test' } },
+      );
 
       for (const size of ['sm', 'md', 'lg'] as const) {
         setInputs({ size });
@@ -110,7 +152,9 @@ describe('DynamoRadio', () => {
 
   describe('output events', () => {
     it('updates a two-way-bound value when selected', async () => {
-      const { container, componentInstance } = renderDynamoComponent(RadioTwoWayHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        RadioTwoWayHostComponent,
+      );
       expect(componentInstance.value()).toBe(false);
 
       await userEvent.click(within(container).getByRole('radio'));
@@ -119,7 +163,9 @@ describe('DynamoRadio', () => {
     });
 
     it('emits checkedChange when a grouped sibling is selected', async () => {
-      const { container, componentInstance } = renderDynamoComponent(RadioGroupHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        RadioGroupHostComponent,
+      );
       const radios = within(container).getAllByRole('radio');
 
       await userEvent.click(radios[1] as HTMLInputElement);
@@ -130,7 +176,10 @@ describe('DynamoRadio', () => {
 
   describe('user interactions', () => {
     it('selects when clicked directly', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRadio,
+        { inputs: { name: 'test' } },
+      );
 
       await userEvent.click(within(container).getByRole('radio'));
 
@@ -138,7 +187,10 @@ describe('DynamoRadio', () => {
     });
 
     it('selects when clicked via its associated <label>', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRadio,
+        { inputs: { name: 'test' } },
+      );
       const label = container.querySelector('label');
       expect(label).not.toBeNull();
 
@@ -148,7 +200,10 @@ describe('DynamoRadio', () => {
     });
 
     it('selects via keyboard (Space) when focused', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRadio,
+        { inputs: { name: 'test' } },
+      );
       const input = within(container).getByRole('radio') as HTMLInputElement;
 
       input.focus();
@@ -158,8 +213,13 @@ describe('DynamoRadio', () => {
     });
 
     it('supports interaction through the DynamoRadioHarness', async () => {
-      const { fixture } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoRadioHarness);
+      const { fixture } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoRadioHarness,
+      );
 
       expect(await harness.isChecked()).toBe(false);
       await harness.select();
@@ -170,7 +230,10 @@ describe('DynamoRadio', () => {
       const { fixture } = renderDynamoComponent(DynamoRadio, {
         inputs: { name: 'test', value: 'apple', disabled: true },
       });
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoRadioHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoRadioHarness,
+      );
 
       expect(await harness.isDisabled()).toBe(true);
       expect(await harness.getValue()).toBe('apple');
@@ -179,14 +242,18 @@ describe('DynamoRadio', () => {
 
   describe('conditional rendering', () => {
     it('renders no inner dot when unchecked', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
 
       const circle = container.querySelectorAll('span')[0];
       expect(circle?.querySelector('span')).toBeNull();
     });
 
     it('renders the inner dot only when checked', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test', checked: true } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test', checked: true },
+      });
 
       const circle = container.querySelectorAll('span')[0];
       expect(circle?.querySelector('span')).not.toBeNull();
@@ -207,7 +274,9 @@ describe('DynamoRadio', () => {
     });
 
     it('hides the native input visually while keeping it in the accessibility tree', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
 
       const input = within(container).getByRole('radio');
       expect(input.className).toContain('sr-only');
@@ -221,21 +290,28 @@ describe('DynamoRadio', () => {
     });
 
     it('has no axe violations while checked', async () => {
-      const { container } = renderDynamoComponent(RadioTwoWayHostComponent, { inputs: { value: true } });
+      const { container } = renderDynamoComponent(RadioTwoWayHostComponent, {
+        inputs: { value: true },
+      });
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
 
     it('flags a labelless radio as an accessibility violation (sanity check on the test helper itself)', async () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
       await expect(expectNoA11yViolations(container)).rejects.toThrow(/label/i);
     });
   });
 
   describe('state changes', () => {
     it('cannot be selected by click when disabled', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoRadio, {
-        inputs: { name: 'test', disabled: true },
-      });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRadio,
+        {
+          inputs: { name: 'test', disabled: true },
+        },
+      );
 
       await userEvent.click(within(container).getByRole('radio'));
 
@@ -243,9 +319,12 @@ describe('DynamoRadio', () => {
     });
 
     it('becomes selectable again once disabled is set back to false', async () => {
-      const { container, componentInstance, setInputs } = renderDynamoComponent(DynamoRadio, {
-        inputs: { name: 'test', disabled: true },
-      });
+      const { container, componentInstance, setInputs } = renderDynamoComponent(
+        DynamoRadio,
+        {
+          inputs: { name: 'test', disabled: true },
+        },
+      );
 
       setInputs({ disabled: false });
       await userEvent.click(within(container).getByRole('radio'));
@@ -254,8 +333,12 @@ describe('DynamoRadio', () => {
     });
 
     it('keeps a deselected sibling in sync via the split-binding group pattern', async () => {
-      const { container, componentInstance } = renderDynamoComponent(RadioGroupHostComponent);
-      const radios = within(container).getAllByRole('radio') as HTMLInputElement[];
+      const { container, componentInstance } = renderDynamoComponent(
+        RadioGroupHostComponent,
+      );
+      const radios = within(container).getAllByRole(
+        'radio',
+      ) as HTMLInputElement[];
       expect(radios[0]?.checked).toBe(true);
 
       await userEvent.click(radios[1] as HTMLInputElement);
@@ -268,15 +351,20 @@ describe('DynamoRadio', () => {
 
   describe('edge cases', () => {
     it('renders with no projected label content without throwing', () => {
-      const { container } = renderDynamoComponent(DynamoRadio, { inputs: { name: 'test' } });
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
 
       expect(within(container).getByRole('radio')).toBeTruthy();
     });
 
     it('handles rapid repeated clicking on an already-checked radio without losing state', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoRadio, {
-        inputs: { name: 'test', checked: true },
-      });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRadio,
+        {
+          inputs: { name: 'test', checked: true },
+        },
+      );
       const input = within(container).getByRole('radio');
 
       for (let i = 0; i < 4; i++) {
@@ -288,7 +376,9 @@ describe('DynamoRadio', () => {
 
     it('generates a distinct id for each radio instance sharing the same injector', () => {
       const { container } = renderDynamoComponent(RadioGroupHostComponent);
-      const radios = within(container).getAllByRole('radio') as HTMLInputElement[];
+      const radios = within(container).getAllByRole(
+        'radio',
+      ) as HTMLInputElement[];
       expect(radios).toHaveLength(2);
 
       expect(radios[0]?.id).not.toBe(radios[1]?.id);

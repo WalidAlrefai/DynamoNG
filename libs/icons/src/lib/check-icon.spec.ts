@@ -63,8 +63,15 @@ describe('DynamoCheckIcon', () => {
       const { fixture, container } = render();
       const svg = container.querySelector('svg');
 
-      const expected: Record<'sm' | 'md' | 'lg', string> = { sm: '14', md: '16', lg: '20' };
-      for (const [size, px] of Object.entries(expected) as ['sm' | 'md' | 'lg', string][]) {
+      const expected: Record<'sm' | 'md' | 'lg', string> = {
+        sm: '14',
+        md: '16',
+        lg: '20',
+      };
+      for (const [size, px] of Object.entries(expected) as [
+        'sm' | 'md' | 'lg',
+        string,
+      ][]) {
         fixture.componentRef.setInput('size', size);
         fixture.detectChanges();
         expect(svg?.getAttribute('width')).toBe(px);
@@ -77,7 +84,9 @@ describe('DynamoCheckIcon', () => {
     it('marks the svg as aria-hidden (decorative icon)', () => {
       const { container } = render();
 
-      expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+      expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe(
+        'true',
+      );
     });
   });
 

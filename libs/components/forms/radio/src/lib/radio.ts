@@ -1,7 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  model,
+} from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
-import { radioCircleStyles, radioDotStyles, radioRootStyles } from './radio.styles';
+import {
+  radioCircleStyles,
+  radioDotStyles,
+  radioRootStyles,
+} from './radio.styles';
 import type { DynamoRadioPart, DynamoRadioSize } from './radio.types';
 
 @Component({
@@ -39,7 +49,9 @@ export class DynamoRadio extends DynamoBaseComponent<DynamoRadioPart> {
   protected readonly inputId = this.idGenerator.next('dg-radio');
 
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(radioRootStyles({ disabled: this.disabled() }), this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(radioRootStyles({ disabled: this.disabled() }), this.styleClass()),
   );
 
   // The visual circle is structural (the native input is visually hidden), so
@@ -48,7 +60,9 @@ export class DynamoRadio extends DynamoBaseComponent<DynamoRadioPart> {
     radioCircleStyles({ size: this.size(), checked: this.checked() }),
   );
 
-  protected readonly dotClasses = computed(() => radioDotStyles({ size: this.size() }));
+  protected readonly dotClasses = computed(() =>
+    radioDotStyles({ size: this.size() }),
+  );
 
   protected onNativeChange(event: Event): void {
     const target = event.target as HTMLInputElement;

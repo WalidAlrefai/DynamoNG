@@ -14,9 +14,9 @@ plain `nx build theme-aura` alone only produces the compiled `.js`/`.d.ts`, not 
 `--dg-*` custom properties as the `AURA_THEME_CSS` TS export, so external consumers can do:
 
 ```css
-@import "tailwindcss";
-@import "@dynamong/theme/tailwind-preset/preset.css";
-@import "@dynamong/theme-aura/theme.css";
+@import 'tailwindcss';
+@import '@dynamong/theme/tailwind-preset/preset.css';
+@import '@dynamong/theme-aura/theme.css';
 ```
 
 instead of importing `AURA_THEME_CSS` and injecting a `<style>` tag manually. (This repo's own
