@@ -48,7 +48,8 @@
       "@dynamong/textarea": ["./libs/components/forms/textarea/src/index.ts"],
       "@dynamong/core/overlay": ["./libs/core/overlay/src/index.ts"],
       "@dynamong/tooltip": ["./libs/components/overlay/tooltip/src/index.ts"],
-      "@dynamong/tabs": ["./libs/components/panel/tabs/src/index.ts"]
+      "@dynamong/tabs": ["./libs/components/panel/tabs/src/index.ts"],
+      "@dynamong/accordion": ["./libs/components/panel/accordion/src/index.ts"]
     }
   }
 }

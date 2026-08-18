@@ -54,4 +54,9 @@ export const appRoutes: Route[] = [
     path: 'components/tabs',
     loadComponent: () => import('./pages/tabs-doc').then((m) => m.TabsDocPage),
   },
+  {
+    path: 'components/accordion',
+    loadComponent: () =>
+      import('./pages/accordion-doc').then((m) => m.AccordionDocPage),
+  },
 ];

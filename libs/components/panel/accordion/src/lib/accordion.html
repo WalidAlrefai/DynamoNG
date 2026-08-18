@@ -1,0 +1,49 @@
+<div [class]="rootClasses()" [attr.aria-label]="ariaLabel() ?? null">
+  @for (panel of panels(); track panel; let i = $index) {
+  <div [class]="panelClasses(panel)">
+    <button
+      #headerButton
+      type="button"
+      [id]="headerId(i)"
+      [attr.aria-expanded]="isExpanded(panel)"
+      [attr.aria-controls]="panelId(i)"
+      [attr.aria-disabled]="panel.disabled() ? 'true' : null"
+      [class]="headerClasses(panel)"
+      (click)="onHeaderClick(panel, i)"
+      (keydown)="onHeaderKeydown($event)"
+    >
+      <span>{{ panel.header() }}</span>
+      <svg
+        [class]="chevronClasses(panel)"
+        [attr.aria-hidden]="true"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+      >
+        <path
+          d="M4 6l4 4 4-4"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <div [class]="contentWrapperClasses(panel)">
+      <div [class]="contentInnerClasses">
+        @if (panel.hasBeenActivated()) {
+        <div
+          role="region"
+          [id]="panelId(i)"
+          [attr.aria-labelledby]="headerId(i)"
+          [class]="contentBodyClasses"
+        >
+          <ng-container [ngTemplateOutlet]="panel.contentTemplate()" />
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+  }
+</div>

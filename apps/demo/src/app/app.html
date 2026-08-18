@@ -140,6 +140,24 @@
     </dg-tabs>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="accordion-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Accordion</h2>
+    <dg-accordion ariaLabel="Demo accordion">
+      <dg-accordion-panel value="shipping" header="Shipping">
+        <p class="text-text-primary">Shipping panel content.</p>
+      </dg-accordion-panel>
+      <dg-accordion-panel value="returns" header="Returns">
+        <p class="text-text-primary">Returns panel content.</p>
+      </dg-accordion-panel>
+      <dg-accordion-panel value="warranty" header="Warranty" [disabled]="true">
+        <p class="text-text-primary">Warranty panel content.</p>
+      </dg-accordion-panel>
+    </dg-accordion>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

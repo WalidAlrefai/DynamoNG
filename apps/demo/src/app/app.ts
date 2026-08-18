@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DynamoAccordion, DynamoAccordionPanel } from '@dynamong/accordion';
 import { DynamoButton } from '@dynamong/button';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoDialog } from '@dynamong/dialog';
@@ -36,6 +37,8 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DynamoAccordion,
+    DynamoAccordionPanel,
     DynamoButton,
     DynamoCheckbox,
     DynamoDialog,

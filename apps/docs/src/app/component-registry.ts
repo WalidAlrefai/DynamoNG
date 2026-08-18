@@ -82,4 +82,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A tabbed content switcher with full keyboard navigation and ARIA tabs semantics.',
   },
+  {
+    slug: 'accordion',
+    name: 'Accordion',
+    domain: 'panel',
+    description:
+      'A collapsible content switcher with full keyboard navigation and ARIA accordion semantics.',
+  },
 ];

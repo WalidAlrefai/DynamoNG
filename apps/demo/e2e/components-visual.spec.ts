@@ -58,3 +58,7 @@ test('tooltip renders as expected', async ({ page }) => {
 test('tabs render as expected', async ({ page }) => {
   await expect(page.getByTestId('tabs-section')).toHaveScreenshot();
 });
+
+test('accordion renders as expected', async ({ page }) => {
+  await expect(page.getByTestId('accordion-section')).toHaveScreenshot();
+});
