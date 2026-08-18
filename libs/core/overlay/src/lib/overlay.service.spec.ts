@@ -54,4 +54,15 @@ describe('DynamoOverlayService', () => {
 
     handle.overlayRef.dispose();
   });
+
+  it('creates a global overlay positioned via the supplied configure callback', () => {
+    const overlayRef = service.createGlobalOverlay((strategy) => {
+      strategy.top('1rem').right('1rem');
+    });
+
+    expect(typeof overlayRef.attach).toBe('function');
+    expect(overlayRef.hasAttached()).toBe(false);
+
+    overlayRef.dispose();
+  });
 });

@@ -171,6 +171,33 @@
     </dg-menu>
   </section>
 
+  <section
+    class="flex flex-wrap gap-2 rounded-lg border border-border p-6"
+    data-testid="toast-section"
+  >
+    <h2 class="w-full text-lg font-semibold text-text-primary">Toast</h2>
+    <dg-button
+      severity="success"
+      (click)="toast.success('Changes saved successfully.')"
+      >Success</dg-button
+    >
+    <dg-button
+      severity="info"
+      (click)="toast.info('A new version is available.')"
+      >Info</dg-button
+    >
+    <dg-button
+      severity="warning"
+      (click)="toast.warning('Your session expires in 5 minutes.')"
+      >Warning</dg-button
+    >
+    <dg-button
+      severity="danger"
+      (click)="toast.error('Could not save changes.')"
+      >Error</dg-button
+    >
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

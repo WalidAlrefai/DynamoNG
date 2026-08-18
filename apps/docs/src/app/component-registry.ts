@@ -1,7 +1,7 @@
 export interface DocComponentEntry {
   slug: string;
   name: string;
-  domain: 'forms' | 'overlay' | 'panel';
+  domain: 'forms' | 'overlay' | 'panel' | 'feedback';
   description: string;
 }
 
@@ -95,5 +95,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'overlay',
     description:
       'A dropdown action menu positioned by CDK Overlay, with full keyboard navigation and ARIA menu semantics.',
+  },
+  {
+    slug: 'toast',
+    name: 'Toast',
+    domain: 'feedback',
+    description:
+      'A global, imperative notification service — inject and call, no template tag required.',
   },
 ];

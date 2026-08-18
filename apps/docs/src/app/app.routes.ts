@@ -63,4 +63,9 @@ export const appRoutes: Route[] = [
     path: 'components/menu',
     loadComponent: () => import('./pages/menu-doc').then((m) => m.MenuDocPage),
   },
+  {
+    path: 'components/toast',
+    loadComponent: () =>
+      import('./pages/toast-doc').then((m) => m.ToastDocPage),
+  },
 ];

@@ -2,6 +2,7 @@ import {
   Overlay,
   type ConnectedPosition,
   type FlexibleConnectedPositionStrategyOrigin,
+  type GlobalPositionStrategy,
   type OverlayConfig,
   type OverlayRef,
   type FlexibleConnectedPositionStrategy,
@@ -46,5 +47,25 @@ export class DynamoOverlayService {
     });
 
     return { overlayRef, positionStrategy };
+  }
+
+  /**
+   * Creates (but does not attach) an overlay positioned relative to the
+   * viewport rather than a trigger element — for service-invoked UI (toasts,
+   * global banners, ...) with no anchor to connect to. `configure` sets the
+   * strategy's corner/margins; this method stays agnostic of any particular
+   * component's position vocabulary, same as `createConnectedOverlay`.
+   */
+  createGlobalOverlay(
+    configure: (strategy: GlobalPositionStrategy) => void,
+    config: Partial<OverlayConfig> = {},
+  ): OverlayRef {
+    const positionStrategy = this.overlay.position().global();
+    configure(positionStrategy);
+
+    return this.overlay.create({
+      positionStrategy,
+      ...config,
+    });
   }
 }

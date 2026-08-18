@@ -72,3 +72,14 @@ test('menu renders as expected', async ({ page }) => {
   await expect(menu).toBeVisible();
   await expect(menu).toHaveScreenshot();
 });
+
+test('toast renders as expected', async ({ page }) => {
+  // Same CDK Overlay portaling issue as Dialog/Tooltip/Menu above — the
+  // toast is mounted by DynamoToastService directly onto document.body, with
+  // no relation at all to the `toast-section` testid's layout box, so open
+  // one and target it by ARIA role instead.
+  await page.getByRole('button', { name: 'Success' }).click();
+  const toast = page.getByRole('status');
+  await expect(toast).toBeVisible();
+  await expect(toast).toHaveScreenshot();
+});
