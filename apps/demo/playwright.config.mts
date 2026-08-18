@@ -31,8 +31,12 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
     deviceScaleFactor: 1,
   },
-  /* Fixed thresholds so minor cross-machine anti-aliasing noise doesn't flake visual comparisons. */
+  /* Fixed thresholds so minor cross-machine anti-aliasing noise doesn't flake visual comparisons.
+   * `timeout` is raised well above the 5s default — WebKit in a resource-constrained CI/Docker
+   * container can take several seconds just to reach a stable (non-animating) frame for its first
+   * few screenshots in a run, and the default was observed timing out on otherwise-correct captures. */
   expect: {
+    timeout: 15_000,
     toHaveScreenshot: {
       threshold: 0.2,
       maxDiffPixelRatio: 0.02,
