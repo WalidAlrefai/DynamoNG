@@ -1,7 +1,7 @@
 export interface DocComponentEntry {
   slug: string;
   name: string;
-  domain: 'forms' | 'overlay';
+  domain: 'forms' | 'overlay' | 'panel';
   description: string;
 }
 
@@ -48,6 +48,13 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
       'A single-line text input with full Angular Forms (ControlValueAccessor) integration.',
   },
   {
+    slug: 'textarea',
+    name: 'Textarea',
+    domain: 'forms',
+    description:
+      'A multi-line text input with full Angular Forms (ControlValueAccessor) integration and optional auto-resize.',
+  },
+  {
     slug: 'select',
     name: 'Select',
     domain: 'forms',
@@ -60,5 +67,26 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'overlay',
     description:
       'A modal dialog with CDK-powered focus trapping and Escape/backdrop-to-close.',
+  },
+  {
+    slug: 'tooltip',
+    name: 'Tooltip',
+    domain: 'overlay',
+    description:
+      'A hover/focus-triggered hint positioned by CDK Overlay with viewport-collision flipping.',
+  },
+  {
+    slug: 'tabs',
+    name: 'Tabs',
+    domain: 'panel',
+    description:
+      'A tabbed content switcher with full keyboard navigation and ARIA tabs semantics.',
+  },
+  {
+    slug: 'accordion',
+    name: 'Accordion',
+    domain: 'panel',
+    description:
+      'A collapsible content switcher with full keyboard navigation and ARIA accordion semantics.',
   },
 ];

@@ -1,0 +1,41 @@
+<div [class]="rootClasses()">
+  <div
+    role="tablist"
+    tabindex="-1"
+    [id]="tabsId"
+    [class]="tablistClasses"
+    [attr.aria-label]="ariaLabel() ?? null"
+    (keydown)="onTablistKeydown($event)"
+  >
+    @for (tab of tabs(); track tab; let i = $index) {
+    <button
+      #tabButton
+      type="button"
+      role="tab"
+      [id]="tabId(i)"
+      [attr.aria-controls]="panelId(i)"
+      [attr.aria-selected]="isActive(tab)"
+      [attr.aria-disabled]="tab.disabled() ? 'true' : null"
+      [tabindex]="isActive(tab) ? 0 : -1"
+      [class]="tabClasses(tab)"
+      (click)="onTabClick(tab, i)"
+    >
+      {{ tab.label() }}
+    </button>
+    }
+  </div>
+
+  @for (tab of tabs(); track tab; let i = $index) { @if (tab.hasBeenActivated())
+  {
+  <div
+    role="tabpanel"
+    [id]="panelId(i)"
+    [attr.aria-labelledby]="tabId(i)"
+    [hidden]="!isActive(tab)"
+    [class]="panelClasses"
+    tabindex="0"
+  >
+    <ng-container [ngTemplateOutlet]="tab.contentTemplate()" />
+  </div>
+  } }
+</div>

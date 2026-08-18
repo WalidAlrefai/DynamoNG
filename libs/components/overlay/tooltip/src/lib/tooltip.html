@@ -1,0 +1,20 @@
+<span
+  #triggerEl
+  tabindex="-1"
+  [class]="triggerClasses()"
+  [attr.aria-describedby]="isVisible() ? contentId : null"
+  (mouseenter)="onMouseEnter()"
+  (mouseleave)="onMouseLeave()"
+  (focusin)="onFocusIn()"
+  (focusout)="onFocusOut()"
+  (keydown.escape)="onEscape()"
+>
+  <ng-content />
+</span>
+
+<ng-template #tooltipTemplate>
+  <div role="tooltip" [id]="contentId" [class]="panelClasses()">
+    {{ content() }}
+    <div [class]="arrowClasses()" [attr.aria-hidden]="true"></div>
+  </div>
+</ng-template>

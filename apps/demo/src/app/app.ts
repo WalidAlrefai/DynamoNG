@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DynamoAccordion, DynamoAccordionPanel } from '@dynamong/accordion';
 import { DynamoButton } from '@dynamong/button';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoDialog } from '@dynamong/dialog';
@@ -8,6 +9,9 @@ import { DynamoRadio } from '@dynamong/radio';
 import { DynamoSelect } from '@dynamong/select';
 import type { DynamoSelectOption } from '@dynamong/select';
 import { DynamoSwitch } from '@dynamong/switch';
+import { DynamoTab, DynamoTabs } from '@dynamong/tabs';
+import { DynamoTextarea } from '@dynamong/textarea';
+import { DynamoTooltip } from '@dynamong/tooltip';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
 const SEVERITIES: DynamoSeverity[] = [
@@ -33,6 +37,8 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DynamoAccordion,
+    DynamoAccordionPanel,
     DynamoButton,
     DynamoCheckbox,
     DynamoDialog,
@@ -40,6 +46,10 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
     DynamoRadio,
     DynamoSelect,
     DynamoSwitch,
+    DynamoTab,
+    DynamoTabs,
+    DynamoTextarea,
+    DynamoTooltip,
     FormsModule,
   ],
   templateUrl: './app.html',
@@ -55,6 +65,8 @@ export class App {
   protected readonly country = signal<string | null>(null);
   protected readonly plan = signal<'free' | 'pro' | 'enterprise'>('free');
   protected readonly notifications = signal(true);
+  protected readonly bio = signal('');
+  protected readonly activeTab = signal<string | undefined>('profile');
   protected readonly submitting = signal(false);
   protected readonly confirmationOpen = signal(false);
 

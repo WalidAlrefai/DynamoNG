@@ -34,6 +34,12 @@ const TARGETS: ComponentTarget[] = [
     sourceFile: 'libs/components/forms/switch/src/lib/switch.ts',
     outFile: 'apps/docs/src/app/generated/api/switch.json',
   },
+  {
+    entryPoint: 'libs/components/forms/textarea/src/index.ts',
+    className: 'DynamoTextarea',
+    sourceFile: 'libs/components/forms/textarea/src/lib/textarea.ts',
+    outFile: 'apps/docs/src/app/generated/api/textarea.json',
+  },
 ];
 
 const SIGNAL_INPUT_KINDS = new Set([

@@ -31,6 +31,11 @@ export const appRoutes: Route[] = [
       import('./pages/input-text-doc').then((m) => m.InputTextDocPage),
   },
   {
+    path: 'components/textarea',
+    loadComponent: () =>
+      import('./pages/textarea-doc').then((m) => m.TextareaDocPage),
+  },
+  {
     path: 'components/select',
     loadComponent: () =>
       import('./pages/select-doc').then((m) => m.SelectDocPage),
@@ -39,5 +44,19 @@ export const appRoutes: Route[] = [
     path: 'components/dialog',
     loadComponent: () =>
       import('./pages/dialog-doc').then((m) => m.DialogDocPage),
+  },
+  {
+    path: 'components/tooltip',
+    loadComponent: () =>
+      import('./pages/tooltip-doc').then((m) => m.TooltipDocPage),
+  },
+  {
+    path: 'components/tabs',
+    loadComponent: () => import('./pages/tabs-doc').then((m) => m.TabsDocPage),
+  },
+  {
+    path: 'components/accordion',
+    loadComponent: () =>
+      import('./pages/accordion-doc').then((m) => m.AccordionDocPage),
   },
 ];

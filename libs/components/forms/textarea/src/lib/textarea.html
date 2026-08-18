@@ -1,0 +1,12 @@
+<textarea
+  #textareaEl
+  [class]="textareaClasses()"
+  [placeholder]="placeholder()"
+  [disabled]="disabled()"
+  [rows]="rows()"
+  [attr.aria-invalid]="invalid() ? 'true' : null"
+  [attr.aria-label]="ariaLabel() ?? null"
+  [value]="value()"
+  (input)="onInput($event)"
+  (blur)="onBlur()"
+></textarea>
