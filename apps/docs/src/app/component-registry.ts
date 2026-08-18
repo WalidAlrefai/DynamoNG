@@ -17,30 +17,48 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     slug: 'button',
     name: 'Button',
     domain: 'forms',
-    description: 'Triggers an action. Supports severity, size, variant, and a loading state.',
+    description:
+      'Triggers an action. Supports severity, size, variant, and a loading state.',
   },
   {
     slug: 'checkbox',
     name: 'Checkbox',
     domain: 'forms',
-    description: 'A tri-state (checked / unchecked / indeterminate) toggle control.',
+    description:
+      'A tri-state (checked / unchecked / indeterminate) toggle control.',
+  },
+  {
+    slug: 'radio',
+    name: 'Radio',
+    domain: 'forms',
+    description:
+      'A single-selection control among a group of native radio inputs sharing a name.',
+  },
+  {
+    slug: 'switch',
+    name: 'Switch',
+    domain: 'forms',
+    description: 'A boolean on/off toggle control.',
   },
   {
     slug: 'input-text',
     name: 'Input Text',
     domain: 'forms',
-    description: 'A single-line text input with full Angular Forms (ControlValueAccessor) integration.',
+    description:
+      'A single-line text input with full Angular Forms (ControlValueAccessor) integration.',
   },
   {
     slug: 'select',
     name: 'Select',
     domain: 'forms',
-    description: 'A single-select combobox with full keyboard navigation and ARIA combobox semantics.',
+    description:
+      'A single-select combobox with full keyboard navigation and ARIA combobox semantics.',
   },
   {
     slug: 'dialog',
     name: 'Dialog',
     domain: 'overlay',
-    description: 'A modal dialog with CDK-powered focus trapping and Escape/backdrop-to-close.',
+    description:
+      'A modal dialog with CDK-powered focus trapping and Escape/backdrop-to-close.',
   },
 ];

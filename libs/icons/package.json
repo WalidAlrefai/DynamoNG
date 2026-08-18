@@ -1,0 +1,9 @@
+{
+  "name": "@dynamong/icons",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^22.0.0",
+    "@dynamong/core": "0.0.1"
+  },
+  "sideEffects": false
+}

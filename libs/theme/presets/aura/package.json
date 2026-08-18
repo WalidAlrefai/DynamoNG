@@ -5,6 +5,18 @@
   "type": "commonjs",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./theme.css": "./theme.css"
+  },
+  "files": [
+    "src",
+    "theme.css",
+    "README.md"
+  ],
   "dependencies": {
     "tslib": "^2.3.0",
     "@dynamong/theme": "0.0.1"

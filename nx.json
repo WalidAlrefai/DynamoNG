@@ -124,7 +124,8 @@
   "generators": {
     "@nx/angular:library": {
       "linter": "eslint",
-      "unitTestRunner": "vitest-angular"
+      "unitTestRunner": "vitest-angular",
+      "strict": false
     },
     "@nx/angular:component": {
       "style": "none"

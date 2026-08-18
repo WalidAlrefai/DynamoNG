@@ -1,17 +1,25 @@
 <main class="mx-auto max-w-3xl space-y-10 p-8">
   <header>
     <h1 class="text-2xl font-bold text-text-primary">DynamoNG Demo</h1>
-    <p class="text-text-muted">A kitchen-sink app consuming @dynamong/* packages the way a real app would.</p>
+    <p class="text-text-muted">
+      A kitchen-sink app consuming @dynamong/* packages the way a real app
+      would.
+    </p>
   </header>
 
-  <section class="space-y-4 rounded-lg border border-border p-6">
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="buttons-section"
+  >
     <h2 class="text-lg font-semibold text-text-primary">Buttons</h2>
     @for (severity of severities; track severity) {
-      <div class="flex flex-wrap items-center gap-2">
-        @for (variant of variants; track variant) {
-          <dg-button [severity]="severity" [variant]="variant" size="sm">{{ severity }} / {{ variant }}</dg-button>
-        }
-      </div>
+    <div class="flex flex-wrap items-center gap-2">
+      @for (variant of variants; track variant) {
+      <dg-button [severity]="severity" [variant]="variant" size="sm"
+        >{{ severity }} / {{ variant }}</dg-button
+      >
+      }
+    </div>
     }
     <div class="flex gap-2">
       <dg-button [loading]="true">Loading</dg-button>
@@ -19,31 +27,88 @@
     </div>
   </section>
 
-  <section class="space-y-4 rounded-lg border border-border p-6">
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="profile-form"
+  >
     <h2 class="text-lg font-semibold text-text-primary">Profile form</h2>
 
-    <div class="block space-y-1">
+    <div class="block space-y-1" data-testid="input-text-field">
       <span class="text-sm font-medium text-text-primary">Name</span>
-      <dg-input-text [(ngModel)]="name" name="name" placeholder="Ada Lovelace" ariaLabel="Name" />
+      <dg-input-text
+        [(ngModel)]="name"
+        name="name"
+        placeholder="Ada Lovelace"
+        ariaLabel="Name"
+      />
     </div>
 
     <div class="block space-y-1">
       <span class="text-sm font-medium text-text-primary">Email</span>
-      <dg-input-text [(ngModel)]="email" name="email" type="email" placeholder="ada@example.com" ariaLabel="Email" />
+      <dg-input-text
+        [(ngModel)]="email"
+        name="email"
+        type="email"
+        placeholder="ada@example.com"
+        ariaLabel="Email"
+      />
     </div>
 
-    <div class="block space-y-1">
+    <div class="block space-y-1" data-testid="select-field">
       <span class="text-sm font-medium text-text-primary">Country</span>
-      <dg-select [options]="countryOptions" [(value)]="country" ariaLabel="Country" placeholder="Choose a country" />
+      <dg-select
+        [options]="countryOptions"
+        [(value)]="country"
+        ariaLabel="Country"
+        placeholder="Choose a country"
+      />
     </div>
 
-    <dg-checkbox [(checked)]="subscribe">Subscribe to product updates</dg-checkbox>
+    <dg-checkbox data-testid="checkbox-field" [(checked)]="subscribe"
+      >Subscribe to product updates</dg-checkbox
+    >
+
+    <dg-switch data-testid="switch-field" [(checked)]="notifications"
+      >Enable notifications</dg-switch
+    >
+
+    <div class="block space-y-2" data-testid="radio-group">
+      <span class="text-sm font-medium text-text-primary">Plan</span>
+      <div class="flex flex-col gap-1">
+        <dg-radio
+          name="plan"
+          value="free"
+          [checked]="plan() === 'free'"
+          (checkedChange)="plan.set('free')"
+        >
+          Free
+        </dg-radio>
+        <dg-radio
+          name="plan"
+          value="pro"
+          [checked]="plan() === 'pro'"
+          (checkedChange)="plan.set('pro')"
+        >
+          Pro
+        </dg-radio>
+        <dg-radio
+          name="plan"
+          value="enterprise"
+          [checked]="plan() === 'enterprise'"
+          (checkedChange)="plan.set('enterprise')"
+        >
+          Enterprise
+        </dg-radio>
+      </div>
+    </div>
 
     <dg-button (click)="submit()" [loading]="submitting()">Submit</dg-button>
   </section>
 
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
-    <p class="text-text-primary">Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.</p>
+    <p class="text-text-primary">
+      Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
+    </p>
     <div class="mt-4 flex justify-end">
       <dg-button (click)="confirmationOpen.set(false)">Close</dg-button>
     </div>

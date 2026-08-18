@@ -1,0 +1,18 @@
+<label [class]="rootClasses()" [for]="inputId">
+  <input
+    type="checkbox"
+    role="switch"
+    class="peer sr-only"
+    [id]="inputId"
+    [checked]="checked()"
+    [disabled]="disabled()"
+    [attr.aria-checked]="checked()"
+    (change)="onNativeChange($event)"
+  />
+  <span [class]="trackClasses()" [attr.aria-hidden]="true">
+    <span [class]="thumbClasses()"></span>
+  </span>
+  <span class="text-sm">
+    <ng-content />
+  </span>
+</label>

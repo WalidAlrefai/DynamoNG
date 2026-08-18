@@ -2,8 +2,35 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
-    "types": []
+    "types": [],
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"]
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
+  "references": [
+    {
+      "path": "../../libs/theme/presets/aura"
+    },
+    {
+      "path": "../../libs/components/forms/select"
+    },
+    {
+      "path": "../../libs/components/forms/radio"
+    },
+    {
+      "path": "../../libs/components/forms/input-text"
+    },
+    {
+      "path": "../../libs/components/overlay/dialog"
+    },
+    {
+      "path": "../../libs/components/forms/checkbox"
+    },
+    {
+      "path": "../../libs/components/forms/button"
+    },
+    {
+      "path": "../../libs/core"
+    }
+  ]
 }

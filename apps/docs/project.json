@@ -6,8 +6,29 @@
   "sourceRoot": "apps/docs/src",
   "tags": ["type:app"],
   "targets": {
+    "docs-api": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{workspaceRoot}/tsconfig.base.json",
+        "{workspaceRoot}/libs/components/forms/checkbox/src/**/*.ts",
+        "{workspaceRoot}/libs/components/forms/radio/src/**/*.ts",
+        "{workspaceRoot}/libs/components/forms/switch/src/**/*.ts",
+        "{workspaceRoot}/libs/core/api/src/**/*.ts"
+      ],
+      "outputs": [
+        "{workspaceRoot}/apps/docs/src/app/generated/api/checkbox.json",
+        "{workspaceRoot}/apps/docs/src/app/generated/api/radio.json",
+        "{workspaceRoot}/apps/docs/src/app/generated/api/switch.json"
+      ],
+      "options": {
+        "command": "node --require @swc-node/register tools/typedoc/generate-api-docs.ts",
+        "cwd": "{workspaceRoot}"
+      }
+    },
     "build": {
       "executor": "@angular/build:application",
+      "dependsOn": ["docs-api"],
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
@@ -48,6 +69,7 @@
     "serve": {
       "continuous": true,
       "executor": "@angular/build:dev-server",
+      "dependsOn": ["docs-api"],
       "defaultConfiguration": "development",
       "configurations": {
         "production": {
@@ -63,6 +85,7 @@
     },
     "test": {
       "executor": "@angular/build:unit-test",
+      "dependsOn": ["docs-api"],
       "options": {
         "watch": false,
         "coverage": false
