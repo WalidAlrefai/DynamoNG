@@ -54,6 +54,17 @@
       />
     </div>
 
+    <div class="block space-y-1" data-testid="textarea-field">
+      <span class="text-sm font-medium text-text-primary">Bio</span>
+      <dg-textarea
+        [(ngModel)]="bio"
+        name="bio"
+        placeholder="Tell us about yourself"
+        ariaLabel="Bio"
+        [autoResize]="true"
+      />
+    </div>
+
     <div class="block space-y-1" data-testid="select-field">
       <span class="text-sm font-medium text-text-primary">Country</span>
       <dg-select

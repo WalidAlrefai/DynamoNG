@@ -44,7 +44,8 @@
       ],
       "@dynamong/dialog": ["./libs/components/overlay/dialog/src/index.ts"],
       "@dynamong/select": ["./libs/components/forms/select/src/index.ts"],
-      "@dynamong/switch": ["./libs/components/forms/switch/src/index.ts"]
+      "@dynamong/switch": ["./libs/components/forms/switch/src/index.ts"],
+      "@dynamong/textarea": ["./libs/components/forms/textarea/src/index.ts"]
     }
   }
 }

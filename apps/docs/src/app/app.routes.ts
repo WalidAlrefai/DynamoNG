@@ -31,6 +31,11 @@ export const appRoutes: Route[] = [
       import('./pages/input-text-doc').then((m) => m.InputTextDocPage),
   },
   {
+    path: 'components/textarea',
+    loadComponent: () =>
+      import('./pages/textarea-doc').then((m) => m.TextareaDocPage),
+  },
+  {
     path: 'components/select',
     loadComponent: () =>
       import('./pages/select-doc').then((m) => m.SelectDocPage),

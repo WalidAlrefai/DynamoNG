@@ -8,6 +8,7 @@ import { DynamoRadio } from '@dynamong/radio';
 import { DynamoSelect } from '@dynamong/select';
 import type { DynamoSelectOption } from '@dynamong/select';
 import { DynamoSwitch } from '@dynamong/switch';
+import { DynamoTextarea } from '@dynamong/textarea';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
 const SEVERITIES: DynamoSeverity[] = [
@@ -40,6 +41,7 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
     DynamoRadio,
     DynamoSelect,
     DynamoSwitch,
+    DynamoTextarea,
     FormsModule,
   ],
   templateUrl: './app.html',
@@ -55,6 +57,7 @@ export class App {
   protected readonly country = signal<string | null>(null);
   protected readonly plan = signal<'free' | 'pro' | 'enterprise'>('free');
   protected readonly notifications = signal(true);
+  protected readonly bio = signal('');
   protected readonly submitting = signal(false);
   protected readonly confirmationOpen = signal(false);
 

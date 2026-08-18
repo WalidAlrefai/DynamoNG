@@ -48,6 +48,13 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
       'A single-line text input with full Angular Forms (ControlValueAccessor) integration.',
   },
   {
+    slug: 'textarea',
+    name: 'Textarea',
+    domain: 'forms',
+    description:
+      'A multi-line text input with full Angular Forms (ControlValueAccessor) integration and optional auto-resize.',
+  },
+  {
     slug: 'select',
     name: 'Select',
     domain: 'forms',

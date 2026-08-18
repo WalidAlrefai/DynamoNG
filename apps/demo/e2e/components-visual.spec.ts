@@ -16,6 +16,10 @@ test('input text renders as expected', async ({ page }) => {
   await expect(page.getByTestId('input-text-field')).toHaveScreenshot();
 });
 
+test('textarea renders as expected', async ({ page }) => {
+  await expect(page.getByTestId('textarea-field')).toHaveScreenshot();
+});
+
 test('select renders as expected', async ({ page }) => {
   await expect(page.getByTestId('select-field')).toHaveScreenshot();
 });
