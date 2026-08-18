@@ -5,6 +5,7 @@ import { DynamoButton } from '@dynamong/button';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoDialog } from '@dynamong/dialog';
 import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoMenu, DynamoMenuItem } from '@dynamong/menu';
 import { DynamoRadio } from '@dynamong/radio';
 import { DynamoSelect } from '@dynamong/select';
 import type { DynamoSelectOption } from '@dynamong/select';
@@ -43,6 +44,8 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
     DynamoCheckbox,
     DynamoDialog,
     DynamoInputText,
+    DynamoMenu,
+    DynamoMenuItem,
     DynamoRadio,
     DynamoSelect,
     DynamoSwitch,

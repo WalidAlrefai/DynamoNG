@@ -89,4 +89,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A collapsible content switcher with full keyboard navigation and ARIA accordion semantics.',
   },
+  {
+    slug: 'menu',
+    name: 'Menu',
+    domain: 'overlay',
+    description:
+      'A dropdown action menu positioned by CDK Overlay, with full keyboard navigation and ARIA menu semantics.',
+  },
 ];

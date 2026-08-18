@@ -62,3 +62,13 @@ test('tabs render as expected', async ({ page }) => {
 test('accordion renders as expected', async ({ page }) => {
   await expect(page.getByTestId('accordion-section')).toHaveScreenshot();
 });
+
+test('menu renders as expected', async ({ page }) => {
+  // Same CDK Overlay portaling issue as Dialog/Tooltip above — the open
+  // menu panel renders outside the `menu-section` testid's layout box, so
+  // open it and target it by ARIA role instead.
+  await page.getByRole('button', { name: 'Actions' }).click();
+  const menu = page.getByRole('menu');
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveScreenshot();
+});

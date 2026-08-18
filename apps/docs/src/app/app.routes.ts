@@ -59,4 +59,8 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/accordion-doc').then((m) => m.AccordionDocPage),
   },
+  {
+    path: 'components/menu',
+    loadComponent: () => import('./pages/menu-doc').then((m) => m.MenuDocPage),
+  },
 ];

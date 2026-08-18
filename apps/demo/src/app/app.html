@@ -158,6 +158,19 @@
     </dg-accordion>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="menu-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Menu</h2>
+    <dg-menu label="Actions">
+      <dg-menu-item value="edit" label="Edit" />
+      <dg-menu-item value="duplicate" label="Duplicate" />
+      <dg-menu-item value="archive" label="Archive" [disabled]="true" />
+      <dg-menu-item value="delete" label="Delete" />
+    </dg-menu>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
