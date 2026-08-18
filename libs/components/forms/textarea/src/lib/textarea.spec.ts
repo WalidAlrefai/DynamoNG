@@ -229,9 +229,7 @@ describe('DynamoTextarea', () => {
 
     it('flags a nameless textarea as an accessibility violation (sanity check on the test helper itself)', async () => {
       const { container } = renderDynamoComponent(DynamoTextarea);
-      await expect(expectNoA11yViolations(container)).rejects.toThrow(
-        /label/i,
-      );
+      await expect(expectNoA11yViolations(container)).rejects.toThrow(/label/i);
     });
   });
 
@@ -290,9 +288,8 @@ describe('DynamoTextarea', () => {
     });
 
     it('handles a writeValue(null) call gracefully (falls back to empty string)', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(
-        DynamoTextarea,
-      );
+      const { fixture, container, componentInstance } =
+        renderDynamoComponent(DynamoTextarea);
 
       componentInstance.writeValue(null);
       fixture.detectChanges();
@@ -309,9 +306,7 @@ describe('DynamoTextarea', () => {
         '\n',
       );
 
-      await expect(
-        userEvent.type(textarea, longValue),
-      ).resolves.not.toThrow();
+      await expect(userEvent.type(textarea, longValue)).resolves.not.toThrow();
     });
   });
 });

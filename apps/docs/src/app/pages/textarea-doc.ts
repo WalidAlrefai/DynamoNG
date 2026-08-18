@@ -38,8 +38,8 @@ import textareaApiRows from '../generated/api/textarea.json';
         />
       </div>
       <div code>
-        &lt;dg-textarea [(ngModel)]="bio" [autoResize]="true"
-        ariaLabel="Bio" /&gt;
+        &lt;dg-textarea [(ngModel)]="bio" [autoResize]="true" ariaLabel="Bio"
+        /&gt;
       </div>
       <docs-api-table api [rows]="apiRows" />
     </docs-page-shell>
