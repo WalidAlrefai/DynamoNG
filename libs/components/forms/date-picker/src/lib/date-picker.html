@@ -1,0 +1,135 @@
+<button
+  #triggerEl
+  type="button"
+  [id]="triggerId"
+  aria-haspopup="dialog"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="open() ? dialogId : null"
+  [attr.aria-label]="ariaLabel() ?? null"
+  [class]="triggerClasses()"
+  [disabled]="disabled()"
+  (click)="toggle()"
+  (keydown)="onTriggerKeydown($event)"
+>
+  <span>{{ triggerLabel() }}</span>
+  <svg
+    [attr.aria-hidden]="true"
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+  >
+    <rect
+      x="2"
+      y="3"
+      width="12"
+      height="11"
+      rx="1.5"
+      stroke="currentColor"
+      stroke-width="1.5"
+    />
+    <path
+      d="M2 6.5h12M5 1.5v3M11 1.5v3"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+    />
+  </svg>
+</button>
+<ng-template #panelTemplate>
+  <div
+    role="dialog"
+    [id]="dialogId"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-labelledby]="ariaLabel() ? null : monthLabelId"
+    aria-modal="false"
+    [class]="panelClasses"
+    (keydown)="onPanelKeydown($event)"
+  >
+    <div class="mb-2 flex items-center justify-between">
+      <button
+        type="button"
+        aria-label="Previous month"
+        [class]="headerButtonClasses"
+        (click)="navigateMonth(-1)"
+      >
+        <svg
+          [attr.aria-hidden]="true"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+        >
+          <path
+            d="M10 3l-5 5 5 5"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <div [id]="monthLabelId" class="text-sm font-semibold text-text-primary">
+        {{ monthLabel() }}
+      </div>
+      <button
+        type="button"
+        aria-label="Next month"
+        [class]="headerButtonClasses"
+        (click)="navigateMonth(1)"
+      >
+        <svg
+          [attr.aria-hidden]="true"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+        >
+          <path
+            d="M6 3l5 5-5 5"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <table role="grid" [attr.aria-labelledby]="monthLabelId">
+      <thead>
+        <tr role="row">
+          @for (label of weekdayLabels(); track label) {
+          <th role="columnheader" scope="col" [class]="weekdayClasses">
+            {{ label }}
+          </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (week of weeks(); track $index) {
+        <tr role="row">
+          @for (day of week; track day.getTime()) {
+          <td
+            role="gridcell"
+            [attr.aria-selected]="isSelected(day) ? 'true' : null"
+          >
+            <button
+              #dayButton
+              type="button"
+              tabindex="-1"
+              [attr.aria-current]="isToday(day) ? 'date' : null"
+              [disabled]="isDisabled(day)"
+              [class]="dayClasses(day)"
+              (click)="selectDay(day)"
+            >
+              {{ day.getDate() }}
+            </button>
+          </td>
+          }
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</ng-template>

@@ -1,0 +1,1 @@
+export type DynamoAlertPart = 'root';

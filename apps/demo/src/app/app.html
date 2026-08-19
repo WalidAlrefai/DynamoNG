@@ -75,6 +75,15 @@
       />
     </div>
 
+    <div class="block space-y-1" data-testid="date-picker-field">
+      <span class="text-sm font-medium text-text-primary">Start date</span>
+      <dg-date-picker
+        [(value)]="startDate"
+        ariaLabel="Start date"
+        placeholder="Choose a date"
+      />
+    </div>
+
     <dg-checkbox data-testid="checkbox-field" [(checked)]="subscribe"
       >Subscribe to product updates</dg-checkbox
     >
@@ -235,6 +244,45 @@
         <p class="text-text-primary">Card body content goes here.</p>
       </dg-card>
     </div>
+  </section>
+
+  <section
+    class="space-y-2 rounded-lg border border-border p-6"
+    data-testid="alert-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Alert</h2>
+    @for (severity of severities; track severity) {
+    <dg-alert [severity]="severity">This is a {{ severity }} alert.</dg-alert>
+    } @if (alertVisible()) {
+    <dg-alert
+      severity="warning"
+      title="Closable alert"
+      [closable]="true"
+      [(visible)]="alertVisible"
+    >
+      Click the close button to dismiss this one.
+    </dg-alert>
+    }
+  </section>
+
+  <section
+    class="flex flex-wrap items-center gap-2 rounded-lg border border-border p-6"
+    data-testid="chip-section"
+  >
+    <h2 class="w-full text-lg font-semibold text-text-primary">Chip</h2>
+    @for (severity of severities; track severity) {
+    <dg-chip [severity]="severity">{{ severity }}</dg-chip>
+    } @for (tag of tags(); track tag) {
+    <dg-chip
+      severity="secondary"
+      variant="outline"
+      [removable]="true"
+      [removeAriaLabel]="'Remove ' + tag"
+      (removed)="removeTag(tag)"
+    >
+      {{ tag }}
+    </dg-chip>
+    }
   </section>
 
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">

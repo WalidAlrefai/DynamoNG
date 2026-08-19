@@ -62,6 +62,13 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
       'A single-select combobox with full keyboard navigation and ARIA combobox semantics.',
   },
   {
+    slug: 'date-picker',
+    name: 'Date Picker',
+    domain: 'forms',
+    description:
+      'A single-date picker with a month-grid calendar dialog, full keyboard navigation, and ARIA grid semantics.',
+  },
+  {
     slug: 'dialog',
     name: 'Dialog',
     domain: 'overlay',
@@ -115,5 +122,18 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'panel',
     description:
       'A content container with an optional header, body, and footer.',
+  },
+  {
+    slug: 'alert',
+    name: 'Alert',
+    domain: 'feedback',
+    description:
+      'A persistent, severity-colored in-page status message, optionally closable.',
+  },
+  {
+    slug: 'chip',
+    name: 'Chip',
+    domain: 'feedback',
+    description: 'A compact, optionally-removable label.',
   },
 ];

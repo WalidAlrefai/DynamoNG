@@ -53,7 +53,12 @@
       "@dynamong/menu": ["./libs/components/overlay/menu/src/index.ts"],
       "@dynamong/toast": ["./libs/components/feedback/toast/src/index.ts"],
       "@dynamong/badge": ["./libs/components/feedback/badge/src/index.ts"],
-      "@dynamong/card": ["./libs/components/panel/card/src/index.ts"]
+      "@dynamong/card": ["./libs/components/panel/card/src/index.ts"],
+      "@dynamong/date-picker": [
+        "./libs/components/forms/date-picker/src/index.ts"
+      ],
+      "@dynamong/alert": ["./libs/components/feedback/alert/src/index.ts"],
+      "@dynamong/chip": ["./libs/components/feedback/chip/src/index.ts"]
     }
   }
 }
