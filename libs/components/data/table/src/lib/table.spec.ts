@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, model } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -14,6 +14,11 @@ import type { DynamoTableColumn } from './table.types';
 interface Person {
   name: string;
   age: number;
+}
+
+interface Item {
+  id: number;
+  name: string;
 }
 
 const SORTABLE_COLUMNS: DynamoTableColumn<Person>[] = [
@@ -32,6 +37,10 @@ const PEOPLE: Person[] = [
   { name: 'Bea', age: 30 },
 ];
 
+const ITEM_COLUMNS: DynamoTableColumn<Item>[] = [
+  { field: 'name', header: 'Name', sortable: true },
+];
+
 @Component({
   selector: 'dg-table-test-host',
   standalone: true,
@@ -40,12 +49,48 @@ const PEOPLE: Person[] = [
     [columns]="columns()"
     [data]="data()"
     [ariaLabel]="ariaLabel()"
+    [pageSize]="pageSize()"
+    [(page)]="page"
+    [selectable]="selectable()"
+    [(selected)]="selected"
+    [trackBy]="trackBy()"
   />`,
 })
 class TableTestHostComponent {
   readonly columns = input<DynamoTableColumn<Person>[]>(SORTABLE_COLUMNS);
   readonly data = input<readonly Person[]>(PEOPLE);
   readonly ariaLabel = input<string | undefined>(undefined);
+  readonly pageSize = input<number | undefined>(undefined);
+  readonly page = model(1);
+  readonly selectable = input(false);
+  readonly selected = model<Person[]>([]);
+  readonly trackBy = input<
+    ((row: Person, index: number) => unknown) | undefined
+  >(undefined);
+}
+
+@Component({
+  selector: 'dg-table-item-host',
+  standalone: true,
+  imports: [DynamoTable],
+  template: `<dg-table
+    [columns]="columns()"
+    [data]="data()"
+    [selectable]="true"
+    [(selected)]="selected"
+    [trackBy]="trackBy()"
+  />`,
+})
+class TableItemHostComponent {
+  readonly columns = input<DynamoTableColumn<Item>[]>(ITEM_COLUMNS);
+  readonly data = input<readonly Item[]>([
+    { id: 1, name: 'First' },
+    { id: 2, name: 'Second' },
+  ]);
+  readonly selected = model<Item[]>([]);
+  readonly trackBy = input<((row: Item, index: number) => unknown) | undefined>(
+    undefined,
+  );
 }
 
 function getHeaderCells(container: HTMLElement): HTMLElement[] {
@@ -62,6 +107,20 @@ function getColumnValues(
 ): string[] {
   return getBodyRows(container).map(
     (row) => row.querySelectorAll('td')[columnIndex]?.textContent?.trim() ?? '',
+  );
+}
+
+function getRowCheckboxes(container: HTMLElement): HTMLInputElement[] {
+  return Array.from(container.querySelectorAll('tbody input[type="checkbox"]'));
+}
+
+function getSelectAllCheckbox(container: HTMLElement): HTMLInputElement | null {
+  return container.querySelector('thead input[type="checkbox"]');
+}
+
+function getPageText(container: HTMLElement): string {
+  return (
+    container.querySelector('[aria-live="polite"]')?.textContent?.trim() ?? ''
   );
 }
 
@@ -93,6 +152,18 @@ describe('DynamoTable', () => {
       for (const th of getHeaderCells(container)) {
         expect(th.getAttribute('aria-sort')).toBeNull();
       }
+    });
+
+    it('defaults pageSize to undefined and selectable to false', () => {
+      const { componentInstance } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE },
+        },
+      );
+
+      expect(componentInstance.pageSize()).toBeUndefined();
+      expect(componentInstance.selectable()).toBe(false);
     });
   });
 
@@ -136,7 +207,7 @@ describe('DynamoTable', () => {
 
   describe('output events', () => {
     it.todo(
-      'N/A — Table has no outputs in v1; sorted state is purely internal presentation state',
+      'N/A — Table has no outputs; page/selected models are the entire event surface',
     );
   });
 
@@ -230,6 +301,18 @@ describe('DynamoTable', () => {
       expect(rows).toHaveLength(1);
       expect(rows[0]?.querySelector('td')?.getAttribute('colspan')).toBe('2');
     });
+
+    it('accounts for the selection column in the empty-state colspan', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: { columns: SORTABLE_COLUMNS, data: [], selectable: true },
+        },
+      );
+
+      const rows = getBodyRows(container);
+      expect(rows[0]?.querySelector('td')?.getAttribute('colspan')).toBe('3');
+    });
   });
 
   describe('template behavior', () => {
@@ -279,6 +362,29 @@ describe('DynamoTable', () => {
       );
 
       await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations with pagination controls rendered', async () => {
+      const { fixture } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { pageSize: 2 },
+      });
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations with selection enabled and one row selected', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { selectable: true } },
+      );
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+
+      return expect(
         expectNoA11yViolations(fixture.nativeElement),
       ).resolves.toBeUndefined();
     });
@@ -364,6 +470,355 @@ describe('DynamoTable', () => {
           inputs: { columns: [], data: PEOPLE },
         }),
       ).not.toThrow();
+    });
+  });
+
+  describe('pagination', () => {
+    it('does not render pagination controls when pageSize is unset', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent);
+
+      expect(container.querySelector('[aria-label="Next page"]')).toBeNull();
+    });
+
+    it('renders all rows unpaginated when pageSize is unset', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent);
+
+      expect(getBodyRows(container)).toHaveLength(3);
+    });
+
+    it('slices data into pages of pageSize and shows the page indicator', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { pageSize: 2 },
+      });
+
+      expect(getBodyRows(container)).toHaveLength(2);
+      expect(getPageText(container)).toBe('Page 1 of 2');
+    });
+
+    it('clamps an out-of-range page down to the last valid page instead of rendering empty', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { pageSize: 2, page: 99 },
+      });
+
+      expect(getBodyRows(container)).toHaveLength(1);
+      expect(getPageText(container)).toBe('Page 2 of 2');
+      expect(container.textContent).not.toContain('No data');
+    });
+
+    it('disables Previous on page 1 and enables Next', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { pageSize: 2 },
+      });
+
+      expect(
+        container.querySelector<HTMLButtonElement>(
+          '[aria-label="Previous page"]',
+        )?.disabled,
+      ).toBe(true);
+      expect(
+        container.querySelector<HTMLButtonElement>('[aria-label="Next page"]')
+          ?.disabled,
+      ).toBe(false);
+    });
+
+    it('disables Next on the last page', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { pageSize: 2, page: 2 },
+      });
+
+      expect(
+        container.querySelector<HTMLButtonElement>('[aria-label="Next page"]')
+          ?.disabled,
+      ).toBe(true);
+      expect(
+        container.querySelector<HTMLButtonElement>(
+          '[aria-label="Previous page"]',
+        )?.disabled,
+      ).toBe(false);
+    });
+
+    it('advances the page via Next and writes the value back through the [(page)] model', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { pageSize: 2 } },
+      );
+
+      within(container).getByRole('button', { name: 'Next page' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(2);
+    });
+
+    it('self-heals an out-of-range bound page on the next Previous click', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { pageSize: 2, page: 99 } },
+      );
+
+      within(container).getByRole('button', { name: 'Previous page' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(1);
+    });
+
+    it('resets to page 1 when a sortable column header is clicked', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { pageSize: 2, page: 2 } },
+      );
+
+      within(container).getByRole('button', { name: 'Name' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(1);
+    });
+
+    it('does not reset the page when pageSize changes — clamps only', () => {
+      const { container, fixture, setInputs } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { pageSize: 2 } },
+      );
+      within(container).getByRole('button', { name: 'Next page' }).click();
+      fixture.detectChanges();
+      expect(getPageText(container)).toBe('Page 2 of 2');
+
+      setInputs({ pageSize: 3 });
+      fixture.detectChanges();
+
+      expect(getPageText(container)).toBe('Page 1 of 1');
+    });
+
+    it('shows the genuine emptyMessage, not a pagination artifact, when data is empty and pageSize is set', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { data: [], pageSize: 2 },
+      });
+
+      expect(container.textContent).toContain('No data');
+      expect(getPageText(container)).toBe('Page 1 of 1');
+    });
+
+    it('paginates through the DynamoTableHarness', async () => {
+      const { fixture } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { pageSize: 2 },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTableHarness,
+      );
+
+      expect(await harness.getPageText()).toBe('Page 1 of 2');
+      expect(await harness.isPreviousPageDisabled()).toBe(true);
+
+      await harness.goToNextPage();
+
+      expect(await harness.getPageText()).toBe('Page 2 of 2');
+      expect(await harness.isNextPageDisabled()).toBe(true);
+
+      await harness.goToPreviousPage();
+
+      expect(await harness.getPageText()).toBe('Page 1 of 2');
+    });
+  });
+
+  describe('selection', () => {
+    it('renders no selection column when selectable is false (default)', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent);
+
+      expect(container.querySelector('input[type="checkbox"]')).toBeNull();
+    });
+
+    it('toggles a single row into the [(selected)] model', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { selectable: true } },
+      );
+
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+      expect(componentInstance.selected()).toEqual([PEOPLE[0]]);
+
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+      expect(componentInstance.selected()).toEqual([]);
+    });
+
+    it('selects only the current page via the header checkbox when paginated, accumulating across pages', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { selectable: true, pageSize: 2 } },
+      );
+
+      getSelectAllCheckbox(container)?.click();
+      fixture.detectChanges();
+      expect(componentInstance.selected()).toHaveLength(2);
+
+      within(container).getByRole('button', { name: 'Next page' }).click();
+      fixture.detectChanges();
+      getSelectAllCheckbox(container)?.click();
+      fixture.detectChanges();
+
+      expect(componentInstance.selected()).toHaveLength(3);
+    });
+
+    it('persists selection across page navigation', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { selectable: true, pageSize: 2 } },
+      );
+
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+
+      within(container).getByRole('button', { name: 'Next page' }).click();
+      fixture.detectChanges();
+      expect(componentInstance.selected()).toHaveLength(1);
+
+      within(container).getByRole('button', { name: 'Previous page' }).click();
+      fixture.detectChanges();
+
+      expect(getRowCheckboxes(container)[0]?.checked).toBe(true);
+    });
+
+    it('sets the header checkbox indeterminate when only some current-page rows are selected', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { selectable: true } },
+      );
+
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+
+      const selectAll = getSelectAllCheckbox(container);
+      expect(selectAll?.indeterminate).toBe(true);
+      expect(selectAll?.checked).toBe(false);
+    });
+
+    it('clears indeterminate once every current-page row is selected', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { selectable: true } },
+      );
+
+      for (const checkbox of getRowCheckboxes(container)) {
+        checkbox.click();
+      }
+      fixture.detectChanges();
+
+      const selectAll = getSelectAllCheckbox(container);
+      expect(selectAll?.indeterminate).toBe(false);
+      expect(selectAll?.checked).toBe(true);
+    });
+
+    it('leaves the header checkbox unchecked and not indeterminate when nothing is selected', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { selectable: true },
+      });
+
+      const selectAll = getSelectAllCheckbox(container);
+      expect(selectAll?.indeterminate).toBe(false);
+      expect(selectAll?.checked).toBe(false);
+    });
+
+    it('uses trackBy for selection identity when row objects are recreated with new references', () => {
+      const { container, fixture, setInputs, componentInstance } =
+        renderDynamoComponent(TableItemHostComponent, {
+          inputs: { trackBy: (row: Item) => row.id },
+        });
+
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+      expect(componentInstance.selected()).toHaveLength(1);
+
+      setInputs({
+        data: [
+          { id: 1, name: 'First' },
+          { id: 2, name: 'Second' },
+        ].map((item) => ({ ...item })),
+      });
+      fixture.detectChanges();
+
+      expect(getRowCheckboxes(container)[0]?.checked).toBe(true);
+    });
+
+    it('treats row objects with equal contents but different references as distinct when trackBy is not provided', () => {
+      const { container, fixture, setInputs } = renderDynamoComponent(
+        TableItemHostComponent,
+      );
+
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+
+      setInputs({
+        data: [
+          { id: 1, name: 'First' },
+          { id: 2, name: 'Second' },
+        ].map((item) => ({ ...item })),
+      });
+      fixture.detectChanges();
+
+      expect(getRowCheckboxes(container)[0]?.checked).toBe(false);
+    });
+
+    it('applies the selected-row highlight class only to selected rows', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { selectable: true } },
+      );
+
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+
+      const rows = getBodyRows(container);
+      expect(rows[0]?.className).toContain('bg-primary');
+      expect(rows[1]?.className).not.toContain('bg-primary');
+    });
+
+    it('disables the select-all checkbox when the current page has zero rows', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { selectable: true, data: [] },
+      });
+
+      expect(getSelectAllCheckbox(container)?.disabled).toBe(true);
+    });
+
+    it('selects and reads selection through the DynamoTableHarness', async () => {
+      const { fixture } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { selectable: true },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTableHarness,
+      );
+
+      expect(await harness.getSelectedCount()).toBe(0);
+
+      await harness.toggleRowSelection('Charlie');
+
+      expect(await harness.isRowSelected('Charlie')).toBe(true);
+      expect(await harness.getSelectedCount()).toBe(1);
+    });
+  });
+
+  describe('pagination + selection together', () => {
+    it('keeps independently-made selections across both pages after navigating', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { selectable: true, pageSize: 2 } },
+      );
+
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+
+      within(container).getByRole('button', { name: 'Next page' }).click();
+      fixture.detectChanges();
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+
+      within(container).getByRole('button', { name: 'Previous page' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.selected()).toHaveLength(2);
+      expect(getRowCheckboxes(container)[0]?.checked).toBe(true);
     });
   });
 });

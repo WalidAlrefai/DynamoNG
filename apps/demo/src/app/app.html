@@ -294,7 +294,14 @@
       [columns]="employeeColumns"
       [data]="employees"
       ariaLabel="Employees"
+      [pageSize]="2"
+      [(page)]="employeePage"
+      [selectable]="true"
+      [(selected)]="selectedEmployees"
     />
+    <p class="text-sm text-text-muted">
+      {{ selectedEmployees().length }} employee(s) selected
+    </p>
   </section>
 
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">

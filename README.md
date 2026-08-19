@@ -163,21 +163,50 @@ gap:
   English strings, not locale-translated — `config.locale` is used only for `Intl.DateTimeFormat`
   date/number-shaped formatting, not UI microcopy; no canned per-locale strings table exists anywhere
   in this codebase yet, and building one is a larger, cross-component concern out of scope here.
-- **`DynamoTable` is client-side, single-column-sort only, v1**: no filtering, pagination, virtual
-  scrolling, column resize/reorder/pinning, row selection, or per-cell template projection — cells
-  render a plain computed value via each column's optional `cell` accessor function, not an arbitrary
-  Angular template. Sorting cycles a single active column through ascending → descending → unsorted
-  on repeated header clicks (no multi-column/shift-click sort, no memory of a previously-sorted
-  column once a different one is clicked). The default comparator reads each column's raw `field`
-  value directly off the row — **never** through `cell`'s display-formatting function, so a column
-  can format dates/labels for display while still sorting correctly by the underlying value — treats
-  `null`/`undefined` as always sorting last regardless of direction, and compares Dates/numbers/
-  booleans natively before falling back to a locale-aware, numeric-sensitive `String.localeCompare`
-  for everything else; pass a column's own `sortFn` to override entirely. There's no `sortChange`
-  output: the sorted result is purely internal presentation state with no server round-trip to
-  coordinate in v1. No `@angular/cdk/table` (`CdkTable`) dependency either — v1's plain `columns`/
-  `data` array API and lack of virtual scrolling/sticky columns/declarative cell-template projection
-  don't need it; the markup is a hand-rolled semantic `<table>`/`<thead>`/`<tbody>`, the same pattern
-  as `DynamoSelect`'s plain options array and `DynamoDatePicker`'s calendar grid. Uses plain `<table>`
-  ARIA semantics (`aria-sort` on the active sortable `<th>` only) per the WAI-ARIA APG "Table"
-  pattern, not `role="grid"` — there's no per-cell keyboard grid navigation to justify it.
+- **`DynamoTable` is client-side, single-column-sort only, v1**: no filtering, virtual scrolling,
+  column resize/reorder/pinning, or per-cell template projection — cells render a plain computed
+  value via each column's optional `cell` accessor function, not an arbitrary Angular template.
+  Sorting cycles a single active column through ascending → descending → unsorted on repeated header
+  clicks (no multi-column/shift-click sort, no memory of a previously-sorted column once a different
+  one is clicked). The default comparator reads each column's raw `field` value directly off the
+  row — **never** through `cell`'s display-formatting function, so a column can format dates/labels
+  for display while still sorting correctly by the underlying value — treats `null`/`undefined` as
+  always sorting last regardless of direction, and compares Dates/numbers/booleans natively before
+  falling back to a locale-aware, numeric-sensitive `String.localeCompare` for everything else; pass
+  a column's own `sortFn` to override entirely. There's no `sortChange` output: the sorted result is
+  purely internal presentation state with no server round-trip to coordinate. No `@angular/cdk/table`
+  (`CdkTable`) dependency
+  either — v1's plain `columns`/`data` array API and lack of virtual scrolling/sticky columns/
+  declarative cell-template projection don't need it; the markup is a hand-rolled semantic
+  `<table>`/`<thead>`/`<tbody>`, the same pattern as `DynamoSelect`'s plain options array and
+  `DynamoDatePicker`'s calendar grid. Uses plain `<table>` ARIA semantics (`aria-sort` on the active
+  sortable `<th>` only) per the WAI-ARIA APG "Table" pattern, not `role="grid"` — there's no per-cell
+  keyboard grid navigation to justify it.
+- **`DynamoTable` v2 adds opt-in client-side pagination and row selection** — both off by default, so
+  existing `<dg-table [columns]="..." [data]="...">` usage with no new inputs renders every row
+  unpaginated, exactly as in v1. **Pagination**: set `pageSize` to enable a Prev/Next + "Page X of Y"
+  footer; `page` (1-indexed) is two-way bindable via `[(page)]`. There's no numbered page-button
+  strip, matching `DynamoDatePicker`'s Prev/Next-only month nav — no jump-to-page input either.
+  `page()` is read through a clamp (`[1, pageCount()]`) rather than ever being corrected by the
+  component itself: if an externally-bound `page` is out of range (e.g. `data()` shrinks while a
+  consumer's own signal still points past the end), the table renders the clamped page but leaves
+  the bound value unchanged until the next Prev/Next click, which writes the corrected value back —
+  a deliberate simplification to keep the component free of `effect()`s. Clicking a sortable column
+  header resets to page 1 (Table owns that interaction); **changing `pageSize` itself does not**
+  reset to page 1, it only re-clamps — if you need a hard reset when the page size changes, set
+  `page` to `1` yourself in the same handler that changes `pageSize` (you already own that value).
+  **Selection**: set `selectable` to render a checkbox column; `selected` (a two-way bindable array
+  of the actual selected row objects) is the entire event surface — no separate `selectionChange`
+  output, mirroring `DynamoAlert`/`DynamoDialog`'s own `model()`-only pattern. Selection membership
+  reuses the `trackBy` input as its identity key (falling back to `===` reference equality when
+  unset) rather than adding a second identity input — this only produces stable cross-page/cross-sort
+  selection when a provided `trackBy` is a pure function of the row's own data (e.g.
+  `(row) => row.id`), the same pattern already recommended over index-based tracking for sorting. The
+  header "select all" checkbox is tri-state (checked/unchecked/indeterminate, set via Angular's
+  native DOM-property binding, same technique `DynamoCheckbox` already uses) and is scoped to the
+  **current page only** when paginated (or all rows, unpaginated) — selecting every row across every
+  page is a materially different feature (it typically needs its own "N selected across M pages"
+  banner) and remains out of scope. Selection checkboxes are plain native `<input type="checkbox">`
+  elements styled with Tailwind's `accent-*` utility, not `DynamoCheckbox` — Table (`domain:data`)
+  can't depend on Checkbox (`domain:forms`) across the module-boundary rule, and native checkboxes
+  get keyboard/screen-reader operability for free.

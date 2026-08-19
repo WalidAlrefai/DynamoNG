@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoTable } from '@dynamong/table';
 import type { DynamoTableColumn } from '@dynamong/table';
 import { DocPageShell } from '../components/doc-page-shell';
@@ -32,11 +32,20 @@ const ROWS: DocEmployee[] = [
       description="A sortable data table driven by a plain column-definition array, with client-side single-column sorting."
     >
       <div demo>
-        <dg-table [columns]="columns" [data]="rows" ariaLabel="Employees" />
+        <dg-table
+          [columns]="columns"
+          [data]="rows"
+          ariaLabel="Employees"
+          [pageSize]="2"
+          [(page)]="page"
+          [selectable]="true"
+          [(selected)]="selected"
+        />
       </div>
       <div code>
         &lt;dg-table [columns]="columns" [data]="rows" ariaLabel="Employees"
-        /&gt;
+        [pageSize]="2" [(page)]="page" [selectable]="true"
+        [(selected)]="selected" /&gt;
       </div>
       <table api class="w-full border-collapse text-sm">
         <thead>
@@ -69,12 +78,32 @@ const ROWS: DocEmployee[] = [
             <td class="py-2 pr-4 font-mono">string</td>
             <td class="py-2 font-mono">'No data'</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">trackBy</td>
             <td class="py-2 pr-4 font-mono">
               (row: TRow, index: number) =&gt; unknown
             </td>
             <td class="py-2 font-mono">row reference identity</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">pageSize</td>
+            <td class="py-2 pr-4 font-mono">number | undefined</td>
+            <td class="py-2 font-mono">undefined (unpaginated)</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">page</td>
+            <td class="py-2 pr-4 font-mono">number (model, 1-indexed)</td>
+            <td class="py-2 font-mono">1</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">selectable</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">selected</td>
+            <td class="py-2 pr-4 font-mono">TRow[] (model)</td>
+            <td class="py-2 font-mono">[]</td>
           </tr>
         </tbody>
       </table>
@@ -84,4 +113,6 @@ const ROWS: DocEmployee[] = [
 export class TableDocPage {
   protected readonly columns = COLUMNS;
   protected readonly rows = ROWS;
+  protected readonly page = signal(1);
+  protected readonly selected = signal<DocEmployee[]>([]);
 }

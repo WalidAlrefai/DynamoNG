@@ -151,6 +151,8 @@ export class App {
   protected readonly tags = signal(['Frontend', 'Backend', 'Design']);
   protected readonly employeeColumns = EMPLOYEE_COLUMNS;
   protected readonly employees = EMPLOYEES;
+  protected readonly employeePage = signal(1);
+  protected readonly selectedEmployees = signal<Employee[]>([]);
   protected readonly activeTab = signal<string | undefined>('profile');
   protected readonly submitting = signal(false);
   protected readonly confirmationOpen = signal(false);

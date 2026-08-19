@@ -123,3 +123,11 @@ test('table sorts a column when its header is clicked', async ({ page }) => {
   await table.getByRole('button', { name: 'Name' }).click();
   await expect(table).toHaveScreenshot();
 });
+
+test('table paginates to the next page when Next is clicked', async ({
+  page,
+}) => {
+  const table = page.getByTestId('table-section');
+  await table.getByRole('button', { name: 'Next page' }).click();
+  await expect(table).toHaveScreenshot();
+});
