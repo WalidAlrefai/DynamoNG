@@ -91,3 +91,25 @@ test('badge renders as expected', async ({ page }) => {
 test('card renders as expected', async ({ page }) => {
   await expect(page.getByTestId('card-section')).toHaveScreenshot();
 });
+
+test('date picker renders as expected', async ({ page }) => {
+  await expect(page.getByTestId('date-picker-field')).toHaveScreenshot();
+});
+
+test('date picker calendar renders as expected', async ({ page }) => {
+  await page
+    .getByTestId('date-picker-field')
+    .getByRole('button', { name: 'Start date' })
+    .click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveScreenshot();
+});
+
+test('alert renders as expected', async ({ page }) => {
+  await expect(page.getByTestId('alert-section')).toHaveScreenshot();
+});
+
+test('chip renders as expected', async ({ page }) => {
+  await expect(page.getByTestId('chip-section')).toHaveScreenshot();
+});

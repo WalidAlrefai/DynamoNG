@@ -41,6 +41,11 @@ export const appRoutes: Route[] = [
       import('./pages/select-doc').then((m) => m.SelectDocPage),
   },
   {
+    path: 'components/date-picker',
+    loadComponent: () =>
+      import('./pages/date-picker-doc').then((m) => m.DatePickerDocPage),
+  },
+  {
     path: 'components/dialog',
     loadComponent: () =>
       import('./pages/dialog-doc').then((m) => m.DialogDocPage),
@@ -76,5 +81,14 @@ export const appRoutes: Route[] = [
   {
     path: 'components/card',
     loadComponent: () => import('./pages/card-doc').then((m) => m.CardDocPage),
+  },
+  {
+    path: 'components/alert',
+    loadComponent: () =>
+      import('./pages/alert-doc').then((m) => m.AlertDocPage),
+  },
+  {
+    path: 'components/chip',
+    loadComponent: () => import('./pages/chip-doc').then((m) => m.ChipDocPage),
   },
 ];

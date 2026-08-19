@@ -6,10 +6,13 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DynamoAccordion, DynamoAccordionPanel } from '@dynamong/accordion';
+import { DynamoAlert } from '@dynamong/alert';
 import { DynamoBadge } from '@dynamong/badge';
 import { DynamoButton } from '@dynamong/button';
 import { DynamoCard } from '@dynamong/card';
 import { DynamoCheckbox } from '@dynamong/checkbox';
+import { DynamoChip } from '@dynamong/chip';
+import { DynamoDatePicker } from '@dynamong/date-picker';
 import { DynamoDialog } from '@dynamong/dialog';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoMenu, DynamoMenuItem } from '@dynamong/menu';
@@ -48,10 +51,13 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   imports: [
     DynamoAccordion,
     DynamoAccordionPanel,
+    DynamoAlert,
     DynamoBadge,
     DynamoButton,
     DynamoCard,
     DynamoCheckbox,
+    DynamoChip,
+    DynamoDatePicker,
     DynamoDialog,
     DynamoInputText,
     DynamoMenu,
@@ -81,9 +87,16 @@ export class App {
   protected readonly plan = signal<'free' | 'pro' | 'enterprise'>('free');
   protected readonly notifications = signal(true);
   protected readonly bio = signal('');
+  protected readonly startDate = signal<Date | null>(null);
+  protected readonly alertVisible = signal(true);
+  protected readonly tags = signal(['Frontend', 'Backend', 'Design']);
   protected readonly activeTab = signal<string | undefined>('profile');
   protected readonly submitting = signal(false);
   protected readonly confirmationOpen = signal(false);
+
+  protected removeTag(tag: string): void {
+    this.tags.update((tags) => tags.filter((t) => t !== tag));
+  }
 
   protected submit(): void {
     this.submitting.set(true);

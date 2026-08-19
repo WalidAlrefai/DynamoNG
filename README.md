@@ -148,3 +148,18 @@ gap:
   per-library source layout in the time available. The convention itself (Tailwind classes only in
   `*.styles.ts`) is still enforced by the generator template and code review.
 - **Nx Cloud is intentionally not connected** (user's explicit choice) — local caching only.
+- **`DynamoDatePicker` is single-date, month-grid only, v1**: no date ranges, no multi-select, no
+  time picker, no dedicated year-picker mega-view (only prev/next-month header navigation and
+  Shift+PageUp/PageDown for ±1 year on a focused grid cell). Disabling is `min`/`max` range-only —
+  there's no arbitrary `disabledDate` predicate input. There's no manual free-text date entry either:
+  the trigger is a non-editable button (like `DynamoSelect`'s combobox trigger), not an editable text
+  field, so there's no date-string parsing/validation surface to get wrong. Display formatting
+  (trigger text, month/year heading, weekday abbreviations) is fixed to
+  `Intl.DateTimeFormat(config.locale, ...)` with hardcoded per-purpose options — there's no
+  `dateFormat` input for a custom pattern. `weekStartsOn` defaults to `0` (Sunday, matching
+  `date-fns`'s own default) and is **not** derived from `config.locale` — a locale→weekStartsOn table
+  would be new, un-scoped i18n infrastructure; consumers who need a Monday-start week pass
+  `weekStartsOn="1"` themselves. The "Previous month"/"Next month" button `aria-label`s are fixed
+  English strings, not locale-translated — `config.locale` is used only for `Intl.DateTimeFormat`
+  date/number-shaped formatting, not UI microcopy; no canned per-locale strings table exists anywhere
+  in this codebase yet, and building one is a larger, cross-component concern out of scope here.
