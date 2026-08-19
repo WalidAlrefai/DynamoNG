@@ -103,4 +103,10 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A global, imperative notification service — inject and call, no template tag required.',
   },
+  {
+    slug: 'badge',
+    name: 'Badge',
+    domain: 'feedback',
+    description: 'A small, severity-colored label for status or metadata.',
+  },
 ];

@@ -68,4 +68,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/toast-doc').then((m) => m.ToastDocPage),
   },
+  {
+    path: 'components/badge',
+    loadComponent: () =>
+      import('./pages/badge-doc').then((m) => m.BadgeDocPage),
+  },
 ];

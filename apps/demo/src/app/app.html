@@ -198,6 +198,16 @@
     >
   </section>
 
+  <section
+    class="flex flex-wrap items-center gap-2 rounded-lg border border-border p-6"
+    data-testid="badge-section"
+  >
+    <h2 class="w-full text-lg font-semibold text-text-primary">Badge</h2>
+    @for (severity of severities; track severity) {
+    <dg-badge [severity]="severity">{{ severity }}</dg-badge>
+    }
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

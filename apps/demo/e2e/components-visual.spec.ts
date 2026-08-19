@@ -83,3 +83,7 @@ test('toast renders as expected', async ({ page }) => {
   await expect(toast).toBeVisible();
   await expect(toast).toHaveScreenshot();
 });
+
+test('badge renders as expected', async ({ page }) => {
+  await expect(page.getByTestId('badge-section')).toHaveScreenshot();
+});

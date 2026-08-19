@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DynamoAccordion, DynamoAccordionPanel } from '@dynamong/accordion';
+import { DynamoBadge } from '@dynamong/badge';
 import { DynamoButton } from '@dynamong/button';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoDialog } from '@dynamong/dialog';
@@ -46,6 +47,7 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   imports: [
     DynamoAccordion,
     DynamoAccordionPanel,
+    DynamoBadge,
     DynamoButton,
     DynamoCheckbox,
     DynamoDialog,
