@@ -109,4 +109,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'feedback',
     description: 'A small, severity-colored label for status or metadata.',
   },
+  {
+    slug: 'card',
+    name: 'Card',
+    domain: 'panel',
+    description:
+      'A content container with an optional header, body, and footer.',
+  },
 ];

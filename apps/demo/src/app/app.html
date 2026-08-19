@@ -208,6 +208,35 @@
     }
   </section>
 
+  <section
+    class="flex flex-wrap gap-4 rounded-lg border border-border p-6"
+    data-testid="card-section"
+  >
+    <h2 class="w-full text-lg font-semibold text-text-primary">Card</h2>
+    <div class="w-72">
+      <dg-card header="Elevated" subheader="Default shadow variant">
+        <p class="text-text-primary">Card body content goes here.</p>
+      </dg-card>
+    </div>
+    <div class="w-72">
+      <dg-card
+        header="Outlined"
+        subheader="Bordered variant"
+        variant="outlined"
+      >
+        <p class="text-text-primary">Card body content goes here.</p>
+        <div footer>
+          <dg-button size="sm">Action</dg-button>
+        </div>
+      </dg-card>
+    </div>
+    <div class="w-72">
+      <dg-card header="Filled" variant="filled">
+        <p class="text-text-primary">Card body content goes here.</p>
+      </dg-card>
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
