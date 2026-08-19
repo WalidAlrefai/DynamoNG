@@ -21,6 +21,8 @@ import { DynamoSelect } from '@dynamong/select';
 import type { DynamoSelectOption } from '@dynamong/select';
 import { DynamoSwitch } from '@dynamong/switch';
 import { DynamoTab, DynamoTabs } from '@dynamong/tabs';
+import { DynamoTable } from '@dynamong/table';
+import type { DynamoTableColumn } from '@dynamong/table';
 import { DynamoTextarea } from '@dynamong/textarea';
 import { DynamoToastService } from '@dynamong/toast';
 import { DynamoTooltip } from '@dynamong/tooltip';
@@ -42,6 +44,62 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   { label: 'Germany', value: 'de' },
   { label: 'Japan', value: 'jp' },
   { label: 'Australia', value: 'au', disabled: true },
+];
+
+interface Employee {
+  name: string;
+  role: string;
+  status: 'active' | 'invited' | 'suspended';
+  startDate: Date;
+}
+
+const EMPLOYEE_COLUMNS: DynamoTableColumn<Employee>[] = [
+  { field: 'name', header: 'Name', sortable: true },
+  { field: 'role', header: 'Role', sortable: true },
+  {
+    field: 'status',
+    header: 'Status',
+    sortable: true,
+    cell: (row) => row.status.charAt(0).toUpperCase() + row.status.slice(1),
+  },
+  {
+    field: 'startDate',
+    header: 'Start Date',
+    sortable: true,
+    // Formats a Date for display while still sorting chronologically by the
+    // raw field, not the formatted string — see table.sort.ts.
+    cell: (row) =>
+      new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
+        row.startDate,
+      ),
+  },
+];
+
+const EMPLOYEES: Employee[] = [
+  {
+    name: 'Ava Thompson',
+    role: 'Engineering Lead',
+    status: 'active',
+    startDate: new Date(2021, 2, 15),
+  },
+  {
+    name: 'Noah Martinez',
+    role: 'Product Designer',
+    status: 'active',
+    startDate: new Date(2022, 6, 1),
+  },
+  {
+    name: 'Priya Shah',
+    role: 'Backend Engineer',
+    status: 'invited',
+    startDate: new Date(2023, 9, 20),
+  },
+  {
+    name: 'Leo Nguyen',
+    role: 'QA Engineer',
+    status: 'suspended',
+    startDate: new Date(2020, 0, 10),
+  },
 ];
 
 @Component({
@@ -66,6 +124,7 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
     DynamoSelect,
     DynamoSwitch,
     DynamoTab,
+    DynamoTable,
     DynamoTabs,
     DynamoTextarea,
     DynamoTooltip,
@@ -90,6 +149,8 @@ export class App {
   protected readonly startDate = signal<Date | null>(null);
   protected readonly alertVisible = signal(true);
   protected readonly tags = signal(['Frontend', 'Backend', 'Design']);
+  protected readonly employeeColumns = EMPLOYEE_COLUMNS;
+  protected readonly employees = EMPLOYEES;
   protected readonly activeTab = signal<string | undefined>('profile');
   protected readonly submitting = signal(false);
   protected readonly confirmationOpen = signal(false);

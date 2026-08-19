@@ -163,3 +163,21 @@ gap:
   English strings, not locale-translated — `config.locale` is used only for `Intl.DateTimeFormat`
   date/number-shaped formatting, not UI microcopy; no canned per-locale strings table exists anywhere
   in this codebase yet, and building one is a larger, cross-component concern out of scope here.
+- **`DynamoTable` is client-side, single-column-sort only, v1**: no filtering, pagination, virtual
+  scrolling, column resize/reorder/pinning, row selection, or per-cell template projection — cells
+  render a plain computed value via each column's optional `cell` accessor function, not an arbitrary
+  Angular template. Sorting cycles a single active column through ascending → descending → unsorted
+  on repeated header clicks (no multi-column/shift-click sort, no memory of a previously-sorted
+  column once a different one is clicked). The default comparator reads each column's raw `field`
+  value directly off the row — **never** through `cell`'s display-formatting function, so a column
+  can format dates/labels for display while still sorting correctly by the underlying value — treats
+  `null`/`undefined` as always sorting last regardless of direction, and compares Dates/numbers/
+  booleans natively before falling back to a locale-aware, numeric-sensitive `String.localeCompare`
+  for everything else; pass a column's own `sortFn` to override entirely. There's no `sortChange`
+  output: the sorted result is purely internal presentation state with no server round-trip to
+  coordinate in v1. No `@angular/cdk/table` (`CdkTable`) dependency either — v1's plain `columns`/
+  `data` array API and lack of virtual scrolling/sticky columns/declarative cell-template projection
+  don't need it; the markup is a hand-rolled semantic `<table>`/`<thead>`/`<tbody>`, the same pattern
+  as `DynamoSelect`'s plain options array and `DynamoDatePicker`'s calendar grid. Uses plain `<table>`
+  ARIA semantics (`aria-sort` on the active sortable `<th>` only) per the WAI-ARIA APG "Table"
+  pattern, not `role="grid"` — there's no per-cell keyboard grid navigation to justify it.

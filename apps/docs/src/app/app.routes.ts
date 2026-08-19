@@ -91,4 +91,9 @@ export const appRoutes: Route[] = [
     path: 'components/chip',
     loadComponent: () => import('./pages/chip-doc').then((m) => m.ChipDocPage),
   },
+  {
+    path: 'components/table',
+    loadComponent: () =>
+      import('./pages/table-doc').then((m) => m.TableDocPage),
+  },
 ];

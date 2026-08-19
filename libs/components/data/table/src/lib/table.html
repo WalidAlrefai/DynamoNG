@@ -1,0 +1,56 @@
+<div [class]="wrapperClasses()">
+  <table [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
+    <thead>
+      <tr [class]="headerRowClasses">
+        @for (column of columns(); track column.field) {
+        <th
+          scope="col"
+          [class]="headerCellClasses()"
+          [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+        >
+          @if (column.sortable) {
+          <button
+            type="button"
+            [class]="sortButtonClasses"
+            (click)="toggleSort(column)"
+          >
+            <span>{{ column.header }}</span>
+            <svg
+              [class]="sortIconClasses(sortDirectionFor(column.field))"
+              [attr.aria-hidden]="true"
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+            >
+              <path
+                d="M4 6l4 4 4-4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          } @else { {{ column.header }} }
+        </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of sortedData(); track trackRow(row, $index)) {
+      <tr [class]="bodyRowClasses">
+        @for (column of columns(); track column.field) {
+        <td [class]="bodyCellClasses()">{{ cellValue(row, column) }}</td>
+        }
+      </tr>
+      } @empty {
+      <tr>
+        <td [attr.colspan]="columns().length" [class]="emptyCellClasses">
+          {{ emptyMessage() }}
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>

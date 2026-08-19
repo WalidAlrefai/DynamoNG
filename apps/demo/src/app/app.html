@@ -285,6 +285,18 @@
     }
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="table-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Table</h2>
+    <dg-table
+      [columns]="employeeColumns"
+      [data]="employees"
+      ariaLabel="Employees"
+    />
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

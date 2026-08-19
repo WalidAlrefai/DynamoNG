@@ -1,7 +1,7 @@
 export interface DocComponentEntry {
   slug: string;
   name: string;
-  domain: 'forms' | 'overlay' | 'panel' | 'feedback';
+  domain: 'forms' | 'overlay' | 'panel' | 'feedback' | 'data';
   description: string;
 }
 
@@ -135,5 +135,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     name: 'Chip',
     domain: 'feedback',
     description: 'A compact, optionally-removable label.',
+  },
+  {
+    slug: 'table',
+    name: 'Table',
+    domain: 'data',
+    description:
+      'A sortable data table driven by a plain column-definition array, with client-side single-column sorting.',
   },
 ];
