@@ -1,16 +1,25 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DynamoAccordion, DynamoAccordionPanel } from '@dynamong/accordion';
+import { DynamoBadge } from '@dynamong/badge';
 import { DynamoButton } from '@dynamong/button';
+import { DynamoCard } from '@dynamong/card';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoDialog } from '@dynamong/dialog';
 import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoMenu, DynamoMenuItem } from '@dynamong/menu';
 import { DynamoRadio } from '@dynamong/radio';
 import { DynamoSelect } from '@dynamong/select';
 import type { DynamoSelectOption } from '@dynamong/select';
 import { DynamoSwitch } from '@dynamong/switch';
 import { DynamoTab, DynamoTabs } from '@dynamong/tabs';
 import { DynamoTextarea } from '@dynamong/textarea';
+import { DynamoToastService } from '@dynamong/toast';
 import { DynamoTooltip } from '@dynamong/tooltip';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -39,10 +48,14 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   imports: [
     DynamoAccordion,
     DynamoAccordionPanel,
+    DynamoBadge,
     DynamoButton,
+    DynamoCard,
     DynamoCheckbox,
     DynamoDialog,
     DynamoInputText,
+    DynamoMenu,
+    DynamoMenuItem,
     DynamoRadio,
     DynamoSelect,
     DynamoSwitch,
@@ -55,6 +68,8 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   templateUrl: './app.html',
 })
 export class App {
+  protected readonly toast = inject(DynamoToastService);
+
   protected readonly severities = SEVERITIES;
   protected readonly variants = VARIANTS;
   protected readonly countryOptions = COUNTRY_OPTIONS;

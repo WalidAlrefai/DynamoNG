@@ -1,0 +1,21 @@
+<div [class]="classes()" [attr.data-testid]="'DynamoCard'">
+  @if (header() || subheader()) {
+  <div [class]="headerClasses()">
+    @if (header()) {
+    <h3 [class]="titleClasses()" data-testid="DynamoCard-title">
+      {{ header() }}
+    </h3>
+    } @if (subheader()) {
+    <p [class]="subtitleClasses()" data-testid="DynamoCard-subtitle">
+      {{ subheader() }}
+    </p>
+    }
+  </div>
+  }
+  <div [class]="bodyClasses()">
+    <ng-content />
+  </div>
+  <div [class]="footerClasses()">
+    <ng-content select="[footer]" />
+  </div>
+</div>

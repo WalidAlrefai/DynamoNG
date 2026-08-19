@@ -49,7 +49,11 @@
       "@dynamong/core/overlay": ["./libs/core/overlay/src/index.ts"],
       "@dynamong/tooltip": ["./libs/components/overlay/tooltip/src/index.ts"],
       "@dynamong/tabs": ["./libs/components/panel/tabs/src/index.ts"],
-      "@dynamong/accordion": ["./libs/components/panel/accordion/src/index.ts"]
+      "@dynamong/accordion": ["./libs/components/panel/accordion/src/index.ts"],
+      "@dynamong/menu": ["./libs/components/overlay/menu/src/index.ts"],
+      "@dynamong/toast": ["./libs/components/feedback/toast/src/index.ts"],
+      "@dynamong/badge": ["./libs/components/feedback/badge/src/index.ts"],
+      "@dynamong/card": ["./libs/components/panel/card/src/index.ts"]
     }
   }
 }

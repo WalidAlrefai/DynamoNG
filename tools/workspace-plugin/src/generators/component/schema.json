@@ -13,16 +13,23 @@
     "domain": {
       "type": "string",
       "description": "The domain this component belongs to (used for source folder grouping and the domain:* module-boundary tag).",
-      "enum": ["forms", "overlay", "data", "panel", "menu"],
+      "enum": ["forms", "overlay", "data", "panel", "menu", "feedback"],
       "x-prompt": {
         "message": "Which domain does this component belong to?",
         "type": "list",
         "items": [
-          { "value": "forms", "label": "forms (button, input, checkbox, select, ...)" },
-          { "value": "overlay", "label": "overlay (dialog, tooltip, popover, ...)" },
+          {
+            "value": "forms",
+            "label": "forms (button, input, checkbox, select, ...)"
+          },
+          {
+            "value": "overlay",
+            "label": "overlay (dialog, tooltip, popover, ...)"
+          },
           { "value": "data", "label": "data (table, paginator, ...)" },
           { "value": "panel", "label": "panel" },
-          { "value": "menu", "label": "menu" }
+          { "value": "menu", "label": "menu" },
+          { "value": "feedback", "label": "feedback (toast, alert, ...)" }
         ]
       }
     },

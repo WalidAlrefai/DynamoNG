@@ -59,4 +59,22 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/accordion-doc').then((m) => m.AccordionDocPage),
   },
+  {
+    path: 'components/menu',
+    loadComponent: () => import('./pages/menu-doc').then((m) => m.MenuDocPage),
+  },
+  {
+    path: 'components/toast',
+    loadComponent: () =>
+      import('./pages/toast-doc').then((m) => m.ToastDocPage),
+  },
+  {
+    path: 'components/badge',
+    loadComponent: () =>
+      import('./pages/badge-doc').then((m) => m.BadgeDocPage),
+  },
+  {
+    path: 'components/card',
+    loadComponent: () => import('./pages/card-doc').then((m) => m.CardDocPage),
+  },
 ];

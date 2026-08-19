@@ -158,6 +158,85 @@
     </dg-accordion>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="menu-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Menu</h2>
+    <dg-menu label="Actions">
+      <dg-menu-item value="edit" label="Edit" />
+      <dg-menu-item value="duplicate" label="Duplicate" />
+      <dg-menu-item value="archive" label="Archive" [disabled]="true" />
+      <dg-menu-item value="delete" label="Delete" />
+    </dg-menu>
+  </section>
+
+  <section
+    class="flex flex-wrap gap-2 rounded-lg border border-border p-6"
+    data-testid="toast-section"
+  >
+    <h2 class="w-full text-lg font-semibold text-text-primary">Toast</h2>
+    <dg-button
+      severity="success"
+      (click)="toast.success('Changes saved successfully.')"
+      >Success</dg-button
+    >
+    <dg-button
+      severity="info"
+      (click)="toast.info('A new version is available.')"
+      >Info</dg-button
+    >
+    <dg-button
+      severity="warning"
+      (click)="toast.warning('Your session expires in 5 minutes.')"
+      >Warning</dg-button
+    >
+    <dg-button
+      severity="danger"
+      (click)="toast.error('Could not save changes.')"
+      >Error</dg-button
+    >
+  </section>
+
+  <section
+    class="flex flex-wrap items-center gap-2 rounded-lg border border-border p-6"
+    data-testid="badge-section"
+  >
+    <h2 class="w-full text-lg font-semibold text-text-primary">Badge</h2>
+    @for (severity of severities; track severity) {
+    <dg-badge [severity]="severity">{{ severity }}</dg-badge>
+    }
+  </section>
+
+  <section
+    class="flex flex-wrap gap-4 rounded-lg border border-border p-6"
+    data-testid="card-section"
+  >
+    <h2 class="w-full text-lg font-semibold text-text-primary">Card</h2>
+    <div class="w-72">
+      <dg-card header="Elevated" subheader="Default shadow variant">
+        <p class="text-text-primary">Card body content goes here.</p>
+      </dg-card>
+    </div>
+    <div class="w-72">
+      <dg-card
+        header="Outlined"
+        subheader="Bordered variant"
+        variant="outlined"
+      >
+        <p class="text-text-primary">Card body content goes here.</p>
+        <div footer>
+          <dg-button size="sm">Action</dg-button>
+        </div>
+      </dg-card>
+    </div>
+    <div class="w-72">
+      <dg-card header="Filled" variant="filled">
+        <p class="text-text-primary">Card body content goes here.</p>
+      </dg-card>
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
