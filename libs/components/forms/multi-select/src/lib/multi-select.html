@@ -1,0 +1,158 @@
+<div
+  #triggerEl
+  role="combobox"
+  [id]="triggerId"
+  [class]="triggerClasses()"
+  [attr.tabindex]="disabled() ? -1 : 0"
+  aria-haspopup="listbox"
+  [attr.aria-expanded]="isOpen()"
+  [attr.aria-controls]="isOpen() ? listboxId : null"
+  [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
+  [attr.aria-invalid]="invalid() ? 'true' : null"
+  [attr.aria-disabled]="disabled() ? 'true' : null"
+  [attr.aria-label]="ariaLabel() ?? null"
+  (click)="toggle()"
+  (keydown)="onTriggerKeydown($event)"
+>
+  @if (selectedOptions().length === 0) {
+  <span [class]="placeholderClasses">{{ placeholder() }}</span>
+  } @else { @for (tag of visibleTags(); track tag.value) {
+  <span [class]="tagClasses">
+    <span>{{ tag.label }}</span>
+    <button
+      type="button"
+      [class]="tagRemoveButtonClasses"
+      [disabled]="disabled()"
+      [attr.aria-label]="'Remove ' + tag.label"
+      (click)="removeTag(tag.value, $event)"
+    >
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        [attr.aria-hidden]="true"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </button>
+  </span>
+  } @if (overflowCount() > 0) {
+  <span [class]="overflowTagClasses"
+    >{{ overflowLabelFn()(overflowCount()) }}</span
+  >
+  } }
+  <svg
+    [class]="chevronClasses()"
+    [attr.aria-hidden]="true"
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+  >
+    <path
+      d="M4 6l4 4 4-4"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+</div>
+
+<ng-template #panelTemplate>
+  <div [class]="panelWrapperClasses">
+    @if (filterable() || showSelectAll()) {
+    <div [class]="headerRowClasses">
+      @if (showSelectAll()) {
+      <dg-checkbox
+        size="sm"
+        data-testid="dg-multi-select-select-all"
+        [checked]="selectAllState().checked"
+        [indeterminate]="selectAllState().indeterminate"
+        [disabled]="disabled() || visibleOptions().length === 0"
+        (checkedChange)="onSelectAllToggle($event)"
+      >
+        <span class="sr-only">{{ selectAllLabel() }}</span>
+      </dg-checkbox>
+      } @if (filterable()) {
+      <div [class]="filterFieldWrapperClasses">
+        <dg-input-text
+          type="search"
+          size="sm"
+          [styleClass]="filterInputExtraClasses"
+          [ngModel]="filterText()"
+          (ngModelChange)="onFilterInputChange($event)"
+          (keydown)="onFilterKeydown($event)"
+          [placeholder]="filterPlaceholder()"
+          ariaLabel="Search options"
+        />
+        <svg
+          [class]="filterIconClasses"
+          [attr.aria-hidden]="true"
+          width="14"
+          height="14"
+          viewBox="0 0 20 20"
+          fill="none"
+        >
+          <path
+            d="M9 17a8 8 0 100-16 8 8 0 000 16zM19 19l-4.35-4.35"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
+      }
+    </div>
+    }
+    <ul
+      [id]="listboxId"
+      role="listbox"
+      aria-multiselectable="true"
+      [class]="listboxClasses"
+      [attr.aria-label]="ariaLabel() ?? 'Options'"
+    >
+      @for (item of renderItems(); track entryKey(item)) { @if (item.kind ===
+      'heading') {
+      <li role="presentation" [class]="groupHeadingClasses">
+        {{ item.label }}
+      </li>
+      } @else {
+      <li
+        [id]="optionId(item.index)"
+        role="option"
+        tabindex="-1"
+        [attr.aria-selected]="isSelected(item.option)"
+        [attr.aria-disabled]="item.option.disabled ? 'true' : null"
+        [class]="optionClasses(item.option, item.index)"
+        (click)="toggleOption(item.option)"
+        (keydown.enter)="toggleOption(item.option)"
+        (keydown.space)="toggleOption(item.option)"
+        (mouseenter)="activeIndex.set(item.index)"
+      >
+        <span [class]="checkboxClasses(item.option)" [attr.aria-hidden]="true">
+          @if (isSelected(item.option)) {
+          <dg-icon-check size="sm" />
+          }
+        </span>
+        <span>{{ item.option.label }}</span>
+      </li>
+      } } @if (showNoResults()) {
+      <li role="presentation" [class]="noResultsClasses">
+        <span role="status">{{ noResultsMessage() }}</span>
+      </li>
+      }
+    </ul>
+    @if (isCapped()) {
+    <div [class]="maxSelectedMessageClasses">
+      <span role="status">{{ maxSelectedMessage() }}</span>
+    </div>
+    }
+  </div>
+</ng-template>

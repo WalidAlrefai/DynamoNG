@@ -19,6 +19,7 @@ import { DynamoDatePicker } from '@dynamong/date-picker';
 import { DynamoDialog } from '@dynamong/dialog';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoMenu, DynamoMenuItem } from '@dynamong/menu';
+import { DynamoMultiSelect } from '@dynamong/multi-select';
 import { DynamoRadio } from '@dynamong/radio';
 import { DynamoSelect } from '@dynamong/select';
 import type { DynamoSelectOption } from '@dynamong/select';
@@ -50,6 +51,15 @@ const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   { label: 'Germany', value: 'de' },
   { label: 'Japan', value: 'jp' },
   { label: 'Australia', value: 'au', disabled: true },
+];
+
+const SKILL_OPTIONS: DynamoSelectOption<string>[] = [
+  { label: 'Angular', value: 'angular' },
+  { label: 'React', value: 'react' },
+  { label: 'Vue', value: 'vue' },
+  { label: 'Svelte', value: 'svelte' },
+  { label: 'TypeScript', value: 'typescript' },
+  { label: 'CSS', value: 'css', disabled: true },
 ];
 
 interface Employee {
@@ -110,6 +120,7 @@ const EMPLOYEES: Employee[] = [
     DynamoInputText,
     DynamoMenu,
     DynamoMenuItem,
+    DynamoMultiSelect,
     DynamoRadio,
     DynamoSelect,
     DynamoSwitch,
@@ -128,11 +139,13 @@ export class App {
   protected readonly severities = SEVERITIES;
   protected readonly variants = VARIANTS;
   protected readonly countryOptions = COUNTRY_OPTIONS;
+  protected readonly skillOptions = SKILL_OPTIONS;
 
   protected readonly name = signal('');
   protected readonly email = signal('');
   protected readonly subscribe = signal(false);
   protected readonly country = signal<string | null>(null);
+  protected readonly skills = signal<string[]>(['angular', 'typescript']);
   protected readonly plan = signal<'free' | 'pro' | 'enterprise'>('free');
   protected readonly notifications = signal(true);
   protected readonly bio = signal('');

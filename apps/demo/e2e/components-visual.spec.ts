@@ -137,3 +137,24 @@ test('table filters rows when a search query is typed', async ({ page }) => {
   await table.getByRole('searchbox').fill('Ava');
   await expect(table).toHaveScreenshot();
 });
+
+test('select panel opens via CDK Overlay and renders as expected', async ({
+  page,
+}) => {
+  await page.getByTestId('select-field').getByRole('combobox').click();
+  const listbox = page.getByRole('listbox');
+  await expect(listbox).toBeVisible();
+  await expect(listbox).toHaveScreenshot();
+});
+
+test('multi select renders selected tags as expected', async ({ page }) => {
+  await expect(page.getByTestId('multi-select-field')).toHaveScreenshot();
+});
+
+test('multi select panel opens and toggles an option', async ({ page }) => {
+  await page.getByTestId('multi-select-field').getByRole('combobox').click();
+  const listbox = page.getByRole('listbox');
+  await expect(listbox).toBeVisible();
+  await listbox.getByRole('option', { name: 'Vue' }).click();
+  await expect(page.getByTestId('multi-select-field')).toHaveScreenshot();
+});

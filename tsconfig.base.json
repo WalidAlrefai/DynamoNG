@@ -59,7 +59,10 @@
       ],
       "@dynamong/alert": ["./libs/components/feedback/alert/src/index.ts"],
       "@dynamong/chip": ["./libs/components/feedback/chip/src/index.ts"],
-      "@dynamong/table": ["./libs/components/data/table/src/index.ts"]
+      "@dynamong/table": ["./libs/components/data/table/src/index.ts"],
+      "@dynamong/multi-select": [
+        "./libs/components/forms/multi-select/src/index.ts"
+      ]
     }
   }
 }

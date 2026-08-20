@@ -41,6 +41,11 @@ export const appRoutes: Route[] = [
       import('./pages/select-doc').then((m) => m.SelectDocPage),
   },
   {
+    path: 'components/multi-select',
+    loadComponent: () =>
+      import('./pages/multi-select-doc').then((m) => m.MultiSelectDocPage),
+  },
+  {
     path: 'components/date-picker',
     loadComponent: () =>
       import('./pages/date-picker-doc').then((m) => m.DatePickerDocPage),
