@@ -113,3 +113,27 @@ test('alert renders as expected', async ({ page }) => {
 test('chip renders as expected', async ({ page }) => {
   await expect(page.getByTestId('chip-section')).toHaveScreenshot();
 });
+
+test('table renders as expected', async ({ page }) => {
+  await expect(page.getByTestId('table-section')).toHaveScreenshot();
+});
+
+test('table sorts a column when its header is clicked', async ({ page }) => {
+  const table = page.getByTestId('table-section');
+  await table.getByRole('button', { name: 'Name' }).click();
+  await expect(table).toHaveScreenshot();
+});
+
+test('table paginates to the next page when Next is clicked', async ({
+  page,
+}) => {
+  const table = page.getByTestId('table-section');
+  await table.getByRole('button', { name: 'Next page' }).click();
+  await expect(table).toHaveScreenshot();
+});
+
+test('table filters rows when a search query is typed', async ({ page }) => {
+  const table = page.getByTestId('table-section');
+  await table.getByRole('searchbox').fill('Ava');
+  await expect(table).toHaveScreenshot();
+});

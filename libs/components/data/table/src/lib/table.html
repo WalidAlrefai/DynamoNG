@@ -1,0 +1,154 @@
+<div [class]="wrapperClasses()">
+  @if (filterable()) {
+  <div [class]="filterWrapperClasses">
+    <input
+      type="search"
+      [class]="filterInputClasses()"
+      [placeholder]="filterPlaceholder()"
+      [value]="filterText()"
+      aria-label="Search table"
+      (input)="onFilterInput($event)"
+    />
+  </div>
+  }
+  <table [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
+    <thead>
+      <tr [class]="headerRowClasses">
+        @if (selectable()) {
+        <th scope="col" [class]="selectionCellClasses()">
+          <input
+            type="checkbox"
+            [class]="checkboxClasses"
+            [checked]="isAllSelected()"
+            [indeterminate]="isSomeSelected()"
+            [disabled]="pagedData().length === 0"
+            aria-label="Select all rows"
+            (change)="toggleSelectAll()"
+          />
+        </th>
+        } @for (column of columns(); track column.field) {
+        <th
+          scope="col"
+          [class]="headerCellClasses()"
+          [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+        >
+          @if (column.sortable) {
+          <button
+            type="button"
+            [class]="sortButtonClasses"
+            (click)="toggleSort(column)"
+          >
+            <span>{{ column.header }}</span>
+            <svg
+              [class]="sortIconClasses(sortDirectionFor(column.field))"
+              [attr.aria-hidden]="true"
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+            >
+              <path
+                d="M4 6l4 4 4-4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          } @else { {{ column.header }} }
+        </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of pagedData(); track trackRow(row, $index); let rowIndex =
+      $index) {
+      <tr [class]="bodyRowClasses(row)">
+        @if (selectable()) {
+        <td [class]="selectionCellClasses()">
+          <input
+            type="checkbox"
+            [class]="checkboxClasses"
+            [checked]="isRowSelected(row)"
+            [attr.aria-label]="'Select row ' + ($index + 1)"
+            (change)="toggleRowSelection(row)"
+          />
+        </td>
+        } @for (column of columns(); track column.field) {
+        <td [class]="bodyCellClasses()">
+          @if (column.cellTemplate) {
+          <ng-container
+            [ngTemplateOutlet]="column.cellTemplate"
+            [ngTemplateOutletContext]="cellContext(row, rowIndex)"
+          />
+          } @else { {{ cellValue(row, column) }} }
+        </td>
+        }
+      </tr>
+      } @empty {
+      <tr>
+        <td
+          [attr.colspan]="columns().length + (selectable() ? 1 : 0)"
+          [class]="emptyCellClasses"
+        >
+          <span role="status">{{ emptyStateMessage() }}</span>
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+  @if (pageSize()) {
+  <div [class]="paginationWrapperClasses">
+    <button
+      type="button"
+      aria-label="Previous page"
+      [class]="paginationButtonClasses"
+      [disabled]="currentPage() === 1"
+      (click)="goToPreviousPage()"
+    >
+      <svg
+        [attr.aria-hidden]="true"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+      >
+        <path
+          d="M10 3l-5 5 5 5"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <span [class]="pageIndicatorClasses" aria-live="polite">
+      Page {{ currentPage() }} of {{ pageCount() }}
+    </span>
+    <button
+      type="button"
+      aria-label="Next page"
+      [class]="paginationButtonClasses"
+      [disabled]="currentPage() === pageCount()"
+      (click)="goToNextPage()"
+    >
+      <svg
+        [attr.aria-hidden]="true"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+      >
+        <path
+          d="M6 3l5 5-5 5"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  </div>
+  }
+</div>

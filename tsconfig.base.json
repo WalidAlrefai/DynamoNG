@@ -58,7 +58,8 @@
         "./libs/components/forms/date-picker/src/index.ts"
       ],
       "@dynamong/alert": ["./libs/components/feedback/alert/src/index.ts"],
-      "@dynamong/chip": ["./libs/components/feedback/chip/src/index.ts"]
+      "@dynamong/chip": ["./libs/components/feedback/chip/src/index.ts"],
+      "@dynamong/table": ["./libs/components/data/table/src/index.ts"]
     }
   }
 }
