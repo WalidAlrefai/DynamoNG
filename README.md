@@ -57,14 +57,16 @@ the root `eslint.config.mjs`.
 
 ## Components
 
-| Component  | Package                | Validates                                                                                                  |
-| ---------- | ---------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Button     | `@dynamong/button`     | Base class + `cva` variant pattern                                                                         |
-| Checkbox   | `@dynamong/checkbox`   | `model()` two-way binding; consumes `@dynamong/icons`                                                      |
-| Radio      | `@dynamong/radio`      | Native radio-group semantics via a split `[checked]`/`(checkedChange)` binding — no `RadioGroup` container |
-| Input Text | `@dynamong/input-text` | `ControlValueAccessor` / reactive forms                                                                    |
-| Select     | `@dynamong/select`     | Composite combobox pattern, full keyboard nav, CVA                                                         |
-| Dialog     | `@dynamong/dialog`     | CDK focus trapping, modal semantics                                                                        |
+| Component    | Package                  | Validates                                                                                                  |
+| ------------ | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Button       | `@dynamong/button`       | Base class + `cva` variant pattern                                                                         |
+| Checkbox     | `@dynamong/checkbox`     | `model()` two-way binding; consumes `@dynamong/icons`                                                      |
+| Radio        | `@dynamong/radio`        | Native radio-group semantics via a split `[checked]`/`(checkedChange)` binding — no `RadioGroup` container |
+| Input Text   | `@dynamong/input-text`   | `ControlValueAccessor` / reactive forms                                                                    |
+| Select       | `@dynamong/select`       | Composite combobox pattern, CDK Overlay, filtering, full keyboard nav, CVA                                 |
+| Multi Select | `@dynamong/multi-select` | Tag-based multi-select, shares `DynamoListboxBase` with Select, select all/clear all, grouping             |
+| Pagination   | `@dynamong/pagination`   | Composes `DynamoButton`/`DynamoSelect` across a real cross-library boundary; PrimeNG-grounded windowing    |
+| Dialog       | `@dynamong/dialog`       | CDK focus trapping, modal semantics                                                                        |
 
 Every component ships: a standalone `OnPush` component, a `*.styles.ts` file (the _only_ place Tailwind
 utility classes live, via `class-variance-authority`), a `*.types.ts` file, a CDK `ComponentHarness` for
@@ -246,3 +248,84 @@ gap:
   (`viewChild(TemplateRef)` reading their own `<ng-template #x let-row let-i="index">`) and assigns it
   into their `columns` array themselves — there's no new content-projection machinery beyond adding
   `NgTemplateOutlet` to Table's own `imports`.
+- **`DynamoSelect` v2 redesigns the panel around `DynamoOverlayService`/CDK Overlay** (matching
+  `DynamoMenu`/`DynamoDatePicker`/`DynamoTooltip`) instead of v1's plain CSS `absolute` positioning —
+  fixes clipping inside `overflow` ancestors, adds viewport-edge flipping via `position`'s 4-corner
+  fallback order, and adds real outside-click/backdrop-to-close (v1 had none at all). Adds opt-in
+  `filterable`/`filterText`/`filterPlaceholder`/`noResultsMessage` (mirroring `DynamoTable`'s exact
+  precedent, including the same empty-vs-no-matches message split), `invalid` (a new
+  `selectTriggerStyles` variant, matching `DynamoInputText`'s), `clearable` (an "x" button that clears
+  without opening), and single-level `group?: string` on `DynamoSelectOption` (grouped options render
+  `role="presentation"` headings, skipped by keyboard nav; ungrouped options are unaffected — fully
+  backward compatible, zero breaking changes for existing consumers). The filter box is a **real**
+  `<dg-input-text>` (both are `domain:forms`, so — unlike Table's forced native-`<input>` workaround —
+  a genuine cross-component import is legal), wired via `[ngModel]`/`(ngModelChange)` since
+  `DynamoInputText` has no direct value output, only full `ControlValueAccessor`. The filter box (and,
+  for `DynamoMultiSelect`, the select-all/clear-all row) must live in the panel wrapper _outside_ the
+  `<ul role="listbox">`, not inside it as an `<li>` — ARIA's `listbox` role only permits `option`/
+  `group` as owned children, so nesting a real `<input>`/`<button>` inside it is an
+  `aria-required-children` axe violation; this was caught live by `DynamoMultiSelect`'s own a11y spec
+  and fixed in both components (`selectPanelWrapperStyles` now carries the border/shadow/scroll chrome
+  for the whole panel, `selectListboxStyles` is just the bare `<ul>`'s padding). The CDK-Overlay
+  lifecycle, filter/group pure functions, and roving-focus keyboard nav are factored into a shared
+  `DynamoListboxBase` abstract class + `select-option-filter.ts`/`listbox-positioning.ts`, all exported
+  from `@dynamong/select`'s public entry — a deliberate exception to "duplicate small stuff across
+  domain boundaries" (seen elsewhere for the h-8/h-10/h-12 size scale), justified because the overlay
+  attach/detach/backdrop/dispose sequence is subtle, effect-timing-sensitive code where a second
+  hand-copy risks silent drift, not cosmetic duplication. Filtering is still client-side substring-only
+  (no fuzzy match, no remote/async option loading); grouping is one level only (no nested subgroups);
+  `position`'s viewport-edge handling is CDK's generic 4-corner collision fallback, not a bespoke
+  "prefer more space" heuristic.
+- **`DynamoMultiSelect` v1 is new**, built on the same `DynamoListboxBase`/filter/group/keyboard-nav
+  machinery as `DynamoSelect` (a real same-domain import — both are `domain:forms` — not a
+  duplication). `value` is a two-way `TValue[]` model; toggling an option (click, Space, or Enter)
+  does **not** close the panel, unlike `DynamoSelect`'s select-and-close. Selected values render as
+  removable tag pills in the trigger — locally-styled markup mirroring `DynamoChip`'s pill shape
+  (`domain:feedback`, not importable across the `domain:forms` boundary), simplified to one neutral
+  look since tags don't need Chip's severity/variant matrix. The per-option check indicator is
+  **deliberately not** a real `<dg-checkbox>`: that component's native `<input>` is independently
+  Tab-focusable, which would add a phantom tab stop inside every `role="option"` `<li>` and break the
+  listbox's single-tab-stop/virtual-focus model — instead it's a decorative-only box mirroring
+  `checkboxBoxStyles`'s visual, rendered with the real (non-focusable) `DynamoCheckIcon`. Ships all
+  four scoped features: **select-all** (a single tri-state `DynamoCheckbox` in the panel header,
+  before the filter input — mirroring PrimeNG's MultiSelect header rather than two separate
+  select-all/clear-all buttons, after live UI review; toggling it selects/clears the current
+  filtered/visible option set — "select all across a filter" and "select all across every filter" are
+  different features, only the former is implemented); **`maxSelected`** (an optional cap — remaining
+  unselected options become synthetically `disabled` once reached, never mutating the real `options()`
+  array — with a `maxSelectedMessage` shown, but no toast/other affordance beyond that); **overflow tag
+  display** (`maxVisibleTags` collapses the trigger's tag list to the first N plus a "+N more" summary,
+  via a configurable `overflowLabelFn`); and **grouping** (same one-level `group?` field as Select).
+  The trigger itself carries `role="combobox"` on a plain focusable `<div tabindex="0">`, not a
+  `<button>` like Select's — a `<button>` can't legally contain the per-tag remove `<button>`s (nested
+  interactive content), and `DynamoSelect`'s own fix for its single clear button (a sibling button, not
+  nested) doesn't scale to an arbitrary number of tag-remove buttons interleaved with text.
+- **`DynamoPagination` is new**, and deliberately does **not** replace `DynamoTable`'s own built-in
+  Prev/Next pager (see the v2 entry above) — the two are independent implementations, not one shared
+  under the hood. `DynamoTable` is `domain:data`, which the module-boundary rules do not allow to
+  depend on `domain:forms` (`DynamoButton`/`DynamoSelect`); since real reuse of those two components was
+  the point (page-number/Prev/Next buttons via `DynamoButton`, the rows-per-page dropdown via
+  `DynamoSelect`), `DynamoPagination` lives in `domain:forms` instead, mirroring how `DynamoMultiSelect`
+  legally reused `DynamoSelect`/`DynamoCheckbox` by staying in the same domain rather than crossing.
+  Reconciling the two pagers into one (Table delegating to Pagination) would need either a breaking
+  Table refactor or a cross-domain exception — out of scope here; `apps/demo`'s "Pagination" section
+  shows the intended pattern instead, a second `dg-table` with its own `pageSize`/`page` left unset
+  (so its built-in pager never renders) fed a pre-sliced page of rows from `dg-pagination` externally.
+  Page-number windowing (always show page 1 and the last page, a run centered on the current page, a
+  single `…` for any collapsed gap) is grounded in PrimeNG Paginator's `pageLinkSize` truncation — a
+  pure, independently-tested function (`buildPaginationRange`, `pagination-range.ts`), not inlined into
+  the component. `page`/`pageSize` are both two-way `model()`s (mirroring `DynamoTable`'s own `page`
+  convention: `page()`'s _read_ is clamped by `currentPage`, never corrected by a computed); changing
+  `pageSize` also resets to page 1, the same technique `DynamoTable`'s own filter/sort handlers already
+  use to avoid an `effect()`. Building this surfaced a real, separate gap in `DynamoButton`: it had no
+  way to set an icon-only button's accessible name (`aria-label`) or `aria-current`, because a plain
+  attribute on `<dg-button>` lands on the non-interactive custom-element host, not the focusable native
+  `<button>` inside its template — fixed with two small, additive, forwarded inputs (`ariaLabel`,
+  `ariaCurrent`) rather than hand-rolling native buttons the way `DynamoSelect`'s and `DynamoTable`'s own
+  icon-only controls do, since fixing Button benefits every future icon-only usage, not just this one.
+  Separately, reusing `<dg-select>` from a different library's template for the first time surfaced that
+  `DynamoListboxBase` (the shared base `DynamoSelect`/`DynamoMultiSelect` extend) needed its own
+  `@Directive()` decorator — without one, Angular's cross-package template type checker lost the
+  `styleClass`/`pt`/`unstyled` inputs inherited from `DynamoBaseComponent` one level further up (NG8002),
+  even though same-project usage and the runtime binding both happened to work either way; now fixed for
+  every future cross-library consumer of `DynamoSelect`/`DynamoMultiSelect`, not just Pagination.

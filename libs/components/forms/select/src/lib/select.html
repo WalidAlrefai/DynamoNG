@@ -1,39 +1,127 @@
-<div class="relative inline-block w-full">
+<div #triggerEl [class]="triggerClasses()">
   <button
     type="button"
     role="combobox"
     [id]="triggerId"
-    [class]="triggerClasses()"
+    [class]="triggerButtonClasses"
     [disabled]="disabled()"
     aria-haspopup="listbox"
     [attr.aria-expanded]="isOpen()"
     [attr.aria-controls]="isOpen() ? listboxId : null"
     [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
     [attr.aria-label]="ariaLabel() ?? null"
     (click)="toggle()"
     (keydown)="onTriggerKeydown($event)"
   >
-    <span>{{ selectedLabel() }}</span>
+    {{ selectedLabel() }}
   </button>
+  @if (clearable() && selectedOption()) {
+  <button
+    type="button"
+    [class]="clearButtonClasses"
+    [disabled]="disabled()"
+    aria-label="Clear selection"
+    (click)="clearValue($event)"
+  >
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      [attr.aria-hidden]="true"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+        clip-rule="evenodd"
+      />
+    </svg>
+  </button>
+  }
+  <svg
+    [class]="chevronClasses()"
+    [attr.aria-hidden]="true"
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+  >
+    <path
+      d="M4 6l4 4 4-4"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+</div>
 
-  @if (isOpen()) {
-    <ul [id]="listboxId" role="listbox" [class]="listboxClasses" [attr.aria-label]="ariaLabel() ?? 'Options'">
-      @for (option of options(); track option.value; let i = $index) {
-        <li
-          [id]="optionId(i)"
-          role="option"
-          tabindex="-1"
-          [attr.aria-selected]="isSelected(option)"
-          [attr.aria-disabled]="option.disabled ? 'true' : null"
-          [class]="optionClasses(option, i)"
-          (click)="selectOption(option)"
-          (keydown.enter)="selectOption(option)"
-          (keydown.space)="selectOption(option)"
-          (mouseenter)="activeIndex.set(i)"
+<ng-template #panelTemplate>
+  <div [class]="panelWrapperClasses">
+    @if (filterable()) {
+    <div [class]="filterWrapperClasses">
+      <div [class]="filterFieldWrapperClasses">
+        <dg-input-text
+          type="search"
+          size="sm"
+          [styleClass]="filterInputExtraClasses"
+          [ngModel]="filterText()"
+          (ngModelChange)="onFilterInputChange($event)"
+          (keydown)="onFilterKeydown($event)"
+          [placeholder]="filterPlaceholder()"
+          ariaLabel="Search options"
+        />
+        <svg
+          [class]="filterIconClasses"
+          [attr.aria-hidden]="true"
+          width="14"
+          height="14"
+          viewBox="0 0 20 20"
+          fill="none"
         >
-          {{ option.label }}
-        </li>
+          <path
+            d="M9 17a8 8 0 100-16 8 8 0 000 16zM19 19l-4.35-4.35"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
+    </div>
+    }
+    <ul
+      [id]="listboxId"
+      role="listbox"
+      [class]="listboxClasses"
+      [attr.aria-label]="ariaLabel() ?? 'Options'"
+    >
+      @for (item of renderItems(); track entryKey(item)) { @if (item.kind ===
+      'heading') {
+      <li role="presentation" [class]="groupHeadingClasses">
+        {{ item.label }}
+      </li>
+      } @else {
+      <li
+        [id]="optionId(item.index)"
+        role="option"
+        tabindex="-1"
+        [attr.aria-selected]="isSelected(item.option)"
+        [attr.aria-disabled]="item.option.disabled ? 'true' : null"
+        [class]="optionClasses(item.option, item.index)"
+        (click)="selectOption(item.option)"
+        (keydown.enter)="selectOption(item.option)"
+        (keydown.space)="selectOption(item.option)"
+        (mouseenter)="activeIndex.set(item.index)"
+      >
+        {{ item.option.label }}
+      </li>
+      } } @if (showNoResults()) {
+      <li role="presentation" [class]="noResultsClasses">
+        <span role="status">{{ noResultsMessage() }}</span>
+      </li>
       }
     </ul>
-  }
-</div>
+  </div>
+</ng-template>

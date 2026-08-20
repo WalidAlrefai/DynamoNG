@@ -72,6 +72,19 @@
         [(value)]="country"
         ariaLabel="Country"
         placeholder="Choose a country"
+        [filterable]="true"
+        [clearable]="true"
+      />
+    </div>
+
+    <div class="block space-y-1" data-testid="multi-select-field">
+      <span class="text-sm font-medium text-text-primary">Skills</span>
+      <dg-multi-select
+        [options]="skillOptions"
+        [(value)]="skills"
+        ariaLabel="Skills"
+        placeholder="Choose skills"
+        [filterable]="true"
       />
     </div>
 
@@ -310,6 +323,23 @@
     <p class="text-sm text-text-muted">
       {{ selectedEmployees().length }} employee(s) selected
     </p>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="pagination-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Pagination</h2>
+    <dg-table
+      [columns]="productColumns"
+      [data]="pagedProducts()"
+      ariaLabel="Products"
+    />
+    <dg-pagination
+      [totalItems]="products.length"
+      [(page)]="productPage"
+      [(pageSize)]="productPageSize"
+    />
   </section>
 
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">

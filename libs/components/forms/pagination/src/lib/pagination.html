@@ -1,0 +1,90 @@
+<nav [class]="classes()" [attr.aria-label]="ariaLabel()">
+  <span [class]="summaryClasses" aria-live="polite">{{ summaryText() }}</span>
+
+  <div [class]="controlsClasses">
+    @if (showPageSizeSelector()) {
+    <dg-select
+      [options]="pageSizeSelectOptions()"
+      [value]="pageSize()"
+      (valueChange)="onPageSizeChange($event)"
+      size="sm"
+      [disabled]="disabled()"
+      [styleClass]="pageSizeSelectClasses"
+      ariaLabel="Rows per page"
+    />
+    }
+
+    <dg-button
+      type="button"
+      variant="text"
+      severity="secondary"
+      size="sm"
+      ariaLabel="Previous page"
+      [disabled]="disabled() || currentPage() === 1"
+      [styleClass]="navButtonExtraClasses()"
+      (click)="goToPreviousPage()"
+    >
+      <svg
+        [attr.aria-hidden]="true"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+      >
+        <path
+          d="M10 3l-5 5 5 5"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </dg-button>
+
+    @for (item of rangeItems(); track trackRangeItem($index, item)) { @if (item
+    === 'ellipsis') {
+    <span [class]="ellipsisClasses()" aria-hidden="true">&hellip;</span>
+    } @else {
+    <dg-button
+      type="button"
+      [variant]="item === currentPage() ? 'solid' : 'text'"
+      [severity]="item === currentPage() ? 'primary' : 'secondary'"
+      size="sm"
+      [ariaLabel]="'Page ' + item"
+      [ariaCurrent]="item === currentPage() ? 'page' : undefined"
+      [disabled]="disabled()"
+      [styleClass]="pageButtonExtraClasses(item === currentPage())"
+      (click)="goToPage(item)"
+    >
+      {{ item }}
+    </dg-button>
+    } }
+
+    <dg-button
+      type="button"
+      variant="text"
+      severity="secondary"
+      size="sm"
+      ariaLabel="Next page"
+      [disabled]="disabled() || currentPage() === pageCount()"
+      [styleClass]="navButtonExtraClasses()"
+      (click)="goToNextPage()"
+    >
+      <svg
+        [attr.aria-hidden]="true"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+      >
+        <path
+          d="M6 3l5 5-5 5"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </dg-button>
+  </div>
+</nav>

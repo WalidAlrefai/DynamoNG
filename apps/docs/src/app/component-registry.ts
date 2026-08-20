@@ -59,7 +59,14 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     name: 'Select',
     domain: 'forms',
     description:
-      'A single-select combobox with full keyboard navigation and ARIA combobox semantics.',
+      'A single-select combobox with full keyboard navigation, ARIA combobox semantics, and optional filtering.',
+  },
+  {
+    slug: 'multi-select',
+    name: 'Multi Select',
+    domain: 'forms',
+    description:
+      'A multi-select combobox with tag display, filtering, a header select-all/clear-all checkbox, a max-selection cap, and option grouping.',
   },
   {
     slug: 'date-picker',
@@ -67,6 +74,13 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'forms',
     description:
       'A single-date picker with a month-grid calendar dialog, full keyboard navigation, and ARIA grid semantics.',
+  },
+  {
+    slug: 'pagination',
+    name: 'Pagination',
+    domain: 'forms',
+    description:
+      'A pagination control with windowed page-number navigation, ellipsis truncation, and a rows-per-page selector, built from DynamoButton and DynamoSelect.',
   },
   {
     slug: 'dialog',
