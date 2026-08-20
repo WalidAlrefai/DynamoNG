@@ -62,6 +62,9 @@
       "@dynamong/table": ["./libs/components/data/table/src/index.ts"],
       "@dynamong/multi-select": [
         "./libs/components/forms/multi-select/src/index.ts"
+      ],
+      "@dynamong/pagination": [
+        "./libs/components/forms/pagination/src/index.ts"
       ]
     }
   }

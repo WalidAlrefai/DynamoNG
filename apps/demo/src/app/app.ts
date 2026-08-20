@@ -20,6 +20,7 @@ import { DynamoDialog } from '@dynamong/dialog';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoMenu, DynamoMenuItem } from '@dynamong/menu';
 import { DynamoMultiSelect } from '@dynamong/multi-select';
+import { DynamoPagination } from '@dynamong/pagination';
 import { DynamoRadio } from '@dynamong/radio';
 import { DynamoSelect } from '@dynamong/select';
 import type { DynamoSelectOption } from '@dynamong/select';
@@ -61,6 +62,23 @@ const SKILL_OPTIONS: DynamoSelectOption<string>[] = [
   { label: 'TypeScript', value: 'typescript' },
   { label: 'CSS', value: 'css', disabled: true },
 ];
+
+interface Product {
+  name: string;
+  category: string;
+  price: number;
+}
+
+const PRODUCT_CATEGORIES = ['Widgets', 'Gadgets', 'Gizmos', 'Doohickeys'];
+
+// Deterministic, not random — keeps e2e/visual snapshots stable across
+// runs. Large enough (247 rows @ 10/page = 25 pages) to demonstrate
+// DynamoPagination's ellipsis truncation in the demo below.
+const PRODUCTS: Product[] = Array.from({ length: 247 }, (_, index) => ({
+  name: `Product ${index + 1}`,
+  category: PRODUCT_CATEGORIES[index % PRODUCT_CATEGORIES.length] as string,
+  price: 9.99 + (index % 20) * 5,
+}));
 
 interface Employee {
   name: string;
@@ -121,6 +139,7 @@ const EMPLOYEES: Employee[] = [
     DynamoMenu,
     DynamoMenuItem,
     DynamoMultiSelect,
+    DynamoPagination,
     DynamoRadio,
     DynamoSelect,
     DynamoSwitch,
@@ -190,6 +209,30 @@ export class App {
   protected employeeStatusSeverity(status: Employee['status']): DynamoSeverity {
     return EMPLOYEE_STATUS_SEVERITY[status];
   }
+
+  protected readonly productColumns: DynamoTableColumn<Product>[] = [
+    { field: 'name', header: 'Name' },
+    { field: 'category', header: 'Category' },
+    {
+      field: 'price',
+      header: 'Price',
+      cell: (row) => `$${row.price.toFixed(2)}`,
+    },
+  ];
+  protected readonly products = PRODUCTS;
+  /**
+   * `DynamoPagination` drives which slice of `products` this second
+   * `dg-table` renders — Table's own `pageSize`/`page` inputs are left
+   * unset here, so its built-in pager (already demoed on Employees above)
+   * doesn't also render. Demonstrates the two components composing without
+   * any change to Table itself — see the Pagination README entry.
+   */
+  protected readonly productPage = signal(1);
+  protected readonly productPageSize = signal(10);
+  protected readonly pagedProducts = computed(() => {
+    const start = (this.productPage() - 1) * this.productPageSize();
+    return this.products.slice(start, start + this.productPageSize());
+  });
   protected readonly activeTab = signal<string | undefined>('profile');
   protected readonly submitting = signal(false);
   protected readonly confirmationOpen = signal(false);

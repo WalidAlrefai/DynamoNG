@@ -1,6 +1,9 @@
 import { Component, input } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -12,7 +15,12 @@ import type { DynamoButtonSeverity, DynamoButtonSize } from './button.types';
   selector: 'dg-button-test-host',
   standalone: true,
   imports: [DynamoButton],
-  template: `<dg-button [severity]="severity()" [size]="size()" [disabled]="disabled()" [loading]="loading()">
+  template: `<dg-button
+    [severity]="severity()"
+    [size]="size()"
+    [disabled]="disabled()"
+    [loading]="loading()"
+  >
     {{ label() }}
   </dg-button>`,
 })
@@ -35,7 +43,9 @@ describe('DynamoButton', () => {
     it('projects the content passed between the component tags', () => {
       const { container } = renderDynamoComponent(ButtonTestHostComponent);
 
-      expect(within(container).getByRole('button', { name: 'Save' })).toBeTruthy();
+      expect(
+        within(container).getByRole('button', { name: 'Save' }),
+      ).toBeTruthy();
     });
   });
 
@@ -43,7 +53,9 @@ describe('DynamoButton', () => {
     it('defaults to type="button" so it never accidentally submits a form', () => {
       const { container } = renderDynamoComponent(DynamoButton);
 
-      expect(within(container).getByRole('button').getAttribute('type')).toBe('button');
+      expect(within(container).getByRole('button').getAttribute('type')).toBe(
+        'button',
+      );
     });
 
     it('defaults to not disabled and not busy', () => {
@@ -57,30 +69,86 @@ describe('DynamoButton', () => {
 
   describe('input properties', () => {
     it('reflects the type input onto the native button', () => {
-      const { container } = renderDynamoComponent(DynamoButton, { inputs: { type: 'submit' } });
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { type: 'submit' },
+      });
 
-      expect(within(container).getByRole('button').getAttribute('type')).toBe('submit');
+      expect(within(container).getByRole('button').getAttribute('type')).toBe(
+        'submit',
+      );
     });
 
     it('applies the disabled input to the native button element', () => {
-      const { container } = renderDynamoComponent(DynamoButton, { inputs: { disabled: true } });
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { disabled: true },
+      });
 
-      expect((within(container).getByRole('button') as HTMLButtonElement).disabled).toBe(true);
+      expect(
+        (within(container).getByRole('button') as HTMLButtonElement).disabled,
+      ).toBe(true);
     });
 
     it('accepts every documented severity without throwing', () => {
-      const { componentInstance, setInputs } = renderDynamoComponent(DynamoButton);
+      const { componentInstance, setInputs } =
+        renderDynamoComponent(DynamoButton);
 
-      for (const severity of ['primary', 'secondary', 'success', 'info', 'warning', 'danger'] as const) {
+      for (const severity of [
+        'primary',
+        'secondary',
+        'success',
+        'info',
+        'warning',
+        'danger',
+      ] as const) {
         setInputs({ severity });
         expect(componentInstance.severity()).toBe(severity);
       }
     });
 
     it('merges a caller-supplied styleClass alongside the built-in classes', () => {
-      const { container } = renderDynamoComponent(DynamoButton, { inputs: { styleClass: 'my-extra-class' } });
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { styleClass: 'my-extra-class' },
+      });
 
-      expect(within(container).getByRole('button').className).toContain('my-extra-class');
+      expect(within(container).getByRole('button').className).toContain(
+        'my-extra-class',
+      );
+    });
+
+    it('forwards ariaLabel to the native button as aria-label, for icon-only usage', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { ariaLabel: 'Previous page' },
+      });
+
+      expect(
+        within(container).getByRole('button', { name: 'Previous page' }),
+      ).toBeTruthy();
+    });
+
+    it('omits aria-label entirely when ariaLabel is unset', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+
+      expect(
+        within(container).getByRole('button').hasAttribute('aria-label'),
+      ).toBe(false);
+    });
+
+    it('forwards ariaCurrent to the native button as aria-current', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { ariaCurrent: 'page' },
+      });
+
+      expect(
+        within(container).getByRole('button').getAttribute('aria-current'),
+      ).toBe('page');
+    });
+
+    it('omits aria-current entirely when ariaCurrent is unset', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+
+      expect(
+        within(container).getByRole('button').hasAttribute('aria-current'),
+      ).toBe(false);
     });
   });
 
@@ -112,7 +180,9 @@ describe('DynamoButton', () => {
     });
 
     it('does not fire a click on the inner button when the button is disabled', async () => {
-      const { container } = renderDynamoComponent(DynamoButton, { inputs: { disabled: true } });
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { disabled: true },
+      });
       const onClick = vi.fn();
       container.addEventListener('click', onClick);
 
@@ -146,8 +216,13 @@ describe('DynamoButton', () => {
     });
 
     it('supports interaction through the DynamoButtonHarness', async () => {
-      const { fixture, setInputs } = renderDynamoComponent(ButtonTestHostComponent);
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoButtonHarness);
+      const { fixture, setInputs } = renderDynamoComponent(
+        ButtonTestHostComponent,
+      );
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoButtonHarness,
+      );
 
       expect(await harness.getText()).toBe('Save');
       expect(await harness.isDisabled()).toBe(false);
@@ -161,7 +236,10 @@ describe('DynamoButton', () => {
       const { fixture, container } = renderDynamoComponent(DynamoButton);
       const onClick = vi.fn();
       container.addEventListener('click', onClick);
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoButtonHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoButtonHarness,
+      );
 
       await harness.click();
 
@@ -171,7 +249,9 @@ describe('DynamoButton', () => {
 
   describe('conditional rendering', () => {
     it('only renders the loading spinner when loading is true', () => {
-      const { container, setInputs } = renderDynamoComponent(DynamoButton, { inputs: { loading: false } });
+      const { container, setInputs } = renderDynamoComponent(DynamoButton, {
+        inputs: { loading: false },
+      });
       expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
 
       setInputs({ loading: true });
@@ -181,7 +261,9 @@ describe('DynamoButton', () => {
 
   describe('template behavior', () => {
     it('reflects the size input via distinct classes per size', () => {
-      const { container, setInputs } = renderDynamoComponent(DynamoButton, { inputs: { size: 'sm' } });
+      const { container, setInputs } = renderDynamoComponent(DynamoButton, {
+        inputs: { size: 'sm' },
+      });
       const smClasses = container.querySelector('button')?.className ?? '';
 
       setInputs({ size: 'lg' });
@@ -195,7 +277,9 @@ describe('DynamoButton', () => {
         inputs: { unstyled: true, styleClass: 'custom-only' },
       });
 
-      expect(within(container).getByRole('button').className).toBe('custom-only');
+      expect(within(container).getByRole('button').className).toBe(
+        'custom-only',
+      );
     });
   });
 
@@ -206,31 +290,47 @@ describe('DynamoButton', () => {
     });
 
     it('has no axe violations while disabled', async () => {
-      const { container } = renderDynamoComponent(ButtonTestHostComponent, { inputs: { disabled: true } });
+      const { container } = renderDynamoComponent(ButtonTestHostComponent, {
+        inputs: { disabled: true },
+      });
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
 
     it('sets aria-busy="true" while loading so assistive tech announces the pending state', () => {
-      const { container } = renderDynamoComponent(DynamoButton, { inputs: { loading: true } });
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { loading: true },
+      });
 
-      expect(within(container).getByRole('button').getAttribute('aria-busy')).toBe('true');
+      expect(
+        within(container).getByRole('button').getAttribute('aria-busy'),
+      ).toBe('true');
     });
   });
 
   describe('state changes', () => {
     it('is disabled while loading even if disabled was not explicitly set', () => {
-      const { container } = renderDynamoComponent(DynamoButton, { inputs: { loading: true } });
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { loading: true },
+      });
 
-      expect((within(container).getByRole('button') as HTMLButtonElement).disabled).toBe(true);
+      expect(
+        (within(container).getByRole('button') as HTMLButtonElement).disabled,
+      ).toBe(true);
     });
 
     it('re-enables the button when loading transitions back to false', () => {
-      const { container, setInputs } = renderDynamoComponent(DynamoButton, { inputs: { loading: true } });
-      expect((within(container).getByRole('button') as HTMLButtonElement).disabled).toBe(true);
+      const { container, setInputs } = renderDynamoComponent(DynamoButton, {
+        inputs: { loading: true },
+      });
+      expect(
+        (within(container).getByRole('button') as HTMLButtonElement).disabled,
+      ).toBe(true);
 
       setInputs({ loading: false });
 
-      expect((within(container).getByRole('button') as HTMLButtonElement).disabled).toBe(false);
+      expect(
+        (within(container).getByRole('button') as HTMLButtonElement).disabled,
+      ).toBe(false);
     });
   });
 
@@ -238,7 +338,9 @@ describe('DynamoButton', () => {
     it('renders with no projected content without throwing', () => {
       const { container } = renderDynamoComponent(DynamoButton);
 
-      expect(within(container).getByRole('button').textContent?.trim()).toBe('');
+      expect(within(container).getByRole('button').textContent?.trim()).toBe(
+        '',
+      );
     });
 
     it('handles very long projected text without throwing', () => {
@@ -254,7 +356,9 @@ describe('DynamoButton', () => {
 
       const { container } = renderDynamoComponent(LongTextHostComponent);
 
-      expect(within(container).getByRole('button').textContent?.trim()).toHaveLength(500);
+      expect(
+        within(container).getByRole('button').textContent?.trim(),
+      ).toHaveLength(500);
     });
 
     it('handles rapid repeated clicks without losing or duplicating events', () => {

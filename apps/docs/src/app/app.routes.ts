@@ -51,6 +51,11 @@ export const appRoutes: Route[] = [
       import('./pages/date-picker-doc').then((m) => m.DatePickerDocPage),
   },
   {
+    path: 'components/pagination',
+    loadComponent: () =>
+      import('./pages/pagination-doc').then((m) => m.PaginationDocPage),
+  },
+  {
     path: 'components/dialog',
     loadComponent: () =>
       import('./pages/dialog-doc').then((m) => m.DialogDocPage),

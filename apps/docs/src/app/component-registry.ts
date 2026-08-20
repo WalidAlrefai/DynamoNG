@@ -76,6 +76,13 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
       'A single-date picker with a month-grid calendar dialog, full keyboard navigation, and ARIA grid semantics.',
   },
   {
+    slug: 'pagination',
+    name: 'Pagination',
+    domain: 'forms',
+    description:
+      'A pagination control with windowed page-number navigation, ellipsis truncation, and a rows-per-page selector, built from DynamoButton and DynamoSelect.',
+  },
+  {
     slug: 'dialog',
     name: 'Dialog',
     domain: 'overlay',

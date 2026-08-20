@@ -1,5 +1,6 @@
 import {
   DestroyRef,
+  Directive,
   ElementRef,
   TemplateRef,
   ViewContainerRef,
@@ -28,7 +29,18 @@ import {
  * as `isOpen()` changes, plus `destroyRef.onDestroy(() => this.destroyOverlay())`
  * — an `effect()` needs the concrete component's own injection context, so
  * it can't be cleanly hoisted into this abstract base's constructor.
+ *
+ * `@Directive()` with no selector, mirroring `DynamoBaseComponent` itself —
+ * required so Angular's template type checker resolves `styleClass`/`pt`/
+ * `unstyled` (declared on `DynamoBaseComponent`, one level further up) as
+ * known inputs on `DynamoSelect`/`DynamoMultiSelect` when they're used from
+ * a DIFFERENT library's template (e.g. `DynamoPagination` reusing
+ * `<dg-select>`). Without a decorator here, ngtsc's cross-package template
+ * checking loses the inherited-input chain past this undecorated
+ * intermediate class (NG8002 "not a known property"), even though
+ * same-project usage and runtime binding both happen to work either way.
  */
+@Directive()
 export abstract class DynamoListboxBase<
   TPart extends string = 'root',
 > extends DynamoBaseComponent<TPart> {
