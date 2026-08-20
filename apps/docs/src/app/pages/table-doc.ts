@@ -40,12 +40,15 @@ const ROWS: DocEmployee[] = [
           [(page)]="page"
           [selectable]="true"
           [(selected)]="selected"
+          [filterable]="true"
+          [(filterText)]="filterText"
         />
       </div>
       <div code>
         &lt;dg-table [columns]="columns" [data]="rows" ariaLabel="Employees"
         [pageSize]="2" [(page)]="page" [selectable]="true"
-        [(selected)]="selected" /&gt;
+        [(selected)]="selected" [filterable]="true" [(filterText)]="filterText"
+        /&gt;
       </div>
       <table api class="w-full border-collapse text-sm">
         <thead>
@@ -100,10 +103,30 @@ const ROWS: DocEmployee[] = [
             <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">selected</td>
             <td class="py-2 pr-4 font-mono">TRow[] (model)</td>
             <td class="py-2 font-mono">[]</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">filterable</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">filterPlaceholder</td>
+            <td class="py-2 pr-4 font-mono">string</td>
+            <td class="py-2 font-mono">'Search...'</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">filterText</td>
+            <td class="py-2 pr-4 font-mono">string (model)</td>
+            <td class="py-2 font-mono">''</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">noMatchesMessage</td>
+            <td class="py-2 pr-4 font-mono">string</td>
+            <td class="py-2 font-mono">'No matching rows'</td>
           </tr>
         </tbody>
       </table>
@@ -115,4 +138,5 @@ export class TableDocPage {
   protected readonly rows = ROWS;
   protected readonly page = signal(1);
   protected readonly selected = signal<DocEmployee[]>([]);
+  protected readonly filterText = signal('');
 }

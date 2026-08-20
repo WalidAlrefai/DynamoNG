@@ -23,6 +23,15 @@ export class DynamoTableHarness extends ComponentHarness {
   private readonly pageIndicatorLocator = this.locatorForOptional(
     '[aria-live="polite"]',
   );
+  private readonly filterInputLocator = this.locatorForOptional(
+    'input[type="search"]',
+  );
+  // A normal body <td> never carries a `colspan` attribute; only the
+  // synthetic empty-state row's single <td> does (see table.html) — a
+  // reliable, markup-native way to find it regardless of the real data's
+  // shape.
+  private readonly emptyStateCellLocator =
+    this.locatorForOptional('tbody td[colspan]');
 
   async sortBy(header: string): Promise<void> {
     for (const button of await this.headerButtonLocators()) {
@@ -137,5 +146,31 @@ export class DynamoTableHarness extends ComponentHarness {
       if ((await rows[i]?.text())?.includes(rowText)) return i;
     }
     throw new Error(`No row containing "${rowText}" found`);
+  }
+
+  /** Throws if `filterable` is not set — there is no search input to type into. */
+  async setFilterText(text: string): Promise<void> {
+    const input = await this.filterInputLocator();
+    if (!input) {
+      throw new Error(
+        'DynamoTable is not filterable (filterable input not set)',
+      );
+    }
+    await input.clear();
+    await input.sendKeys(text);
+  }
+
+  async getFilterText(): Promise<string> {
+    const input = await this.filterInputLocator();
+    return (await input?.getProperty<string>('value')) ?? '';
+  }
+
+  /**
+   * The current `emptyMessage`/`noMatchesMessage` text, or `null` when
+   * rows are rendered (no empty-state row present).
+   */
+  async getEmptyStateMessage(): Promise<string | null> {
+    const cell = await this.emptyStateCellLocator();
+    return (await cell?.text())?.trim() ?? null;
   }
 }

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,12 +9,15 @@ import {
 } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
+import { filterRows } from './table.filter';
 import { sortRows, type DynamoTableSortDirection } from './table.sort';
 import {
   tableBodyCellStyles,
   tableBodyRowStyles,
   tableCheckboxStyles,
   tableEmptyCellStyles,
+  tableFilterInputStyles,
+  tableFilterWrapperStyles,
   tableHeaderCellStyles,
   tableHeaderRowStyles,
   tablePageIndicatorStyles,
@@ -26,6 +30,7 @@ import {
   tableWrapperStyles,
 } from './table.styles';
 import type {
+  DynamoTableCellContext,
   DynamoTableColumn,
   DynamoTablePart,
   DynamoTableSize,
@@ -35,6 +40,7 @@ import type {
   selector: 'dg-table',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [NgTemplateOutlet],
   templateUrl: './table.html',
 })
 export class DynamoTable<
@@ -66,13 +72,13 @@ export class DynamoTable<
    * Two-way bindable, 1-indexed: `<dg-table [(page)]="pageNum">`. The
    * *read* of this signal is clamped into range by `currentPage` below —
    * `page()` itself is only ever written by explicit user interaction
-   * (Prev/Next) or a sort-triggering header click, never by a computed.
-   * Known simplification: if an externally-bound `pageNum` is left out of
-   * range (e.g. `data()` shrank while the consumer's own signal still
-   * pointed at page 3), the table silently *renders* the clamped page
-   * without reaching back out to correct `pageNum` until the user clicks
-   * Prev/Next (which read from `currentPage()`, not raw `page()`, so the
-   * click writes the corrected value back). See README.
+   * (Prev/Next) or a sort-/filter-triggering interaction, never by a
+   * computed. Known simplification: if an externally-bound `pageNum` is
+   * left out of range (e.g. `data()` shrank while the consumer's own
+   * signal still pointed at page 3), the table silently *renders* the
+   * clamped page without reaching back out to correct `pageNum` until the
+   * user clicks Prev/Next (which read from `currentPage()`, not raw
+   * `page()`, so the click writes the corrected value back). See README.
    */
   readonly page = model(1);
 
@@ -86,21 +92,72 @@ export class DynamoTable<
    */
   readonly selected = model<TRow[]>([]);
 
+  /**
+   * Opt-in global filter. `false` (default) renders no search UI at all —
+   * byte-for-byte identical to v1/v2. When `true`, Table renders its own
+   * `<input type="search">` above the table, matching how pagination's
+   * Prev/Next controls and the selection checkbox column are also
+   * Table-rendered UI rather than left to the consumer to build.
+   */
+  readonly filterable = input(false);
+  /** Placeholder text for the search input rendered when `filterable` is `true`. */
+  readonly filterPlaceholder = input('Search...');
+  /**
+   * Two-way bindable filter query: `<dg-table [(filterText)]="query">`, so
+   * a consumer can read, clear, or pre-fill it externally — mirrors
+   * `page`'s/`selected`'s own `model()` pattern. Matching is a
+   * case-insensitive substring test against the trimmed, lowercased value;
+   * blank/whitespace-only text matches every row (no filtering applied).
+   * Typing into Table's own search input writes here AND resets `page` to
+   * 1 in the same handler (`onFilterInput`) — no `effect()` needed, the
+   * same technique `toggleSort` already uses for its own page-reset.
+   */
+  readonly filterText = model('');
+  /**
+   * Shown in the `@empty` block instead of `emptyMessage`, specifically
+   * when `data()` has rows but the active `filterText` matched none of
+   * them — see `emptyStateMessage` for the exact disambiguation. Kept
+   * distinct from `emptyMessage` so a user with an active filter doesn't
+   * mistake "nothing matched my search" for "there's no data at all".
+   */
+  readonly noMatchesMessage = input('No matching rows');
+
   /** Sole source of truth for the active sort — mirrors DatePicker's single-signal pattern. */
   protected readonly sortState = signal<{
     field: string;
     direction: DynamoTableSortDirection;
   } | null>(null);
 
+  /**
+   * New pipeline stage, inserted BEFORE sorting: `data()` -> here ->
+   * `sortedData()` -> `pagedData()`. Delegates to the pure `filterRows`
+   * (`table.filter.ts`), passing `cellValue` as the accessor so filtering
+   * reads `cell()`'s formatted output when present (unlike sorting, which
+   * always reads the raw `field` — see `table.filter.ts`'s own doc for
+   * why these deliberately differ). Never reads `cellTemplate`.
+   */
+  protected readonly filteredData = computed(() =>
+    filterRows(this.data(), this.columns(), this.filterText(), (row, column) =>
+      this.cellValue(row, column),
+    ),
+  );
+
+  /** Sorts the FILTERED set (`filteredData()`), not raw `data()` — see `filteredData` above. */
   protected readonly sortedData = computed(() => {
     const state = this.sortState();
     const column = state
       ? this.columns().find((c) => c.field === state.field)
       : undefined;
-    return sortRows(this.data(), column, state?.direction ?? null);
+    return sortRows(this.filteredData(), column, state?.direction ?? null);
   });
 
-  /** Always >= 1, even for zero rows — see `currentPage`'s doc for why this matters. */
+  /**
+   * Always >= 1, even for zero rows — see `currentPage`'s doc for why this
+   * matters. Based on `sortedData().length`, which now reflects BOTH
+   * sorting and filtering — the same >=1 safety property holds whether the
+   * length shrank to zero because `data()` itself is empty or because
+   * `filterText` excluded every row.
+   */
   protected readonly pageCount = computed(() => {
     const size = this.pageSize();
     if (!size) return 1;
@@ -113,8 +170,11 @@ export class DynamoTable<
    * Because `pageCount()` is always >= 1 and the last page of a non-empty
    * `sortedData()` always holds at least one row, `pagedData()` derived
    * from this clamp can only ever be empty when `sortedData()` itself is
-   * empty. That's what lets `table.html`'s `@empty` block keep meaning
-   * exactly "data() has zero rows" post-pagination.
+   * empty — which now includes "filtered down to zero rows", not just
+   * "data() itself is empty". That's what lets `table.html`'s `@empty`
+   * block keep meaning exactly "sortedData() has zero rows" post-
+   * pagination; `emptyStateMessage` (below) picks the right wording for
+   * *why* it's empty.
    */
   protected readonly currentPage = computed(() =>
     Math.min(Math.max(1, this.page()), this.pageCount()),
@@ -125,6 +185,27 @@ export class DynamoTable<
     if (!size) return this.sortedData();
     const start = (this.currentPage() - 1) * size;
     return this.sortedData().slice(start, start + size);
+  });
+
+  /**
+   * Picks which "no rows" message the `@empty` block shows. Only ever
+   * consulted when `pagedData()` is empty, which (per `currentPage`'s
+   * clamp guarantee above) only happens when `sortedData()`/
+   * `filteredData()` itself is empty. Three states:
+   *  1. `data()` itself has zero rows -> `emptyMessage()`, regardless of
+   *     `filterText()` — an active-but-irrelevant filter must not steal
+   *     this message from genuinely-empty data.
+   *  2. `data()` has rows but the active `filterText()` matched none of
+   *     them -> `noMatchesMessage()`.
+   *  3. `filterText()` is blank/whitespace-only -> always `emptyMessage()`
+   *     (falls into case 1) — a blank filter can never be "the reason"
+   *     nothing matched.
+   */
+  protected readonly emptyStateMessage = computed(() => {
+    const hasActiveFilter = this.filterText().trim().length > 0;
+    return hasActiveFilter && this.data().length > 0
+      ? this.noMatchesMessage()
+      : this.emptyMessage();
   });
 
   protected readonly wrapperClasses = computed(() =>
@@ -140,6 +221,7 @@ export class DynamoTable<
   protected readonly paginationButtonClasses = tablePaginationButtonStyles;
   protected readonly pageIndicatorClasses = tablePageIndicatorStyles;
   protected readonly checkboxClasses = tableCheckboxStyles;
+  protected readonly filterWrapperClasses = tableFilterWrapperStyles;
 
   protected readonly headerCellClasses = computed(() =>
     tableHeaderCellStyles({ size: this.size() }),
@@ -149,6 +231,9 @@ export class DynamoTable<
   );
   protected readonly selectionCellClasses = computed(() =>
     tableSelectionCellStyles({ size: this.size() }),
+  );
+  protected readonly filterInputClasses = computed(() =>
+    tableFilterInputStyles({ size: this.size() }),
   );
 
   /**
@@ -160,7 +245,13 @@ export class DynamoTable<
     () => new Set(this.selected().map((row) => this.selectionKey(row))),
   );
 
-  /** Scoped to the *current page* (or all rows, unpaginated) — see `toggleSelectAll`. */
+  /**
+   * Scoped to the *current page* (or all rows, unpaginated) — see
+   * `toggleSelectAll`. Transitively scoped to the current filtered set
+   * too, with no extra code: `pagedData()` is derived from `filteredData()`
+   * via `sortedData()`, so "select all" after filtering naturally only
+   * ever touches rows that are both filtered-in AND on the current page.
+   */
   protected readonly isAllSelected = computed(() => {
     const rows = this.pagedData();
     return rows.length > 0 && rows.every((row) => this.isRowSelected(row));
@@ -197,7 +288,8 @@ export class DynamoTable<
    * returning to page 1 would leave a paginated table showing a
    * disorienting mid-list slice under the new order. Table owns this
    * reset directly (a plain `page.set(1)` inside a method it already
-   * calls on click) rather than needing an `effect()`.
+   * calls on click) rather than needing an `effect()`. Unaffected by
+   * filtering: this operates on `columns()`, not row data.
    */
   protected toggleSort(column: DynamoTableColumn<TRow>): void {
     if (!column.sortable) return;
@@ -211,10 +303,37 @@ export class DynamoTable<
     this.page.set(1);
   }
 
+  /**
+   * Owns the search box's `(input)` handler directly — the same technique
+   * `toggleSort` already uses above for its own page-reset. Writing
+   * `filterText` and resetting `page` to 1 together this way needs no
+   * `effect()`.
+   */
+  protected onFilterInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.filterText.set(value);
+    this.page.set(1);
+  }
+
   protected cellValue(row: TRow, column: DynamoTableColumn<TRow>): unknown {
     return column.cell
       ? column.cell(row)
       : (row as Record<string, unknown>)[column.field];
+  }
+
+  /**
+   * Builds the context object handed to a column's `cellTemplate` via
+   * `[ngTemplateOutletContext]`. `pageIndex` is the row's position within
+   * `pagedData()` (the template's own `$index` for that `@for`) —
+   * converted to its absolute position in `sortedData()` via the existing
+   * `absoluteIndex` helper, exactly like `trackRow` already does, so
+   * `index` means the same thing here as it does for `trackBy`.
+   */
+  protected cellContext(
+    row: TRow,
+    pageIndex: number,
+  ): DynamoTableCellContext<TRow> {
+    return { $implicit: row, row, index: this.absoluteIndex(pageIndex) };
   }
 
   protected bodyRowClasses(row: TRow): string {

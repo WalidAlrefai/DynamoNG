@@ -110,3 +110,35 @@ export const tablePaginationButtonStyles =
   'flex h-7 w-7 items-center justify-center rounded-md text-text-muted transition-colors ' +
   'hover:bg-surface-100 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 ' +
   'focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+
+// --- v3: filtering ---
+
+// Header bar above the `<table>`, symmetric to `tablePaginationWrapperStyles`'
+// footer bar below it (`border-t` there, `border-b` here) — both live inside
+// the same bordered/rounded `tableWrapperStyles` card.
+export const tableFilterWrapperStyles =
+  'flex items-center gap-2 border-b border-border px-4 py-2.5';
+
+// Native `<input type="search">`, not DynamoInputText — Table (domain:data)
+// can't depend on Input Text (domain:forms) across the module-boundary
+// rule, the same reasoning `tableCheckboxStyles` above already documents
+// for the selection checkboxes. Mirrors DynamoInputText's own size scale
+// (input-text.styles.ts) so switching Table's `size` keeps the search box
+// visually consistent; capped at `max-w-xs` rather than `w-full` — a
+// full-bleed search box spanning a wide multi-column table would read as
+// an unintentional layout bug, not an intentional design choice.
+export const tableFilterInputStyles = cva(
+  'block w-full max-w-xs rounded-md border border-border bg-surface-0 text-text-primary ' +
+    'transition-colors placeholder:text-text-muted focus-visible:outline-none ' +
+    'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+  {
+    variants: {
+      size: {
+        sm: 'h-8 px-3 text-sm',
+        md: 'h-10 px-4 text-base',
+        lg: 'h-12 px-5 text-lg',
+      },
+    },
+    defaultVariants: { size: 'md' },
+  },
+);

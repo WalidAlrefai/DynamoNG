@@ -1,8 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  TemplateRef,
+  computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DynamoAccordion, DynamoAccordionPanel } from '@dynamong/accordion';
@@ -22,7 +25,10 @@ import type { DynamoSelectOption } from '@dynamong/select';
 import { DynamoSwitch } from '@dynamong/switch';
 import { DynamoTab, DynamoTabs } from '@dynamong/tabs';
 import { DynamoTable } from '@dynamong/table';
-import type { DynamoTableColumn } from '@dynamong/table';
+import type {
+  DynamoTableCellContext,
+  DynamoTableColumn,
+} from '@dynamong/table';
 import { DynamoTextarea } from '@dynamong/textarea';
 import { DynamoToastService } from '@dynamong/toast';
 import { DynamoTooltip } from '@dynamong/tooltip';
@@ -53,27 +59,11 @@ interface Employee {
   startDate: Date;
 }
 
-const EMPLOYEE_COLUMNS: DynamoTableColumn<Employee>[] = [
-  { field: 'name', header: 'Name', sortable: true },
-  { field: 'role', header: 'Role', sortable: true },
-  {
-    field: 'status',
-    header: 'Status',
-    sortable: true,
-    cell: (row) => row.status.charAt(0).toUpperCase() + row.status.slice(1),
-  },
-  {
-    field: 'startDate',
-    header: 'Start Date',
-    sortable: true,
-    // Formats a Date for display while still sorting chronologically by the
-    // raw field, not the formatted string — see table.sort.ts.
-    cell: (row) =>
-      new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
-        row.startDate,
-      ),
-  },
-];
+const EMPLOYEE_STATUS_SEVERITY: Record<Employee['status'], DynamoSeverity> = {
+  active: 'success',
+  invited: 'warning',
+  suspended: 'danger',
+};
 
 const EMPLOYEES: Employee[] = [
   {
@@ -149,10 +139,44 @@ export class App {
   protected readonly startDate = signal<Date | null>(null);
   protected readonly alertVisible = signal(true);
   protected readonly tags = signal(['Frontend', 'Backend', 'Design']);
-  protected readonly employeeColumns = EMPLOYEE_COLUMNS;
+
+  private readonly statusCellTemplate =
+    viewChild.required<TemplateRef<DynamoTableCellContext<Employee>>>(
+      'statusCell',
+    );
+
+  protected readonly employeeColumns = computed<DynamoTableColumn<Employee>[]>(
+    () => [
+      { field: 'name', header: 'Name', sortable: true },
+      { field: 'role', header: 'Role', sortable: true },
+      {
+        field: 'status',
+        header: 'Status',
+        sortable: true,
+        cell: (row) => row.status.charAt(0).toUpperCase() + row.status.slice(1),
+        cellTemplate: this.statusCellTemplate(),
+      },
+      {
+        field: 'startDate',
+        header: 'Start Date',
+        sortable: true,
+        // Formats a Date for display while still sorting chronologically by
+        // the raw field, not the formatted string — see table.sort.ts.
+        cell: (row) =>
+          new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
+            row.startDate,
+          ),
+      },
+    ],
+  );
   protected readonly employees = EMPLOYEES;
   protected readonly employeePage = signal(1);
   protected readonly selectedEmployees = signal<Employee[]>([]);
+  protected readonly employeeFilterText = signal('');
+
+  protected employeeStatusSeverity(status: Employee['status']): DynamoSeverity {
+    return EMPLOYEE_STATUS_SEVERITY[status];
+  }
   protected readonly activeTab = signal<string | undefined>('profile');
   protected readonly submitting = signal(false);
   protected readonly confirmationOpen = signal(false);

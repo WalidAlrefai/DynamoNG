@@ -1,4 +1,11 @@
-import { Component, input, model } from '@angular/core';
+import {
+  Component,
+  TemplateRef,
+  computed,
+  input,
+  model,
+  viewChild,
+} from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -9,7 +16,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DynamoTable } from './table';
 import { DynamoTableHarness } from './table.harness';
-import type { DynamoTableColumn } from './table.types';
+import type { DynamoTableCellContext, DynamoTableColumn } from './table.types';
 
 interface Person {
   name: string;
@@ -54,6 +61,10 @@ const ITEM_COLUMNS: DynamoTableColumn<Item>[] = [
     [selectable]="selectable()"
     [(selected)]="selected"
     [trackBy]="trackBy()"
+    [filterable]="filterable()"
+    [filterPlaceholder]="filterPlaceholder()"
+    [(filterText)]="filterText"
+    [noMatchesMessage]="noMatchesMessage()"
   />`,
 })
 class TableTestHostComponent {
@@ -67,6 +78,44 @@ class TableTestHostComponent {
   readonly trackBy = input<
     ((row: Person, index: number) => unknown) | undefined
   >(undefined);
+  readonly filterable = input(false);
+  readonly filterPlaceholder = input('Search...');
+  readonly filterText = model('');
+  readonly noMatchesMessage = input('No matching rows');
+}
+
+@Component({
+  selector: 'dg-table-cell-template-host',
+  standalone: true,
+  imports: [DynamoTable],
+  template: `
+    <ng-template #ageCell let-row let-i="index">
+      <strong data-cell-marker>{{ row.age }}yo (idx {{ i }})</strong>
+    </ng-template>
+    <dg-table
+      [columns]="columns()"
+      [data]="data"
+      [pageSize]="pageSize()"
+      [(page)]="page"
+    />
+  `,
+})
+class TableCellTemplateHostComponent {
+  private readonly ageCellTpl =
+    viewChild.required<TemplateRef<DynamoTableCellContext<Person>>>('ageCell');
+  readonly data: Person[] = PEOPLE;
+  readonly pageSize = input<number | undefined>(undefined);
+  readonly page = model(1);
+  readonly columns = computed<DynamoTableColumn<Person>[]>(() => [
+    { field: 'name', header: 'Name' },
+    {
+      field: 'age',
+      header: 'Age',
+      sortable: true,
+      cell: (row) => `Age: ${row.age}`,
+      cellTemplate: this.ageCellTpl(),
+    },
+  ]);
 }
 
 @Component({
@@ -122,6 +171,20 @@ function getPageText(container: HTMLElement): string {
   return (
     container.querySelector('[aria-live="polite"]')?.textContent?.trim() ?? ''
   );
+}
+
+function getFilterInput(container: HTMLElement): HTMLInputElement {
+  const input = container.querySelector<HTMLInputElement>(
+    'input[type="search"]',
+  );
+  if (!input) throw new Error('No filter input found — is filterable set?');
+  return input;
+}
+
+function setFilterValue(container: HTMLElement, value: string): void {
+  const input = getFilterInput(container);
+  input.value = value;
+  input.dispatchEvent(new Event('input'));
 }
 
 describe('DynamoTable', () => {
@@ -819,6 +882,277 @@ describe('DynamoTable', () => {
 
       expect(componentInstance.selected()).toHaveLength(2);
       expect(getRowCheckboxes(container)[0]?.checked).toBe(true);
+    });
+  });
+
+  describe('filtering', () => {
+    it('renders no search input when filterable is false (default)', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent);
+
+      expect(container.querySelector('input[type="search"]')).toBeNull();
+    });
+
+    it('renders a search input with the given placeholder when filterable is true', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { filterable: true, filterPlaceholder: 'Find a person' },
+      });
+
+      expect(getFilterInput(container).placeholder).toBe('Find a person');
+    });
+
+    it('filters rows via a case-insensitive substring match and writes filterText back', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true } },
+      );
+
+      setFilterValue(container, 'ADA');
+      fixture.detectChanges();
+
+      expect(getColumnValues(container, 0)).toEqual(['Ada']);
+      expect(componentInstance.filterText()).toBe('ADA');
+    });
+
+    it('matches when any filterable-eligible column contains the query', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true } },
+      );
+
+      setFilterValue(container, '40'); // only Ada's age
+      fixture.detectChanges();
+
+      expect(getColumnValues(container, 0)).toEqual(['Ada']);
+    });
+
+    it('treats a whitespace-only filter as matching everything', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true } },
+      );
+
+      setFilterValue(container, '   ');
+      fixture.detectChanges();
+
+      expect(getBodyRows(container)).toHaveLength(3);
+    });
+
+    it('excludes a column with filterable: false from matching', () => {
+      const columns: DynamoTableColumn<Person>[] = [
+        { field: 'name', header: 'Name' },
+        { field: 'age', header: 'Age', filterable: false },
+      ];
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true, columns } },
+      );
+
+      setFilterValue(container, '40'); // Ada's age — but age is filterable:false
+      fixture.detectChanges();
+
+      // "No matching rows" (the empty-state row) renders instead of any
+      // data row — getBodyRows would still report 1 `<tr>` for that row.
+      expect(container.textContent).toContain('No matching rows');
+    });
+
+    it('resets to page 1 when the filter text changes', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true, pageSize: 1, page: 2 } },
+      );
+
+      setFilterValue(container, 'a');
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(1);
+    });
+
+    it('scopes select-all to only the currently filtered rows', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true, selectable: true } },
+      );
+
+      setFilterValue(container, 'da'); // matches only "Ada"
+      fixture.detectChanges();
+
+      getSelectAllCheckbox(container)?.click();
+      fixture.detectChanges();
+
+      expect(componentInstance.selected()).toEqual([PEOPLE[1]]); // Ada
+    });
+
+    it('filters through the DynamoTableHarness', async () => {
+      const { fixture } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { filterable: true },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTableHarness,
+      );
+
+      await harness.setFilterText('ada');
+
+      expect(await harness.getRowCount()).toBe(1);
+      expect(await harness.getFilterText()).toBe('ada');
+    });
+  });
+
+  describe('empty state messaging', () => {
+    it('shows emptyMessage (not noMatchesMessage) when data itself is empty and no filter is active', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { data: [], filterable: true },
+      });
+
+      expect(container.textContent).toContain('No data');
+      expect(container.textContent).not.toContain('No matching rows');
+    });
+
+    it('shows emptyMessage (not noMatchesMessage) when data is empty even with an active filter bound', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { data: [], filterable: true, filterText: 'anything' },
+      });
+
+      expect(container.textContent).toContain('No data');
+      expect(container.textContent).not.toContain('No matching rows');
+    });
+
+    it('shows noMatchesMessage when data has rows but the filter matches none', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true } },
+      );
+
+      setFilterValue(container, 'zzz-no-match');
+      fixture.detectChanges();
+
+      expect(container.textContent).toContain('No matching rows');
+      expect(container.textContent).not.toContain('No data');
+    });
+
+    it('honors a custom noMatchesMessage', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true, noMatchesMessage: 'Nothing found' } },
+      );
+
+      setFilterValue(container, 'zzz');
+      fixture.detectChanges();
+
+      expect(container.textContent).toContain('Nothing found');
+    });
+
+    it('still clamps to a non-empty page instead of showing an empty state when filtered rows exist', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true, pageSize: 2, page: 5 } },
+      );
+
+      setFilterValue(container, 'a'); // matches all three, still exercises the clamp
+      fixture.detectChanges();
+
+      expect(container.textContent).not.toContain('No data');
+      expect(container.textContent).not.toContain('No matching rows');
+    });
+
+    it('reads the empty-state message through the DynamoTableHarness', async () => {
+      const { fixture } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { filterable: true },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTableHarness,
+      );
+
+      await harness.setFilterText('zzz');
+
+      expect(await harness.getEmptyStateMessage()).toBe('No matching rows');
+    });
+  });
+
+  describe('cellTemplate', () => {
+    it('renders the template instead of cellValue when cellTemplate is set', () => {
+      const { container } = renderDynamoComponent(
+        TableCellTemplateHostComponent,
+      );
+
+      expect(container.querySelector('[data-cell-marker]')).not.toBeNull();
+      expect(container.textContent).not.toContain('Age: 25'); // the `cell` output never renders
+    });
+
+    it('passes $implicit/row/index correctly into the template context', () => {
+      const { container } = renderDynamoComponent(
+        TableCellTemplateHostComponent,
+      );
+
+      const markers = Array.from(
+        container.querySelectorAll('[data-cell-marker]'),
+      ).map((el) => el.textContent?.trim());
+      // PEOPLE = [Charlie 25, Ada 40, Bea 30] (unsorted, default order)
+      expect(markers).toEqual(['25yo (idx 0)', '40yo (idx 1)', '30yo (idx 2)']);
+    });
+
+    it('index stays absolute (pre-pagination) even when pageSize is set', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TableCellTemplateHostComponent,
+        { inputs: { pageSize: 2 } },
+      );
+      componentInstance.page.set(2);
+      fixture.detectChanges();
+
+      const markers = Array.from(
+        container.querySelectorAll('[data-cell-marker]'),
+      ).map((el) => el.textContent?.trim());
+      // Page 2 shows only Bea (absolute index 2), not page-relative index 0
+      expect(markers).toEqual(['30yo (idx 2)']);
+    });
+
+    it('sorts by the raw field even when the column also has a cellTemplate', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableCellTemplateHostComponent,
+      );
+
+      within(container).getByRole('button', { name: 'Age' }).click();
+      fixture.detectChanges();
+
+      const markers = Array.from(
+        container.querySelectorAll('[data-cell-marker]'),
+      ).map((el) => el.textContent);
+      expect(markers[0]).toContain('25yo');
+    });
+
+    it('has no axe violations when a column uses cellTemplate', async () => {
+      const { fixture } = renderDynamoComponent(TableCellTemplateHostComponent);
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('accessibility (v3)', () => {
+    it('has no axe violations with the filter search box rendered', async () => {
+      const { fixture } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { filterable: true },
+      });
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations in the "no matching rows" empty state', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { filterable: true } },
+      );
+
+      setFilterValue(container, 'zzz');
+      fixture.detectChanges();
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
     });
   });
 });

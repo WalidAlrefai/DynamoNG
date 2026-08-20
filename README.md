@@ -163,10 +163,11 @@ gap:
   English strings, not locale-translated — `config.locale` is used only for `Intl.DateTimeFormat`
   date/number-shaped formatting, not UI microcopy; no canned per-locale strings table exists anywhere
   in this codebase yet, and building one is a larger, cross-component concern out of scope here.
-- **`DynamoTable` is client-side, single-column-sort only, v1**: no filtering, virtual scrolling,
-  column resize/reorder/pinning, or per-cell template projection — cells render a plain computed
-  value via each column's optional `cell` accessor function, not an arbitrary Angular template.
-  Sorting cycles a single active column through ascending → descending → unsorted on repeated header
+- **`DynamoTable` is client-side, single-column-sort only, v1**: no virtual scrolling or column
+  resize/reorder/pinning — v1 cells render a plain computed value via each column's optional `cell`
+  accessor function, not an arbitrary Angular template (per-cell template projection and global
+  filtering are added in v3, see below). Sorting cycles a single active column through ascending →
+  descending → unsorted on repeated header
   clicks (no multi-column/shift-click sort, no memory of a previously-sorted column once a different
   one is clicked). The default comparator reads each column's raw `field` value directly off the
   row — **never** through `cell`'s display-formatting function, so a column can format dates/labels
@@ -210,3 +211,38 @@ gap:
   elements styled with Tailwind's `accent-*` utility, not `DynamoCheckbox` — Table (`domain:data`)
   can't depend on Checkbox (`domain:forms`) across the module-boundary rule, and native checkboxes
   get keyboard/screen-reader operability for free.
+- **`DynamoTable` v3 adds opt-in global filtering and opt-in per-cell template projection** — both
+  fully additive; existing `<dg-table>` usage with no new inputs is unaffected. **Filtering**: set
+  `filterable` to render a search `<input type="search">` above the table (a native input styled to
+  match `DynamoInputText`'s size scale — Table can't depend on Input Text across the module boundary,
+  same reasoning as the hand-rolled selection checkboxes); `filterPlaceholder` customizes its
+  placeholder text, and `filterText` is two-way bindable (`[(filterText)]`) so a consumer can read,
+  clear, or pre-fill the query externally. A row matches when ANY column whose `filterable` is not
+  explicitly `false` has a `String(cellValue(row, column))` (case-insensitively) containing the
+  trimmed, lowercased query — blank/whitespace-only `filterText` matches every row. Filtering runs as
+  a new pipeline stage before sorting (`data() → filteredData() → sortedData() → pagedData()`), so
+  sorting, selection, and pagination all transparently operate on the filtered set with zero extra
+  wiring — "select all" after filtering, for instance, naturally scopes to only the
+  filtered-and-current-page rows. Typing in the search box resets to page 1, the same way clicking a
+  sortable header already does. Filtering deliberately does NOT bypass `cell()` the way the default
+  sort comparator does: filtering reads `cellValue(row, column)` (`cell()`'s formatted output when
+  present, else the raw `field` value) — matching what's conceptually shown on screen — while the
+  default sort comparator always reads the raw `field` value regardless of `cell`. Neither sort nor
+  filter ever reads `cellTemplate` — only rendering does. Three distinct "no rows" states are
+  disambiguated in the empty-state row: genuinely empty `data()` always shows `emptyMessage` (even
+  with an active-but-irrelevant filter bound); `data()` with rows but zero filter matches shows the
+  new `noMatchesMessage`; pagination's existing clamp-prevents-empty-page guarantee continues to hold
+  transparently. There's no per-column filter UI and no matched-text highlighting — both out of
+  scope. **Per-cell template projection**: any column may set `cellTemplate` to a
+  `TemplateRef<DynamoTableCellContext<TRow>>`; Table renders it via `NgTemplateOutlet` (already used
+  elsewhere in this codebase by `DynamoTabs`) instead of the plain `cellValue(row, column)`
+  interpolation, with context `{ $implicit: row, row, index }`. `index` is the row's absolute
+  position in `sortedData()` (before pagination slices it) — matching `trackBy`'s own index
+  convention, NOT `@for`'s page-relative `$index` — so a `cellTemplate` reading `index` sees a stable
+  value whether or not `pageSize` is set. `cellTemplate` is rendering-only: sorting and filtering are
+  completely unaware of it and always read `cellValue` — a column may set `cell` (for sort/filter) and
+  `cellTemplate` (for display) independently, e.g. a status column that sorts/filters by its text
+  while rendering a `<dg-badge>`. A consumer obtains the `TemplateRef` the standard Angular way
+  (`viewChild(TemplateRef)` reading their own `<ng-template #x let-row let-i="index">`) and assigns it
+  into their `columns` array themselves — there's no new content-projection machinery beyond adding
+  `NgTemplateOutlet` to Table's own `imports`.

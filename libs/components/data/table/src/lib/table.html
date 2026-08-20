@@ -1,4 +1,16 @@
 <div [class]="wrapperClasses()">
+  @if (filterable()) {
+  <div [class]="filterWrapperClasses">
+    <input
+      type="search"
+      [class]="filterInputClasses()"
+      [placeholder]="filterPlaceholder()"
+      [value]="filterText()"
+      aria-label="Search table"
+      (input)="onFilterInput($event)"
+    />
+  </div>
+  }
   <table [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
     <thead>
       <tr [class]="headerRowClasses">
@@ -50,7 +62,8 @@
       </tr>
     </thead>
     <tbody>
-      @for (row of pagedData(); track trackRow(row, $index)) {
+      @for (row of pagedData(); track trackRow(row, $index); let rowIndex =
+      $index) {
       <tr [class]="bodyRowClasses(row)">
         @if (selectable()) {
         <td [class]="selectionCellClasses()">
@@ -63,7 +76,14 @@
           />
         </td>
         } @for (column of columns(); track column.field) {
-        <td [class]="bodyCellClasses()">{{ cellValue(row, column) }}</td>
+        <td [class]="bodyCellClasses()">
+          @if (column.cellTemplate) {
+          <ng-container
+            [ngTemplateOutlet]="column.cellTemplate"
+            [ngTemplateOutletContext]="cellContext(row, rowIndex)"
+          />
+          } @else { {{ cellValue(row, column) }} }
+        </td>
         }
       </tr>
       } @empty {
@@ -72,7 +92,7 @@
           [attr.colspan]="columns().length + (selectable() ? 1 : 0)"
           [class]="emptyCellClasses"
         >
-          {{ emptyMessage() }}
+          <span role="status">{{ emptyStateMessage() }}</span>
         </td>
       </tr>
       }

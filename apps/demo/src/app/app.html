@@ -290,14 +290,22 @@
     data-testid="table-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Table</h2>
+    <ng-template #statusCell let-row>
+      <dg-badge [severity]="employeeStatusSeverity(row.status)">
+        {{ row.status }}
+      </dg-badge>
+    </ng-template>
     <dg-table
-      [columns]="employeeColumns"
+      [columns]="employeeColumns()"
       [data]="employees"
       ariaLabel="Employees"
       [pageSize]="2"
       [(page)]="employeePage"
       [selectable]="true"
       [(selected)]="selectedEmployees"
+      [filterable]="true"
+      filterPlaceholder="Search employees..."
+      [(filterText)]="employeeFilterText"
     />
     <p class="text-sm text-text-muted">
       {{ selectedEmployees().length }} employee(s) selected
