@@ -395,6 +395,88 @@
     />
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="stepper-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Stepper</h2>
+    <dg-stepper [(value)]="stepperValue" ariaLabel="Checkout">
+      <dg-step value="account" label="Account">
+        <p class="text-text-primary">Create your account details.</p>
+      </dg-step>
+      <dg-step value="preferences" label="Preferences" [disabled]="true">
+        <p class="text-text-primary">Optional — skipped by default.</p>
+      </dg-step>
+      <dg-step value="confirm" label="Confirm">
+        <p class="text-text-primary">Review and confirm.</p>
+      </dg-step>
+    </dg-stepper>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="popover-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Popover</h2>
+    <dg-popover ariaLabel="Filters">
+      <dg-button variant="outline">Filters</dg-button>
+      <dg-popover-content>
+        <div class="flex w-56 flex-col gap-3">
+          <div class="flex flex-col gap-1 text-sm text-text-primary">
+            <span>Name</span>
+            <dg-input-text [(ngModel)]="popoverFilterName" ariaLabel="Name" />
+          </div>
+          <dg-button (click)="popoverApplied.set(popoverFilterName())">
+            Apply
+          </dg-button>
+        </div>
+      </dg-popover-content>
+    </dg-popover>
+    @if (popoverApplied(); as value) {
+      <p class="text-sm text-text-muted">
+        Applied: <span class="font-mono">{{ value }}</span>
+      </p>
+    }
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="skeleton-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Skeleton</h2>
+    <div class="flex max-w-sm flex-col gap-4">
+      <div class="flex items-center gap-3">
+        <dg-skeleton variant="circular" />
+        <div class="flex flex-1 flex-col gap-2">
+          <dg-skeleton variant="text" width="60%" />
+          <dg-skeleton variant="text" width="40%" />
+        </div>
+      </div>
+      <dg-skeleton variant="rectangular" height="8rem" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="tag-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Tag</h2>
+    <div class="flex flex-wrap items-center gap-2">
+      <dg-tag severity="primary">Primary</dg-tag>
+      <dg-tag severity="success">Success</dg-tag>
+      <dg-tag severity="warning">Warning</dg-tag>
+      <dg-tag severity="danger" variant="outline">Danger</dg-tag>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="breadcrumb-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Breadcrumb</h2>
+    <dg-breadcrumb [items]="breadcrumbItems" />
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

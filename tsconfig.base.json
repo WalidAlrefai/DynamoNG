@@ -73,7 +73,16 @@
         "./libs/components/feedback/progress/src/index.ts"
       ],
       "@dynamong/divider": ["./libs/components/panel/divider/src/index.ts"],
-      "@dynamong/tree": ["./libs/components/data/tree/src/index.ts"]
+      "@dynamong/tree": ["./libs/components/data/tree/src/index.ts"],
+      "@dynamong/stepper": ["./libs/components/panel/stepper/src/index.ts"],
+      "@dynamong/popover": ["./libs/components/overlay/popover/src/index.ts"],
+      "@dynamong/skeleton": [
+        "./libs/components/feedback/skeleton/src/index.ts"
+      ],
+      "@dynamong/tag": ["./libs/components/feedback/tag/src/index.ts"],
+      "@dynamong/breadcrumb": [
+        "./libs/components/panel/breadcrumb/src/index.ts"
+      ]
     }
   }
 }

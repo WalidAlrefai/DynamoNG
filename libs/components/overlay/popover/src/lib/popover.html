@@ -1,0 +1,22 @@
+<span
+  #triggerEl
+  tabindex="-1"
+  [class]="triggerClasses()"
+  (click)="toggle()"
+  (keydown)="onTriggerKeydown($event)"
+>
+  <ng-content select=":not(dg-popover-content)" />
+</span>
+
+<ng-template #panelTemplate>
+  <div
+    #panel
+    tabindex="-1"
+    data-testid="popover-panel"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [class]="panelClasses"
+    (keydown.escape)="onEscape()"
+  >
+    <ng-container [ngTemplateOutlet]="content().contentTemplate()" />
+  </div>
+</ng-template>

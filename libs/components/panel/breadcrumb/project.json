@@ -1,0 +1,46 @@
+{
+  "name": "panel-breadcrumb",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/components/panel/breadcrumb/src",
+  "prefix": "dg",
+  "projectType": "library",
+  "release": {
+    "version": {
+      "manifestRootsToUpdate": ["dist/{projectRoot}"],
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk"
+    }
+  },
+  "tags": ["type:component", "domain:panel", "tier:0", "scope:public"],
+  "targets": {
+    "build": {
+      "executor": "@nx/angular:package",
+      "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "project": "libs/components/panel/breadcrumb/ng-package.json",
+        "tsConfig": "libs/components/panel/breadcrumb/tsconfig.lib.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "libs/components/panel/breadcrumb/tsconfig.lib.prod.json"
+        },
+        "development": {}
+      }
+    },
+    "nx-release-publish": {
+      "options": {
+        "packageRoot": "dist/{projectRoot}"
+      }
+    },
+    "test": {
+      "executor": "@nx/angular:unit-test",
+      "options": {
+        "watch": false
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}
