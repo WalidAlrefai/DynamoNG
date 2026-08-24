@@ -2,18 +2,24 @@ import { cva } from 'class-variance-authority';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — switch.html only ever binds `[class]="...Classes()"`.
-export const switchRootStyles = cva(
-  'inline-flex items-center gap-2 select-none',
-  {
-    variants: {
-      disabled: {
-        true: 'cursor-not-allowed opacity-60',
-        false: 'cursor-pointer',
-      },
+// `flex`, not `inline-flex` — same fix and reasoning as `checkboxRootStyles`
+// (checkbox.styles.ts): an inline-level flex container's contribution to its
+// surrounding line-box height depends on its synthesized baseline, which is
+// unstable across `checked` state (even though the track/thumb spans are
+// always both present here, unlike Checkbox's conditional icon — the
+// baseline of an inline-flex box with a rendered vs. class-only-changed
+// child is still not guaranteed stable across browsers/states). That made
+// the host's own auto height jitter by 1-2px purely based on checked state.
+// Block-level `flex` removes it from that inline formatting context entirely.
+export const switchRootStyles = cva('flex items-center gap-2 select-none', {
+  variants: {
+    disabled: {
+      true: 'cursor-not-allowed opacity-60',
+      false: 'cursor-pointer',
     },
-    defaultVariants: { disabled: false },
   },
-);
+  defaultVariants: { disabled: false },
+});
 
 export const switchTrackStyles = cva(
   'relative inline-block shrink-0 rounded-full border transition-colors ' +
