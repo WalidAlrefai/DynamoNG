@@ -1,12 +1,11 @@
 {
-  "name": "@dynamong/button",
+  "name": "@dynamong/spinner",
   "version": "0.0.1",
   "peerDependencies": {
     "@angular/core": "^22.0.0",
     "@angular/cdk": "^22.0.0",
     "@dynamong/core": "0.0.1",
-    "@dynamong/utils": "0.0.1",
-    "@dynamong/spinner": "0.0.1"
+    "@dynamong/utils": "0.0.1"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1"

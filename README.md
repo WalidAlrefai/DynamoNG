@@ -71,6 +71,7 @@ purely organizational (source-folder grouping, project naming) — they no longe
 | Multi Select | `@dynamong/multi-select` | Tag-based multi-select, shares `DynamoListboxBase` with Select, select all/clear all, grouping             |
 | Pagination   | `@dynamong/pagination`   | Composes `DynamoButton`/`DynamoSelect` across a real cross-library boundary; PrimeNG-grounded windowing    |
 | Dialog       | `@dynamong/dialog`       | CDK focus trapping, modal semantics                                                                        |
+| Spinner      | `@dynamong/spinner`      | Decorative-vs-announced dual mode via one optional `label` input; consumed by `DynamoButton` to dedupe     |
 
 Every component ships: a standalone `OnPush` component, a `*.styles.ts` file (the _only_ place Tailwind
 utility classes live, via `class-variance-authority`), a `*.types.ts` file, a CDK `ComponentHarness` for
@@ -348,3 +349,14 @@ type="search">`, wired via `[ngModel]`/`(ngModelChange)` since `DynamoInputText`
   `styleClass`/`pt`/`unstyled` inputs inherited from `DynamoBaseComponent` one level further up (NG8002),
   even though same-project usage and the runtime binding both happened to work either way; now fixed for
   every future cross-library consumer of `DynamoSelect`/`DynamoMultiSelect`, not just Pagination.
+- **`DynamoSpinner` is new.** `DynamoButton` had been hand-rolling its own loading-state spin markup
+  inline (`border-current border-t-transparent`, `animate-spin`) — extracted into `@dynamong/spinner`
+  (`tier:0`) so the same ring is a real, independently documented component rather than duplicated
+  wherever a loading state is needed next. It takes no `severity`/color input — `border-current` means
+  it inherits whatever text color its container sets, which is how `DynamoButton` already gets the right
+  color for free. An optional `label` input switches it between two modes: unset renders it purely
+  decorative (`aria-hidden="true"`, the mode `DynamoButton` uses, since the button already announces
+  `aria-busy` itself), set renders it as a standalone announced status region (`role="status"` +
+  `aria-label`) for loading states with no other accessible announcement nearby. Consuming it bumped
+  `DynamoButton` from `tier:0` to `tier:1`, the same mechanical bump every other cross-library reuse in
+  this list has required.

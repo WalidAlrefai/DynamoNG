@@ -65,7 +65,8 @@
       ],
       "@dynamong/pagination": [
         "./libs/components/forms/pagination/src/index.ts"
-      ]
+      ],
+      "@dynamong/spinner": ["./libs/components/feedback/spinner/src/index.ts"]
     }
   }
 }

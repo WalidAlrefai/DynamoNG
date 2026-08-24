@@ -1,7 +1,7 @@
 {
-  "name": "forms-button",
+  "name": "feedback-spinner",
   "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/components/forms/button/src",
+  "sourceRoot": "libs/components/feedback/spinner/src",
   "prefix": "dg",
   "projectType": "library",
   "release": {
@@ -11,19 +11,19 @@
       "fallbackCurrentVersionResolver": "disk"
     }
   },
-  "tags": ["type:component", "domain:forms", "tier:1", "scope:public"],
+  "tags": ["type:component", "domain:feedback", "tier:0", "scope:public"],
   "targets": {
     "build": {
       "executor": "@nx/angular:package",
       "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
       "defaultConfiguration": "production",
       "options": {
-        "project": "libs/components/forms/button/ng-package.json",
-        "tsConfig": "libs/components/forms/button/tsconfig.lib.json"
+        "project": "libs/components/feedback/spinner/ng-package.json",
+        "tsConfig": "libs/components/feedback/spinner/tsconfig.lib.json"
       },
       "configurations": {
         "production": {
-          "tsConfig": "libs/components/forms/button/tsconfig.lib.prod.json"
+          "tsConfig": "libs/components/feedback/spinner/tsconfig.lib.prod.json"
         },
         "development": {}
       }

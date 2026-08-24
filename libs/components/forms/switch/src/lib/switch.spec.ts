@@ -206,6 +206,29 @@ describe('DynamoSwitch', () => {
       const input = within(container).getByRole('switch');
       expect(input.className).toContain('sr-only');
     });
+
+    // Regression test for a real row-height-jitter bug: an `inline-flex`
+    // root label's contribution to its surrounding line-box height depends
+    // on its synthesized baseline, which shifts depending on checked state —
+    // making the host's own auto height jitter by 1-2px purely based on
+    // checked state (confirmed live via getBoundingClientRect before/after
+    // toggling in a real browser; jsdom doesn't implement layout, so this
+    // asserts the class-level fix instead). Block-level `flex` removes the
+    // root label from that inline formatting context. Same fix already
+    // applied to Checkbox and Radio; see checkbox.spec.ts / radio.spec.ts
+    // for the identical pattern.
+    it.each([{ checked: false }, { checked: true }])(
+      'roots the label with block-level flex, not inline-flex, when checked=$checked',
+      ({ checked }) => {
+        const { container } = renderDynamoComponent(DynamoSwitch, {
+          inputs: { checked },
+        });
+
+        const label = container.querySelector('label');
+        expect(label?.classList.contains('flex')).toBe(true);
+        expect(label?.classList.contains('inline-flex')).toBe(false);
+      },
+    );
   });
 
   describe('accessibility', () => {

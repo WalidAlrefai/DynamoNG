@@ -106,4 +106,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/table-doc').then((m) => m.TableDocPage),
   },
+  {
+    path: 'components/spinner',
+    loadComponent: () =>
+      import('./pages/spinner-doc').then((m) => m.SpinnerDocPage),
+  },
 ];
