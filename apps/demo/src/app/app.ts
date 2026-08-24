@@ -10,6 +10,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { DynamoAccordion, DynamoAccordionPanel } from '@dynamong/accordion';
 import { DynamoAlert } from '@dynamong/alert';
+import { DynamoAvatar } from '@dynamong/avatar';
 import { DynamoBadge } from '@dynamong/badge';
 import { DynamoButton } from '@dynamong/button';
 import { DynamoCard } from '@dynamong/card';
@@ -17,6 +18,8 @@ import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoChip } from '@dynamong/chip';
 import { DynamoDatePicker } from '@dynamong/date-picker';
 import { DynamoDialog } from '@dynamong/dialog';
+import { DynamoDivider } from '@dynamong/divider';
+import { DynamoDrawer } from '@dynamong/drawer';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoMenu, DynamoMenuItem } from '@dynamong/menu';
 import { DynamoMultiSelect } from '@dynamong/multi-select';
@@ -34,6 +37,7 @@ import type {
 import { DynamoTextarea } from '@dynamong/textarea';
 import { DynamoToastService } from '@dynamong/toast';
 import { DynamoTooltip } from '@dynamong/tooltip';
+import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
 const SEVERITIES: DynamoSeverity[] = [
@@ -128,6 +132,7 @@ const EMPLOYEES: Employee[] = [
     DynamoAccordion,
     DynamoAccordionPanel,
     DynamoAlert,
+    DynamoAvatar,
     DynamoBadge,
     DynamoButton,
     DynamoCard,
@@ -135,11 +140,14 @@ const EMPLOYEES: Employee[] = [
     DynamoChip,
     DynamoDatePicker,
     DynamoDialog,
+    DynamoDivider,
+    DynamoDrawer,
     DynamoInputText,
     DynamoMenu,
     DynamoMenuItem,
     DynamoMultiSelect,
     DynamoPagination,
+    DynamoProgress,
     DynamoRadio,
     DynamoSelect,
     DynamoSwitch,
@@ -236,6 +244,8 @@ export class App {
   protected readonly activeTab = signal<string | undefined>('profile');
   protected readonly submitting = signal(false);
   protected readonly confirmationOpen = signal(false);
+  protected readonly drawerOpen = signal(false);
+  protected readonly progressValue = signal(62);
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

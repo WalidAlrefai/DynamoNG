@@ -61,6 +61,11 @@ export const appRoutes: Route[] = [
       import('./pages/dialog-doc').then((m) => m.DialogDocPage),
   },
   {
+    path: 'components/drawer',
+    loadComponent: () =>
+      import('./pages/drawer-doc').then((m) => m.DrawerDocPage),
+  },
+  {
     path: 'components/tooltip',
     loadComponent: () =>
       import('./pages/tooltip-doc').then((m) => m.TooltipDocPage),
@@ -110,5 +115,20 @@ export const appRoutes: Route[] = [
     path: 'components/spinner',
     loadComponent: () =>
       import('./pages/spinner-doc').then((m) => m.SpinnerDocPage),
+  },
+  {
+    path: 'components/avatar',
+    loadComponent: () =>
+      import('./pages/avatar-doc').then((m) => m.AvatarDocPage),
+  },
+  {
+    path: 'components/progress',
+    loadComponent: () =>
+      import('./pages/progress-doc').then((m) => m.ProgressDocPage),
+  },
+  {
+    path: 'components/divider',
+    loadComponent: () =>
+      import('./pages/divider-doc').then((m) => m.DividerDocPage),
   },
 ];

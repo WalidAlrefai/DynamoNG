@@ -84,6 +84,20 @@ test('toast renders as expected', async ({ page }) => {
   await expect(toast).toHaveScreenshot();
 });
 
+test('drawer renders as expected', async ({ page }) => {
+  // Same CDK Overlay portaling issue as Dialog/Tooltip/Menu/Toast above —
+  // the drawer panel is portaled into `.cdk-overlay-container` outside the
+  // `drawer-section` testid's layout box, so open it and target it by ARIA
+  // role instead. The panel slides in over ~200ms (see DynamoDrawer's
+  // animation state machine) — wait for the transition to settle before the
+  // screenshot so it isn't captured mid-slide.
+  await page.getByRole('button', { name: 'Open drawer' }).click();
+  const drawer = page.getByRole('dialog');
+  await expect(drawer).toBeVisible();
+  await page.waitForTimeout(250);
+  await expect(drawer).toHaveScreenshot();
+});
+
 test('badge renders as expected', async ({ page }) => {
   await expect(page.getByTestId('badge-section')).toHaveScreenshot();
 });
