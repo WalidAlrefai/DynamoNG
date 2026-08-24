@@ -155,6 +155,6 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     name: 'Table',
     domain: 'data',
     description:
-      'A sortable data table driven by a plain column-definition array, with client-side single-column sorting.',
+      'A data table driven by a plain column-definition array, with client-side single-column sorting, pagination, row selection, global filtering, and per-column cell-template projection.',
   },
 ];

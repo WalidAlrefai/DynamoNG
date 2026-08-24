@@ -113,25 +113,22 @@
           value="free"
           [checked]="plan() === 'free'"
           (checkedChange)="plan.set('free')"
+          >Free</dg-radio
         >
-          Free
-        </dg-radio>
         <dg-radio
           name="plan"
           value="pro"
           [checked]="plan() === 'pro'"
           (checkedChange)="plan.set('pro')"
+          >Pro</dg-radio
         >
-          Pro
-        </dg-radio>
         <dg-radio
           name="plan"
           value="enterprise"
           [checked]="plan() === 'enterprise'"
           (checkedChange)="plan.set('enterprise')"
+          >Enterprise</dg-radio
         >
-          Enterprise
-        </dg-radio>
       </div>
     </div>
 
@@ -313,6 +310,7 @@
       [data]="employees"
       ariaLabel="Employees"
       [pageSize]="2"
+      [pageSizeOptions]="[2, 4, 10]"
       [(page)]="employeePage"
       [selectable]="true"
       [(selected)]="selectedEmployees"

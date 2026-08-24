@@ -7,21 +7,21 @@ import {
   model,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoPagination } from '@dynamong/pagination';
 import { cn } from '@dynamong/utils/class-merge';
 import { filterRows } from './table.filter';
 import { sortRows, type DynamoTableSortDirection } from './table.sort';
 import {
   tableBodyCellStyles,
   tableBodyRowStyles,
-  tableCheckboxStyles,
   tableEmptyCellStyles,
-  tableFilterInputStyles,
   tableFilterWrapperStyles,
   tableHeaderCellStyles,
   tableHeaderRowStyles,
-  tablePageIndicatorStyles,
-  tablePaginationButtonStyles,
   tablePaginationWrapperStyles,
   tableSelectionCellStyles,
   tableSortButtonStyles,
@@ -40,7 +40,13 @@ import type {
   selector: 'dg-table',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet],
+  imports: [
+    NgTemplateOutlet,
+    FormsModule,
+    DynamoCheckbox,
+    DynamoInputText,
+    DynamoPagination,
+  ],
   templateUrl: './table.html',
 })
 export class DynamoTable<
@@ -65,9 +71,19 @@ export class DynamoTable<
 
   /**
    * Opt-in pagination. Unset (default) means every row renders and no
-   * pagination UI shows at all — byte-for-byte identical to v1.
+   * pagination UI shows at all — byte-for-byte identical to v1. Two-way
+   * (`model()`, not `input()`) since v4: the footer is a real `<dg-pagination>`
+   * whose rows-per-page `<dg-select>` needs to write a new size back.
    */
-  readonly pageSize = input<number | undefined>(undefined);
+  readonly pageSize = model<number | undefined>(undefined);
+  /**
+   * Options for `<dg-pagination>`'s rows-per-page selector — forwarded
+   * as-is. Defaults to `DynamoPagination`'s own default. If `pageSize` is
+   * ever set to a value NOT in this list, the selector has nothing to
+   * match and falls back to its placeholder — pass a list that includes
+   * whatever `pageSize` you actually use.
+   */
+  readonly pageSizeOptions = input<number[]>([10, 25, 50, 100]);
   /**
    * Two-way bindable, 1-indexed: `<dg-table [(page)]="pageNum">`. The
    * *read* of this signal is clamped into range by `currentPage` below —
@@ -218,9 +234,6 @@ export class DynamoTable<
   protected readonly sortButtonClasses = tableSortButtonStyles;
   protected readonly emptyCellClasses = tableEmptyCellStyles;
   protected readonly paginationWrapperClasses = tablePaginationWrapperStyles;
-  protected readonly paginationButtonClasses = tablePaginationButtonStyles;
-  protected readonly pageIndicatorClasses = tablePageIndicatorStyles;
-  protected readonly checkboxClasses = tableCheckboxStyles;
   protected readonly filterWrapperClasses = tableFilterWrapperStyles;
 
   protected readonly headerCellClasses = computed(() =>
@@ -231,9 +244,6 @@ export class DynamoTable<
   );
   protected readonly selectionCellClasses = computed(() =>
     tableSelectionCellStyles({ size: this.size() }),
-  );
-  protected readonly filterInputClasses = computed(() =>
-    tableFilterInputStyles({ size: this.size() }),
   );
 
   /**
@@ -304,13 +314,13 @@ export class DynamoTable<
   }
 
   /**
-   * Owns the search box's `(input)` handler directly — the same technique
-   * `toggleSort` already uses above for its own page-reset. Writing
-   * `filterText` and resetting `page` to 1 together this way needs no
-   * `effect()`.
+   * Wired to `<dg-input-text>`'s `(ngModelChange)` — `DynamoInputText` only
+   * exposes `ControlValueAccessor`, no direct value output, so this reads
+   * the emitted string rather than a raw DOM event. Writing `filterText`
+   * and resetting `page` to 1 together this way needs no `effect()`, the
+   * same technique `toggleSort` already uses above for its own page-reset.
    */
-  protected onFilterInput(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+  protected onFilterTextChange(value: string): void {
     this.filterText.set(value);
     this.page.set(1);
   }
@@ -349,14 +359,6 @@ export class DynamoTable<
    */
   protected trackRow(row: TRow, pageIndex: number): unknown {
     return this.rowKey(row, this.absoluteIndex(pageIndex));
-  }
-
-  protected goToPreviousPage(): void {
-    this.page.set(Math.max(1, this.currentPage() - 1));
-  }
-
-  protected goToNextPage(): void {
-    this.page.set(Math.min(this.pageCount(), this.currentPage() + 1));
   }
 
   protected isRowSelected(row: TRow): boolean {

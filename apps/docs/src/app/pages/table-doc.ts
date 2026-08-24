@@ -29,7 +29,7 @@ const ROWS: DocEmployee[] = [
   template: `
     <docs-page-shell
       name="Table"
-      description="A sortable data table driven by a plain column-definition array, with client-side single-column sorting."
+      description="A data table driven by a plain column-definition array, with sorting, pagination (via DynamoPagination), row selection (via DynamoCheckbox), and global filtering (via DynamoInputText)."
     >
       <div demo>
         <dg-table
@@ -90,8 +90,13 @@ const ROWS: DocEmployee[] = [
           </tr>
           <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">pageSize</td>
-            <td class="py-2 pr-4 font-mono">number | undefined</td>
+            <td class="py-2 pr-4 font-mono">number | undefined (model)</td>
             <td class="py-2 font-mono">undefined (unpaginated)</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">pageSizeOptions</td>
+            <td class="py-2 pr-4 font-mono">number[]</td>
+            <td class="py-2 font-mono">[10, 25, 50, 100]</td>
           </tr>
           <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">page</td>

@@ -8,7 +8,11 @@ import {
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoCheckIcon } from '@dynamong/icons';
-import { checkboxBoxStyles, checkboxRootStyles } from './checkbox.styles';
+import {
+  checkboxBoxStyles,
+  checkboxIndeterminateDashStyles,
+  checkboxRootStyles,
+} from './checkbox.styles';
 import type { DynamoCheckboxPart, DynamoCheckboxSize } from './checkbox.types';
 
 @Component({
@@ -41,6 +45,10 @@ export class DynamoCheckbox extends DynamoBaseComponent<DynamoCheckboxPart> {
   // color/variant classes, without this the checkbox would have no affordance.
   protected readonly boxClasses = computed(() =>
     checkboxBoxStyles({ size: this.size(), checked: this.checked() }),
+  );
+
+  protected readonly indeterminateDashClasses = computed(() =>
+    checkboxIndeterminateDashStyles({ size: this.size() }),
   );
 
   protected onNativeChange(event: Event): void {

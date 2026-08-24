@@ -51,9 +51,13 @@ DynamoNG/
     └── typedoc/               # generates apps/docs' API tables from source for migrated components
 ```
 
-Each `@dynamong/*` package installs independently (`npm i @dynamong/button`); components never depend on
-other domains' components, only on `core`/`utils`/`theme` — enforced by `@nx/enforce-module-boundaries` in
-the root `eslint.config.mjs`.
+Each `@dynamong/*` package installs independently (`npm i @dynamong/button`). Component-to-component
+dependencies are ordered by a `tier:N` tag rather than fenced off by UI category: a component may depend on
+`core`/`utils`/`theme` plus any component tagged with a strictly lower tier, never same-or-higher —
+enforced by `@nx/enforce-module-boundaries` in the root `eslint.config.mjs`. That ordering makes cycles
+structurally impossible while still letting any component reuse any other one; a component just accepts
+becoming a higher tier than whatever it now depends on. `domain:*` tags still exist per project but are
+purely organizational (source-folder grouping, project naming) — they no longer drive enforcement.
 
 ## Components
 
@@ -187,10 +191,11 @@ gap:
   keyboard grid navigation to justify it.
 - **`DynamoTable` v2 adds opt-in client-side pagination and row selection** — both off by default, so
   existing `<dg-table [columns]="..." [data]="...">` usage with no new inputs renders every row
-  unpaginated, exactly as in v1. **Pagination**: set `pageSize` to enable a Prev/Next + "Page X of Y"
-  footer; `page` (1-indexed) is two-way bindable via `[(page)]`. There's no numbered page-button
-  strip, matching `DynamoDatePicker`'s Prev/Next-only month nav — no jump-to-page input either.
-  `page()` is read through a clamp (`[1, pageCount()]`) rather than ever being corrected by the
+  unpaginated, exactly as in v1. **Pagination**: set `pageSize` to enable a footer, `page` (1-indexed)
+  is two-way bindable via `[(page)]`. (v2 originally rendered its own Prev/Next-only footer with no
+  numbered page-button strip; v4 below replaces that footer with a real `<dg-pagination>`, which does
+  add numbered pages — see that entry.) `page()` is read through a clamp (`[1, pageCount()]`) rather
+  than ever being corrected by the
   component itself: if an externally-bound `page` is out of range (e.g. `data()` shrinks while a
   consumer's own signal still points past the end), the table renders the clamped page but leaves
   the bound value unchanged until the next Prev/Next click, which writes the corrected value back —
@@ -205,19 +210,14 @@ gap:
   unset) rather than adding a second identity input — this only produces stable cross-page/cross-sort
   selection when a provided `trackBy` is a pure function of the row's own data (e.g.
   `(row) => row.id`), the same pattern already recommended over index-based tracking for sorting. The
-  header "select all" checkbox is tri-state (checked/unchecked/indeterminate, set via Angular's
-  native DOM-property binding, same technique `DynamoCheckbox` already uses) and is scoped to the
+  header "select all" checkbox is tri-state (checked/unchecked/indeterminate) and is scoped to the
   **current page only** when paginated (or all rows, unpaginated) — selecting every row across every
   page is a materially different feature (it typically needs its own "N selected across M pages"
-  banner) and remains out of scope. Selection checkboxes are plain native `<input type="checkbox">`
-  elements styled with Tailwind's `accent-*` utility, not `DynamoCheckbox` — Table (`domain:data`)
-  can't depend on Checkbox (`domain:forms`) across the module-boundary rule, and native checkboxes
-  get keyboard/screen-reader operability for free.
+  banner) and remains out of scope. (v2 originally rendered plain native `<input type="checkbox">`
+  elements; v4 below reuses real `<dg-checkbox>` instead — see that entry.)
 - **`DynamoTable` v3 adds opt-in global filtering and opt-in per-cell template projection** — both
   fully additive; existing `<dg-table>` usage with no new inputs is unaffected. **Filtering**: set
-  `filterable` to render a search `<input type="search">` above the table (a native input styled to
-  match `DynamoInputText`'s size scale — Table can't depend on Input Text across the module boundary,
-  same reasoning as the hand-rolled selection checkboxes); `filterPlaceholder` customizes its
+  `filterable` to render a search box above the table; `filterPlaceholder` customizes its
   placeholder text, and `filterText` is two-way bindable (`[(filterText)]`) so a consumer can read,
   clear, or pre-fill the query externally. A row matches when ANY column whose `filterable` is not
   explicitly `false` has a `String(cellValue(row, column))` (case-insensitively) containing the
@@ -248,6 +248,26 @@ gap:
   (`viewChild(TemplateRef)` reading their own `<ng-template #x let-row let-i="index">`) and assigns it
   into their `columns` array themselves — there's no new content-projection machinery beyond adding
   `NgTemplateOutlet` to Table's own `imports`.
+- **`DynamoTable` v4 reuses `DynamoCheckbox`, `DynamoInputText`, and `DynamoPagination` directly**
+  instead of the hand-rolled native checkbox/search-input/Prev-Next-footer v1-v3 shipped with — the
+  tier system (see above) was introduced specifically to unblock this. `DynamoTable` moves from
+  `tier:0` to `tier:3` (strictly above `DynamoPagination`'s `tier:2`). Selection checkboxes are real
+  `<dg-checkbox>`s with a `<span class="sr-only">` accessible name (the same pattern
+  `DynamoMultiSelect`'s select-all checkbox already uses); the filter box is a real `<dg-input-text
+type="search">`, wired via `[ngModel]`/`(ngModelChange)` since `DynamoInputText` has no direct value
+  output. The pagination footer is now a real `<dg-pagination>`, bound `[(page)]` straight through
+  (both are identically-shaped `model<number>`s) — this is a genuine, visible UX change: `pageSize`
+  became a two-way `model()` (was a one-directional `input()`) so `DynamoPagination`'s rows-per-page
+  `<dg-select>` can write back, and the footer now shows numbered pages with ellipsis truncation and a
+  rows-per-page dropdown by default, not just plain "Page N of M" text — the live-region text
+  consumers/tests read is now `DynamoPagination`'s own summary format ("Showing 1-2 of 3" / "No
+  results"), not Table's old "Page N of M". Table still owns its own `pagedData()` slicing/clamping
+  independently of `DynamoPagination`'s internal clamp (both use the identical formula and converge
+  through the two-way `page` binding), so the rendered rows never depend on which one clamps first.
+  `apps/demo`'s "Pagination" section still separately demos composing a bare `dg-table` (with its own
+  `pageSize`/`page` left unset) alongside an externally-driven `dg-pagination` — a different, still-valid
+  pattern for consumers who want their own pagination UI fully decoupled from Table (e.g. server-side
+  paging), distinct from Table's own now-built-in footer.
 - **`DynamoSelect` v2 redesigns the panel around `DynamoOverlayService`/CDK Overlay** (matching
   `DynamoMenu`/`DynamoDatePicker`/`DynamoTooltip`) instead of v1's plain CSS `absolute` positioning —
   fixes clipping inside `overflow` ancestors, adds viewport-edge flipping via `position`'s 4-corner
@@ -258,8 +278,9 @@ gap:
   without opening), and single-level `group?: string` on `DynamoSelectOption` (grouped options render
   `role="presentation"` headings, skipped by keyboard nav; ungrouped options are unaffected — fully
   backward compatible, zero breaking changes for existing consumers). The filter box is a **real**
-  `<dg-input-text>` (both are `domain:forms`, so — unlike Table's forced native-`<input>` workaround —
-  a genuine cross-component import is legal), wired via `[ngModel]`/`(ngModelChange)` since
+  `<dg-input-text>` (`DynamoSelect` is `tier:1`, `DynamoInputText` is `tier:0`, so — unlike Table's
+  forced native-`<input>` workaround — a genuine cross-component import is legal), wired via
+  `[ngModel]`/`(ngModelChange)` since
   `DynamoInputText` has no direct value output, only full `ControlValueAccessor`. The filter box (and,
   for `DynamoMultiSelect`, the select-all/clear-all row) must live in the panel wrapper _outside_ the
   `<ul role="listbox">`, not inside it as an `<li>` — ARIA's `listbox` role only permits `option`/
@@ -270,19 +291,21 @@ gap:
   lifecycle, filter/group pure functions, and roving-focus keyboard nav are factored into a shared
   `DynamoListboxBase` abstract class + `select-option-filter.ts`/`listbox-positioning.ts`, all exported
   from `@dynamong/select`'s public entry — a deliberate exception to "duplicate small stuff across
-  domain boundaries" (seen elsewhere for the h-8/h-10/h-12 size scale), justified because the overlay
+  components" (seen elsewhere for the h-8/h-10/h-12 size scale), justified because the overlay
   attach/detach/backdrop/dispose sequence is subtle, effect-timing-sensitive code where a second
   hand-copy risks silent drift, not cosmetic duplication. Filtering is still client-side substring-only
   (no fuzzy match, no remote/async option loading); grouping is one level only (no nested subgroups);
   `position`'s viewport-edge handling is CDK's generic 4-corner collision fallback, not a bespoke
   "prefer more space" heuristic.
 - **`DynamoMultiSelect` v1 is new**, built on the same `DynamoListboxBase`/filter/group/keyboard-nav
-  machinery as `DynamoSelect` (a real same-domain import — both are `domain:forms` — not a
-  duplication). `value` is a two-way `TValue[]` model; toggling an option (click, Space, or Enter)
-  does **not** close the panel, unlike `DynamoSelect`'s select-and-close. Selected values render as
-  removable tag pills in the trigger — locally-styled markup mirroring `DynamoChip`'s pill shape
-  (`domain:feedback`, not importable across the `domain:forms` boundary), simplified to one neutral
-  look since tags don't need Chip's severity/variant matrix. The per-option check indicator is
+  machinery as `DynamoSelect` (a real component-to-component import — `DynamoMultiSelect` is `tier:2`,
+  `DynamoSelect` is `tier:1` — not a duplication). `value` is a two-way `TValue[]` model; toggling an
+  option (click, Space, or Enter) does **not** close the panel, unlike `DynamoSelect`'s select-and-close.
+  Selected values render as removable tag pills in the trigger — locally-styled markup mirroring
+  `DynamoChip`'s pill shape rather than a real `<dg-chip>` (legal either way now that both are ordered by
+  tier rather than domain — `DynamoChip` is `tier:0` — this was simplification, not a boundary block),
+  simplified to one neutral look since tags don't need Chip's severity/variant matrix. The per-option
+  check indicator is
   **deliberately not** a real `<dg-checkbox>`: that component's native `<input>` is independently
   Tab-focusable, which would add a phantom tab stop inside every `role="option"` `<li>` and break the
   listbox's single-tab-stop/virtual-focus model — instead it's a decorative-only box mirroring
@@ -300,17 +323,13 @@ gap:
   `<button>` like Select's — a `<button>` can't legally contain the per-tag remove `<button>`s (nested
   interactive content), and `DynamoSelect`'s own fix for its single clear button (a sibling button, not
   nested) doesn't scale to an arbitrary number of tag-remove buttons interleaved with text.
-- **`DynamoPagination` is new**, and deliberately does **not** replace `DynamoTable`'s own built-in
-  Prev/Next pager (see the v2 entry above) — the two are independent implementations, not one shared
-  under the hood. `DynamoTable` is `domain:data`, which the module-boundary rules do not allow to
-  depend on `domain:forms` (`DynamoButton`/`DynamoSelect`); since real reuse of those two components was
-  the point (page-number/Prev/Next buttons via `DynamoButton`, the rows-per-page dropdown via
-  `DynamoSelect`), `DynamoPagination` lives in `domain:forms` instead, mirroring how `DynamoMultiSelect`
-  legally reused `DynamoSelect`/`DynamoCheckbox` by staying in the same domain rather than crossing.
-  Reconciling the two pagers into one (Table delegating to Pagination) would need either a breaking
-  Table refactor or a cross-domain exception — out of scope here; `apps/demo`'s "Pagination" section
-  shows the intended pattern instead, a second `dg-table` with its own `pageSize`/`page` left unset
-  (so its built-in pager never renders) fed a pre-sliced page of rows from `dg-pagination` externally.
+- **`DynamoPagination` is new.** Real reuse of `DynamoButton`/`DynamoSelect` was the point
+  (page-number/Prev/Next buttons via `DynamoButton`, the rows-per-page dropdown via `DynamoSelect`),
+  which puts `DynamoPagination` at `tier:2` (same tier as `DynamoMultiSelect`, for the same reason —
+  composing a `tier:1` component plus `tier:0` ones). At introduction it was independent of
+  `DynamoTable`'s own built-in pager (which was still `tier:0` and hadn't taken on the dependency); the
+  `DynamoTable` v4 entry above covers the later reconciliation — Table now renders a real
+  `<dg-pagination>` internally instead of its own hand-rolled footer.
   Page-number windowing (always show page 1 and the last page, a run centered on the current page, a
   single `…` for any collapsed gap) is grounded in PrimeNG Paginator's `pageLinkSize` truncation — a
   pure, independently-tested function (`buildPaginationRange`, `pagination-range.ts`), not inlined into

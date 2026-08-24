@@ -11,7 +11,7 @@
       "fallbackCurrentVersionResolver": "disk"
     }
   },
-  "tags": ["type:component", "domain:data", "scope:public"],
+  "tags": ["type:component", "domain:data", "tier:3", "scope:public"],
   "targets": {
     "build": {
       "executor": "@nx/angular:package",

@@ -2,7 +2,15 @@ import { cva } from 'class-variance-authority';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — checkbox.html only ever binds `[class]="...Classes()"`.
-export const checkboxRootStyles = cva('inline-flex items-center gap-2 select-none', {
+// `flex`, not `inline-flex` — an inline-level flex container's contribution
+// to its surrounding line-box height depends on its synthesized baseline,
+// which shifts depending on whether the box span's only child (the check
+// icon / indeterminate dash) is present. That made the host's own auto
+// height jitter by 1-2px purely based on checked state (confirmed live via
+// getBoundingClientRect before/after toggling — see the checkbox/radio
+// row-height-jitter fix). Block-level `flex` removes it from that inline
+// formatting context entirely.
+export const checkboxRootStyles = cva('flex items-center gap-2 select-none', {
   variants: {
     disabled: {
       true: 'cursor-not-allowed opacity-60',
@@ -30,3 +38,17 @@ export const checkboxBoxStyles = cva(
     defaultVariants: { size: 'md', checked: false },
   },
 );
+
+// Scales with `size` the same way the checkmark icon does (`dg-icon-check
+// [size]="size()"`) — previously a hardcoded `h-0.5 w-2.5` regardless of
+// size, which looked disproportionately small inside the `lg` box.
+export const checkboxIndeterminateDashStyles = cva('block h-0.5 bg-current', {
+  variants: {
+    size: {
+      sm: 'w-2',
+      md: 'w-2.5',
+      lg: 'w-3',
+    },
+  },
+  defaultVariants: { size: 'md' },
+});

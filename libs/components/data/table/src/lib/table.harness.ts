@@ -79,8 +79,12 @@ export class DynamoTableHarness extends ComponentHarness {
     await button.click();
   }
 
-  /** e.g. `"Page 2 of 4"`. Empty string when unpaginated. */
-  async getPageText(): Promise<string> {
+  /**
+   * The `<dg-pagination>` footer's live summary text, e.g.
+   * `"Showing 1-2 of 3"` or `"No results"`. Empty string when unpaginated
+   * (`pageSize` unset — no `<dg-pagination>` rendered at all).
+   */
+  async getPaginationSummary(): Promise<string> {
     const indicator = await this.pageIndicatorLocator();
     return (await indicator?.text())?.trim() ?? '';
   }

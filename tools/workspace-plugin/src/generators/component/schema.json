@@ -12,7 +12,7 @@
     },
     "domain": {
       "type": "string",
-      "description": "The domain this component belongs to (used for source folder grouping and the domain:* module-boundary tag).",
+      "description": "The domain this component belongs to (used for source folder grouping, project naming, and the domain:* tag — organizational metadata only; module boundaries are enforced by tier:*, not domain:*).",
       "enum": ["forms", "overlay", "data", "panel", "menu", "feedback"],
       "x-prompt": {
         "message": "Which domain does this component belong to?",
