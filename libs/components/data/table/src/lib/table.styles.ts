@@ -85,12 +85,12 @@ export const tableSelectionCellStyles = cva('w-10 text-center', {
   defaultVariants: { size: 'md' },
 });
 
-// Native checkbox, not DynamoCheckbox's custom SVG box — Table
-// (domain:data) can't depend on Checkbox (domain:forms) components across
-// the module-boundary rule, and a plain native input gets keyboard/
-// screen-reader operability for free. `accent-primary` resolves through
-// the same `--dg-color-primary` token `bg-primary`/`text-primary` already
-// use elsewhere.
+// Native checkbox, not DynamoCheckbox's custom SVG box — Table is tier:0
+// today and hasn't taken on a Checkbox dependency (a choice, not a module-
+// boundary wall — see eslint.config.mjs's tier constraints), and a plain
+// native input gets keyboard/screen-reader operability for free.
+// `accent-primary` resolves through the same `--dg-color-primary` token
+// `bg-primary`/`text-primary` already use elsewhere.
 export const tableCheckboxStyles = 'h-4 w-4 cursor-pointer accent-primary';
 
 export const tablePaginationWrapperStyles =

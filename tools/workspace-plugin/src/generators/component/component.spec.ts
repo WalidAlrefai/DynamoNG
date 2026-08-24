@@ -7,7 +7,10 @@ import type { ComponentGeneratorSchema } from './schema';
 
 describe('componentGenerator', () => {
   let tree: Tree;
-  const options: ComponentGeneratorSchema = { name: 'test-widget', domain: 'forms' };
+  const options: ComponentGeneratorSchema = {
+    name: 'test-widget',
+    domain: 'forms',
+  };
 
   beforeEach(() => {
     tree = createTreeWithEmptyWorkspace();
@@ -20,11 +23,18 @@ describe('componentGenerator', () => {
     expect(config.root).toBe('libs/components/forms/test-widget');
   });
 
-  it('tags the project with type:component and domain:<domain>', async () => {
+  it('tags the project with type:component, domain:<domain>, and tier:0', async () => {
     await componentGenerator(tree, options);
 
     const config = readProjectConfiguration(tree, 'forms-test-widget');
-    expect(config.tags).toEqual(expect.arrayContaining(['type:component', 'domain:forms', 'scope:public']));
+    expect(config.tags).toEqual(
+      expect.arrayContaining([
+        'type:component',
+        'domain:forms',
+        'tier:0',
+        'scope:public',
+      ]),
+    );
   });
 
   it('writes the full DynamoNG component file set, not the generic library scaffold', async () => {
@@ -42,14 +52,21 @@ describe('componentGenerator', () => {
   it('names the component class with a Dynamo prefix and PascalCase', async () => {
     await componentGenerator(tree, options);
 
-    const content = tree.read('libs/components/forms/test-widget/src/lib/test-widget.ts', 'utf-8');
+    const content = tree.read(
+      'libs/components/forms/test-widget/src/lib/test-widget.ts',
+      'utf-8',
+    );
     expect(content).toContain('export class DynamoTestWidget');
   });
 
   it('produces a spec file covering every mandatory checklist section', async () => {
     await componentGenerator(tree, options);
 
-    const spec = tree.read('libs/components/forms/test-widget/src/lib/test-widget.spec.ts', 'utf-8') ?? '';
+    const spec =
+      tree.read(
+        'libs/components/forms/test-widget/src/lib/test-widget.spec.ts',
+        'utf-8',
+      ) ?? '';
     for (const section of [
       'creation',
       'default behavior',
@@ -69,7 +86,9 @@ describe('componentGenerator', () => {
   it('does not leave the generic library-generator demo component behind', async () => {
     await componentGenerator(tree, options);
 
-    const libChildren = tree.children('libs/components/forms/test-widget/src/lib');
+    const libChildren = tree.children(
+      'libs/components/forms/test-widget/src/lib',
+    );
     expect(libChildren).not.toContain('forms-test-widget');
   });
 });

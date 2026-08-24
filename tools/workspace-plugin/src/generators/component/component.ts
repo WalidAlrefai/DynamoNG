@@ -31,7 +31,13 @@ export async function componentGenerator(
     standalone: true,
     linter: 'eslint',
     prefix: 'dg',
-    tags: `type:component,domain:${domain},scope:public`,
+    // Every new component starts as a dependency-graph leaf (tier:0). If it
+    // later grows a dependency on another @dynamong/* component, bump this
+    // tag by hand to (that dependency's highest tier) + 1 — the
+    // `@nx/enforce-module-boundaries` tier constraints in the root
+    // eslint.config.mjs reject a same-or-higher-tier import outright, so
+    // forgetting the bump fails lint immediately rather than silently.
+    tags: `type:component,domain:${domain},tier:0,scope:public`,
     skipModule: true,
     skipFormat: true,
   });

@@ -46,59 +46,76 @@ export default [
                 'type:testing',
               ],
             },
-            // Cross-domain component-to-component imports are disallowed by
-            // default: if domain A genuinely needs domain B's internals, that's
-            // a signal the shared primitive belongs in `core`, not a cross-domain
-            // dependency. Each domain constraint still allows the foundational
-            // layers (type:core/util/theme/testing) — it only narrows *component* deps.
+            // Component-to-component dependencies are ordered by tier, not
+            // fenced off by UI category: `tier:N` may depend on foundation
+            // (type:core/util/theme/testing) plus any `tier:M` where M < N,
+            // never same-or-higher tier. That strict ordering makes cycles
+            // structurally impossible, while still letting any component
+            // reuse any other component — it just has to accept becoming a
+            // higher tier than whatever it now depends on (e.g. a component
+            // that starts depending on a `tier:0` component must itself move
+            // to at least `tier:1`; the lint rule fails immediately if that
+            // bump is forgotten). `domain:*` tags remain on projects purely
+            // as organizational/folder metadata — nothing here reads them.
+            //
+            // Defined two tiers deeper than today's actual max depth (2, see
+            // `forms-date-picker`/`forms-multi-select`/`forms-pagination` →
+            // `forms-select` → `forms-input-text`). To go deeper later, copy
+            // the highest block, bump N, and list every `tier:0..N-1` in its
+            // `onlyDependOnLibsWithTags`.
             {
-              sourceTag: 'domain:forms',
+              sourceTag: 'tier:0',
               onlyDependOnLibsWithTags: [
                 'type:core',
                 'type:util',
                 'type:theme',
                 'type:testing',
-                'domain:forms',
               ],
             },
             {
-              sourceTag: 'domain:overlay',
+              sourceTag: 'tier:1',
               onlyDependOnLibsWithTags: [
                 'type:core',
                 'type:util',
                 'type:theme',
                 'type:testing',
-                'domain:overlay',
+                'tier:0',
               ],
             },
             {
-              sourceTag: 'domain:data',
+              sourceTag: 'tier:2',
               onlyDependOnLibsWithTags: [
                 'type:core',
                 'type:util',
                 'type:theme',
                 'type:testing',
-                'domain:data',
+                'tier:0',
+                'tier:1',
               ],
             },
             {
-              sourceTag: 'domain:panel',
+              sourceTag: 'tier:3',
               onlyDependOnLibsWithTags: [
                 'type:core',
                 'type:util',
                 'type:theme',
                 'type:testing',
-                'domain:panel',
+                'tier:0',
+                'tier:1',
+                'tier:2',
               ],
             },
             {
-              sourceTag: 'domain:menu',
+              sourceTag: 'tier:4',
               onlyDependOnLibsWithTags: [
                 'type:core',
                 'type:util',
                 'type:theme',
                 'type:testing',
-                'domain:menu',
+                'tier:0',
+                'tier:1',
+                'tier:2',
+                'tier:3',
               ],
             },
             // Apps may depend on anything publishable; nothing may depend on an app.
