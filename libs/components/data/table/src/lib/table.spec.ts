@@ -167,7 +167,7 @@ function getSelectAllCheckbox(container: HTMLElement): HTMLInputElement | null {
   return container.querySelector('thead input[type="checkbox"]');
 }
 
-function getPageText(container: HTMLElement): string {
+function getPaginationSummary(container: HTMLElement): string {
   return (
     container.querySelector('[aria-live="polite"]')?.textContent?.trim() ?? ''
   );
@@ -227,6 +227,17 @@ describe('DynamoTable', () => {
 
       expect(componentInstance.pageSize()).toBeUndefined();
       expect(componentInstance.selectable()).toBe(false);
+    });
+
+    it('defaults pageSizeOptions to [10, 25, 50, 100]', () => {
+      const { componentInstance } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE },
+        },
+      );
+
+      expect(componentInstance.pageSizeOptions()).toEqual([10, 25, 50, 100]);
     });
   });
 
@@ -555,7 +566,7 @@ describe('DynamoTable', () => {
       });
 
       expect(getBodyRows(container)).toHaveLength(2);
-      expect(getPageText(container)).toBe('Page 1 of 2');
+      expect(getPaginationSummary(container)).toBe('Showing 1-2 of 3');
     });
 
     it('clamps an out-of-range page down to the last valid page instead of rendering empty', () => {
@@ -564,7 +575,7 @@ describe('DynamoTable', () => {
       });
 
       expect(getBodyRows(container)).toHaveLength(1);
-      expect(getPageText(container)).toBe('Page 2 of 2');
+      expect(getPaginationSummary(container)).toBe('Showing 3-3 of 3');
       expect(container.textContent).not.toContain('No data');
     });
 
@@ -643,12 +654,12 @@ describe('DynamoTable', () => {
       );
       within(container).getByRole('button', { name: 'Next page' }).click();
       fixture.detectChanges();
-      expect(getPageText(container)).toBe('Page 2 of 2');
+      expect(getPaginationSummary(container)).toBe('Showing 3-3 of 3');
 
       setInputs({ pageSize: 3 });
       fixture.detectChanges();
 
-      expect(getPageText(container)).toBe('Page 1 of 1');
+      expect(getPaginationSummary(container)).toBe('Showing 1-3 of 3');
     });
 
     it('shows the genuine emptyMessage, not a pagination artifact, when data is empty and pageSize is set', () => {
@@ -657,7 +668,48 @@ describe('DynamoTable', () => {
       });
 
       expect(container.textContent).toContain('No data');
-      expect(getPageText(container)).toBe('Page 1 of 1');
+      expect(getPaginationSummary(container)).toBe('No results');
+    });
+
+    it('shows a rows-per-page selector by default, and changing it resets to page 1', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { pageSize: 2, page: 2 } },
+      );
+
+      expect(
+        within(container).getByRole('combobox', { name: 'Rows per page' }),
+      ).toBeTruthy();
+
+      within(container)
+        .getByRole('combobox', { name: 'Rows per page' })
+        .click();
+      fixture.detectChanges();
+      // The listbox panel is CDK-portaled onto document.body, outside
+      // `container`'s own layout box — same as Select/MultiSelect elsewhere.
+      within(document.body).getByRole('option', { name: '25 / page' }).click();
+      fixture.detectChanges();
+
+      expect(getPaginationSummary(container)).toBe('Showing 1-3 of 3');
+    });
+
+    it('forwards pageSizeOptions to the rows-per-page selector so a non-default pageSize still has a matching option', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            pageSize: 2,
+            pageSizeOptions: [2, 3],
+          },
+        },
+      );
+
+      expect(
+        within(container).getByRole('combobox', { name: 'Rows per page' })
+          .textContent,
+      ).toContain('2 / page');
     });
 
     it('paginates through the DynamoTableHarness', async () => {
@@ -669,17 +721,17 @@ describe('DynamoTable', () => {
         DynamoTableHarness,
       );
 
-      expect(await harness.getPageText()).toBe('Page 1 of 2');
+      expect(await harness.getPaginationSummary()).toBe('Showing 1-2 of 3');
       expect(await harness.isPreviousPageDisabled()).toBe(true);
 
       await harness.goToNextPage();
 
-      expect(await harness.getPageText()).toBe('Page 2 of 2');
+      expect(await harness.getPaginationSummary()).toBe('Showing 3-3 of 3');
       expect(await harness.isNextPageDisabled()).toBe(true);
 
       await harness.goToPreviousPage();
 
-      expect(await harness.getPageText()).toBe('Page 1 of 2');
+      expect(await harness.getPaginationSummary()).toBe('Showing 1-2 of 3');
     });
   });
 
