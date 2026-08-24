@@ -5,6 +5,7 @@ import {
   input,
 } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
 import { buttonStyles } from './button.styles';
 import type {
@@ -19,6 +20,7 @@ import type {
   selector: 'dg-button',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoSpinner],
   templateUrl: './button.html',
 })
 export class DynamoButton extends DynamoBaseComponent<DynamoButtonPart> {

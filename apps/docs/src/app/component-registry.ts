@@ -157,4 +157,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A data table driven by a plain column-definition array, with client-side single-column sorting, pagination, row selection, global filtering, and per-column cell-template projection.',
   },
+  {
+    slug: 'spinner',
+    name: 'Spinner',
+    domain: 'feedback',
+    description:
+      'A small loading indicator — decorative by default, or an announced status region when given a label.',
+  },
 ];
