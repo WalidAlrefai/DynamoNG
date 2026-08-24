@@ -90,6 +90,13 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
       'A modal dialog with CDK-powered focus trapping and Escape/backdrop-to-close.',
   },
   {
+    slug: 'drawer',
+    name: 'Drawer',
+    domain: 'overlay',
+    description:
+      'An off-canvas panel that slides in from a screen edge, with CDK-powered focus trapping and Escape/backdrop-to-close.',
+  },
+  {
     slug: 'tooltip',
     name: 'Tooltip',
     domain: 'overlay',
@@ -163,5 +170,26 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'feedback',
     description:
       'A small loading indicator — decorative by default, or an announced status region when given a label.',
+  },
+  {
+    slug: 'avatar',
+    name: 'Avatar',
+    domain: 'data',
+    description:
+      'A user image with initials/icon fallback, for user-related data displays like table rows.',
+  },
+  {
+    slug: 'progress',
+    name: 'Progress',
+    domain: 'feedback',
+    description:
+      'A determinate linear progress bar with severity-colored fill.',
+  },
+  {
+    slug: 'divider',
+    name: 'Divider',
+    domain: 'panel',
+    description:
+      'A horizontal or vertical rule, optionally with a centered label.',
   },
 ];

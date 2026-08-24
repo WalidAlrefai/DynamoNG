@@ -1,0 +1,24 @@
+<span [class]="rootClasses()" role="img" [attr.aria-label]="altText()">
+  @if (showImage()) {
+  <!-- Static, variant-free — this is the only element in the component that
+    never varies, so it doesn't need a cva() entry in avatar.styles.ts. -->
+  <img
+    [src]="src()"
+    [alt]="altText()"
+    (error)="onImageError()"
+    class="h-full w-full object-cover"
+  />
+  } @else if (initials()) {
+  <span [attr.aria-hidden]="true">{{ initials() }}</span>
+  } @else {
+  <svg
+    viewBox="0 0 24 24"
+    class="h-3/5 w-3/5 fill-current"
+    [attr.aria-hidden]="true"
+  >
+    <path
+      d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12Zm0 2.5c-3.4 0-10 1.7-10 5.1v2.2h20v-2.2c0-3.4-6.6-5.1-10-5.1Z"
+    />
+  </svg>
+  }
+</span>

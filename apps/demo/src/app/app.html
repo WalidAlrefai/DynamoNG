@@ -340,6 +340,48 @@
     />
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="drawer-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Drawer</h2>
+    <dg-button (click)="drawerOpen.set(true)">Open drawer</dg-button>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="avatar-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Avatar</h2>
+    <div class="flex flex-wrap items-center gap-4">
+      <dg-avatar name="Ada Lovelace" size="sm" />
+      <dg-avatar name="Ada Lovelace" size="md" />
+      <dg-avatar name="Madonna" size="lg" />
+      <dg-avatar />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="progress-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Progress</h2>
+    <dg-progress
+      [value]="progressValue()"
+      severity="success"
+      ariaLabel="Demo progress"
+    />
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="divider-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Divider</h2>
+    <dg-divider />
+    <dg-divider>OR</dg-divider>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
@@ -348,4 +390,11 @@
       <dg-button (click)="confirmationOpen.set(false)">Close</dg-button>
     </div>
   </dg-dialog>
+
+  <dg-drawer [(open)]="drawerOpen" position="right" title="Filters">
+    <p class="text-text-primary">Filter controls go here.</p>
+    <div class="mt-4 flex justify-end">
+      <dg-button (click)="drawerOpen.set(false)">Apply</dg-button>
+    </div>
+  </dg-drawer>
 </main>

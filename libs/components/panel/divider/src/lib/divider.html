@@ -1,0 +1,9 @@
+@if (orientation() === 'horizontal') {
+<div class="flex items-center" role="separator">
+  <div [class]="lineClasses()"></div>
+  <span [class]="labelClasses"><ng-content /></span>
+  <div [class]="lineClasses()"></div>
+</div>
+} @else {
+<div [class]="lineClasses()" role="separator" aria-orientation="vertical"></div>
+}

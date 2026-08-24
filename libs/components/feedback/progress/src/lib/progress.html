@@ -1,0 +1,13 @@
+<div
+  role="progressbar"
+  [class]="trackClasses()"
+  [attr.aria-valuenow]="clampedValue()"
+  aria-valuemin="0"
+  aria-valuemax="100"
+  [attr.aria-label]="ariaLabel() ?? 'Progress'"
+>
+  <!-- The one deliberate exception to "only .styles.ts holds visual values"
+  in this component — width is a continuous 0-100 value with no discrete
+  class variant that could express it. -->
+  <div [class]="fillClasses()" [style.width.%]="clampedValue()"></div>
+</div>
