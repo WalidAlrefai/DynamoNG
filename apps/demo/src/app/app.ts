@@ -39,6 +39,12 @@ import { DynamoToastService } from '@dynamong/toast';
 import { DynamoTooltip } from '@dynamong/tooltip';
 import { DynamoTree } from '@dynamong/tree';
 import type { DynamoTreeNode } from '@dynamong/tree';
+import { DynamoStep, DynamoStepper } from '@dynamong/stepper';
+import { DynamoPopover, DynamoPopoverContent } from '@dynamong/popover';
+import { DynamoSkeleton } from '@dynamong/skeleton';
+import { DynamoTag } from '@dynamong/tag';
+import { DynamoBreadcrumb } from '@dynamong/breadcrumb';
+import type { DynamoBreadcrumbItem } from '@dynamong/breadcrumb';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -159,6 +165,13 @@ const EMPLOYEES: Employee[] = [
     DynamoTextarea,
     DynamoTooltip,
     DynamoTree,
+    DynamoStepper,
+    DynamoStep,
+    DynamoPopover,
+    DynamoPopoverContent,
+    DynamoSkeleton,
+    DynamoTag,
+    DynamoBreadcrumb,
     FormsModule,
   ],
   templateUrl: './app.html',
@@ -276,6 +289,18 @@ export class App {
   ]);
   protected readonly treeExpanded = signal<string[]>(['src']);
   protected readonly treeSelected = signal<string[]>([]);
+
+  protected readonly stepperValue = signal<string | undefined>('account');
+
+  protected readonly popoverFilterName = signal('');
+  protected readonly popoverApplied = signal<string | null>(null);
+
+  protected readonly breadcrumbItems: DynamoBreadcrumbItem[] = [
+    { label: 'Home', href: '/' },
+    { label: 'Archived' },
+    { label: 'Products', href: '/products' },
+    { label: 'Keyboard' },
+  ];
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

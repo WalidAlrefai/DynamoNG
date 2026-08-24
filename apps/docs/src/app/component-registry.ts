@@ -199,4 +199,36 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A hierarchical, expandable tree with keyboard navigation and multi-select tri-state checkboxes.',
   },
+  {
+    slug: 'stepper',
+    name: 'Stepper',
+    domain: 'panel',
+    description:
+      'A multi-step process indicator with built-in content panels and Back/Next navigation.',
+  },
+  {
+    slug: 'popover',
+    name: 'Popover',
+    domain: 'overlay',
+    description:
+      'A generic floating panel with arbitrary projected content, positioned relative to a trigger.',
+  },
+  {
+    slug: 'skeleton',
+    name: 'Skeleton',
+    domain: 'feedback',
+    description: 'An animated loading-placeholder block.',
+  },
+  {
+    slug: 'tag',
+    name: 'Tag',
+    domain: 'feedback',
+    description: 'A static, non-removable severity-colored label.',
+  },
+  {
+    slug: 'breadcrumb',
+    name: 'Breadcrumb',
+    domain: 'panel',
+    description: 'A path navigation trail with a current-page indicator.',
+  },
 ];

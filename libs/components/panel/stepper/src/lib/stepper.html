@@ -1,0 +1,65 @@
+<div [class]="rootClasses()">
+  <nav [attr.aria-label]="ariaLabel() ?? 'Progress'">
+    <ol
+      tabindex="-1"
+      [class]="listClasses"
+      (keydown)="onStepsKeydown($event)"
+    >
+      @for (step of steps(); track step; let i = $index; let last = $last) {
+        <li [class]="itemClasses">
+          <button
+            #stepButton
+            type="button"
+            [id]="stepId(i)"
+            [attr.aria-current]="stepState(i) === 'active' ? 'step' : null"
+            [attr.aria-disabled]="isDisabled(i) ? 'true' : null"
+            [tabindex]="stepState(i) === 'active' ? 0 : -1"
+            [class]="stepButtonClasses(i)"
+            (click)="onStepClick(i)"
+          >
+            <span [class]="circleClasses(i)" aria-hidden="true">
+              @if (stepState(i) === 'completed') {
+                <dg-icon-check size="sm" />
+              } @else {
+                {{ i + 1 }}
+              }
+            </span>
+            <span [class]="labelClasses(i)" data-testid="step-label">{{
+              step.label()
+            }}</span>
+          </button>
+          @if (!last) {
+            <span [class]="connectorClasses(i)" aria-hidden="true"></span>
+          }
+        </li>
+      }
+    </ol>
+  </nav>
+
+  @for (step of steps(); track step; let i = $index) {
+    @if (step.hasBeenActivated()) {
+      <div
+        [id]="panelId(i)"
+        [attr.aria-labelledby]="stepId(i)"
+        [hidden]="stepState(i) !== 'active'"
+        [class]="panelClasses"
+        tabindex="0"
+      >
+        <ng-container [ngTemplateOutlet]="step.contentTemplate()" />
+      </div>
+    }
+  }
+
+  <div [class]="controlsClasses" data-testid="stepper-controls">
+    <dg-button
+      variant="outline"
+      [disabled]="activeIndex() === 0"
+      (click)="back()"
+    >
+      {{ backLabel() }}
+    </dg-button>
+    <dg-button (click)="next()">
+      {{ activeIndex() === steps().length - 1 ? finishLabel() : nextLabel() }}
+    </dg-button>
+  </div>
+</div>

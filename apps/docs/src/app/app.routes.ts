@@ -135,4 +135,28 @@ export const appRoutes: Route[] = [
     path: 'components/tree',
     loadComponent: () => import('./pages/tree-doc').then((m) => m.TreeDocPage),
   },
+  {
+    path: 'components/stepper',
+    loadComponent: () =>
+      import('./pages/stepper-doc').then((m) => m.StepperDocPage),
+  },
+  {
+    path: 'components/popover',
+    loadComponent: () =>
+      import('./pages/popover-doc').then((m) => m.PopoverDocPage),
+  },
+  {
+    path: 'components/skeleton',
+    loadComponent: () =>
+      import('./pages/skeleton-doc').then((m) => m.SkeletonDocPage),
+  },
+  {
+    path: 'components/tag',
+    loadComponent: () => import('./pages/tag-doc').then((m) => m.TagDocPage),
+  },
+  {
+    path: 'components/breadcrumb',
+    loadComponent: () =>
+      import('./pages/breadcrumb-doc').then((m) => m.BreadcrumbDocPage),
+  },
 ];
