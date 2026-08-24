@@ -1,29 +1,20 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
   TemplateRef,
-  ViewContainerRef,
   computed,
   effect,
   forwardRef,
-  inject,
   input,
   model,
   signal,
   viewChild,
   viewChildren,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
-import { TemplatePortal } from '@angular/cdk/portal';
-import { DynamoBaseComponent } from '@dynamong/core/base';
-import {
-  DynamoOverlayService,
-  type DynamoOverlayHandle,
-} from '@dynamong/core/overlay';
+import { DynamoListboxBase } from '@dynamong/select';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   addDays,
@@ -102,7 +93,7 @@ const POSITIONS: ConnectedPosition[] = [
   ],
 })
 export class DynamoDatePicker
-  extends DynamoBaseComponent<DynamoDatePickerPart>
+  extends DynamoListboxBase<DynamoDatePickerPart>
   implements ControlValueAccessor
 {
   readonly placeholder = input('Select a date');
@@ -124,18 +115,12 @@ export class DynamoDatePicker
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
   private readonly dayButtons =
     viewChildren<ElementRef<HTMLButtonElement>>('dayButton');
-  private readonly overlayService = inject(DynamoOverlayService);
-  private readonly viewContainerRef = inject(ViewContainerRef);
-  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly triggerId = this.idGenerator.next(
     'dg-date-picker-trigger',
   );
   protected readonly dialogId = this.idGenerator.next('dg-date-picker-dialog');
   protected readonly monthLabelId = `${this.dialogId}-month-label`;
-
-  private overlayHandle: DynamoOverlayHandle | null = null;
-  private portal: TemplatePortal | null = null;
 
   /** Sole source of truth for both the visible month and the roving-focus cursor. */
   protected readonly focusedDate = signal<Date>(startOfDay(new Date()));
@@ -349,45 +334,16 @@ export class DynamoDatePicker
     this.triggerEl().nativeElement.focus();
   }
 
-  private attachOverlay(): void {
-    if (!this.overlayHandle) {
-      const handle = this.overlayService.createConnectedOverlay(
-        this.triggerEl().nativeElement,
-        POSITIONS,
-        {
-          hasBackdrop: true,
-          backdropClass: 'cdk-overlay-transparent-backdrop',
-        },
-      );
-      handle.overlayRef
-        .backdropClick()
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => this.close());
-      this.overlayHandle = handle;
-    }
-
-    if (!this.portal) {
-      this.portal = new TemplatePortal(
-        this.panelTemplate(),
-        this.viewContainerRef,
-      );
-    }
-
-    if (!this.overlayHandle.overlayRef.hasAttached()) {
-      this.overlayHandle.overlayRef.attach(this.portal);
-    }
+  protected triggerElRef(): ElementRef<HTMLElement> {
+    return this.triggerEl();
   }
 
-  private detachOverlay(): void {
-    if (this.overlayHandle?.overlayRef.hasAttached()) {
-      this.overlayHandle.overlayRef.detach();
-    }
+  protected panelTemplateRef(): TemplateRef<unknown> {
+    return this.panelTemplate();
   }
 
-  private destroyOverlay(): void {
-    this.overlayHandle?.overlayRef.dispose();
-    this.overlayHandle = null;
-    this.portal = null;
+  protected overlayPositions(): ConnectedPosition[] {
+    return POSITIONS;
   }
 
   writeValue(value: Date | null): void {

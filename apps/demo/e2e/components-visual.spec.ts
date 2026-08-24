@@ -158,3 +158,7 @@ test('multi select panel opens and toggles an option', async ({ page }) => {
   await listbox.getByRole('option', { name: 'Vue' }).click();
   await expect(page.getByTestId('multi-select-field')).toHaveScreenshot();
 });
+
+test('pagination renders as expected', async ({ page }) => {
+  await expect(page.getByTestId('pagination-section')).toHaveScreenshot();
+});
