@@ -1,0 +1,15 @@
+<div
+  [class]="rootClasses()"
+  role="tree"
+  aria-multiselectable="true"
+  [attr.aria-label]="ariaLabel() ?? null"
+>
+  @for (node of items(); track node.id; let i = $index) {
+    <dg-tree-item
+      [node]="node"
+      [depth]="0"
+      [posinset]="i + 1"
+      [setsize]="items().length"
+    />
+  }
+</div>

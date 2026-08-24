@@ -37,6 +37,8 @@ import type {
 import { DynamoTextarea } from '@dynamong/textarea';
 import { DynamoToastService } from '@dynamong/toast';
 import { DynamoTooltip } from '@dynamong/tooltip';
+import { DynamoTree } from '@dynamong/tree';
+import type { DynamoTreeNode } from '@dynamong/tree';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -156,6 +158,7 @@ const EMPLOYEES: Employee[] = [
     DynamoTabs,
     DynamoTextarea,
     DynamoTooltip,
+    DynamoTree,
     FormsModule,
   ],
   templateUrl: './app.html',
@@ -246,6 +249,33 @@ export class App {
   protected readonly confirmationOpen = signal(false);
   protected readonly drawerOpen = signal(false);
   protected readonly progressValue = signal(62);
+
+  protected readonly treeItems = signal<DynamoTreeNode[]>([
+    {
+      id: 'src',
+      label: 'src',
+      children: [
+        {
+          id: 'components',
+          label: 'components',
+          children: [
+            { id: 'button-ts', label: 'button.ts' },
+            { id: 'button-spec', label: 'button.spec.ts' },
+          ],
+        },
+        { id: 'main-ts', label: 'main.ts' },
+      ],
+    },
+    {
+      id: 'dist',
+      label: 'dist',
+      disabled: true,
+      children: [{ id: 'bundle-js', label: 'bundle.js' }],
+    },
+    { id: 'readme-md', label: 'README.md' },
+  ]);
+  protected readonly treeExpanded = signal<string[]>(['src']);
+  protected readonly treeSelected = signal<string[]>([]);
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

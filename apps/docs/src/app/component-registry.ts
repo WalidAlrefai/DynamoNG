@@ -192,4 +192,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A horizontal or vertical rule, optionally with a centered label.',
   },
+  {
+    slug: 'tree',
+    name: 'Tree',
+    domain: 'data',
+    description:
+      'A hierarchical, expandable tree with keyboard navigation and multi-select tri-state checkboxes.',
+  },
 ];

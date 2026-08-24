@@ -1,0 +1,71 @@
+<div
+  #row
+  role="treeitem"
+  [class]="rowClasses()"
+  [tabindex]="isActive() ? 0 : -1"
+  aria-selected="false"
+  [attr.aria-expanded]="hasChildren() ? isExpanded() : null"
+  [attr.aria-checked]="ariaCheckedAttr()"
+  [attr.aria-disabled]="node().disabled ? 'true' : null"
+  [attr.aria-level]="depth() + 1"
+  [attr.aria-posinset]="posinset()"
+  [attr.aria-setsize]="setsize()"
+  [attr.data-node-id]="node().id"
+  [style.paddingLeft.rem]="indentRem()"
+  (click)="onRowClick()"
+  (focus)="onRowFocus()"
+  (keydown)="state.handleKeydown($event)"
+>
+  @if (hasChildren()) {
+    <span
+      [class]="chevronButtonClasses"
+      data-testid="chevron"
+      [attr.aria-hidden]="true"
+      (click)="onChevronClick($event)"
+    >
+      <svg
+        [class]="chevronClasses()"
+        [attr.aria-hidden]="true"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+      >
+        <path
+          d="M4 6l4 4 4-4"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </span>
+  } @else {
+    <span [class]="chevronPlaceholderClasses" [attr.aria-hidden]="true"></span>
+  }
+  <span #checkboxHost>
+    <dg-checkbox
+      size="sm"
+      [checked]="checkboxChecked()"
+      [indeterminate]="isIndeterminate()"
+      [disabled]="node().disabled ?? false"
+      (checkedChange)="onCheckedChange()"
+      (click)="onCheckboxContainerClick($event)"
+    />
+  </span>
+  <span [class]="labelClasses">{{ node().label }}</span>
+</div>
+@if (hasChildren() && isExpanded()) {
+  <div role="group" [class]="groupClasses()">
+    <div [class]="groupInnerClasses">
+      @for (child of node().children; track child.id; let i = $index) {
+        <dg-tree-item
+          [node]="child"
+          [depth]="depth() + 1"
+          [posinset]="i + 1"
+          [setsize]="node().children!.length"
+        />
+      }
+    </div>
+  </div>
+}

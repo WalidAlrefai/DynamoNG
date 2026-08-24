@@ -382,6 +382,19 @@
     <dg-divider>OR</dg-divider>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="tree-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Tree</h2>
+    <dg-tree
+      [items]="treeItems()"
+      [(expandedIds)]="treeExpanded"
+      [(selected)]="treeSelected"
+      ariaLabel="Project files"
+    />
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
