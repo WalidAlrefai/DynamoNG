@@ -131,4 +131,8 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/divider-doc').then((m) => m.DividerDocPage),
   },
+  {
+    path: 'components/tree',
+    loadComponent: () => import('./pages/tree-doc').then((m) => m.TreeDocPage),
+  },
 ];

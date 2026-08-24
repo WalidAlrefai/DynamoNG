@@ -72,7 +72,8 @@
       "@dynamong/progress": [
         "./libs/components/feedback/progress/src/index.ts"
       ],
-      "@dynamong/divider": ["./libs/components/panel/divider/src/index.ts"]
+      "@dynamong/divider": ["./libs/components/panel/divider/src/index.ts"],
+      "@dynamong/tree": ["./libs/components/data/tree/src/index.ts"]
     }
   }
 }
