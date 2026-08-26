@@ -96,6 +96,9 @@
       ],
       "@dynamong/color-picker": [
         "./libs/components/forms/color-picker/src/index.ts"
+      ],
+      "@dynamong/file-upload": [
+        "./libs/components/forms/file-upload/src/index.ts"
       ]
     }
   }

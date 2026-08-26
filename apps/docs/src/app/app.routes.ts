@@ -189,4 +189,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/color-picker-doc').then((m) => m.ColorPickerDocPage),
   },
+  {
+    path: 'components/file-upload',
+    loadComponent: () =>
+      import('./pages/file-upload-doc').then((m) => m.FileUploadDocPage),
+  },
 ];

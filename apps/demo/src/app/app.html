@@ -593,6 +593,43 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="file-upload-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">File Upload</h2>
+    <div class="max-w-md">
+      <dg-file-upload
+        [(value)]="attachments"
+        [multiple]="true"
+        accept="image/*,.pdf"
+        [maxFileSize]="5 * 1024 * 1024"
+        ariaLabel="Attachments"
+        (rejected)="onAttachmentsRejected($event)"
+      />
+      @if (attachmentRejections().length > 0) {
+        <ul class="mt-2 text-sm text-danger">
+          @for (rejection of attachmentRejections(); track rejection.file) {
+            <li>
+              {{ rejection.file.name }} —
+              @switch (rejection.reason) {
+                @case ('type') {
+                  unsupported file type
+                }
+                @case ('size') {
+                  over 5 MB
+                }
+                @default {
+                  too many files
+                }
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

@@ -52,6 +52,8 @@ import { DynamoContextMenu } from '@dynamong/context-menu';
 import { DynamoAutocomplete } from '@dynamong/autocomplete';
 import type { DynamoSelectOption as DynamoAutocompleteOption } from '@dynamong/autocomplete';
 import { DynamoColorPicker } from '@dynamong/color-picker';
+import { DynamoFileUpload } from '@dynamong/file-upload';
+import type { DynamoFileRejection } from '@dynamong/file-upload';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -196,6 +198,7 @@ const EMPLOYEES: Employee[] = [
     DynamoContextMenu,
     DynamoAutocomplete,
     DynamoColorPicker,
+    DynamoFileUpload,
     FormsModule,
   ],
   templateUrl: './app.html',
@@ -333,6 +336,13 @@ export class App {
   protected readonly lastFruitSelected = signal<string | null>(null);
 
   protected readonly brandColor = signal('#3b82f6');
+
+  protected readonly attachments = signal<File[]>([]);
+  protected readonly attachmentRejections = signal<DynamoFileRejection[]>([]);
+
+  protected onAttachmentsRejected(rejections: DynamoFileRejection[]): void {
+    this.attachmentRejections.set(rejections);
+  }
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

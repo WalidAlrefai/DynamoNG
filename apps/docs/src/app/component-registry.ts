@@ -272,4 +272,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A color input with a hex field, preset swatches, and a native color picker.',
   },
+  {
+    slug: 'file-upload',
+    name: 'File Upload',
+    domain: 'forms',
+    description:
+      'A drag-and-drop and click-to-browse file input with validation and a removable file list.',
+  },
 ];
