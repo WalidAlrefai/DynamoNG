@@ -51,6 +51,7 @@ import { DynamoSplitButton } from '@dynamong/split-button';
 import { DynamoContextMenu } from '@dynamong/context-menu';
 import { DynamoAutocomplete } from '@dynamong/autocomplete';
 import type { DynamoSelectOption as DynamoAutocompleteOption } from '@dynamong/autocomplete';
+import { DynamoColorPicker } from '@dynamong/color-picker';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -194,6 +195,7 @@ const EMPLOYEES: Employee[] = [
     DynamoSplitButton,
     DynamoContextMenu,
     DynamoAutocomplete,
+    DynamoColorPicker,
     FormsModule,
   ],
   templateUrl: './app.html',
@@ -329,6 +331,8 @@ export class App {
   protected readonly fruitOptions = FRUIT_OPTIONS;
   protected readonly fruit = signal('');
   protected readonly lastFruitSelected = signal<string | null>(null);
+
+  protected readonly brandColor = signal('#3b82f6');
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

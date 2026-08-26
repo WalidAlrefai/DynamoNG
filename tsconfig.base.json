@@ -93,6 +93,9 @@
       ],
       "@dynamong/autocomplete": [
         "./libs/components/forms/autocomplete/src/index.ts"
+      ],
+      "@dynamong/color-picker": [
+        "./libs/components/forms/color-picker/src/index.ts"
       ]
     }
   }

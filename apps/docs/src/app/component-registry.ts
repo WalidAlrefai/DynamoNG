@@ -265,4 +265,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A text input with filtered, keyboard-navigable suggestions.',
   },
+  {
+    slug: 'color-picker',
+    name: 'Color Picker',
+    domain: 'forms',
+    description:
+      'A color input with a hex field, preset swatches, and a native color picker.',
+  },
 ];

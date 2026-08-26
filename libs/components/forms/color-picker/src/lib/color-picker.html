@@ -1,0 +1,54 @@
+<div [class]="wrapperClasses()">
+  <input
+    type="text"
+    [class]="hexInputClasses"
+    [disabled]="disabled()"
+    [value]="value()"
+    placeholder="#000000"
+    [attr.aria-label]="ariaLabel() ?? 'Color'"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
+    (input)="onHexInput($event)"
+  />
+  <button
+    #triggerEl
+    type="button"
+    [class]="swatchButtonClasses()"
+    [style.background-color]="value() || 'transparent'"
+    [disabled]="disabled()"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-label]="'Choose color' + (value() ? ', current ' + value() : '')"
+    (click)="toggle()"
+    (keydown)="onTriggerKeydown($event)"
+  ></button>
+</div>
+
+<ng-template #panelTemplate>
+  <div
+    [class]="panelWrapperClasses"
+    tabindex="-1"
+    (keydown)="onPanelKeydown($event)"
+  >
+    <div [class]="swatchGridClasses">
+      @for (swatch of swatches(); track swatch) {
+        <button
+          type="button"
+          [class]="swatchOptionClasses(isSameColor(swatch))"
+          [style.background-color]="swatch"
+          [attr.aria-label]="'Color ' + swatch"
+          [attr.aria-pressed]="isSameColor(swatch)"
+          (click)="selectSwatch(swatch)"
+        ></button>
+      }
+      <div [class]="nativeInputWrapperClasses">
+        <input
+          type="color"
+          [class]="nativeInputClasses"
+          [value]="normalizedNativeColorValue()"
+          aria-label="Custom color"
+          (input)="onNativeColorInput($event)"
+        />
+      </div>
+    </div>
+  </div>
+</ng-template>

@@ -184,4 +184,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/autocomplete-doc').then((m) => m.AutocompleteDocPage),
   },
+  {
+    path: 'components/color-picker',
+    loadComponent: () =>
+      import('./pages/color-picker-doc').then((m) => m.ColorPickerDocPage),
+  },
 ];

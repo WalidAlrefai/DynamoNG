@@ -580,6 +580,19 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="color-picker-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Color Picker</h2>
+    <div class="max-w-xs">
+      <dg-color-picker [(value)]="brandColor" ariaLabel="Brand color" />
+      <p class="mt-2 text-sm text-text-muted">
+        Value: <span class="font-mono">{{ brandColor() || '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
