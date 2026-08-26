@@ -300,4 +300,24 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A resizable multi-pane layout container with draggable dividers.',
   },
+  {
+    slug: 'toolbar',
+    name: 'Toolbar',
+    domain: 'panel',
+    description: 'An action bar with start/center/end content-projection slots.',
+  },
+  {
+    slug: 'scroll-top',
+    name: 'Scroll Top',
+    domain: 'overlay',
+    description:
+      'A floating button that scrolls to the top of the page after scrolling past a threshold.',
+  },
+  {
+    slug: 'otp-input',
+    name: 'OTP Input',
+    domain: 'forms',
+    description:
+      'A segmented one-time-code input with auto-advance, backspace-to-previous, and paste support.',
+  },
 ];

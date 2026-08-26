@@ -104,7 +104,12 @@
         "./libs/components/forms/input-number/src/index.ts"
       ],
       "@dynamong/rating": ["./libs/components/forms/rating/src/index.ts"],
-      "@dynamong/splitter": ["./libs/components/panel/splitter/src/index.ts"]
+      "@dynamong/splitter": ["./libs/components/panel/splitter/src/index.ts"],
+      "@dynamong/toolbar": ["./libs/components/panel/toolbar/src/index.ts"],
+      "@dynamong/scroll-top": [
+        "./libs/components/overlay/scroll-top/src/index.ts"
+      ],
+      "@dynamong/otp-input": ["./libs/components/forms/otp-input/src/index.ts"]
     }
   }
 }

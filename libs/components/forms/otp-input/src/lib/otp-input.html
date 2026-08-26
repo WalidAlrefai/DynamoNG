@@ -1,0 +1,25 @@
+<div
+  [class]="rootClasses()"
+  role="group"
+  [attr.aria-label]="ariaLabel() ?? 'One-time code'"
+  [attr.data-testid]="'DynamoOtpInput'"
+>
+  @for (i of boxes(); track i) {
+    <input
+      #box
+      type="text"
+      [attr.inputmode]="numeric() ? 'numeric' : 'text'"
+      maxlength="1"
+      autocomplete="one-time-code"
+      [class]="boxClasses()"
+      [value]="boxValues()[i] ?? ''"
+      [disabled]="disabled()"
+      [attr.aria-label]="'Digit ' + (i + 1) + ' of ' + length()"
+      [attr.aria-invalid]="invalid() ? 'true' : null"
+      (input)="onBoxInput(i, $event)"
+      (keydown)="onBoxKeydown(i, $event)"
+      (paste)="onBoxPaste(i, $event)"
+      (blur)="onBoxBlur()"
+    />
+  }
+</div>

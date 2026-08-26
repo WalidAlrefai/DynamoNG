@@ -688,6 +688,46 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="toolbar-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Toolbar</h2>
+    <dg-toolbar ariaLabel="Document actions" class="rounded-md border border-border p-2">
+      <span start class="font-semibold">My Document</span>
+      <span center class="text-sm text-text-muted">Autosaved</span>
+      <div end class="flex gap-2">
+        <dg-button size="sm" variant="outline">Share</dg-button>
+        <dg-button size="sm">Save</dg-button>
+      </div>
+    </dg-toolbar>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="otp-input-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">OTP Input</h2>
+    <div class="flex flex-col gap-3">
+      <dg-otp-input [formControl]="verificationCode" ariaLabel="Verification code" />
+      <p class="text-sm text-text-muted">
+        Value: <span class="font-mono">{{ verificationCode.value || '(empty)' }}</span>
+      </p>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="scroll-top-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Scroll Top</h2>
+    <p class="text-sm text-text-muted">
+      Scroll this page down to see the "back to top" button appear in the
+      bottom-right corner.
+    </p>
+    <dg-scroll-top [threshold]="200" />
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

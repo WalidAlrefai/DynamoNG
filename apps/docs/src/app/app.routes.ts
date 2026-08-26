@@ -209,4 +209,19 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/splitter-doc').then((m) => m.SplitterDocPage),
   },
+  {
+    path: 'components/toolbar',
+    loadComponent: () =>
+      import('./pages/toolbar-doc').then((m) => m.ToolbarDocPage),
+  },
+  {
+    path: 'components/scroll-top',
+    loadComponent: () =>
+      import('./pages/scroll-top-doc').then((m) => m.ScrollTopDocPage),
+  },
+  {
+    path: 'components/otp-input',
+    loadComponent: () =>
+      import('./pages/otp-input-doc').then((m) => m.OtpInputDocPage),
+  },
 ];

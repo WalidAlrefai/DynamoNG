@@ -57,6 +57,9 @@ import type { DynamoFileRejection } from '@dynamong/file-upload';
 import { DynamoInputNumber } from '@dynamong/input-number';
 import { DynamoRating } from '@dynamong/rating';
 import { DynamoSplitter, DynamoSplitterPanel } from '@dynamong/splitter';
+import { DynamoToolbar } from '@dynamong/toolbar';
+import { DynamoScrollTop } from '@dynamong/scroll-top';
+import { DynamoOtpInput } from '@dynamong/otp-input';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -206,6 +209,9 @@ const EMPLOYEES: Employee[] = [
     DynamoRating,
     DynamoSplitter,
     DynamoSplitterPanel,
+    DynamoToolbar,
+    DynamoScrollTop,
+    DynamoOtpInput,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -353,6 +359,8 @@ export class App {
   }
 
   protected readonly quantity = new FormControl<number | null>(3);
+
+  protected readonly verificationCode = new FormControl('', { nonNullable: true });
 
   protected readonly productRating = signal(3);
 
