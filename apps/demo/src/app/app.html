@@ -477,6 +477,122 @@
     <dg-breadcrumb [items]="breadcrumbItems" />
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="carousel-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Carousel</h2>
+    <dg-carousel [autoPlay]="true" styleClass="max-w-md" ariaLabel="Announcements">
+      <dg-carousel-slide>
+        <div
+          class="flex h-48 items-center justify-center bg-primary text-lg font-medium text-on-primary"
+        >
+          Slide 1
+        </div>
+      </dg-carousel-slide>
+      <dg-carousel-slide>
+        <div
+          class="flex h-48 items-center justify-center bg-success text-lg font-medium text-on-primary"
+        >
+          Slide 2
+        </div>
+      </dg-carousel-slide>
+      <dg-carousel-slide>
+        <div
+          class="flex h-48 items-center justify-center bg-info text-lg font-medium text-on-primary"
+        >
+          Slide 3
+        </div>
+      </dg-carousel-slide>
+      <dg-carousel-slide>
+        <div
+          class="flex h-48 items-center justify-center bg-warning text-lg font-medium text-on-primary"
+        >
+          Slide 4
+        </div>
+      </dg-carousel-slide>
+    </dg-carousel>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="slider-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Slider</h2>
+    <div class="max-w-md space-y-2">
+      <span class="text-sm text-text-muted">Volume: {{ volume() }}</span>
+      <dg-slider [(value)]="volume" ariaLabel="Volume" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="split-button-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Split Button</h2>
+    <dg-split-button
+      label="Save"
+      (action)="toast.success('Saved.')"
+      (itemSelect)="toast.info('Selected: ' + $event)"
+    >
+      <dg-menu-item value="save-as" label="Save as..." />
+      <dg-menu-item value="duplicate" label="Duplicate" />
+      <dg-menu-item value="delete" label="Delete" [disabled]="true" />
+    </dg-split-button>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="context-menu-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Context Menu</h2>
+    <dg-context-menu (itemSelect)="toast.info('Selected: ' + $event)">
+      <div
+        class="flex h-32 w-64 items-center justify-center rounded-lg border border-dashed border-border text-sm text-text-muted"
+      >
+        Right-click me
+      </div>
+      <dg-menu-item value="edit" label="Edit" />
+      <dg-menu-item value="duplicate" label="Duplicate" />
+      <dg-menu-item value="archive" label="Archive" [disabled]="true" />
+      <dg-menu-item value="delete" label="Delete" />
+    </dg-context-menu>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="autocomplete-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Autocomplete</h2>
+    <div class="max-w-sm">
+      <dg-autocomplete
+        [options]="fruitOptions"
+        [(value)]="fruit"
+        (optionSelect)="lastFruitSelected.set($event.label)"
+        ariaLabel="Fruit"
+        placeholder="Start typing a fruit..."
+      />
+      @if (lastFruitSelected(); as selected) {
+        <p class="mt-2 text-sm text-text-muted">
+          Last selected: <span class="font-mono">{{ selected }}</span>
+        </p>
+      }
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="color-picker-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Color Picker</h2>
+    <div class="max-w-xs">
+      <dg-color-picker [(value)]="brandColor" ariaLabel="Brand color" />
+      <p class="mt-2 text-sm text-text-muted">
+        Value: <span class="font-mono">{{ brandColor() || '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

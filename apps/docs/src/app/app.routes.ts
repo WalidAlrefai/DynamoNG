@@ -159,4 +159,34 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/breadcrumb-doc').then((m) => m.BreadcrumbDocPage),
   },
+  {
+    path: 'components/carousel',
+    loadComponent: () =>
+      import('./pages/carousel-doc').then((m) => m.CarouselDocPage),
+  },
+  {
+    path: 'components/slider',
+    loadComponent: () =>
+      import('./pages/slider-doc').then((m) => m.SliderDocPage),
+  },
+  {
+    path: 'components/split-button',
+    loadComponent: () =>
+      import('./pages/split-button-doc').then((m) => m.SplitButtonDocPage),
+  },
+  {
+    path: 'components/context-menu',
+    loadComponent: () =>
+      import('./pages/context-menu-doc').then((m) => m.ContextMenuDocPage),
+  },
+  {
+    path: 'components/autocomplete',
+    loadComponent: () =>
+      import('./pages/autocomplete-doc').then((m) => m.AutocompleteDocPage),
+  },
+  {
+    path: 'components/color-picker',
+    loadComponent: () =>
+      import('./pages/color-picker-doc').then((m) => m.ColorPickerDocPage),
+  },
 ];

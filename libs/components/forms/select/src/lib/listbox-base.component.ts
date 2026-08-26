@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import type { ConnectedPosition } from '@angular/cdk/overlay';
+import type { ConnectedPosition, OverlayConfig } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import {
@@ -53,26 +53,63 @@ export abstract class DynamoListboxBase<
 
   private overlayHandle: DynamoOverlayHandle | null = null;
   private portal: TemplatePortal | null = null;
+  private resizeObserver: ResizeObserver | null = null;
 
   protected abstract triggerElRef(): ElementRef<HTMLElement>;
   protected abstract panelTemplateRef(): TemplateRef<unknown>;
   protected abstract overlayPositions(): ConnectedPosition[];
 
+  /**
+   * Override to true to keep the overlay panel's width matched to the
+   * trigger's width, live-synced via `ResizeObserver` as the trigger
+   * resizes. Defaults to false — `DynamoSelect`/`DynamoMultiSelect` keep
+   * their fixed min-width, content-sized panel regardless of the trigger's
+   * width (see `selectPanelWrapperStyles`' own comment). `DynamoAutocomplete`
+   * overrides this to true, since its trigger is a directly-typed-into text
+   * field where a width-matched panel is the expected behavior.
+   */
+  protected matchOverlayWidthToTrigger(): boolean {
+    return false;
+  }
+
   protected attachOverlay(): void {
     if (!this.overlayHandle) {
+      const config: Partial<OverlayConfig> = {
+        hasBackdrop: true,
+        backdropClass: 'cdk-overlay-transparent-backdrop',
+      };
+      if (this.matchOverlayWidthToTrigger()) {
+        config.width =
+          this.triggerElRef().nativeElement.getBoundingClientRect().width;
+      }
+
       const handle = this.overlayService.createConnectedOverlay(
         this.triggerElRef().nativeElement,
         this.overlayPositions(),
-        {
-          hasBackdrop: true,
-          backdropClass: 'cdk-overlay-transparent-backdrop',
-        },
+        config,
       );
       handle.overlayRef
         .backdropClick()
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(() => this.close());
       this.overlayHandle = handle;
+
+      // Not implemented in jsdom — guarded rather than assumed, same
+      // defensiveness as other real-browser-only APIs used in this codebase
+      // (e.g. setPointerCapture in Carousel/Slider). The initial width above
+      // is still set either way; only live resize-tracking is skipped.
+      if (
+        this.matchOverlayWidthToTrigger() &&
+        typeof ResizeObserver !== 'undefined'
+      ) {
+        this.resizeObserver = new ResizeObserver((entries) => {
+          const width = entries[0]?.contentRect.width;
+          if (width !== undefined) {
+            this.overlayHandle?.overlayRef.updateSize({ width });
+          }
+        });
+        this.resizeObserver.observe(this.triggerElRef().nativeElement);
+      }
     }
 
     if (!this.portal) {
@@ -94,6 +131,8 @@ export abstract class DynamoListboxBase<
   }
 
   protected destroyOverlay(): void {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
     this.overlayHandle?.overlayRef.dispose();
     this.overlayHandle = null;
     this.portal = null;

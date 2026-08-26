@@ -231,4 +231,45 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'panel',
     description: 'A path navigation trail with a current-page indicator.',
   },
+  {
+    slug: 'carousel',
+    name: 'Carousel',
+    domain: 'panel',
+    description:
+      'A sliding content carousel with swipe, keyboard, and autoplay navigation.',
+  },
+  {
+    slug: 'slider',
+    name: 'Slider',
+    domain: 'forms',
+    description:
+      'A draggable range input with keyboard stepping and click-to-jump.',
+  },
+  {
+    slug: 'split-button',
+    name: 'Split Button',
+    domain: 'forms',
+    description:
+      'A primary action button with an attached dropdown of secondary actions.',
+  },
+  {
+    slug: 'context-menu',
+    name: 'Context Menu',
+    domain: 'overlay',
+    description: 'A right-click triggered menu positioned at the cursor.',
+  },
+  {
+    slug: 'autocomplete',
+    name: 'Autocomplete',
+    domain: 'forms',
+    description:
+      'A text input with filtered, keyboard-navigable suggestions.',
+  },
+  {
+    slug: 'color-picker',
+    name: 'Color Picker',
+    domain: 'forms',
+    description:
+      'A color input with a hex field, preset swatches, and a native color picker.',
+  },
 ];

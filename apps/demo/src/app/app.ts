@@ -45,6 +45,13 @@ import { DynamoSkeleton } from '@dynamong/skeleton';
 import { DynamoTag } from '@dynamong/tag';
 import { DynamoBreadcrumb } from '@dynamong/breadcrumb';
 import type { DynamoBreadcrumbItem } from '@dynamong/breadcrumb';
+import { DynamoCarousel, DynamoCarouselSlide } from '@dynamong/carousel';
+import { DynamoSlider } from '@dynamong/slider';
+import { DynamoSplitButton } from '@dynamong/split-button';
+import { DynamoContextMenu } from '@dynamong/context-menu';
+import { DynamoAutocomplete } from '@dynamong/autocomplete';
+import type { DynamoSelectOption as DynamoAutocompleteOption } from '@dynamong/autocomplete';
+import { DynamoColorPicker } from '@dynamong/color-picker';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -57,6 +64,16 @@ const SEVERITIES: DynamoSeverity[] = [
   'danger',
 ];
 const VARIANTS = ['solid', 'outline', 'text'] as const;
+
+const FRUIT_OPTIONS: DynamoAutocompleteOption<string>[] = [
+  { label: 'Apple', value: 'apple' },
+  { label: 'Apricot', value: 'apricot' },
+  { label: 'Banana', value: 'banana' },
+  { label: 'Blueberry', value: 'blueberry' },
+  { label: 'Cherry', value: 'cherry' },
+  { label: 'Grape (disabled)', value: 'grape', disabled: true },
+  { label: 'Mango', value: 'mango' },
+];
 
 const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   { label: 'United States', value: 'us' },
@@ -172,6 +189,13 @@ const EMPLOYEES: Employee[] = [
     DynamoSkeleton,
     DynamoTag,
     DynamoBreadcrumb,
+    DynamoCarousel,
+    DynamoCarouselSlide,
+    DynamoSlider,
+    DynamoSplitButton,
+    DynamoContextMenu,
+    DynamoAutocomplete,
+    DynamoColorPicker,
     FormsModule,
   ],
   templateUrl: './app.html',
@@ -301,6 +325,14 @@ export class App {
     { label: 'Products', href: '/products' },
     { label: 'Keyboard' },
   ];
+
+  protected readonly volume = signal(50);
+
+  protected readonly fruitOptions = FRUIT_OPTIONS;
+  protected readonly fruit = signal('');
+  protected readonly lastFruitSelected = signal<string | null>(null);
+
+  protected readonly brandColor = signal('#3b82f6');
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

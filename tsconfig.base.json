@@ -82,6 +82,20 @@
       "@dynamong/tag": ["./libs/components/feedback/tag/src/index.ts"],
       "@dynamong/breadcrumb": [
         "./libs/components/panel/breadcrumb/src/index.ts"
+      ],
+      "@dynamong/carousel": ["./libs/components/panel/carousel/src/index.ts"],
+      "@dynamong/slider": ["./libs/components/forms/slider/src/index.ts"],
+      "@dynamong/split-button": [
+        "./libs/components/forms/split-button/src/index.ts"
+      ],
+      "@dynamong/context-menu": [
+        "./libs/components/overlay/context-menu/src/index.ts"
+      ],
+      "@dynamong/autocomplete": [
+        "./libs/components/forms/autocomplete/src/index.ts"
+      ],
+      "@dynamong/color-picker": [
+        "./libs/components/forms/color-picker/src/index.ts"
       ]
     }
   }
