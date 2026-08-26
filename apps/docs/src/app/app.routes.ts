@@ -169,4 +169,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/slider-doc').then((m) => m.SliderDocPage),
   },
+  {
+    path: 'components/split-button',
+    loadComponent: () =>
+      import('./pages/split-button-doc').then((m) => m.SplitButtonDocPage),
+  },
 ];

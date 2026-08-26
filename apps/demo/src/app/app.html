@@ -525,6 +525,22 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="split-button-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Split Button</h2>
+    <dg-split-button
+      label="Save"
+      (action)="toast.success('Saved.')"
+      (itemSelect)="toast.info('Selected: ' + $event)"
+    >
+      <dg-menu-item value="save-as" label="Save as..." />
+      <dg-menu-item value="duplicate" label="Duplicate" />
+      <dg-menu-item value="delete" label="Delete" [disabled]="true" />
+    </dg-split-button>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

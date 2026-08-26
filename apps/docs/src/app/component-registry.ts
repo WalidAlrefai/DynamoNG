@@ -245,4 +245,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A draggable range input with keyboard stepping and click-to-jump.',
   },
+  {
+    slug: 'split-button',
+    name: 'Split Button',
+    domain: 'forms',
+    description:
+      'A primary action button with an attached dropdown of secondary actions.',
+  },
 ];
