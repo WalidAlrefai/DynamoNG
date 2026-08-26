@@ -55,6 +55,7 @@ import { DynamoColorPicker } from '@dynamong/color-picker';
 import { DynamoFileUpload } from '@dynamong/file-upload';
 import type { DynamoFileRejection } from '@dynamong/file-upload';
 import { DynamoInputNumber } from '@dynamong/input-number';
+import { DynamoRating } from '@dynamong/rating';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -201,6 +202,7 @@ const EMPLOYEES: Employee[] = [
     DynamoColorPicker,
     DynamoFileUpload,
     DynamoInputNumber,
+    DynamoRating,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -348,6 +350,8 @@ export class App {
   }
 
   protected readonly quantity = new FormControl<number | null>(3);
+
+  protected readonly productRating = signal(3);
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

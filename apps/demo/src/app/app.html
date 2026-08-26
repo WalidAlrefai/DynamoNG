@@ -648,6 +648,20 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="rating-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Rating</h2>
+    <div class="flex flex-col gap-4">
+      <dg-rating [(value)]="productRating" ariaLabel="Rate this product" />
+      <p class="text-sm text-text-muted">
+        Value: <span class="font-mono">{{ productRating() }}</span>
+      </p>
+      <dg-rating [value]="4" [readOnly]="true" ariaLabel="Average rating" />
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

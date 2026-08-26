@@ -199,4 +199,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/input-number-doc').then((m) => m.InputNumberDocPage),
   },
+  {
+    path: 'components/rating',
+    loadComponent: () =>
+      import('./pages/rating-doc').then((m) => m.RatingDocPage),
+  },
 ];

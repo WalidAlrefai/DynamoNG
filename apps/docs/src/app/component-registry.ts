@@ -286,4 +286,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A numeric spinner input with increment/decrement buttons, keyboard stepping, and min/max/step bounds.',
   },
+  {
+    slug: 'rating',
+    name: 'Rating',
+    domain: 'forms',
+    description:
+      'A star rating control with click, hover-preview, and keyboard support.',
+  },
 ];
