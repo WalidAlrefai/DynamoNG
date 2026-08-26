@@ -1,0 +1,25 @@
+<div [class]="rootClasses()">
+  <div
+    #track
+    [class]="trackClasses()"
+    (pointerdown)="onTrackPointerDown($event)"
+    (pointermove)="onTrackPointerMove($event)"
+    (pointerup)="onTrackPointerUp()"
+    (pointercancel)="onTrackPointerUp()"
+  >
+    <div [class]="fillClasses()" [style.width.%]="percent()"></div>
+    <div
+      #thumb
+      role="slider"
+      [tabindex]="disabled() ? -1 : 0"
+      [class]="thumbClasses()"
+      [style.left.%]="percent()"
+      [attr.aria-valuenow]="clampedValue()"
+      [attr.aria-valuemin]="min()"
+      [attr.aria-valuemax]="max()"
+      [attr.aria-disabled]="disabled() ? 'true' : null"
+      [attr.aria-label]="ariaLabel() ?? 'Slider'"
+      (keydown)="onThumbKeydown($event)"
+    ></div>
+  </div>
+</div>

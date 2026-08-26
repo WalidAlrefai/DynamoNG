@@ -46,6 +46,7 @@ import { DynamoTag } from '@dynamong/tag';
 import { DynamoBreadcrumb } from '@dynamong/breadcrumb';
 import type { DynamoBreadcrumbItem } from '@dynamong/breadcrumb';
 import { DynamoCarousel, DynamoCarouselSlide } from '@dynamong/carousel';
+import { DynamoSlider } from '@dynamong/slider';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -175,6 +176,7 @@ const EMPLOYEES: Employee[] = [
     DynamoBreadcrumb,
     DynamoCarousel,
     DynamoCarouselSlide,
+    DynamoSlider,
     FormsModule,
   ],
   templateUrl: './app.html',
@@ -304,6 +306,8 @@ export class App {
     { label: 'Products', href: '/products' },
     { label: 'Keyboard' },
   ];
+
+  protected readonly volume = signal(50);
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

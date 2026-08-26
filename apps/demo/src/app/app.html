@@ -514,6 +514,17 @@
     </dg-carousel>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="slider-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Slider</h2>
+    <div class="max-w-md space-y-2">
+      <span class="text-sm text-text-muted">Volume: {{ volume() }}</span>
+      <dg-slider [(value)]="volume" ariaLabel="Volume" />
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

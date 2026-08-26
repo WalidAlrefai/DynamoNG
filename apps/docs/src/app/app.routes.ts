@@ -164,4 +164,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/carousel-doc').then((m) => m.CarouselDocPage),
   },
+  {
+    path: 'components/slider',
+    loadComponent: () =>
+      import('./pages/slider-doc').then((m) => m.SliderDocPage),
+  },
 ];

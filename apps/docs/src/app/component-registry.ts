@@ -238,4 +238,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A sliding content carousel with swipe, keyboard, and autoplay navigation.',
   },
+  {
+    slug: 'slider',
+    name: 'Slider',
+    domain: 'forms',
+    description:
+      'A draggable range input with keyboard stepping and click-to-jump.',
+  },
 ];
