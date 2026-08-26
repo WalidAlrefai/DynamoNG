@@ -90,6 +90,9 @@
       ],
       "@dynamong/context-menu": [
         "./libs/components/overlay/context-menu/src/index.ts"
+      ],
+      "@dynamong/autocomplete": [
+        "./libs/components/forms/autocomplete/src/index.ts"
       ]
     }
   }

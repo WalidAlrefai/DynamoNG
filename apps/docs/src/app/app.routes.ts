@@ -179,4 +179,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/context-menu-doc').then((m) => m.ContextMenuDocPage),
   },
+  {
+    path: 'components/autocomplete',
+    loadComponent: () =>
+      import('./pages/autocomplete-doc').then((m) => m.AutocompleteDocPage),
+  },
 ];

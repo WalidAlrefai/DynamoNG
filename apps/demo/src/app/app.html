@@ -559,6 +559,27 @@
     </dg-context-menu>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="autocomplete-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Autocomplete</h2>
+    <div class="max-w-sm">
+      <dg-autocomplete
+        [options]="fruitOptions"
+        [(value)]="fruit"
+        (optionSelect)="lastFruitSelected.set($event.label)"
+        ariaLabel="Fruit"
+        placeholder="Start typing a fruit..."
+      />
+      @if (lastFruitSelected(); as selected) {
+        <p class="mt-2 text-sm text-text-muted">
+          Last selected: <span class="font-mono">{{ selected }}</span>
+        </p>
+      }
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

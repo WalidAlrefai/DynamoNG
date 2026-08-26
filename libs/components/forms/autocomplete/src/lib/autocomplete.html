@@ -1,0 +1,60 @@
+<input
+  #triggerEl
+  type="text"
+  role="combobox"
+  [id]="fieldId"
+  [class]="fieldClasses()"
+  [disabled]="disabled()"
+  [placeholder]="placeholder()"
+  [value]="value()"
+  aria-haspopup="listbox"
+  aria-autocomplete="list"
+  [attr.aria-expanded]="isOpen()"
+  [attr.aria-controls]="isOpen() ? listboxId : null"
+  [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
+  [attr.aria-invalid]="invalid() ? 'true' : null"
+  [attr.aria-label]="ariaLabel() ?? null"
+  (input)="onInput($event)"
+  (keydown)="onKeydown($event)"
+  (blur)="onBlur()"
+/>
+
+<ng-template #panelTemplate>
+  <div [class]="panelWrapperClasses">
+    <ul
+      [id]="listboxId"
+      role="listbox"
+      [class]="listboxClasses"
+      [attr.aria-label]="ariaLabel() ?? 'Suggestions'"
+    >
+      @for (item of renderItems(); track entryKey(item)) {
+        @if (item.kind === 'heading') {
+          <li role="presentation" [class]="groupHeadingClasses">
+            {{ item.label }}
+          </li>
+        } @else {
+          <li
+            [id]="optionId(item.index)"
+            role="option"
+            tabindex="-1"
+            [attr.aria-selected]="item.index === activeIndex()"
+            [attr.aria-disabled]="item.option.disabled ? 'true' : null"
+            [class]="optionClasses(item.option, item.index)"
+            (mousedown)="$event.preventDefault()"
+            (click)="selectOption(item.option)"
+            (keydown.enter)="selectOption(item.option)"
+            (keydown.space)="selectOption(item.option)"
+            (mouseenter)="activeIndex.set(item.index)"
+          >
+            {{ item.option.label }}
+          </li>
+        }
+      }
+      @if (showNoResults()) {
+        <li role="presentation" [class]="noResultsClasses">
+          <span role="status">{{ noResultsMessage() }}</span>
+        </li>
+      }
+    </ul>
+  </div>
+</ng-template>

@@ -258,4 +258,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'overlay',
     description: 'A right-click triggered menu positioned at the cursor.',
   },
+  {
+    slug: 'autocomplete',
+    name: 'Autocomplete',
+    domain: 'forms',
+    description:
+      'A text input with filtered, keyboard-navigable suggestions.',
+  },
 ];

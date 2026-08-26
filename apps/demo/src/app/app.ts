@@ -49,6 +49,8 @@ import { DynamoCarousel, DynamoCarouselSlide } from '@dynamong/carousel';
 import { DynamoSlider } from '@dynamong/slider';
 import { DynamoSplitButton } from '@dynamong/split-button';
 import { DynamoContextMenu } from '@dynamong/context-menu';
+import { DynamoAutocomplete } from '@dynamong/autocomplete';
+import type { DynamoSelectOption as DynamoAutocompleteOption } from '@dynamong/autocomplete';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -61,6 +63,16 @@ const SEVERITIES: DynamoSeverity[] = [
   'danger',
 ];
 const VARIANTS = ['solid', 'outline', 'text'] as const;
+
+const FRUIT_OPTIONS: DynamoAutocompleteOption<string>[] = [
+  { label: 'Apple', value: 'apple' },
+  { label: 'Apricot', value: 'apricot' },
+  { label: 'Banana', value: 'banana' },
+  { label: 'Blueberry', value: 'blueberry' },
+  { label: 'Cherry', value: 'cherry' },
+  { label: 'Grape (disabled)', value: 'grape', disabled: true },
+  { label: 'Mango', value: 'mango' },
+];
 
 const COUNTRY_OPTIONS: DynamoSelectOption<string>[] = [
   { label: 'United States', value: 'us' },
@@ -181,6 +193,7 @@ const EMPLOYEES: Employee[] = [
     DynamoSlider,
     DynamoSplitButton,
     DynamoContextMenu,
+    DynamoAutocomplete,
     FormsModule,
   ],
   templateUrl: './app.html',
@@ -312,6 +325,10 @@ export class App {
   ];
 
   protected readonly volume = signal(50);
+
+  protected readonly fruitOptions = FRUIT_OPTIONS;
+  protected readonly fruit = signal('');
+  protected readonly lastFruitSelected = signal<string | null>(null);
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));
