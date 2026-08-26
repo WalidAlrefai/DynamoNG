@@ -82,7 +82,8 @@
       "@dynamong/tag": ["./libs/components/feedback/tag/src/index.ts"],
       "@dynamong/breadcrumb": [
         "./libs/components/panel/breadcrumb/src/index.ts"
-      ]
+      ],
+      "@dynamong/carousel": ["./libs/components/panel/carousel/src/index.ts"]
     }
   }
 }

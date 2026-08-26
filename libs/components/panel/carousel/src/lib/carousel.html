@@ -1,0 +1,128 @@
+<section
+  [class]="rootClasses()"
+  [attr.aria-label]="ariaLabel() ?? 'Carousel'"
+  aria-roledescription="carousel"
+  (pointerenter)="onPointerEnterRoot()"
+  (pointerleave)="onPointerLeaveRoot()"
+  (focusin)="onFocusIn()"
+  (focusout)="onFocusOut()"
+>
+  <div
+    #viewport
+    data-testid="carousel-viewport"
+    [class]="viewportClasses"
+    tabindex="0"
+    (keydown)="onViewportKeydown($event)"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp()"
+    (pointercancel)="onPointerUp()"
+  >
+    <div [class]="trackClasses()" [style.transform]="trackTransform()">
+      @for (slide of slides(); track slide; let i = $index) {
+        <div
+          [class]="slideClasses"
+          role="group"
+          aria-roledescription="slide"
+          [attr.aria-label]="slideAriaLabel(i)"
+          [attr.inert]="i !== activeIndex() ? '' : null"
+        >
+          <ng-container [ngTemplateOutlet]="slide.contentTemplate()" />
+        </div>
+      }
+    </div>
+
+    @if (showArrows() && slides().length > 1) {
+      <dg-button
+        type="button"
+        variant="solid"
+        severity="secondary"
+        size="sm"
+        ariaLabel="Previous slide"
+        [styleClass]="prevArrowClasses"
+        [disabled]="!canPrev()"
+        (click)="prev()"
+      >
+        <svg
+          [attr.aria-hidden]="true"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+        >
+          <path
+            d="M10 3l-5 5 5 5"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </dg-button>
+
+      <dg-button
+        type="button"
+        variant="solid"
+        severity="secondary"
+        size="sm"
+        ariaLabel="Next slide"
+        [styleClass]="nextArrowClasses"
+        [disabled]="!canNext()"
+        (click)="next()"
+      >
+        <svg
+          [attr.aria-hidden]="true"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+        >
+          <path
+            d="M6 3l5 5-5 5"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </dg-button>
+    }
+
+    @if (autoPlay()) {
+      <dg-button
+        type="button"
+        variant="solid"
+        severity="secondary"
+        size="sm"
+        [ariaLabel]="userPaused() ? 'Play' : 'Pause'"
+        [styleClass]="playToggleClasses"
+        (click)="toggleAutoPlay()"
+      >
+        {{ userPaused() ? 'Play' : 'Pause' }}
+      </dg-button>
+    }
+  </div>
+
+  @if (showIndicators() && slides().length > 1) {
+    <div
+      [class]="indicatorsClasses"
+      role="tablist"
+      aria-label="Slides"
+      tabindex="-1"
+      (keydown)="onIndicatorKeydown($event)"
+    >
+      @for (slide of slides(); track slide; let i = $index) {
+        <button
+          #dotButton
+          type="button"
+          role="tab"
+          [class]="dotClasses(i === activeIndex())"
+          [attr.aria-label]="'Go to slide ' + (i + 1)"
+          [attr.aria-selected]="i === activeIndex()"
+          [tabindex]="i === activeIndex() ? 0 : -1"
+          (click)="goTo(i)"
+        ></button>
+      }
+    </div>
+  }
+</section>

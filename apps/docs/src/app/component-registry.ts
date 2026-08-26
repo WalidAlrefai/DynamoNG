@@ -231,4 +231,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'panel',
     description: 'A path navigation trail with a current-page indicator.',
   },
+  {
+    slug: 'carousel',
+    name: 'Carousel',
+    domain: 'panel',
+    description:
+      'A sliding content carousel with swipe, keyboard, and autoplay navigation.',
+  },
 ];

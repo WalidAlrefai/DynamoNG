@@ -45,6 +45,7 @@ import { DynamoSkeleton } from '@dynamong/skeleton';
 import { DynamoTag } from '@dynamong/tag';
 import { DynamoBreadcrumb } from '@dynamong/breadcrumb';
 import type { DynamoBreadcrumbItem } from '@dynamong/breadcrumb';
+import { DynamoCarousel, DynamoCarouselSlide } from '@dynamong/carousel';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -172,6 +173,8 @@ const EMPLOYEES: Employee[] = [
     DynamoSkeleton,
     DynamoTag,
     DynamoBreadcrumb,
+    DynamoCarousel,
+    DynamoCarouselSlide,
     FormsModule,
   ],
   templateUrl: './app.html',

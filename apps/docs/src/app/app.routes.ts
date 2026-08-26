@@ -159,4 +159,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/breadcrumb-doc').then((m) => m.BreadcrumbDocPage),
   },
+  {
+    path: 'components/carousel',
+    loadComponent: () =>
+      import('./pages/carousel-doc').then((m) => m.CarouselDocPage),
+  },
 ];
