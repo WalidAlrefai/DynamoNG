@@ -1,0 +1,24 @@
+<div #container [class]="rootClasses()" [attr.data-testid]="'DynamoSplitter'">
+  @for (panel of panels(); track panel; let i = $index) {
+    <div [class]="panelClasses" [style]="panelStyle(i)">
+      <ng-container [ngTemplateOutlet]="panel.contentTemplate()" />
+    </div>
+    @if (i < panels().length - 1) {
+      <div
+        role="separator"
+        [attr.aria-orientation]="orientation()"
+        [tabindex]="disabled() ? -1 : 0"
+        [attr.aria-valuenow]="sizes()[i]"
+        [attr.aria-valuemin]="panel.minSize()"
+        [attr.aria-valuemax]="dividerMax(i)"
+        [attr.aria-disabled]="disabled() ? 'true' : null"
+        [class]="dividerClasses()"
+        [style]="dividerStyle()"
+        (pointerdown)="onDividerPointerDown(i, $event)"
+        (pointermove)="onDividerPointerMove($event)"
+        (pointerup)="onDividerPointerUp()"
+        (keydown)="onDividerKeydown(i, $event)"
+      ></div>
+    }
+  }
+</div>

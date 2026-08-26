@@ -22,7 +22,7 @@ describe('App', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const links = compiled.querySelectorAll('nav a');
-    // 1 home link + 41 component links.
-    expect(links).toHaveLength(42);
+    // 1 home link + 42 component links.
+    expect(links).toHaveLength(43);
   });
 });

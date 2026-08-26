@@ -293,4 +293,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A star rating control with click, hover-preview, and keyboard support.',
   },
+  {
+    slug: 'splitter',
+    name: 'Splitter',
+    domain: 'panel',
+    description:
+      'A resizable multi-pane layout container with draggable dividers.',
+  },
 ];

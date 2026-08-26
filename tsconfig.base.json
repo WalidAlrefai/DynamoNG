@@ -103,7 +103,8 @@
       "@dynamong/input-number": [
         "./libs/components/forms/input-number/src/index.ts"
       ],
-      "@dynamong/rating": ["./libs/components/forms/rating/src/index.ts"]
+      "@dynamong/rating": ["./libs/components/forms/rating/src/index.ts"],
+      "@dynamong/splitter": ["./libs/components/panel/splitter/src/index.ts"]
     }
   }
 }

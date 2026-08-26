@@ -56,6 +56,7 @@ import { DynamoFileUpload } from '@dynamong/file-upload';
 import type { DynamoFileRejection } from '@dynamong/file-upload';
 import { DynamoInputNumber } from '@dynamong/input-number';
 import { DynamoRating } from '@dynamong/rating';
+import { DynamoSplitter, DynamoSplitterPanel } from '@dynamong/splitter';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -203,6 +204,8 @@ const EMPLOYEES: Employee[] = [
     DynamoFileUpload,
     DynamoInputNumber,
     DynamoRating,
+    DynamoSplitter,
+    DynamoSplitterPanel,
     FormsModule,
     ReactiveFormsModule,
   ],

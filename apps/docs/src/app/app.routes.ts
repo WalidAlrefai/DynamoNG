@@ -204,4 +204,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/rating-doc').then((m) => m.RatingDocPage),
   },
+  {
+    path: 'components/splitter',
+    loadComponent: () =>
+      import('./pages/splitter-doc').then((m) => m.SplitterDocPage),
+  },
 ];
