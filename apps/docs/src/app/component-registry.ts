@@ -252,4 +252,10 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A primary action button with an attached dropdown of secondary actions.',
   },
+  {
+    slug: 'context-menu',
+    name: 'Context Menu',
+    domain: 'overlay',
+    description: 'A right-click triggered menu positioned at the cursor.',
+  },
 ];

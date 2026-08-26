@@ -87,6 +87,9 @@
       "@dynamong/slider": ["./libs/components/forms/slider/src/index.ts"],
       "@dynamong/split-button": [
         "./libs/components/forms/split-button/src/index.ts"
+      ],
+      "@dynamong/context-menu": [
+        "./libs/components/overlay/context-menu/src/index.ts"
       ]
     }
   }

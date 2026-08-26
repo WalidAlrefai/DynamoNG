@@ -541,6 +541,24 @@
     </dg-split-button>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="context-menu-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Context Menu</h2>
+    <dg-context-menu (itemSelect)="toast.info('Selected: ' + $event)">
+      <div
+        class="flex h-32 w-64 items-center justify-center rounded-lg border border-dashed border-border text-sm text-text-muted"
+      >
+        Right-click me
+      </div>
+      <dg-menu-item value="edit" label="Edit" />
+      <dg-menu-item value="duplicate" label="Duplicate" />
+      <dg-menu-item value="archive" label="Archive" [disabled]="true" />
+      <dg-menu-item value="delete" label="Delete" />
+    </dg-context-menu>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

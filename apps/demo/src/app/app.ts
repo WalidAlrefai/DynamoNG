@@ -48,6 +48,7 @@ import type { DynamoBreadcrumbItem } from '@dynamong/breadcrumb';
 import { DynamoCarousel, DynamoCarouselSlide } from '@dynamong/carousel';
 import { DynamoSlider } from '@dynamong/slider';
 import { DynamoSplitButton } from '@dynamong/split-button';
+import { DynamoContextMenu } from '@dynamong/context-menu';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -179,6 +180,7 @@ const EMPLOYEES: Employee[] = [
     DynamoCarouselSlide,
     DynamoSlider,
     DynamoSplitButton,
+    DynamoContextMenu,
     FormsModule,
   ],
   templateUrl: './app.html',

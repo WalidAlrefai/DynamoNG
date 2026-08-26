@@ -174,4 +174,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/split-button-doc').then((m) => m.SplitButtonDocPage),
   },
+  {
+    path: 'components/context-menu',
+    loadComponent: () =>
+      import('./pages/context-menu-doc').then((m) => m.ContextMenuDocPage),
+  },
 ];

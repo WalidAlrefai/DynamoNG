@@ -1,0 +1,31 @@
+<div
+  #triggerEl
+  [class]="triggerClasses()"
+  (contextmenu)="onContextMenu($event)"
+>
+  <ng-content select=":not(dg-menu-item)" />
+</div>
+
+<ng-template #panelTemplate>
+  <div
+    role="menu"
+    tabindex="-1"
+    [attr.aria-label]="ariaLabel() ?? 'Context menu'"
+    [class]="panelClasses"
+    (keydown)="onPanelKeydown($event)"
+  >
+    @for (item of items(); track item) {
+      <button
+        #itemButton
+        type="button"
+        role="menuitem"
+        tabindex="-1"
+        [attr.aria-disabled]="item.disabled() ? 'true' : null"
+        [class]="itemClasses(item)"
+        (click)="onItemClick(item)"
+      >
+        {{ item.label() }}
+      </button>
+    }
+  </div>
+</ng-template>
