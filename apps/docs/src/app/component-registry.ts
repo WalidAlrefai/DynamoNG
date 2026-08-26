@@ -272,4 +272,59 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A color input with a hex field, preset swatches, and a native color picker.',
   },
+  {
+    slug: 'file-upload',
+    name: 'File Upload',
+    domain: 'forms',
+    description:
+      'A drag-and-drop and click-to-browse file input with validation and a removable file list.',
+  },
+  {
+    slug: 'input-number',
+    name: 'Input Number',
+    domain: 'forms',
+    description:
+      'A numeric spinner input with increment/decrement buttons, keyboard stepping, and min/max/step bounds.',
+  },
+  {
+    slug: 'rating',
+    name: 'Rating',
+    domain: 'forms',
+    description:
+      'A star rating control with click, hover-preview, and keyboard support.',
+  },
+  {
+    slug: 'splitter',
+    name: 'Splitter',
+    domain: 'panel',
+    description:
+      'A resizable multi-pane layout container with draggable dividers.',
+  },
+  {
+    slug: 'toolbar',
+    name: 'Toolbar',
+    domain: 'panel',
+    description: 'An action bar with start/center/end content-projection slots.',
+  },
+  {
+    slug: 'scroll-top',
+    name: 'Scroll Top',
+    domain: 'overlay',
+    description:
+      'A floating button that scrolls to the top of the page after scrolling past a threshold.',
+  },
+  {
+    slug: 'otp-input',
+    name: 'OTP Input',
+    domain: 'forms',
+    description:
+      'A segmented one-time-code input with auto-advance, backspace-to-previous, and paste support.',
+  },
+  {
+    slug: 'timeline',
+    name: 'Timeline',
+    domain: 'panel',
+    description:
+      'A vertical event/activity list with markers, connecting lines, and per-item content projection.',
+  },
 ];

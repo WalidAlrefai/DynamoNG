@@ -7,7 +7,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DynamoAccordion, DynamoAccordionPanel } from '@dynamong/accordion';
 import { DynamoAlert } from '@dynamong/alert';
 import { DynamoAvatar } from '@dynamong/avatar';
@@ -52,6 +52,15 @@ import { DynamoContextMenu } from '@dynamong/context-menu';
 import { DynamoAutocomplete } from '@dynamong/autocomplete';
 import type { DynamoSelectOption as DynamoAutocompleteOption } from '@dynamong/autocomplete';
 import { DynamoColorPicker } from '@dynamong/color-picker';
+import { DynamoFileUpload } from '@dynamong/file-upload';
+import type { DynamoFileRejection } from '@dynamong/file-upload';
+import { DynamoInputNumber } from '@dynamong/input-number';
+import { DynamoRating } from '@dynamong/rating';
+import { DynamoSplitter, DynamoSplitterPanel } from '@dynamong/splitter';
+import { DynamoToolbar } from '@dynamong/toolbar';
+import { DynamoScrollTop } from '@dynamong/scroll-top';
+import { DynamoOtpInput } from '@dynamong/otp-input';
+import { DynamoTimeline, DynamoTimelineItem } from '@dynamong/timeline';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -196,7 +205,18 @@ const EMPLOYEES: Employee[] = [
     DynamoContextMenu,
     DynamoAutocomplete,
     DynamoColorPicker,
+    DynamoFileUpload,
+    DynamoInputNumber,
+    DynamoRating,
+    DynamoSplitter,
+    DynamoSplitterPanel,
+    DynamoToolbar,
+    DynamoScrollTop,
+    DynamoOtpInput,
+    DynamoTimeline,
+    DynamoTimelineItem,
     FormsModule,
+    ReactiveFormsModule,
   ],
   templateUrl: './app.html',
 })
@@ -333,6 +353,19 @@ export class App {
   protected readonly lastFruitSelected = signal<string | null>(null);
 
   protected readonly brandColor = signal('#3b82f6');
+
+  protected readonly attachments = signal<File[]>([]);
+  protected readonly attachmentRejections = signal<DynamoFileRejection[]>([]);
+
+  protected onAttachmentsRejected(rejections: DynamoFileRejection[]): void {
+    this.attachmentRejections.set(rejections);
+  }
+
+  protected readonly quantity = new FormControl<number | null>(3);
+
+  protected readonly verificationCode = new FormControl('', { nonNullable: true });
+
+  protected readonly productRating = signal(3);
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

@@ -1,0 +1,40 @@
+<div [class]="wrapperClasses()">
+  <button
+    type="button"
+    tabindex="-1"
+    [class]="buttonClasses()"
+    [disabled]="decrementDisabled()"
+    aria-label="Decrement"
+    (click)="decrement()"
+  >
+    &minus;
+  </button>
+  <input
+    type="text"
+    inputmode="decimal"
+    role="spinbutton"
+    [class]="inputClasses"
+    [value]="displayValue()"
+    [attr.aria-valuenow]="value()"
+    [attr.aria-valuemin]="min() ?? null"
+    [attr.aria-valuemax]="max() ?? null"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
+    [placeholder]="placeholder()"
+    [disabled]="disabled()"
+    (input)="onInput($event)"
+    (focus)="onFocus()"
+    (blur)="onBlur()"
+    (keydown)="onKeydown($event)"
+  />
+  <button
+    type="button"
+    tabindex="-1"
+    [class]="buttonClasses()"
+    [disabled]="incrementDisabled()"
+    aria-label="Increment"
+    (click)="increment()"
+  >
+    +
+  </button>
+</div>

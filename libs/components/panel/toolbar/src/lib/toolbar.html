@@ -1,0 +1,16 @@
+<div
+  [class]="rootClasses()"
+  role="toolbar"
+  [attr.aria-label]="ariaLabel() ?? null"
+  [attr.data-testid]="'DynamoToolbar'"
+>
+  <div [class]="startClasses" data-testid="DynamoToolbar-start">
+    <ng-content select="[start]" />
+  </div>
+  <div [class]="centerClasses" data-testid="DynamoToolbar-center">
+    <ng-content select="[center]" />
+  </div>
+  <div [class]="endClasses" data-testid="DynamoToolbar-end">
+    <ng-content select="[end]" />
+  </div>
+</div>

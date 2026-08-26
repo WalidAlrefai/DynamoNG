@@ -96,7 +96,21 @@
       ],
       "@dynamong/color-picker": [
         "./libs/components/forms/color-picker/src/index.ts"
-      ]
+      ],
+      "@dynamong/file-upload": [
+        "./libs/components/forms/file-upload/src/index.ts"
+      ],
+      "@dynamong/input-number": [
+        "./libs/components/forms/input-number/src/index.ts"
+      ],
+      "@dynamong/rating": ["./libs/components/forms/rating/src/index.ts"],
+      "@dynamong/splitter": ["./libs/components/panel/splitter/src/index.ts"],
+      "@dynamong/toolbar": ["./libs/components/panel/toolbar/src/index.ts"],
+      "@dynamong/scroll-top": [
+        "./libs/components/overlay/scroll-top/src/index.ts"
+      ],
+      "@dynamong/otp-input": ["./libs/components/forms/otp-input/src/index.ts"],
+      "@dynamong/timeline": ["./libs/components/panel/timeline/src/index.ts"]
     }
   }
 }

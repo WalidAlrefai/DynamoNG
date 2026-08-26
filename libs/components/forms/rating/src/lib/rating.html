@@ -1,0 +1,43 @@
+<div
+  [class]="rootClasses()"
+  role="slider"
+  [tabindex]="disabled() ? -1 : 0"
+  [attr.aria-valuenow]="displayValue()"
+  aria-valuemin="0"
+  [attr.aria-valuemax]="max()"
+  [attr.aria-readonly]="readOnly() ? 'true' : null"
+  [attr.aria-disabled]="disabled() ? 'true' : null"
+  [attr.aria-label]="ariaLabel() ?? 'Rating'"
+  (keydown)="onKeydown($event)"
+  (mouseleave)="onMouseLeave()"
+>
+  @for (star of stars(); track star) {
+    <!--
+      A plain <span>, not a <button> — the group's role="slider" root above
+      is the only real interactive/focusable element (same as Slider's
+      non-focusable track/fill around its thumb). A nested <button> here
+      would be flagged by axe as a real interactive control nested inside
+      another (role="slider" counts), and would itself need a discernible
+      name it has no good text for (each star isn't independently
+      operable — clicking it only ever sets the group's one value).
+    -->
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- intentionally not independently focusable/keyboard-operable; see comment above -->
+    <span
+      [class]="starButtonClasses"
+      [attr.data-star]="star"
+      (click)="onStarClick(star)"
+      (mouseenter)="onStarMouseEnter(star)"
+    >
+      <svg
+        [class]="starClasses(star)"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        [attr.aria-hidden]="true"
+      >
+        <path
+          d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1 1 5.8L10 14.9l-5.21 2.74 1-5.8-4.21-4.1 5.82-.85L10 1.5z"
+        />
+      </svg>
+    </span>
+  }
+</div>

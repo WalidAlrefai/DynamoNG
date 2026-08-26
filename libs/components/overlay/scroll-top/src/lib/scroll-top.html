@@ -1,0 +1,23 @@
+@if (visible()) {
+  <button
+    type="button"
+    [class]="rootClasses()"
+    [attr.aria-label]="ariaLabel()"
+    [attr.data-testid]="'DynamoScrollTop'"
+    (click)="scrollToTop()"
+  >
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      [attr.aria-hidden]="true"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M10 17a1 1 0 01-1-1V6.414L5.707 9.707a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0l5 5a1 1 0 01-1.414 1.414L11 6.414V16a1 1 0 01-1 1z"
+        clip-rule="evenodd"
+      />
+    </svg>
+  </button>
+}

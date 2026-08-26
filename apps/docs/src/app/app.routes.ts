@@ -189,4 +189,44 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/color-picker-doc').then((m) => m.ColorPickerDocPage),
   },
+  {
+    path: 'components/file-upload',
+    loadComponent: () =>
+      import('./pages/file-upload-doc').then((m) => m.FileUploadDocPage),
+  },
+  {
+    path: 'components/input-number',
+    loadComponent: () =>
+      import('./pages/input-number-doc').then((m) => m.InputNumberDocPage),
+  },
+  {
+    path: 'components/rating',
+    loadComponent: () =>
+      import('./pages/rating-doc').then((m) => m.RatingDocPage),
+  },
+  {
+    path: 'components/splitter',
+    loadComponent: () =>
+      import('./pages/splitter-doc').then((m) => m.SplitterDocPage),
+  },
+  {
+    path: 'components/toolbar',
+    loadComponent: () =>
+      import('./pages/toolbar-doc').then((m) => m.ToolbarDocPage),
+  },
+  {
+    path: 'components/scroll-top',
+    loadComponent: () =>
+      import('./pages/scroll-top-doc').then((m) => m.ScrollTopDocPage),
+  },
+  {
+    path: 'components/otp-input',
+    loadComponent: () =>
+      import('./pages/otp-input-doc').then((m) => m.OtpInputDocPage),
+  },
+  {
+    path: 'components/timeline',
+    loadComponent: () =>
+      import('./pages/timeline-doc').then((m) => m.TimelineDocPage),
+  },
 ];

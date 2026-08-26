@@ -593,6 +593,168 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="file-upload-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">File Upload</h2>
+    <div class="max-w-md">
+      <dg-file-upload
+        [(value)]="attachments"
+        [multiple]="true"
+        accept="image/*,.pdf"
+        [maxFileSize]="5 * 1024 * 1024"
+        ariaLabel="Attachments"
+        (rejected)="onAttachmentsRejected($event)"
+      />
+      @if (attachmentRejections().length > 0) {
+        <ul class="mt-2 text-sm text-danger">
+          @for (rejection of attachmentRejections(); track rejection.file) {
+            <li>
+              {{ rejection.file.name }} —
+              @switch (rejection.reason) {
+                @case ('type') {
+                  unsupported file type
+                }
+                @case ('size') {
+                  over 5 MB
+                }
+                @default {
+                  too many files
+                }
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="input-number-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Input Number</h2>
+    <div class="max-w-xs">
+      <dg-input-number
+        [formControl]="quantity"
+        [min]="0"
+        [max]="10"
+        ariaLabel="Quantity"
+      />
+      <p class="mt-2 text-sm text-text-muted">
+        Value: <span class="font-mono">{{ quantity.value ?? '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="rating-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Rating</h2>
+    <div class="flex flex-col gap-4">
+      <dg-rating [(value)]="productRating" ariaLabel="Rate this product" />
+      <p class="text-sm text-text-muted">
+        Value: <span class="font-mono">{{ productRating() }}</span>
+      </p>
+      <dg-rating [value]="4" [readOnly]="true" ariaLabel="Average rating" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="splitter-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Splitter</h2>
+    <div class="h-64 rounded-md border border-border">
+      <dg-splitter styleClass="h-full">
+        <dg-splitter-panel [initialSize]="25" [minSize]="10">
+          <div class="flex h-full items-center justify-center bg-surface-100 p-4">
+            Sidebar
+          </div>
+        </dg-splitter-panel>
+        <dg-splitter-panel [minSize]="20">
+          <div class="flex h-full items-center justify-center bg-surface-0 p-4">
+            Main content
+          </div>
+        </dg-splitter-panel>
+        <dg-splitter-panel [initialSize]="25" [minSize]="10">
+          <div class="flex h-full items-center justify-center bg-surface-100 p-4">
+            Details
+          </div>
+        </dg-splitter-panel>
+      </dg-splitter>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="toolbar-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Toolbar</h2>
+    <dg-toolbar ariaLabel="Document actions" class="rounded-md border border-border p-2">
+      <span start class="font-semibold">My Document</span>
+      <span center class="text-sm text-text-muted">Autosaved</span>
+      <div end class="flex gap-2">
+        <dg-button size="sm" variant="outline">Share</dg-button>
+        <dg-button size="sm">Save</dg-button>
+      </div>
+    </dg-toolbar>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="otp-input-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">OTP Input</h2>
+    <div class="flex flex-col gap-3">
+      <dg-otp-input [formControl]="verificationCode" ariaLabel="Verification code" />
+      <p class="text-sm text-text-muted">
+        Value: <span class="font-mono">{{ verificationCode.value || '(empty)' }}</span>
+      </p>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="scroll-top-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Scroll Top</h2>
+    <p class="text-sm text-text-muted">
+      Scroll this page down to see the "back to top" button appear in the
+      bottom-right corner.
+    </p>
+    <dg-scroll-top [threshold]="200" />
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="timeline-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Timeline</h2>
+    <div class="max-w-md">
+      <dg-timeline ariaLabel="Order status">
+        <dg-timeline-item severity="success">
+          <p class="font-medium text-text-primary">Order placed</p>
+          <p class="text-sm text-text-muted">Jan 1, 9:02 AM</p>
+        </dg-timeline-item>
+        <dg-timeline-item severity="info">
+          <p class="font-medium text-text-primary">Shipped</p>
+          <p class="text-sm text-text-muted">Jan 2, 4:45 PM</p>
+        </dg-timeline-item>
+        <dg-timeline-item severity="warning">
+          <p class="font-medium text-text-primary">Out for delivery</p>
+          <p class="text-sm text-text-muted">Jan 3, 8:15 AM</p>
+        </dg-timeline-item>
+        <dg-timeline-item severity="primary">
+          <p class="font-medium text-text-primary">Delivered</p>
+          <p class="text-sm text-text-muted">Jan 3, 1:30 PM</p>
+        </dg-timeline-item>
+      </dg-timeline>
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
