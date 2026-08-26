@@ -1,0 +1,7 @@
+<div [class]="markerColumnClasses" [attr.data-testid]="'DynamoTimelineItem-marker'">
+  <span [class]="dotClasses()" [attr.data-testid]="'DynamoTimelineItem-dot'"></span>
+  <span [class]="connectorClasses" [attr.data-testid]="'DynamoTimelineItem-connector'"></span>
+</div>
+<div [class]="contentClasses()" [attr.data-testid]="'DynamoTimelineItem-content'">
+  <ng-content />
+</div>

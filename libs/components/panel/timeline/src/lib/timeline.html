@@ -1,0 +1,8 @@
+<div
+  [class]="rootClasses()"
+  role="list"
+  [attr.aria-label]="ariaLabel() ?? null"
+  [attr.data-testid]="'DynamoTimeline'"
+>
+  <ng-content />
+</div>

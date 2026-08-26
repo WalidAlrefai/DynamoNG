@@ -320,4 +320,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A segmented one-time-code input with auto-advance, backspace-to-previous, and paste support.',
   },
+  {
+    slug: 'timeline',
+    name: 'Timeline',
+    domain: 'panel',
+    description:
+      'A vertical event/activity list with markers, connecting lines, and per-item content projection.',
+  },
 ];

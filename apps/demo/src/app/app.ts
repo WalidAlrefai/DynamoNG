@@ -60,6 +60,7 @@ import { DynamoSplitter, DynamoSplitterPanel } from '@dynamong/splitter';
 import { DynamoToolbar } from '@dynamong/toolbar';
 import { DynamoScrollTop } from '@dynamong/scroll-top';
 import { DynamoOtpInput } from '@dynamong/otp-input';
+import { DynamoTimeline, DynamoTimelineItem } from '@dynamong/timeline';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -212,6 +213,8 @@ const EMPLOYEES: Employee[] = [
     DynamoToolbar,
     DynamoScrollTop,
     DynamoOtpInput,
+    DynamoTimeline,
+    DynamoTimelineItem,
     FormsModule,
     ReactiveFormsModule,
   ],

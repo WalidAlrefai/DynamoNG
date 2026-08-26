@@ -224,4 +224,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/otp-input-doc').then((m) => m.OtpInputDocPage),
   },
+  {
+    path: 'components/timeline',
+    loadComponent: () =>
+      import('./pages/timeline-doc').then((m) => m.TimelineDocPage),
+  },
 ];

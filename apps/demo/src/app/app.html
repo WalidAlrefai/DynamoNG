@@ -728,6 +728,33 @@
     <dg-scroll-top [threshold]="200" />
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="timeline-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Timeline</h2>
+    <div class="max-w-md">
+      <dg-timeline ariaLabel="Order status">
+        <dg-timeline-item severity="success">
+          <p class="font-medium text-text-primary">Order placed</p>
+          <p class="text-sm text-text-muted">Jan 1, 9:02 AM</p>
+        </dg-timeline-item>
+        <dg-timeline-item severity="info">
+          <p class="font-medium text-text-primary">Shipped</p>
+          <p class="text-sm text-text-muted">Jan 2, 4:45 PM</p>
+        </dg-timeline-item>
+        <dg-timeline-item severity="warning">
+          <p class="font-medium text-text-primary">Out for delivery</p>
+          <p class="text-sm text-text-muted">Jan 3, 8:15 AM</p>
+        </dg-timeline-item>
+        <dg-timeline-item severity="primary">
+          <p class="font-medium text-text-primary">Delivered</p>
+          <p class="text-sm text-text-muted">Jan 3, 1:30 PM</p>
+        </dg-timeline-item>
+      </dg-timeline>
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
