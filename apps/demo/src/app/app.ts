@@ -7,7 +7,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { DynamoAccordion, DynamoAccordionPanel } from '@dynamong/accordion';
 import { DynamoAlert } from '@dynamong/alert';
 import { DynamoAvatar } from '@dynamong/avatar';
@@ -54,6 +54,7 @@ import type { DynamoSelectOption as DynamoAutocompleteOption } from '@dynamong/a
 import { DynamoColorPicker } from '@dynamong/color-picker';
 import { DynamoFileUpload } from '@dynamong/file-upload';
 import type { DynamoFileRejection } from '@dynamong/file-upload';
+import { DynamoInputNumber } from '@dynamong/input-number';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -199,7 +200,9 @@ const EMPLOYEES: Employee[] = [
     DynamoAutocomplete,
     DynamoColorPicker,
     DynamoFileUpload,
+    DynamoInputNumber,
     FormsModule,
+    ReactiveFormsModule,
   ],
   templateUrl: './app.html',
 })
@@ -343,6 +346,8 @@ export class App {
   protected onAttachmentsRejected(rejections: DynamoFileRejection[]): void {
     this.attachmentRejections.set(rejections);
   }
+
+  protected readonly quantity = new FormControl<number | null>(3);
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

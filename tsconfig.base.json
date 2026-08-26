@@ -99,6 +99,9 @@
       ],
       "@dynamong/file-upload": [
         "./libs/components/forms/file-upload/src/index.ts"
+      ],
+      "@dynamong/input-number": [
+        "./libs/components/forms/input-number/src/index.ts"
       ]
     }
   }

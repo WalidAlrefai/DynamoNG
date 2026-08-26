@@ -194,4 +194,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/file-upload-doc').then((m) => m.FileUploadDocPage),
   },
+  {
+    path: 'components/input-number',
+    loadComponent: () =>
+      import('./pages/input-number-doc').then((m) => m.InputNumberDocPage),
+  },
 ];

@@ -279,4 +279,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A drag-and-drop and click-to-browse file input with validation and a removable file list.',
   },
+  {
+    slug: 'input-number',
+    name: 'Input Number',
+    domain: 'forms',
+    description:
+      'A numeric spinner input with increment/decrement buttons, keyboard stepping, and min/max/step bounds.',
+  },
 ];

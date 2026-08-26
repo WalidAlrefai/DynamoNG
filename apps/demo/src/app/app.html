@@ -630,6 +630,24 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="input-number-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Input Number</h2>
+    <div class="max-w-xs">
+      <dg-input-number
+        [formControl]="quantity"
+        [min]="0"
+        [max]="10"
+        ariaLabel="Quantity"
+      />
+      <p class="mt-2 text-sm text-text-muted">
+        Value: <span class="font-mono">{{ quantity.value ?? '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
