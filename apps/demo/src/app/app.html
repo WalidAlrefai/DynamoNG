@@ -755,6 +755,91 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="chips-input-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Chips Input</h2>
+    <div class="max-w-md">
+      <dg-chips-input
+        [formControl]="chipTags"
+        placeholder="Add a tag..."
+        ariaLabel="Tags"
+      />
+      <p class="mt-2 text-sm text-text-muted">
+        Value:
+        <span class="font-mono">{{ chipTags.value.join(', ') || '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="tree-select-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Tree Select</h2>
+    <div class="max-w-xs">
+      <dg-tree-select
+        [nodes]="treeSelectNodes"
+        [formControl]="category"
+        ariaLabel="Category"
+      />
+      <p class="mt-2 text-sm text-text-muted">
+        Value: <span class="font-mono">{{ category.value ?? '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="confirm-dialog-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Confirm Dialog</h2>
+    <dg-button severity="danger" (click)="onDeleteConfirm()"
+      >Delete item</dg-button
+    >
+    @if (lastConfirmResult() !== null) {
+      <p class="text-sm text-text-muted">
+        Result: <span class="font-mono">{{ lastConfirmResult() }}</span>
+      </p>
+    }
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="password-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Password</h2>
+    <div class="max-w-xs">
+      <dg-password
+        [(ngModel)]="password"
+        placeholder="Enter a password"
+        [showStrengthMeter]="true"
+        ariaLabel="Password"
+      />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="select-button-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Select Button</h2>
+    <div class="flex flex-col gap-3">
+      <dg-select-button
+        [options]="viewModeOptions"
+        [(value)]="viewMode"
+        ariaLabel="View"
+      />
+      <dg-select-button
+        [options]="tagFilterOptions"
+        [(value)]="tagFilters"
+        [multiple]="true"
+        ariaLabel="Tags"
+      />
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

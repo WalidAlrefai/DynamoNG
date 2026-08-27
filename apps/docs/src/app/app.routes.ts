@@ -229,4 +229,29 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/timeline-doc').then((m) => m.TimelineDocPage),
   },
+  {
+    path: 'components/chips-input',
+    loadComponent: () =>
+      import('./pages/chips-input-doc').then((m) => m.ChipsInputDocPage),
+  },
+  {
+    path: 'components/tree-select',
+    loadComponent: () =>
+      import('./pages/tree-select-doc').then((m) => m.TreeSelectDocPage),
+  },
+  {
+    path: 'components/confirm-dialog',
+    loadComponent: () =>
+      import('./pages/confirm-dialog-doc').then((m) => m.ConfirmDialogDocPage),
+  },
+  {
+    path: 'components/password',
+    loadComponent: () =>
+      import('./pages/password-doc').then((m) => m.PasswordDocPage),
+  },
+  {
+    path: 'components/select-button',
+    loadComponent: () =>
+      import('./pages/select-button-doc').then((m) => m.SelectButtonDocPage),
+  },
 ];

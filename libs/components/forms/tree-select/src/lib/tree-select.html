@@ -1,0 +1,90 @@
+<div #triggerEl [class]="triggerClasses()">
+  <button
+    type="button"
+    role="combobox"
+    [class]="triggerButtonClasses"
+    [disabled]="disabled()"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="isOpen() ? panelId : null"
+    [attr.aria-activedescendant]="isOpen() ? activeEntryId() : null"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
+    [attr.aria-label]="ariaLabel() ?? null"
+    (click)="toggle()"
+    (keydown)="onTriggerKeydown($event)"
+  >
+    {{ selectedLabel() }}
+  </button>
+  <svg
+    [class]="chevronClasses()"
+    [attr.aria-hidden]="true"
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+  >
+    <path
+      d="M4 6l4 4 4-4"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+</div>
+
+<ng-template #panelTemplate>
+  <div
+    [id]="panelId"
+    [class]="panelWrapperClasses"
+    role="tree"
+    [attr.aria-label]="ariaLabel() ?? 'Options'"
+  >
+    @for (entry of visibleEntries(); track entry.node.id; let i = $index) {
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction (including selecting the active row via Enter) is handled on the trigger's own keydown, see tree-select.ts's onTriggerKeydown doc comment -->
+      <div
+        [id]="entryId(i)"
+        role="treeitem"
+        tabindex="-1"
+        [style.padding-left.rem]="entry.depth"
+        [attr.aria-selected]="isSelected(entry.node)"
+        [attr.aria-expanded]="
+          entry.node.children?.length ? isExpanded(entry.node.id) : null
+        "
+        [attr.aria-disabled]="entry.node.disabled ? 'true' : null"
+        [class]="rowClasses(entry, i)"
+        (click)="selectNode(entry.node)"
+        (mouseenter)="activeIndex.set(i)"
+      >
+        @if (entry.node.children?.length) {
+          <button
+            type="button"
+            [class]="expandButtonClasses"
+            [attr.aria-label]="isExpanded(entry.node.id) ? 'Collapse' : 'Expand'"
+            (click)="toggleExpanded(entry.node.id, $event)"
+          >
+            <svg
+              [class]="expandIconClasses(entry.node.id)"
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+              [attr.aria-hidden]="true"
+            >
+              <path
+                d="M6 4l4 4-4 4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        } @else {
+          <span [class]="expandSpacerClasses"></span>
+        }
+        <span>{{ entry.node.label }}</span>
+      </div>
+    }
+  </div>
+</ng-template>

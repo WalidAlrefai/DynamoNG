@@ -327,4 +327,39 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A vertical event/activity list with markers, connecting lines, and per-item content projection.',
   },
+  {
+    slug: 'chips-input',
+    name: 'Chips Input',
+    domain: 'forms',
+    description:
+      'A tag/multi-value text input with Enter-to-commit, backspace-to-remove, and paste-splitting.',
+  },
+  {
+    slug: 'tree-select',
+    name: 'Tree Select',
+    domain: 'forms',
+    description:
+      'A dropdown combobox whose panel shows a hierarchical, expandable tree.',
+  },
+  {
+    slug: 'confirm-dialog',
+    name: 'Confirm Dialog',
+    domain: 'overlay',
+    description:
+      'An imperative confirm-before-action prompt — inject and call, resolves a Promise<boolean> on confirm/cancel.',
+  },
+  {
+    slug: 'password',
+    name: 'Password',
+    domain: 'forms',
+    description:
+      'A masked text input with a show/hide toggle and an optional password-strength meter.',
+  },
+  {
+    slug: 'select-button',
+    name: 'Select Button',
+    domain: 'forms',
+    description:
+      'A segmented row of buttons acting as a single- or multi-select control.',
+  },
 ];

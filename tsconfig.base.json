@@ -110,7 +110,20 @@
         "./libs/components/overlay/scroll-top/src/index.ts"
       ],
       "@dynamong/otp-input": ["./libs/components/forms/otp-input/src/index.ts"],
-      "@dynamong/timeline": ["./libs/components/panel/timeline/src/index.ts"]
+      "@dynamong/timeline": ["./libs/components/panel/timeline/src/index.ts"],
+      "@dynamong/chips-input": [
+        "./libs/components/forms/chips-input/src/index.ts"
+      ],
+      "@dynamong/tree-select": [
+        "./libs/components/forms/tree-select/src/index.ts"
+      ],
+      "@dynamong/confirm-dialog": [
+        "./libs/components/overlay/confirm-dialog/src/index.ts"
+      ],
+      "@dynamong/password": ["./libs/components/forms/password/src/index.ts"],
+      "@dynamong/select-button": [
+        "./libs/components/forms/select-button/src/index.ts"
+      ]
     }
   }
 }
