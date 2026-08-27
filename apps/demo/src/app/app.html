@@ -840,6 +840,65 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="toggle-button-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Toggle Button</h2>
+    <div class="flex flex-wrap items-center gap-2">
+      <dg-toggle-button [(pressed)]="boldPressed">Bold</dg-toggle-button>
+      <dg-toggle-button [(pressed)]="italicPressed">Italic</dg-toggle-button>
+      <dg-toggle-button severity="danger" [(pressed)]="mutedPressed"
+        >Mute</dg-toggle-button
+      >
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="listbox-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Listbox</h2>
+    <div class="flex flex-wrap gap-6">
+      <dg-listbox
+        class="w-48"
+        [options]="viewModeOptions"
+        [(value)]="listboxView"
+        ariaLabel="View"
+      />
+      <dg-listbox
+        class="w-48"
+        [options]="tagFilterOptions"
+        [(value)]="listboxTags"
+        [multiple]="true"
+        ariaLabel="Tags"
+      />
+      <dg-listbox
+        class="w-48"
+        [options]="produceOptions"
+        [(value)]="listboxProduce"
+        ariaLabel="Produce"
+      />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="cascade-select-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Cascade Select</h2>
+    <div class="max-w-xs">
+      <dg-cascade-select
+        [nodes]="cascadeSelectNodes"
+        [formControl]="location"
+        ariaLabel="Location"
+      />
+      <p class="mt-2 text-sm text-text-muted">
+        Value: <span class="font-mono">{{ location.value ?? '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

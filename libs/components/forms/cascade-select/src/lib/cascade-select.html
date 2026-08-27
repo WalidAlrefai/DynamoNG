@@ -1,0 +1,88 @@
+<div #triggerEl [class]="triggerClasses()">
+  <button
+    type="button"
+    role="combobox"
+    [class]="triggerButtonClasses"
+    [disabled]="disabled()"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="isOpen() ? panelIdForLevel(0) : null"
+    [attr.aria-activedescendant]="isOpen() ? activeDescendantId() : null"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
+    [attr.aria-label]="ariaLabel() ?? null"
+    (click)="toggle()"
+    (keydown)="onTriggerKeydown($event)"
+  >
+    {{ selectedLabel() }}
+  </button>
+  <svg
+    [class]="chevronClasses()"
+    [attr.aria-hidden]="true"
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+  >
+    <path
+      d="M4 6l4 4 4-4"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+</div>
+
+<!--
+  One shared template, reused for every open level (root + every flyout).
+  The base class's own `attachOverlay()` attaches this with no context
+  (`levelIndex` comes through as `undefined`), and `levels()[levelIndex ?? 0]`
+  correctly resolves that to level 0 — no special-casing needed for the root
+  panel. Every flyout beyond the root is attached by this component itself
+  (see cascade-select.ts's constructor effect), each with an explicit
+  `{ levelIndex }` context.
+-->
+<ng-template #panelTemplate let-levelIndex="levelIndex">
+  @if (levels()[levelIndex ?? 0]; as level) {
+    <div
+      [id]="panelIdForLevel(levelIndex ?? 0)"
+      [class]="panelWrapperClasses"
+      role="listbox"
+      [attr.aria-label]="ariaLabel() ?? 'Options'"
+    >
+      @for (node of level.nodes; track node.id; let i = $index) {
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown, see cascade-select.ts's onTriggerKeydown doc comment -->
+        <div
+          [id]="rowId(levelIndex ?? 0, i)"
+          role="option"
+          tabindex="-1"
+          [attr.aria-selected]="isSelected(node)"
+          [attr.aria-disabled]="node.disabled ? 'true' : null"
+          [class]="rowClasses(node, levelIndex ?? 0, i)"
+          (mouseenter)="onRowHover(levelIndex ?? 0, i)"
+          (click)="onRowActivate(levelIndex ?? 0, i)"
+        >
+          <span>{{ node.label }}</span>
+          @if (node.children?.length) {
+            <svg
+              [class]="caretClasses"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              [attr.aria-hidden]="true"
+            >
+              <path
+                d="M6 4l4 4-4 4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          }
+        </div>
+      }
+    </div>
+  }
+</ng-template>

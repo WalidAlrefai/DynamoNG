@@ -362,4 +362,25 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A segmented row of buttons acting as a single- or multi-select control.',
   },
+  {
+    slug: 'toggle-button',
+    name: 'Toggle Button',
+    domain: 'forms',
+    description:
+      'A single pressable button with a pressed/unpressed visual state.',
+  },
+  {
+    slug: 'listbox',
+    name: 'Listbox',
+    domain: 'forms',
+    description:
+      'An always-visible, single- or multi-select option list — no trigger, no overlay.',
+  },
+  {
+    slug: 'cascade-select',
+    name: 'Cascade Select',
+    domain: 'forms',
+    description:
+      'A multi-level dependent dropdown — selecting a branch reveals its children in a side flyout, down to a leaf.',
+  },
 ];

@@ -1,0 +1,38 @@
+<ul
+  [id]="listboxId"
+  role="listbox"
+  [attr.aria-multiselectable]="multiple() ? 'true' : null"
+  [attr.aria-label]="ariaLabel() ?? null"
+  [attr.aria-disabled]="disabled() ? 'true' : null"
+  [attr.tabindex]="disabled() ? -1 : 0"
+  [attr.aria-activedescendant]="activeOptionId()"
+  [class]="rootClasses()"
+  (keydown)="onKeydown($event)"
+>
+  @for (item of renderItems(); track entryKey(item)) {
+    @if (item.kind === 'heading') {
+      <li role="presentation" [class]="groupHeadingClasses">{{ item.label }}</li>
+    } @else {
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are tabindex="-1"/mouse-only by design; all keyboard handling lives on the root's (keydown), same reasoning as TreeSelect's/Rating's per-row bindings. -->
+      <li
+        [id]="optionId(item.index)"
+        role="option"
+        tabindex="-1"
+        [attr.aria-selected]="isSelected(item.option)"
+        [attr.aria-disabled]="item.option.disabled ? 'true' : null"
+        [class]="optionClasses(item.option, item.index)"
+        (click)="activate(item.option)"
+        (mouseenter)="activeIndex.set(item.index)"
+      >
+        @if (multiple()) {
+          <span [class]="checkboxClasses(item.option)" [attr.aria-hidden]="true">
+            @if (isSelected(item.option)) {
+              <dg-icon-check size="sm" />
+            }
+          </span>
+        }
+        <span>{{ item.option.label }}</span>
+      </li>
+    }
+  }
+</ul>

@@ -254,4 +254,19 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/select-button-doc').then((m) => m.SelectButtonDocPage),
   },
+  {
+    path: 'components/toggle-button',
+    loadComponent: () =>
+      import('./pages/toggle-button-doc').then((m) => m.ToggleButtonDocPage),
+  },
+  {
+    path: 'components/listbox',
+    loadComponent: () =>
+      import('./pages/listbox-doc').then((m) => m.ListboxDocPage),
+  },
+  {
+    path: 'components/cascade-select',
+    loadComponent: () =>
+      import('./pages/cascade-select-doc').then((m) => m.CascadeSelectDocPage),
+  },
 ];

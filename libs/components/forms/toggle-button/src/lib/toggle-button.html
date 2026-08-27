@@ -1,0 +1,13 @@
+<dg-button
+  type="button"
+  [ariaPressed]="pressed()"
+  [ariaLabel]="ariaLabel() ?? undefined"
+  [variant]="pressed() ? 'solid' : 'outline'"
+  [severity]="pressed() ? severity() : 'secondary'"
+  [size]="size()"
+  [disabled]="disabled()"
+  [styleClass]="innerStyleClass()"
+  (click)="togglePressed()"
+>
+  <ng-content />
+</dg-button>

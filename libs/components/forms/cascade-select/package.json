@@ -1,0 +1,17 @@
+{
+  "name": "@dynamong/cascade-select",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^22.0.0",
+    "@angular/cdk": "^22.0.0",
+    "@angular/forms": "^22.0.0",
+    "@dynamong/core": "0.0.1",
+    "@dynamong/utils": "0.0.1",
+    "@dynamong/select": "0.0.1",
+    "@dynamong/tree": "0.0.1"
+  },
+  "dependencies": {
+    "class-variance-authority": "0.7.1"
+  },
+  "sideEffects": false
+}
