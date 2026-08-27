@@ -244,4 +244,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/confirm-dialog-doc').then((m) => m.ConfirmDialogDocPage),
   },
+  {
+    path: 'components/password',
+    loadComponent: () =>
+      import('./pages/password-doc').then((m) => m.PasswordDocPage),
+  },
 ];

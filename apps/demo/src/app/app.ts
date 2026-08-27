@@ -64,6 +64,7 @@ import { DynamoTimeline, DynamoTimelineItem } from '@dynamong/timeline';
 import { DynamoChipsInput } from '@dynamong/chips-input';
 import { DynamoTreeSelect } from '@dynamong/tree-select';
 import { DynamoConfirmService } from '@dynamong/confirm-dialog';
+import { DynamoPassword } from '@dynamong/password';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -220,6 +221,7 @@ const EMPLOYEES: Employee[] = [
     DynamoTimelineItem,
     DynamoChipsInput,
     DynamoTreeSelect,
+    DynamoPassword,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -399,6 +401,8 @@ export class App {
   protected readonly category = new FormControl<string | null>(null);
 
   protected readonly productRating = signal(3);
+
+  protected readonly password = signal('');
 
   protected onDeleteConfirm(): void {
     this.confirm

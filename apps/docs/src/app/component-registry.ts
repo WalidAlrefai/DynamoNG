@@ -348,4 +348,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'An imperative confirm-before-action prompt — inject and call, resolves a Promise<boolean> on confirm/cancel.',
   },
+  {
+    slug: 'password',
+    name: 'Password',
+    domain: 'forms',
+    description:
+      'A masked text input with a show/hide toggle and an optional password-strength meter.',
+  },
 ];

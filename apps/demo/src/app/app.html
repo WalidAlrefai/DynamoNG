@@ -805,6 +805,21 @@
     }
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="password-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Password</h2>
+    <div class="max-w-xs">
+      <dg-password
+        [(ngModel)]="password"
+        placeholder="Enter a password"
+        [showStrengthMeter]="true"
+        ariaLabel="Password"
+      />
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

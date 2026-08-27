@@ -119,7 +119,8 @@
       ],
       "@dynamong/confirm-dialog": [
         "./libs/components/overlay/confirm-dialog/src/index.ts"
-      ]
+      ],
+      "@dynamong/password": ["./libs/components/forms/password/src/index.ts"]
     }
   }
 }
