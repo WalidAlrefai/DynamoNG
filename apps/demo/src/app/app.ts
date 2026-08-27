@@ -66,6 +66,7 @@ import { DynamoTreeSelect } from '@dynamong/tree-select';
 import { DynamoConfirmService } from '@dynamong/confirm-dialog';
 import { DynamoPassword } from '@dynamong/password';
 import { DynamoSelectButton } from '@dynamong/select-button';
+import { DynamoToggleButton } from '@dynamong/toggle-button';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -237,6 +238,7 @@ const EMPLOYEES: Employee[] = [
     DynamoTreeSelect,
     DynamoPassword,
     DynamoSelectButton,
+    DynamoToggleButton,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -423,6 +425,10 @@ export class App {
   protected readonly tagFilterOptions = TAG_FILTER_OPTIONS;
   protected readonly viewMode = signal<string | null>('list');
   protected readonly tagFilters = signal<string[]>(['bug']);
+
+  protected readonly boldPressed = signal(false);
+  protected readonly italicPressed = signal(false);
+  protected readonly mutedPressed = signal(false);
 
   protected onDeleteConfirm(): void {
     this.confirm

@@ -123,6 +123,9 @@
       "@dynamong/password": ["./libs/components/forms/password/src/index.ts"],
       "@dynamong/select-button": [
         "./libs/components/forms/select-button/src/index.ts"
+      ],
+      "@dynamong/toggle-button": [
+        "./libs/components/forms/toggle-button/src/index.ts"
       ]
     }
   }

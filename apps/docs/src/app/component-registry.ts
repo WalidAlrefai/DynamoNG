@@ -362,4 +362,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A segmented row of buttons acting as a single- or multi-select control.',
   },
+  {
+    slug: 'toggle-button',
+    name: 'Toggle Button',
+    domain: 'forms',
+    description:
+      'A single pressable button with a pressed/unpressed visual state.',
+  },
 ];
