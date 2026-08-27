@@ -49,6 +49,14 @@ export class DynamoButton extends DynamoBaseComponent<DynamoButtonPart> {
     | 'false'
     | undefined
   >(undefined);
+  /** Forwarded to the native `<button>` as `role`, overriding its implicit button role — e.g. `'radio'` for a button acting as one segment of a single-select group. Same forwarding rationale as `ariaLabel`. */
+  readonly role = input<string | undefined>(undefined);
+  /** Forwarded to the native `<button>` as `aria-checked` — for a button acting as a radio-group segment. */
+  readonly ariaChecked = input<boolean | undefined>(undefined);
+  /** Forwarded to the native `<button>` as `aria-pressed` — for a button acting as a toggle in a multi-select group. */
+  readonly ariaPressed = input<boolean | undefined>(undefined);
+  /** Forwarded to the native `<button>` as `tabindex`, overriding its default tab-stop membership — for roving-tabindex patterns like Select Button's segmented control. */
+  readonly tabIndexOverride = input<number | undefined>(undefined);
 
   protected readonly isDisabled = computed(
     () => this.disabled() || this.loading(),

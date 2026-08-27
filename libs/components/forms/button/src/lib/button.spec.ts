@@ -150,6 +150,62 @@ describe('DynamoButton', () => {
         within(container).getByRole('button').hasAttribute('aria-current'),
       ).toBe(false);
     });
+
+    it('forwards role to the native button, overriding its implicit role', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { role: 'radio' },
+      });
+
+      expect(container.querySelector('button')?.getAttribute('role')).toBe('radio');
+    });
+
+    it('omits role entirely when role is unset', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+
+      expect(container.querySelector('button')?.hasAttribute('role')).toBe(false);
+    });
+
+    it('forwards ariaChecked to the native button as aria-checked', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { ariaChecked: true },
+      });
+
+      expect(container.querySelector('button')?.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('omits aria-checked entirely when ariaChecked is unset', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+
+      expect(container.querySelector('button')?.hasAttribute('aria-checked')).toBe(false);
+    });
+
+    it('forwards ariaPressed to the native button as aria-pressed', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { ariaPressed: false },
+      });
+
+      expect(container.querySelector('button')?.getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('omits aria-pressed entirely when ariaPressed is unset', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+
+      expect(container.querySelector('button')?.hasAttribute('aria-pressed')).toBe(false);
+    });
+
+    it('forwards tabIndexOverride to the native button as tabindex', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { tabIndexOverride: -1 },
+      });
+
+      expect(container.querySelector('button')?.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('omits tabindex entirely when tabIndexOverride is unset', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+
+      expect(container.querySelector('button')?.hasAttribute('tabindex')).toBe(false);
+    });
   });
 
   describe('output events', () => {

@@ -5,6 +5,10 @@
   [attr.aria-busy]="loading() ? 'true' : null"
   [attr.aria-label]="ariaLabel() ?? null"
   [attr.aria-current]="ariaCurrent() ?? null"
+  [attr.role]="role() ?? null"
+  [attr.aria-checked]="ariaChecked() ?? null"
+  [attr.aria-pressed]="ariaPressed() ?? null"
+  [attr.tabindex]="tabIndexOverride() ?? null"
 >
   @if (loading()) {
   <dg-spinner size="sm" />

@@ -65,6 +65,7 @@ import { DynamoChipsInput } from '@dynamong/chips-input';
 import { DynamoTreeSelect } from '@dynamong/tree-select';
 import { DynamoConfirmService } from '@dynamong/confirm-dialog';
 import { DynamoPassword } from '@dynamong/password';
+import { DynamoSelectButton } from '@dynamong/select-button';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -103,6 +104,19 @@ const SKILL_OPTIONS: DynamoSelectOption<string>[] = [
   { label: 'Svelte', value: 'svelte' },
   { label: 'TypeScript', value: 'typescript' },
   { label: 'CSS', value: 'css', disabled: true },
+];
+
+const VIEW_MODE_OPTIONS: DynamoSelectOption<string>[] = [
+  { label: 'List', value: 'list' },
+  { label: 'Grid', value: 'grid' },
+  { label: 'Card', value: 'card' },
+];
+
+const TAG_FILTER_OPTIONS: DynamoSelectOption<string>[] = [
+  { label: 'Urgent', value: 'urgent' },
+  { label: 'Bug', value: 'bug' },
+  { label: 'Feature', value: 'feature' },
+  { label: 'Archived', value: 'archived', disabled: true },
 ];
 
 interface Product {
@@ -222,6 +236,7 @@ const EMPLOYEES: Employee[] = [
     DynamoChipsInput,
     DynamoTreeSelect,
     DynamoPassword,
+    DynamoSelectButton,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -403,6 +418,11 @@ export class App {
   protected readonly productRating = signal(3);
 
   protected readonly password = signal('');
+
+  protected readonly viewModeOptions = VIEW_MODE_OPTIONS;
+  protected readonly tagFilterOptions = TAG_FILTER_OPTIONS;
+  protected readonly viewMode = signal<string | null>('list');
+  protected readonly tagFilters = signal<string[]>(['bug']);
 
   protected onDeleteConfirm(): void {
     this.confirm

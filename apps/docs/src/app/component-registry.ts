@@ -355,4 +355,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A masked text input with a show/hide toggle and an optional password-strength meter.',
   },
+  {
+    slug: 'select-button',
+    name: 'Select Button',
+    domain: 'forms',
+    description:
+      'A segmented row of buttons acting as a single- or multi-select control.',
+  },
 ];

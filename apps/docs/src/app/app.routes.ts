@@ -249,4 +249,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/password-doc').then((m) => m.PasswordDocPage),
   },
+  {
+    path: 'components/select-button',
+    loadComponent: () =>
+      import('./pages/select-button-doc').then((m) => m.SelectButtonDocPage),
+  },
 ];
