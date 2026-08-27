@@ -327,4 +327,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A vertical event/activity list with markers, connecting lines, and per-item content projection.',
   },
+  {
+    slug: 'chips-input',
+    name: 'Chips Input',
+    domain: 'forms',
+    description:
+      'A tag/multi-value text input with Enter-to-commit, backspace-to-remove, and paste-splitting.',
+  },
 ];

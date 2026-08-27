@@ -229,4 +229,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/timeline-doc').then((m) => m.TimelineDocPage),
   },
+  {
+    path: 'components/chips-input',
+    loadComponent: () =>
+      import('./pages/chips-input-doc').then((m) => m.ChipsInputDocPage),
+  },
 ];

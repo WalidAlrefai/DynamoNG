@@ -110,7 +110,10 @@
         "./libs/components/overlay/scroll-top/src/index.ts"
       ],
       "@dynamong/otp-input": ["./libs/components/forms/otp-input/src/index.ts"],
-      "@dynamong/timeline": ["./libs/components/panel/timeline/src/index.ts"]
+      "@dynamong/timeline": ["./libs/components/panel/timeline/src/index.ts"],
+      "@dynamong/chips-input": [
+        "./libs/components/forms/chips-input/src/index.ts"
+      ]
     }
   }
 }

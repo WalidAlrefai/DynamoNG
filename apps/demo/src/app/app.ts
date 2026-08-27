@@ -61,6 +61,7 @@ import { DynamoToolbar } from '@dynamong/toolbar';
 import { DynamoScrollTop } from '@dynamong/scroll-top';
 import { DynamoOtpInput } from '@dynamong/otp-input';
 import { DynamoTimeline, DynamoTimelineItem } from '@dynamong/timeline';
+import { DynamoChipsInput } from '@dynamong/chips-input';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -215,6 +216,7 @@ const EMPLOYEES: Employee[] = [
     DynamoOtpInput,
     DynamoTimeline,
     DynamoTimelineItem,
+    DynamoChipsInput,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -364,6 +366,11 @@ export class App {
   protected readonly quantity = new FormControl<number | null>(3);
 
   protected readonly verificationCode = new FormControl('', { nonNullable: true });
+
+  protected readonly chipTags = new FormControl<string[]>(
+    ['angular', 'tailwind'],
+    { nonNullable: true },
+  );
 
   protected readonly productRating = signal(3);
 
