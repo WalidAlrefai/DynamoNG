@@ -264,4 +264,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/listbox-doc').then((m) => m.ListboxDocPage),
   },
+  {
+    path: 'components/cascade-select',
+    loadComponent: () =>
+      import('./pages/cascade-select-doc').then((m) => m.CascadeSelectDocPage),
+  },
 ];

@@ -376,4 +376,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'An always-visible, single- or multi-select option list — no trigger, no overlay.',
   },
+  {
+    slug: 'cascade-select',
+    name: 'Cascade Select',
+    domain: 'forms',
+    description:
+      'A multi-level dependent dropdown — selecting a branch reveals its children in a side flyout, down to a leaf.',
+  },
 ];

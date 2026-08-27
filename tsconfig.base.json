@@ -127,7 +127,10 @@
       "@dynamong/toggle-button": [
         "./libs/components/forms/toggle-button/src/index.ts"
       ],
-      "@dynamong/listbox": ["./libs/components/forms/listbox/src/index.ts"]
+      "@dynamong/listbox": ["./libs/components/forms/listbox/src/index.ts"],
+      "@dynamong/cascade-select": [
+        "./libs/components/forms/cascade-select/src/index.ts"
+      ]
     }
   }
 }

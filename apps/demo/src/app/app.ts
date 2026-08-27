@@ -68,6 +68,7 @@ import { DynamoPassword } from '@dynamong/password';
 import { DynamoSelectButton } from '@dynamong/select-button';
 import { DynamoToggleButton } from '@dynamong/toggle-button';
 import { DynamoListbox } from '@dynamong/listbox';
+import { DynamoCascadeSelect } from '@dynamong/cascade-select';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -248,6 +249,7 @@ const EMPLOYEES: Employee[] = [
     DynamoSelectButton,
     DynamoToggleButton,
     DynamoListbox,
+    DynamoCascadeSelect,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -443,6 +445,45 @@ export class App {
   protected readonly listboxView = signal<string | null>('list');
   protected readonly listboxTags = signal<string[]>(['bug']);
   protected readonly listboxProduce = signal<string | null>(null);
+
+  protected readonly cascadeSelectNodes: DynamoTreeNode<string>[] = [
+    {
+      id: 'usa',
+      label: 'United States',
+      children: [
+        {
+          id: 'california',
+          label: 'California',
+          children: [
+            { id: 'la', label: 'Los Angeles', value: 'la' },
+            { id: 'sf', label: 'San Francisco', value: 'sf' },
+          ],
+        },
+        {
+          id: 'texas',
+          label: 'Texas',
+          children: [
+            { id: 'austin', label: 'Austin', value: 'austin' },
+            { id: 'dallas', label: 'Dallas', value: 'dallas', disabled: true },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'canada',
+      label: 'Canada',
+      children: [
+        {
+          id: 'ontario',
+          label: 'Ontario',
+          disabled: true,
+          children: [{ id: 'toronto', label: 'Toronto', value: 'toronto' }],
+        },
+      ],
+    },
+    { id: 'mexico', label: 'Mexico', value: 'mexico' },
+  ];
+  protected readonly location = new FormControl<string | null>(null);
 
   protected onDeleteConfirm(): void {
     this.confirm

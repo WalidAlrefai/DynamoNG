@@ -882,6 +882,23 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="cascade-select-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Cascade Select</h2>
+    <div class="max-w-xs">
+      <dg-cascade-select
+        [nodes]="cascadeSelectNodes"
+        [formControl]="location"
+        ariaLabel="Location"
+      />
+      <p class="mt-2 text-sm text-text-muted">
+        Value: <span class="font-mono">{{ location.value ?? '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
