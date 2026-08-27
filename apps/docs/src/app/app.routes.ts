@@ -239,4 +239,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/tree-select-doc').then((m) => m.TreeSelectDocPage),
   },
+  {
+    path: 'components/confirm-dialog',
+    loadComponent: () =>
+      import('./pages/confirm-dialog-doc').then((m) => m.ConfirmDialogDocPage),
+  },
 ];

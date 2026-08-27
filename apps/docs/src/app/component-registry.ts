@@ -341,4 +341,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A dropdown combobox whose panel shows a hierarchical, expandable tree.',
   },
+  {
+    slug: 'confirm-dialog',
+    name: 'Confirm Dialog',
+    domain: 'overlay',
+    description:
+      'An imperative confirm-before-action prompt — inject and call, resolves a Promise<boolean> on confirm/cancel.',
+  },
 ];

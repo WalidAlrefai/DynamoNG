@@ -63,6 +63,7 @@ import { DynamoOtpInput } from '@dynamong/otp-input';
 import { DynamoTimeline, DynamoTimelineItem } from '@dynamong/timeline';
 import { DynamoChipsInput } from '@dynamong/chips-input';
 import { DynamoTreeSelect } from '@dynamong/tree-select';
+import { DynamoConfirmService } from '@dynamong/confirm-dialog';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -226,6 +227,8 @@ const EMPLOYEES: Employee[] = [
 })
 export class App {
   protected readonly toast = inject(DynamoToastService);
+  protected readonly confirm = inject(DynamoConfirmService);
+  protected readonly lastConfirmResult = signal<boolean | null>(null);
 
   protected readonly severities = SEVERITIES;
   protected readonly variants = VARIANTS;
@@ -396,6 +399,17 @@ export class App {
   protected readonly category = new FormControl<string | null>(null);
 
   protected readonly productRating = signal(3);
+
+  protected onDeleteConfirm(): void {
+    this.confirm
+      .open({
+        title: 'Delete item',
+        message: 'Are you sure? This cannot be undone.',
+        severity: 'danger',
+        confirmLabel: 'Delete',
+      })
+      .then((result) => this.lastConfirmResult.set(result));
+  }
 
   protected removeTag(tag: string): void {
     this.tags.update((tags) => tags.filter((t) => t !== tag));

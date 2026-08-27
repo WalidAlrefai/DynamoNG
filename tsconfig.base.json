@@ -116,6 +116,9 @@
       ],
       "@dynamong/tree-select": [
         "./libs/components/forms/tree-select/src/index.ts"
+      ],
+      "@dynamong/confirm-dialog": [
+        "./libs/components/overlay/confirm-dialog/src/index.ts"
       ]
     }
   }

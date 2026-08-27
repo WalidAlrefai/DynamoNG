@@ -790,6 +790,21 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="confirm-dialog-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Confirm Dialog</h2>
+    <dg-button severity="danger" (click)="onDeleteConfirm()"
+      >Delete item</dg-button
+    >
+    @if (lastConfirmResult() !== null) {
+      <p class="text-sm text-text-muted">
+        Result: <span class="font-mono">{{ lastConfirmResult() }}</span>
+      </p>
+    }
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.
