@@ -369,4 +369,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A single pressable button with a pressed/unpressed visual state.',
   },
+  {
+    slug: 'listbox',
+    name: 'Listbox',
+    domain: 'forms',
+    description:
+      'An always-visible, single- or multi-select option list — no trigger, no overlay.',
+  },
 ];

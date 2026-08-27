@@ -126,7 +126,8 @@
       ],
       "@dynamong/toggle-button": [
         "./libs/components/forms/toggle-button/src/index.ts"
-      ]
+      ],
+      "@dynamong/listbox": ["./libs/components/forms/listbox/src/index.ts"]
     }
   }
 }

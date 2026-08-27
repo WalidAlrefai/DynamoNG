@@ -854,6 +854,34 @@
     </div>
   </section>
 
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="listbox-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Listbox</h2>
+    <div class="flex flex-wrap gap-6">
+      <dg-listbox
+        class="w-48"
+        [options]="viewModeOptions"
+        [(value)]="listboxView"
+        ariaLabel="View"
+      />
+      <dg-listbox
+        class="w-48"
+        [options]="tagFilterOptions"
+        [(value)]="listboxTags"
+        [multiple]="true"
+        ariaLabel="Tags"
+      />
+      <dg-listbox
+        class="w-48"
+        [options]="produceOptions"
+        [(value)]="listboxProduce"
+        ariaLabel="Produce"
+      />
+    </div>
+  </section>
+
   <dg-dialog [(open)]="confirmationOpen" title="Profile saved">
     <p class="text-text-primary">
       Thanks{{ name() ? ', ' + name() : '' }} — your profile has been saved.

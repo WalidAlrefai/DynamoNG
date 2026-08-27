@@ -259,4 +259,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/toggle-button-doc').then((m) => m.ToggleButtonDocPage),
   },
+  {
+    path: 'components/listbox',
+    loadComponent: () =>
+      import('./pages/listbox-doc').then((m) => m.ListboxDocPage),
+  },
 ];
