@@ -62,6 +62,7 @@ import { DynamoScrollTop } from '@dynamong/scroll-top';
 import { DynamoOtpInput } from '@dynamong/otp-input';
 import { DynamoTimeline, DynamoTimelineItem } from '@dynamong/timeline';
 import { DynamoChipsInput } from '@dynamong/chips-input';
+import { DynamoTreeSelect } from '@dynamong/tree-select';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -217,6 +218,7 @@ const EMPLOYEES: Employee[] = [
     DynamoTimeline,
     DynamoTimelineItem,
     DynamoChipsInput,
+    DynamoTreeSelect,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -371,6 +373,27 @@ export class App {
     ['angular', 'tailwind'],
     { nonNullable: true },
   );
+
+  protected readonly treeSelectNodes: DynamoTreeNode<string>[] = [
+    {
+      id: 'fruits',
+      label: 'Fruits',
+      children: [
+        { id: 'apple', label: 'Apple', value: 'apple' },
+        { id: 'banana', label: 'Banana', value: 'banana' },
+      ],
+    },
+    {
+      id: 'veggies',
+      label: 'Vegetables',
+      children: [
+        { id: 'carrot', label: 'Carrot', value: 'carrot', disabled: true },
+        { id: 'pea', label: 'Pea', value: 'pea' },
+      ],
+    },
+    { id: 'grain', label: 'Grain', value: 'grain' },
+  ];
+  protected readonly category = new FormControl<string | null>(null);
 
   protected readonly productRating = signal(3);
 

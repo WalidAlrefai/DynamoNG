@@ -334,4 +334,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A tag/multi-value text input with Enter-to-commit, backspace-to-remove, and paste-splitting.',
   },
+  {
+    slug: 'tree-select',
+    name: 'Tree Select',
+    domain: 'forms',
+    description:
+      'A dropdown combobox whose panel shows a hierarchical, expandable tree.',
+  },
 ];

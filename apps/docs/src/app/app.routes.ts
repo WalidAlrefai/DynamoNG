@@ -234,4 +234,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/chips-input-doc').then((m) => m.ChipsInputDocPage),
   },
+  {
+    path: 'components/tree-select',
+    loadComponent: () =>
+      import('./pages/tree-select-doc').then((m) => m.TreeSelectDocPage),
+  },
 ];
