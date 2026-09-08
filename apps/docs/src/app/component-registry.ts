@@ -397,4 +397,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A masked text input that enforces a fixed character pattern as the user types, auto-inserting literals and skipping them on backspace/delete.',
   },
+  {
+    slug: 'picklist',
+    name: 'PickList',
+    domain: 'forms',
+    description:
+      'A dual-list transfer widget — move items between an available and a selected list via buttons, drag-and-drop, or keyboard reorder controls.',
+  },
 ];

@@ -279,4 +279,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/input-mask-doc').then((m) => m.InputMaskDocPage),
   },
+  {
+    path: 'components/picklist',
+    loadComponent: () =>
+      import('./pages/picklist-doc').then((m) => m.PicklistDocPage),
+  },
 ];

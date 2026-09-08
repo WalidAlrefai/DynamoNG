@@ -551,6 +551,14 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="picklist-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">PickList</h2>
+    <dg-picklist [(source)]="picklistSource" [(target)]="picklistTarget" sourceLabel="Available" targetLabel="Selected" />
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="split-button-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Split Button</h2>
