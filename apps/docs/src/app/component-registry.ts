@@ -485,4 +485,44 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A contenteditable rich-text editor with a formatting toolbar for bold, italic, underline, lists, and links.',
   },
+  {
+    slug: 'image-gallery',
+    name: 'Image Gallery',
+    domain: 'panel',
+    category: 'Media',
+    description:
+      'An image viewer with a thumbnail strip and a fullscreen lightbox, with full keyboard navigation.',
+  },
+  {
+    slug: 'panel',
+    name: 'Panel',
+    domain: 'panel',
+    category: 'Panel',
+    description:
+      'A single standalone collapsible content section with its own header.',
+  },
+  {
+    slug: 'fieldset',
+    name: 'Fieldset',
+    domain: 'forms',
+    category: 'Form',
+    description:
+      'A bordered, legend\'d form section built on the native <fieldset>/<legend> elements, optionally collapsible.',
+  },
+  {
+    slug: 'input-group',
+    name: 'Input Group',
+    domain: 'forms',
+    category: 'Form',
+    description:
+      'A bordered wrapper adding prefix/suffix content — an icon, a $ sign, a unit label — alongside any projected input.',
+  },
+  {
+    slug: 'tiered-menu',
+    name: 'Tiered Menu',
+    domain: 'overlay',
+    category: 'Menu',
+    description:
+      'A nested multi-level action menu — submenus flyout to the side, with full keyboard navigation across levels.',
+  },
 ];

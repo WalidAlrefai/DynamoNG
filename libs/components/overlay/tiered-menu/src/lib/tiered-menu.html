@@ -1,0 +1,60 @@
+<button
+  #triggerEl
+  type="button"
+  [id]="triggerId"
+  role="combobox"
+  aria-haspopup="menu"
+  [attr.aria-label]="label()"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="open() ? menuId : null"
+  [attr.aria-activedescendant]="activeDescendantId()"
+  [class]="triggerClasses()"
+  (click)="toggle()"
+  (keydown)="onTriggerKeydown($event)"
+>
+  <span>{{ label() }}</span>
+  <svg [class]="chevronClasses()" [attr.aria-hidden]="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+</button>
+
+<!--
+  One shared template, reused for every open level (root + every flyout).
+  This component's own root-overlay attachOverlay() attaches it with no
+  context (`levelIndex` comes through as `undefined`), and
+  `levels()[levelIndex ?? 0]` correctly resolves that to level 0 — no
+  special-casing needed for the root panel. Every flyout beyond the root is
+  attached by the constructor effect in tiered-menu.ts, each with an explicit
+  `{ levelIndex }` context. Same shape as Cascade Select's own panelTemplate.
+-->
+<ng-template #panelTemplate let-levelIndex="levelIndex">
+  @if (levels()[levelIndex ?? 0]; as level) {
+    <div
+      [id]="panelIdForLevel(levelIndex ?? 0)"
+      role="menu"
+      [attr.aria-label]="ariaLabel() ?? null"
+      [attr.aria-labelledby]="ariaLabel() ? null : triggerId"
+      [class]="panelClasses"
+    >
+      @for (item of level.items; track item; let i = $index) {
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown (see tiered-menu.ts's class doc comment on the aria-activedescendant focus model) -->
+        <div
+          [id]="rowId(levelIndex ?? 0, i)"
+          role="menuitem"
+          tabindex="-1"
+          [attr.aria-disabled]="item.disabled ? 'true' : null"
+          [class]="itemClasses(item, levelIndex ?? 0, i)"
+          (mouseenter)="onItemHover(levelIndex ?? 0, i)"
+          (click)="onItemClick(levelIndex ?? 0, i)"
+        >
+          <span>{{ item.label }}</span>
+          @if (item.children?.length) {
+            <svg [class]="caretClasses" width="16" height="16" viewBox="0 0 16 16" fill="none" [attr.aria-hidden]="true">
+              <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          }
+        </div>
+      }
+    </div>
+  }
+</ng-template>

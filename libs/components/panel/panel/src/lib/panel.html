@@ -1,0 +1,42 @@
+<div [class]="rootClasses()">
+  @if (header() || collapsible()) {
+    @if (collapsible()) {
+      <button
+        type="button"
+        data-testid="dg-panel-header"
+        [id]="headerId"
+        [class]="headerClasses + ' ' + headerButtonClasses"
+        [attr.aria-expanded]="expanded()"
+        [attr.aria-controls]="contentId"
+        (click)="toggle()"
+      >
+        <span [class]="titleClasses">{{ header() }}</span>
+        <svg [class]="chevronClasses()" [attr.aria-hidden]="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path
+            d="M4 6l4 4 4-4"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    } @else {
+      <div data-testid="dg-panel-header" [id]="headerId" [class]="headerClasses">
+        <span [class]="titleClasses">{{ header() }}</span>
+      </div>
+    }
+  }
+  <div [class]="contentWrapperClasses()">
+    <div [class]="contentInnerClasses">
+      <div
+        role="region"
+        [id]="contentId"
+        [attr.aria-labelledby]="header() || collapsible() ? headerId : null"
+        [class]="contentBodyClasses"
+      >
+        <ng-content />
+      </div>
+    </div>
+  </div>
+</div>

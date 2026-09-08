@@ -137,7 +137,18 @@
         "./libs/components/forms/input-mask/src/index.ts"
       ],
       "@dynamong/picklist": ["./libs/components/forms/picklist/src/index.ts"],
-      "@dynamong/editor": ["./libs/components/forms/editor/src/index.ts"]
+      "@dynamong/editor": ["./libs/components/forms/editor/src/index.ts"],
+      "@dynamong/image-gallery": [
+        "./libs/components/panel/image-gallery/src/index.ts"
+      ],
+      "@dynamong/panel": ["./libs/components/panel/panel/src/index.ts"],
+      "@dynamong/fieldset": ["./libs/components/forms/fieldset/src/index.ts"],
+      "@dynamong/input-group": [
+        "./libs/components/forms/input-group/src/index.ts"
+      ],
+      "@dynamong/tiered-menu": [
+        "./libs/components/overlay/tiered-menu/src/index.ts"
+      ]
     }
   }
 }
