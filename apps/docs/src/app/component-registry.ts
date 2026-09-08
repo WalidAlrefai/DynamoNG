@@ -390,4 +390,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A circular dial input adjustable by drag, scroll, or keyboard.',
   },
+  {
+    slug: 'input-mask',
+    name: 'Input Mask',
+    domain: 'forms',
+    description:
+      'A masked text input that enforces a fixed character pattern as the user types, auto-inserting literals and skipping them on backspace/delete.',
+  },
 ];

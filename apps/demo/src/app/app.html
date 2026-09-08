@@ -538,6 +538,19 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="input-mask-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Input Mask</h2>
+    <div class="max-w-xs">
+      <dg-input-mask [formControl]="phone" mask="(999) 999-9999" ariaLabel="Phone" placeholder="(555) 000-0000" />
+      <p class="mt-2 text-sm text-text-muted">
+        Value: <span class="font-mono">{{ phone.value || '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="split-button-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Split Button</h2>

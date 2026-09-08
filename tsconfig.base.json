@@ -131,7 +131,10 @@
       "@dynamong/cascade-select": [
         "./libs/components/forms/cascade-select/src/index.ts"
       ],
-      "@dynamong/knob": ["./libs/components/forms/knob/src/index.ts"]
+      "@dynamong/knob": ["./libs/components/forms/knob/src/index.ts"],
+      "@dynamong/input-mask": [
+        "./libs/components/forms/input-mask/src/index.ts"
+      ]
     }
   }
 }
