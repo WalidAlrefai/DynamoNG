@@ -1,0 +1,14 @@
+<input
+  type="text"
+  inputmode="text"
+  [class]="inputClasses()"
+  [value]="value()"
+  [placeholder]="placeholder()"
+  [disabled]="disabled()"
+  [attr.aria-invalid]="invalid() ? 'true' : null"
+  [attr.aria-label]="ariaLabel() ?? null"
+  (input)="onInput($event)"
+  (keydown)="onKeydown($event)"
+  (paste)="onPaste($event)"
+  (blur)="onBlur()"
+/>

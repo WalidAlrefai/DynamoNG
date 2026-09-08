@@ -69,6 +69,10 @@ import { DynamoSelectButton } from '@dynamong/select-button';
 import { DynamoToggleButton } from '@dynamong/toggle-button';
 import { DynamoListbox } from '@dynamong/listbox';
 import { DynamoCascadeSelect } from '@dynamong/cascade-select';
+import { DynamoKnob } from '@dynamong/knob';
+import { DynamoInputMask } from '@dynamong/input-mask';
+import { DynamoPicklist } from '@dynamong/picklist';
+import { DynamoEditor } from '@dynamong/editor';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -250,6 +254,10 @@ const EMPLOYEES: Employee[] = [
     DynamoToggleButton,
     DynamoListbox,
     DynamoCascadeSelect,
+    DynamoKnob,
+    DynamoInputMask,
+    DynamoPicklist,
+    DynamoEditor,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -384,6 +392,20 @@ export class App {
   ];
 
   protected readonly volume = signal(50);
+  protected readonly knobValue = signal(50);
+  protected readonly phone = new FormControl<string | null>(null);
+  protected readonly picklistSource = signal<DynamoSelectOption<string>[]>([
+    { label: 'Rust', value: 'rust' },
+    { label: 'Go', value: 'go' },
+    { label: 'Python', value: 'py' },
+    { label: 'Kotlin', value: 'kotlin', disabled: true },
+  ]);
+  protected readonly picklistTarget = signal<DynamoSelectOption<string>[]>([
+    { label: 'TypeScript', value: 'ts' },
+  ]);
+  protected readonly editorContent = new FormControl('<p>Hello <b>world</b></p>', {
+    nonNullable: true,
+  });
 
   protected readonly fruitOptions = FRUIT_OPTIONS;
   protected readonly fruit = signal('');

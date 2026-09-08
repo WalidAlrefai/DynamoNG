@@ -383,4 +383,32 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A multi-level dependent dropdown — selecting a branch reveals its children in a side flyout, down to a leaf.',
   },
+  {
+    slug: 'knob',
+    name: 'Knob',
+    domain: 'forms',
+    description:
+      'A circular dial input adjustable by drag, scroll, or keyboard.',
+  },
+  {
+    slug: 'input-mask',
+    name: 'Input Mask',
+    domain: 'forms',
+    description:
+      'A masked text input that enforces a fixed character pattern as the user types, auto-inserting literals and skipping them on backspace/delete.',
+  },
+  {
+    slug: 'picklist',
+    name: 'PickList',
+    domain: 'forms',
+    description:
+      'A dual-list transfer widget — move items between an available and a selected list via buttons, drag-and-drop, or keyboard reorder controls.',
+  },
+  {
+    slug: 'editor',
+    name: 'Editor',
+    domain: 'forms',
+    description:
+      'A contenteditable rich-text editor with a formatting toolbar for bold, italic, underline, lists, and links.',
+  },
 ];

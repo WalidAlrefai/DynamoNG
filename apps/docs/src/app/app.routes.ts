@@ -269,4 +269,24 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/cascade-select-doc').then((m) => m.CascadeSelectDocPage),
   },
+  {
+    path: 'components/knob',
+    loadComponent: () =>
+      import('./pages/knob-doc').then((m) => m.KnobDocPage),
+  },
+  {
+    path: 'components/input-mask',
+    loadComponent: () =>
+      import('./pages/input-mask-doc').then((m) => m.InputMaskDocPage),
+  },
+  {
+    path: 'components/picklist',
+    loadComponent: () =>
+      import('./pages/picklist-doc').then((m) => m.PicklistDocPage),
+  },
+  {
+    path: 'components/editor',
+    loadComponent: () =>
+      import('./pages/editor-doc').then((m) => m.EditorDocPage),
+  },
 ];

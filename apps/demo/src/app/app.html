@@ -527,6 +527,48 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="knob-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Knob</h2>
+    <div class="max-w-md space-y-2">
+      <span class="text-sm text-text-muted">Value: {{ knobValue() }}</span>
+      <dg-knob [(value)]="knobValue" ariaLabel="Knob value" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="input-mask-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Input Mask</h2>
+    <div class="max-w-xs">
+      <dg-input-mask [formControl]="phone" mask="(999) 999-9999" ariaLabel="Phone" placeholder="(555) 000-0000" />
+      <p class="mt-2 text-sm text-text-muted">
+        Value: <span class="font-mono">{{ phone.value || '(none)' }}</span>
+      </p>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="picklist-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">PickList</h2>
+    <dg-picklist [(source)]="picklistSource" [(target)]="picklistTarget" sourceLabel="Available" targetLabel="Selected" />
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="editor-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Editor</h2>
+    <div class="max-w-lg">
+      <dg-editor [formControl]="editorContent" ariaLabel="Notes" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="split-button-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Split Button</h2>
