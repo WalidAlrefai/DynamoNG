@@ -559,6 +559,16 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="editor-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Editor</h2>
+    <div class="max-w-lg">
+      <dg-editor [formControl]="editorContent" ariaLabel="Notes" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="split-button-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Split Button</h2>

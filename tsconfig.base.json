@@ -135,7 +135,8 @@
       "@dynamong/input-mask": [
         "./libs/components/forms/input-mask/src/index.ts"
       ],
-      "@dynamong/picklist": ["./libs/components/forms/picklist/src/index.ts"]
+      "@dynamong/picklist": ["./libs/components/forms/picklist/src/index.ts"],
+      "@dynamong/editor": ["./libs/components/forms/editor/src/index.ts"]
     }
   }
 }

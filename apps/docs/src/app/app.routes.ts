@@ -284,4 +284,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/picklist-doc').then((m) => m.PicklistDocPage),
   },
+  {
+    path: 'components/editor',
+    loadComponent: () =>
+      import('./pages/editor-doc').then((m) => m.EditorDocPage),
+  },
 ];

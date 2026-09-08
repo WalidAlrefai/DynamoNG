@@ -72,6 +72,7 @@ import { DynamoCascadeSelect } from '@dynamong/cascade-select';
 import { DynamoKnob } from '@dynamong/knob';
 import { DynamoInputMask } from '@dynamong/input-mask';
 import { DynamoPicklist } from '@dynamong/picklist';
+import { DynamoEditor } from '@dynamong/editor';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -256,6 +257,7 @@ const EMPLOYEES: Employee[] = [
     DynamoKnob,
     DynamoInputMask,
     DynamoPicklist,
+    DynamoEditor,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -401,6 +403,9 @@ export class App {
   protected readonly picklistTarget = signal<DynamoSelectOption<string>[]>([
     { label: 'TypeScript', value: 'ts' },
   ]);
+  protected readonly editorContent = new FormControl('<p>Hello <b>world</b></p>', {
+    nonNullable: true,
+  });
 
   protected readonly fruitOptions = FRUIT_OPTIONS;
   protected readonly fruit = signal('');

@@ -404,4 +404,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A dual-list transfer widget — move items between an available and a selected list via buttons, drag-and-drop, or keyboard reorder controls.',
   },
+  {
+    slug: 'editor',
+    name: 'Editor',
+    domain: 'forms',
+    description:
+      'A contenteditable rich-text editor with a formatting toolbar for bold, italic, underline, lists, and links.',
+  },
 ];
