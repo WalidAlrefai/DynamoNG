@@ -11,22 +11,175 @@
       "path": "../../libs/theme/presets/aura"
     },
     {
+      "path": "../../libs/components/feedback/progress"
+    },
+    {
+      "path": "../../libs/components/forms/editor"
+    },
+    {
+      "path": "../../libs/components/forms/picklist"
+    },
+    {
+      "path": "../../libs/components/forms/input-mask"
+    },
+    {
+      "path": "../../libs/components/forms/knob"
+    },
+    {
+      "path": "../../libs/components/forms/cascade-select"
+    },
+    {
+      "path": "../../libs/components/forms/listbox"
+    },
+    {
+      "path": "../../libs/components/forms/toggle-button"
+    },
+    {
+      "path": "../../libs/components/forms/select-button"
+    },
+    {
+      "path": "../../libs/components/forms/password"
+    },
+    {
+      "path": "../../libs/components/overlay/confirm-dialog"
+    },
+    {
+      "path": "../../libs/components/forms/tree-select"
+    },
+    {
+      "path": "../../libs/components/forms/chips-input"
+    },
+    {
+      "path": "../../libs/components/panel/timeline"
+    },
+    {
+      "path": "../../libs/components/forms/otp-input"
+    },
+    {
+      "path": "../../libs/components/overlay/scroll-top"
+    },
+    {
+      "path": "../../libs/components/panel/toolbar"
+    },
+    {
+      "path": "../../libs/components/panel/splitter"
+    },
+    {
+      "path": "../../libs/components/forms/rating"
+    },
+    {
+      "path": "../../libs/components/forms/input-number"
+    },
+    {
+      "path": "../../libs/components/forms/file-upload"
+    },
+    {
+      "path": "../../libs/components/forms/color-picker"
+    },
+    {
+      "path": "../../libs/components/forms/autocomplete"
+    },
+    {
+      "path": "../../libs/components/overlay/context-menu"
+    },
+    {
+      "path": "../../libs/components/forms/split-button"
+    },
+    {
+      "path": "../../libs/components/forms/slider"
+    },
+    {
+      "path": "../../libs/components/panel/carousel"
+    },
+    {
+      "path": "../../libs/components/panel/breadcrumb"
+    },
+    {
+      "path": "../../libs/components/feedback/tag"
+    },
+    {
+      "path": "../../libs/components/feedback/skeleton"
+    },
+    {
+      "path": "../../libs/components/overlay/popover"
+    },
+    {
+      "path": "../../libs/components/panel/stepper"
+    },
+    {
+      "path": "../../libs/components/data/tree"
+    },
+    {
+      "path": "../../libs/components/overlay/tooltip"
+    },
+    {
+      "path": "../../libs/components/feedback/toast"
+    },
+    {
+      "path": "../../libs/components/forms/textarea"
+    },
+    {
+      "path": "../../libs/components/data/table"
+    },
+    {
+      "path": "../../libs/components/panel/tabs"
+    },
+    {
+      "path": "../../libs/components/forms/switch"
+    },
+    {
       "path": "../../libs/components/forms/select"
     },
     {
       "path": "../../libs/components/forms/radio"
     },
     {
+      "path": "../../libs/components/forms/pagination"
+    },
+    {
+      "path": "../../libs/components/forms/multi-select"
+    },
+    {
+      "path": "../../libs/components/overlay/menu"
+    },
+    {
       "path": "../../libs/components/forms/input-text"
+    },
+    {
+      "path": "../../libs/components/overlay/drawer"
+    },
+    {
+      "path": "../../libs/components/panel/divider"
     },
     {
       "path": "../../libs/components/overlay/dialog"
     },
     {
+      "path": "../../libs/components/forms/date-picker"
+    },
+    {
+      "path": "../../libs/components/feedback/chip"
+    },
+    {
       "path": "../../libs/components/forms/checkbox"
     },
     {
+      "path": "../../libs/components/panel/card"
+    },
+    {
       "path": "../../libs/components/forms/button"
+    },
+    {
+      "path": "../../libs/components/feedback/badge"
+    },
+    {
+      "path": "../../libs/components/data/avatar"
+    },
+    {
+      "path": "../../libs/components/feedback/alert"
+    },
+    {
+      "path": "../../libs/components/panel/accordion"
     },
     {
       "path": "../../libs/core"
