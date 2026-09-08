@@ -75,6 +75,9 @@ import { DynamoPicklist } from '@dynamong/picklist';
 import { DynamoEditor } from '@dynamong/editor';
 import { DynamoImageGallery } from '@dynamong/image-gallery';
 import type { DynamoGalleryImage } from '@dynamong/image-gallery';
+import { DynamoPanel } from '@dynamong/panel';
+import { DynamoFieldset } from '@dynamong/fieldset';
+import { DynamoInputGroup } from '@dynamong/input-group';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -268,6 +271,9 @@ const EMPLOYEES: Employee[] = [
     DynamoPicklist,
     DynamoEditor,
     DynamoImageGallery,
+    DynamoPanel,
+    DynamoFieldset,
+    DynamoInputGroup,
     FormsModule,
     ReactiveFormsModule,
   ],

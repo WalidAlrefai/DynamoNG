@@ -1,0 +1,36 @@
+<fieldset [class]="rootClasses()" [disabled]="disabled()">
+  @if (legend() || collapsible()) {
+    <legend [class]="legendClasses">
+      @if (collapsible()) {
+        <button
+          type="button"
+          data-testid="dg-fieldset-toggle"
+          [class]="toggleButtonClasses"
+          [attr.aria-expanded]="expanded()"
+          [attr.aria-controls]="contentId"
+          (click)="toggle()"
+        >
+          <span>{{ legend() }}</span>
+          <svg [class]="chevronClasses()" [attr.aria-hidden]="true" width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M4 6l4 4 4-4"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      } @else {
+        {{ legend() }}
+      }
+    </legend>
+  }
+  <div [class]="contentWrapperClasses()">
+    <div [class]="contentInnerClasses">
+      <div [id]="contentId" [class]="contentBodyClasses">
+        <ng-content />
+      </div>
+    </div>
+  </div>
+</fieldset>

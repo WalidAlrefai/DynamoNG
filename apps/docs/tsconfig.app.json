@@ -90,6 +90,9 @@
       "path": "../../libs/components/forms/password"
     },
     {
+      "path": "../../libs/components/panel/panel"
+    },
+    {
       "path": "../../libs/components/forms/pagination"
     },
     {
@@ -105,19 +108,25 @@
       "path": "../../libs/components/forms/knob"
     },
     {
-      "path": "../../libs/components/forms/input-text"
-    },
-    {
       "path": "../../libs/components/forms/input-number"
     },
     {
       "path": "../../libs/components/forms/input-mask"
     },
     {
+      "path": "../../libs/components/forms/input-group"
+    },
+    {
       "path": "../../libs/components/panel/image-gallery"
     },
     {
       "path": "../../libs/components/forms/file-upload"
+    },
+    {
+      "path": "../../libs/components/forms/input-text"
+    },
+    {
+      "path": "../../libs/components/forms/fieldset"
     },
     {
       "path": "../../libs/components/forms/editor"

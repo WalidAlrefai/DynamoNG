@@ -304,4 +304,19 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/image-gallery-doc').then((m) => m.ImageGalleryDocPage),
   },
+  {
+    path: 'components/panel',
+    loadComponent: () =>
+      import('./pages/panel-doc').then((m) => m.PanelDocPage),
+  },
+  {
+    path: 'components/fieldset',
+    loadComponent: () =>
+      import('./pages/fieldset-doc').then((m) => m.FieldsetDocPage),
+  },
+  {
+    path: 'components/input-group',
+    loadComponent: () =>
+      import('./pages/input-group-doc').then((m) => m.InputGroupDocPage),
+  },
 ];

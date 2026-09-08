@@ -140,6 +140,11 @@
       "@dynamong/editor": ["./libs/components/forms/editor/src/index.ts"],
       "@dynamong/image-gallery": [
         "./libs/components/panel/image-gallery/src/index.ts"
+      ],
+      "@dynamong/panel": ["./libs/components/panel/panel/src/index.ts"],
+      "@dynamong/fieldset": ["./libs/components/forms/fieldset/src/index.ts"],
+      "@dynamong/input-group": [
+        "./libs/components/forms/input-group/src/index.ts"
       ]
     }
   }

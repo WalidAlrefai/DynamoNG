@@ -257,6 +257,18 @@
   </section>
 
   <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="panel-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Panel</h2>
+    <div class="max-w-md">
+      <dg-panel header="Shipping details" [collapsible]="true">
+        <p class="text-text-primary">Orders ship within 2 business days.</p>
+      </dg-panel>
+    </div>
+  </section>
+
+  <section
     class="space-y-2 rounded-lg border border-border p-6"
     data-testid="alert-section"
   >
@@ -869,6 +881,40 @@
         [showStrengthMeter]="true"
         ariaLabel="Password"
       />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="fieldset-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Fieldset</h2>
+    <div class="max-w-sm">
+      <dg-fieldset legend="Contact info" [collapsible]="true">
+        <div class="flex flex-col gap-2">
+          <dg-input-text placeholder="Name" ariaLabel="Name" />
+          <dg-input-text placeholder="Email" ariaLabel="Email" />
+        </div>
+      </dg-fieldset>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="input-group-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Input Group</h2>
+    <div class="w-40">
+      <dg-input-group>
+        <span prefix>$</span>
+        <dg-input-text
+          [unstyled]="true"
+          styleClass="min-w-0 flex-1 bg-transparent outline-none"
+          placeholder="0.00"
+          ariaLabel="Amount"
+        />
+        <span suffix>USD</span>
+      </dg-input-group>
     </div>
   </section>
 

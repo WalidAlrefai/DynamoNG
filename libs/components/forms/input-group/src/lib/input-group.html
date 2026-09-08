@@ -1,0 +1,9 @@
+<div [class]="wrapperClasses()">
+  <span [class]="prefixClasses" data-testid="dg-input-group-prefix">
+    <ng-content select="[prefix]" />
+  </span>
+  <ng-content />
+  <span [class]="suffixClasses" data-testid="dg-input-group-suffix">
+    <ng-content select="[suffix]" />
+  </span>
+</div>

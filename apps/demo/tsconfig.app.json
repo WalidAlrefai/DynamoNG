@@ -14,6 +14,15 @@
       "path": "../../libs/components/feedback/progress"
     },
     {
+      "path": "../../libs/components/forms/input-group"
+    },
+    {
+      "path": "../../libs/components/forms/fieldset"
+    },
+    {
+      "path": "../../libs/components/panel/panel"
+    },
+    {
       "path": "../../libs/components/panel/image-gallery"
     },
     {
