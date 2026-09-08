@@ -383,4 +383,11 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A multi-level dependent dropdown — selecting a branch reveals its children in a side flyout, down to a leaf.',
   },
+  {
+    slug: 'knob',
+    name: 'Knob',
+    domain: 'forms',
+    description:
+      'A circular dial input adjustable by drag, scroll, or keyboard.',
+  },
 ];

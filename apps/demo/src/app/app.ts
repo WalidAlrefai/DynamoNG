@@ -69,6 +69,7 @@ import { DynamoSelectButton } from '@dynamong/select-button';
 import { DynamoToggleButton } from '@dynamong/toggle-button';
 import { DynamoListbox } from '@dynamong/listbox';
 import { DynamoCascadeSelect } from '@dynamong/cascade-select';
+import { DynamoKnob } from '@dynamong/knob';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -250,6 +251,7 @@ const EMPLOYEES: Employee[] = [
     DynamoToggleButton,
     DynamoListbox,
     DynamoCascadeSelect,
+    DynamoKnob,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -384,6 +386,7 @@ export class App {
   ];
 
   protected readonly volume = signal(50);
+  protected readonly knobValue = signal(50);
 
   protected readonly fruitOptions = FRUIT_OPTIONS;
   protected readonly fruit = signal('');

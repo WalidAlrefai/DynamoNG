@@ -269,4 +269,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/cascade-select-doc').then((m) => m.CascadeSelectDocPage),
   },
+  {
+    path: 'components/knob',
+    loadComponent: () =>
+      import('./pages/knob-doc').then((m) => m.KnobDocPage),
+  },
 ];

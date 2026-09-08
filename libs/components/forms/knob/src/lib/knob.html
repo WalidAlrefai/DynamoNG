@@ -1,0 +1,46 @@
+<div
+  [class]="rootClasses()"
+  [style.width.px]="diameter()"
+  [style.height.px]="diameter()"
+>
+  <svg
+    #svg
+    role="slider"
+    [class]="dialClasses()"
+    [tabindex]="disabled() ? -1 : 0"
+    [attr.viewBox]="'0 0 ' + diameter() + ' ' + diameter()"
+    [attr.width]="diameter()"
+    [attr.height]="diameter()"
+    [attr.aria-valuenow]="clampedValue()"
+    [attr.aria-valuemin]="min()"
+    [attr.aria-valuemax]="max()"
+    [attr.aria-disabled]="disabled() ? 'true' : null"
+    [attr.aria-label]="ariaLabel() ?? 'Knob'"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp()"
+    (pointercancel)="onPointerUp()"
+    (wheel)="onWheel($event)"
+    (keydown)="onKeydown($event)"
+  >
+    <circle
+      [class]="trackClasses()"
+      [attr.cx]="diameter() / 2"
+      [attr.cy]="diameter() / 2"
+      [attr.r]="radius()"
+      [attr.stroke-width]="strokeWidth()"
+    />
+    <circle
+      [class]="fillClasses()"
+      [attr.cx]="diameter() / 2"
+      [attr.cy]="diameter() / 2"
+      [attr.r]="radius()"
+      [attr.stroke-width]="strokeWidth()"
+      [attr.stroke-dasharray]="circumference()"
+      [attr.stroke-dashoffset]="dashOffset()"
+    />
+  </svg>
+  @if (showValue()) {
+    <span [class]="labelClasses()">{{ clampedValue() }}</span>
+  }
+</div>
