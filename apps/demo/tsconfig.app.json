@@ -14,6 +14,9 @@
       "path": "../../libs/components/feedback/progress"
     },
     {
+      "path": "../../libs/components/overlay/tiered-menu"
+    },
+    {
       "path": "../../libs/components/forms/input-group"
     },
     {

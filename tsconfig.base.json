@@ -145,6 +145,9 @@
       "@dynamong/fieldset": ["./libs/components/forms/fieldset/src/index.ts"],
       "@dynamong/input-group": [
         "./libs/components/forms/input-group/src/index.ts"
+      ],
+      "@dynamong/tiered-menu": [
+        "./libs/components/overlay/tiered-menu/src/index.ts"
       ]
     }
   }

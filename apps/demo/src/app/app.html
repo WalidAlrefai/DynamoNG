@@ -191,6 +191,19 @@
   </section>
 
   <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="tiered-menu-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Tiered Menu</h2>
+    <dg-tiered-menu label="File" [items]="tieredMenuItems" (itemSelect)="lastMenuAction.set($event.label)" />
+    @if (lastMenuAction(); as action) {
+      <p class="text-sm text-text-muted">
+        Last action: <span class="font-mono">{{ action }}</span>
+      </p>
+    }
+  </section>
+
+  <section
     class="flex flex-wrap gap-2 rounded-lg border border-border p-6"
     data-testid="toast-section"
   >

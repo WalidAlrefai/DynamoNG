@@ -78,6 +78,8 @@ import type { DynamoGalleryImage } from '@dynamong/image-gallery';
 import { DynamoPanel } from '@dynamong/panel';
 import { DynamoFieldset } from '@dynamong/fieldset';
 import { DynamoInputGroup } from '@dynamong/input-group';
+import { DynamoTieredMenu } from '@dynamong/tiered-menu';
+import type { DynamoTieredMenuItem } from '@dynamong/tiered-menu';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -274,6 +276,7 @@ const EMPLOYEES: Employee[] = [
     DynamoPanel,
     DynamoFieldset,
     DynamoInputGroup,
+    DynamoTieredMenu,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -427,6 +430,20 @@ export class App {
     { src: demoPlaceholder('Photo 1', '#6366f1'), alt: 'Placeholder photo 1', caption: 'A mountain range at dawn' },
     { src: demoPlaceholder('Photo 2', '#22c55e'), alt: 'Placeholder photo 2' },
     { src: demoPlaceholder('Photo 3', '#f59e0b'), alt: 'Placeholder photo 3', caption: 'A coastline at sunset' },
+  ];
+
+  protected readonly lastMenuAction = signal<string | null>(null);
+  protected readonly tieredMenuItems: DynamoTieredMenuItem[] = [
+    {
+      label: 'New',
+      children: [{ label: 'Document' }, { label: 'Spreadsheet' }, { label: 'Presentation' }],
+    },
+    {
+      label: 'Export',
+      children: [{ label: 'PDF' }, { label: 'CSV' }],
+    },
+    { label: 'Print' },
+    { label: 'Share', disabled: true },
   ];
 
   protected readonly fruitOptions = FRUIT_OPTIONS;

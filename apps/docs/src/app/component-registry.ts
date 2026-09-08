@@ -517,4 +517,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A bordered wrapper adding prefix/suffix content — an icon, a $ sign, a unit label — alongside any projected input.',
   },
+  {
+    slug: 'tiered-menu',
+    name: 'Tiered Menu',
+    domain: 'overlay',
+    category: 'Menu',
+    description:
+      'A nested multi-level action menu — submenus flyout to the side, with full keyboard navigation across levels.',
+  },
 ];
