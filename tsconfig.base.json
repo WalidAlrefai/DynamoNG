@@ -35,6 +35,7 @@
       "@dynamong/theme-aura": ["./libs/theme/presets/aura/src/index.ts"],
       "@dynamong/icons": ["./libs/icons/src/index.ts"],
       "@dynamong/testing": ["./libs/testing/src/index.ts"],
+      "@dynamong/full": ["./libs/full/src/index.ts"],
       "@dynamong/workspace-plugin": ["./tools/workspace-plugin/src/index.ts"],
       "@dynamong/button": ["./libs/components/forms/button/src/index.ts"],
       "@dynamong/checkbox": ["./libs/components/forms/checkbox/src/index.ts"],

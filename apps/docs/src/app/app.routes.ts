@@ -3,7 +3,17 @@ import { Route } from '@angular/router';
 export const appRoutes: Route[] = [
   {
     path: '',
-    loadComponent: () => import('./pages/home').then((m) => m.HomePage),
+    loadComponent: () => import('./pages/landing').then((m) => m.LandingPage),
+  },
+  {
+    path: 'components',
+    loadComponent: () =>
+      import('./pages/components-index').then((m) => m.ComponentsIndexPage),
+  },
+  {
+    path: 'templates',
+    loadComponent: () =>
+      import('./pages/templates').then((m) => m.TemplatesPage),
   },
   {
     path: 'components/button',

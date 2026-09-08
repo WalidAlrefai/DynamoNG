@@ -98,7 +98,9 @@ Swapping a theme means swapping the `--dg-*` values at `:root`, never touching a
 `@dynamong/theme/tailwind-preset/preset.css` in your global stylesheet, import a compiled theme stylesheet,
 and call `provideDynamoNG({ theme: 'aura' })` in `app.config.ts`. See `apps/demo/src/styles.css` for a
 working example — note that within _this_ monorepo it uses a relative import instead of the bare package
-specifier (see the comment there for why).
+specifier (see the comment there for why). Prefer the whole library over hand-picking components? `npm i
+@dynamong/full` installs every `@dynamong/*` package (plus core/utils/theme) in one shot — it has no exports
+of its own, so components are still imported from their individual packages as usual.
 
 ## Testing
 

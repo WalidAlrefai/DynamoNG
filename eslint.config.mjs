@@ -129,6 +129,19 @@ export default [
                 'type:testing',
               ],
             },
+            // A meta package (e.g. @dynamong/full) exists purely to depend on
+            // every publishable package as an npm dependency, same breadth as
+            // type:app above — it just isn't an application.
+            {
+              sourceTag: 'type:meta',
+              onlyDependOnLibsWithTags: [
+                'type:core',
+                'type:util',
+                'type:theme',
+                'type:component',
+                'type:testing',
+              ],
+            },
           ],
         },
       ],

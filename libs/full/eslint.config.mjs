@@ -1,0 +1,54 @@
+import nx from '@nx/eslint-plugin';
+import baseConfig from '../../eslint.config.mjs';
+
+export default [
+  ...nx.configs['flat/angular'],
+  ...nx.configs['flat/angular-template'],
+  ...baseConfig,
+  {
+    files: ['**/*.json'],
+    rules: {
+      // checkObsoleteDependencies is off: this package's whole point is
+      // declaring npm dependencies on every @dynamong/* package without
+      // importing any of them from source (src/index.ts has no exports),
+      // which the default obsolete-dependency check would otherwise flag as
+      // 61 "unused dependency" errors.
+      '@nx/dependency-checks': [
+        'error',
+        {
+          ignoredFiles: ['{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}'],
+          checkObsoleteDependencies: false,
+        },
+      ],
+    },
+    languageOptions: {
+      parser: await import('jsonc-eslint-parser'),
+    },
+  },
+  {
+    files: ['**/*.ts'],
+    rules: {
+      '@angular-eslint/directive-selector': [
+        'error',
+        {
+          type: 'attribute',
+          prefix: 'dg',
+          style: 'camelCase',
+        },
+      ],
+      '@angular-eslint/component-selector': [
+        'error',
+        {
+          type: 'element',
+          prefix: 'dg',
+          style: 'kebab-case',
+        },
+      ],
+    },
+  },
+  {
+    files: ['**/*.html'],
+    // Override or add rules here
+    rules: {},
+  },
+];
