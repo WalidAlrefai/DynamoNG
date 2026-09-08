@@ -1,0 +1,210 @@
+<div [class]="rootClasses()">
+  <div [class]="viewportClasses()" [attr.aria-label]="ariaLabel() ?? 'Image gallery'">
+    @if (activeImage(); as image) {
+      <button
+        type="button"
+        [class]="mainButtonClasses"
+        (click)="openLightbox()"
+        (keydown)="onViewportKeydown($event)"
+        [attr.aria-label]="'View fullscreen: ' + image.alt + ', ' + imageAriaLabel(activeIndex())"
+      >
+        @if (hasFailed(activeIndex())) {
+          <div [class]="fallbackClasses">
+            <svg viewBox="0 0 24 24" class="h-8 w-8 fill-current" [attr.aria-hidden]="true">
+              <path
+                d="M4 4h16v16H4V4Zm2 2v9.2l3.6-3.6 2.4 2.4L16 9.4l2 2V6H6Zm0 12h12v-3.6l-2-2-4 4-2.4-2.4L6 15.4V18Zm3-8.5A1.5 1.5 0 1 0 9 6a1.5 1.5 0 0 0 0 3.5Z"
+              />
+            </svg>
+          </div>
+        } @else {
+          <img
+            [src]="image.src"
+            [alt]="image.alt"
+            [class]="mainImageClasses"
+            (error)="onImageError(activeIndex())"
+          />
+        }
+      </button>
+
+      @if (images().length > 1) {
+        <dg-button
+          type="button"
+          variant="solid"
+          severity="secondary"
+          size="sm"
+          ariaLabel="Previous image"
+          [styleClass]="prevArrowClasses"
+          [disabled]="!canPrev()"
+          (click)="prev()"
+        >
+          <svg [attr.aria-hidden]="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M10 3l-5 5 5 5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </dg-button>
+
+        <dg-button
+          type="button"
+          variant="solid"
+          severity="secondary"
+          size="sm"
+          ariaLabel="Next image"
+          [styleClass]="nextArrowClasses"
+          [disabled]="!canNext()"
+          (click)="next()"
+        >
+          <svg [attr.aria-hidden]="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M6 3l5 5-5 5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </dg-button>
+      }
+    }
+  </div>
+
+  @if (showThumbnails() && images().length > 1) {
+    <div
+      [class]="thumbnailsClasses"
+      role="tablist"
+      aria-label="Images"
+      tabindex="-1"
+      (keydown)="onThumbnailKeydown($event)"
+    >
+      @for (image of images(); track image; let i = $index) {
+        <button
+          #thumbnailButton
+          type="button"
+          role="tab"
+          [class]="thumbnailClasses(i === activeIndex())"
+          [attr.aria-label]="'Go to image ' + (i + 1)"
+          [attr.aria-selected]="i === activeIndex()"
+          [tabindex]="i === activeIndex() ? 0 : -1"
+          (click)="goTo(i)"
+        >
+          @if (hasFailed(i)) {
+            <div [class]="fallbackClasses">
+              <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" [attr.aria-hidden]="true">
+                <path
+                  d="M4 4h16v16H4V4Zm2 2v9.2l3.6-3.6 2.4 2.4L16 9.4l2 2V6H6Zm0 12h12v-3.6l-2-2-4 4-2.4-2.4L6 15.4V18Zm3-8.5A1.5 1.5 0 1 0 9 6a1.5 1.5 0 0 0 0 3.5Z"
+                />
+              </svg>
+            </div>
+          } @else {
+            <img
+              [src]="thumbnailSrc(image)"
+              [alt]="image.alt"
+              [class]="thumbnailImageClasses"
+              loading="lazy"
+              (error)="onImageError(i)"
+            />
+          }
+        </button>
+      }
+    </div>
+  }
+
+  @if (lightboxOpen() && activeImage(); as lightImage) {
+    <div
+      data-testid="image-gallery-lightbox-backdrop"
+      [class]="lightboxBackdropClasses"
+      [attr.aria-hidden]="true"
+      (click)="closeLightbox()"
+    ></div>
+    <div
+      #lightboxPanel
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      [class]="lightboxPanelClasses"
+      [attr.aria-label]="lightImage.alt"
+      (keydown.escape)="closeLightbox()"
+      (keydown)="onViewportKeydown($event)"
+    >
+      <button
+        type="button"
+        [class]="lightboxCloseButtonClasses"
+        (click)="closeLightbox()"
+        aria-label="Close"
+      >
+        <svg viewBox="0 0 16 16" class="h-4 w-4 fill-current" [attr.aria-hidden]="true">
+          <path
+            d="M3.6 2.5 2.5 3.6 6.9 8l-4.4 4.4 1.1 1.1L8 9.1l4.4 4.4 1.1-1.1L9.1 8l4.4-4.4-1.1-1.1L8 6.9z"
+          />
+        </svg>
+      </button>
+
+      @if (images().length > 1) {
+        <dg-button
+          type="button"
+          variant="solid"
+          severity="secondary"
+          ariaLabel="Previous image"
+          [styleClass]="lightboxPrevArrowClasses"
+          [disabled]="!canPrev()"
+          (click)="prev()"
+        >
+          <svg [attr.aria-hidden]="true" width="20" height="20" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M10 3l-5 5 5 5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </dg-button>
+
+        <dg-button
+          type="button"
+          variant="solid"
+          severity="secondary"
+          ariaLabel="Next image"
+          [styleClass]="lightboxNextArrowClasses"
+          [disabled]="!canNext()"
+          (click)="next()"
+        >
+          <svg [attr.aria-hidden]="true" width="20" height="20" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M6 3l5 5-5 5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </dg-button>
+      }
+
+      @if (hasFailed(activeIndex())) {
+        <div [class]="fallbackClasses">
+          <svg viewBox="0 0 24 24" class="h-12 w-12 fill-current" [attr.aria-hidden]="true">
+            <path
+              d="M4 4h16v16H4V4Zm2 2v9.2l3.6-3.6 2.4 2.4L16 9.4l2 2V6H6Zm0 12h12v-3.6l-2-2-4 4-2.4-2.4L6 15.4V18Zm3-8.5A1.5 1.5 0 1 0 9 6a1.5 1.5 0 0 0 0 3.5Z"
+            />
+          </svg>
+        </div>
+      } @else {
+        <img
+          [src]="lightImage.src"
+          [alt]="lightImage.alt"
+          [class]="lightboxImageClasses"
+          (error)="onImageError(activeIndex())"
+        />
+      }
+
+      @if (lightImage.caption) {
+        <p [class]="lightboxCaptionClasses">{{ lightImage.caption }}</p>
+      }
+    </div>
+  }
+</div>

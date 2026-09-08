@@ -73,8 +73,17 @@ import { DynamoKnob } from '@dynamong/knob';
 import { DynamoInputMask } from '@dynamong/input-mask';
 import { DynamoPicklist } from '@dynamong/picklist';
 import { DynamoEditor } from '@dynamong/editor';
+import { DynamoImageGallery } from '@dynamong/image-gallery';
+import type { DynamoGalleryImage } from '@dynamong/image-gallery';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
+
+// Self-contained inline SVG data-URI, matching the docs app's own
+// image-gallery demo — no network dependency, reliable in e2e/visual tests.
+function demoPlaceholder(label: string, color: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450"><rect width="100%" height="100%" fill="${color}"/><text x="50%" y="50%" font-family="sans-serif" font-size="48" fill="white" text-anchor="middle" dominant-baseline="middle">${label}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
 
 const SEVERITIES: DynamoSeverity[] = [
   'primary',
@@ -258,6 +267,7 @@ const EMPLOYEES: Employee[] = [
     DynamoInputMask,
     DynamoPicklist,
     DynamoEditor,
+    DynamoImageGallery,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -406,6 +416,12 @@ export class App {
   protected readonly editorContent = new FormControl('<p>Hello <b>world</b></p>', {
     nonNullable: true,
   });
+
+  protected readonly galleryImages: DynamoGalleryImage[] = [
+    { src: demoPlaceholder('Photo 1', '#6366f1'), alt: 'Placeholder photo 1', caption: 'A mountain range at dawn' },
+    { src: demoPlaceholder('Photo 2', '#22c55e'), alt: 'Placeholder photo 2' },
+    { src: demoPlaceholder('Photo 3', '#f59e0b'), alt: 'Placeholder photo 3', caption: 'A coastline at sunset' },
+  ];
 
   protected readonly fruitOptions = FRUIT_OPTIONS;
   protected readonly fruit = signal('');

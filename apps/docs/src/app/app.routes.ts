@@ -299,4 +299,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/editor-doc').then((m) => m.EditorDocPage),
   },
+  {
+    path: 'components/image-gallery',
+    loadComponent: () =>
+      import('./pages/image-gallery-doc').then((m) => m.ImageGalleryDocPage),
+  },
 ];

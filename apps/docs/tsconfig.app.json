@@ -114,6 +114,9 @@
       "path": "../../libs/components/forms/input-mask"
     },
     {
+      "path": "../../libs/components/panel/image-gallery"
+    },
+    {
       "path": "../../libs/components/forms/file-upload"
     },
     {

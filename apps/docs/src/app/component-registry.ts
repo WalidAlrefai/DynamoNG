@@ -485,4 +485,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A contenteditable rich-text editor with a formatting toolbar for bold, italic, underline, lists, and links.',
   },
+  {
+    slug: 'image-gallery',
+    name: 'Image Gallery',
+    domain: 'panel',
+    category: 'Media',
+    description:
+      'An image viewer with a thumbnail strip and a fullscreen lightbox, with full keyboard navigation.',
+  },
 ];

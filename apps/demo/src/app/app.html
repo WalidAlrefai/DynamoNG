@@ -516,6 +516,16 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="image-gallery-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Image Gallery</h2>
+    <div class="max-w-md">
+      <dg-image-gallery [images]="galleryImages" ariaLabel="Sample photos" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="slider-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Slider</h2>
