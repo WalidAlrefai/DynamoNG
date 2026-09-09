@@ -533,4 +533,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'An always-visible, top-level horizontal navigation bar — dropdown submenus with nested side-flyout submenus and full keyboard navigation.',
   },
+  {
+    slug: 'panel-menu',
+    name: 'PanelMenu',
+    domain: 'panel',
+    category: 'Menu',
+    description:
+      'A vertical, always-visible nested action menu that expands and collapses in place, with full keyboard navigation.',
+  },
 ];

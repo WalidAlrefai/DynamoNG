@@ -149,7 +149,10 @@
       "@dynamong/tiered-menu": [
         "./libs/components/overlay/tiered-menu/src/index.ts"
       ],
-      "@dynamong/menubar": ["./libs/components/overlay/menubar/src/index.ts"]
+      "@dynamong/menubar": ["./libs/components/overlay/menubar/src/index.ts"],
+      "@dynamong/panel-menu": [
+        "./libs/components/panel/panel-menu/src/index.ts"
+      ]
     }
   }
 }

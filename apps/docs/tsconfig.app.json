@@ -93,6 +93,9 @@
       "path": "../../libs/components/forms/password"
     },
     {
+      "path": "../../libs/components/panel/panel-menu"
+    },
+    {
       "path": "../../libs/components/panel/panel"
     },
     {

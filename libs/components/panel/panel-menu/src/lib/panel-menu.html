@@ -1,0 +1,5 @@
+<nav [class]="rootClasses()" [attr.aria-label]="ariaLabel() ?? null" [attr.data-testid]="'DynamoPanelMenu'">
+  @for (item of items(); track item; let i = $index) {
+    <dg-panel-menu-node [item]="item" [path]="'' + i" [depth]="0" />
+  }
+</nav>

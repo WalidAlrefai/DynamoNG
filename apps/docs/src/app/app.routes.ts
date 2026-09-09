@@ -329,4 +329,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/menubar-doc').then((m) => m.MenubarDocPage),
   },
+  {
+    path: 'components/panel-menu',
+    loadComponent: () =>
+      import('./pages/panel-menu-doc').then((m) => m.PanelMenuDocPage),
+  },
 ];

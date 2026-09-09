@@ -82,6 +82,8 @@ import { DynamoTieredMenu } from '@dynamong/tiered-menu';
 import type { DynamoTieredMenuItem } from '@dynamong/tiered-menu';
 import { DynamoMenubar } from '@dynamong/menubar';
 import type { DynamoMenubarItem } from '@dynamong/menubar';
+import { DynamoPanelMenu } from '@dynamong/panel-menu';
+import type { DynamoPanelMenuItem } from '@dynamong/panel-menu';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -280,6 +282,7 @@ const EMPLOYEES: Employee[] = [
     DynamoInputGroup,
     DynamoTieredMenu,
     DynamoMenubar,
+    DynamoPanelMenu,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -475,6 +478,32 @@ export class App {
       children: [{ label: 'Zoom In' }, { label: 'Zoom Out' }, { label: 'Fullscreen' }],
     },
     { label: 'Help' },
+  ];
+
+  protected readonly lastPanelMenuAction = signal<string | null>(null);
+  protected readonly panelMenuExpanded = signal<string[]>(['0']);
+  protected readonly panelMenuItems: DynamoPanelMenuItem[] = [
+    {
+      label: 'Getting Started',
+      children: [
+        { label: 'Installation' },
+        { label: 'Quick Start' },
+        {
+          label: 'Configuration',
+          children: [{ label: 'Themes' }, { label: 'Tokens' }],
+        },
+      ],
+    },
+    {
+      label: 'Components',
+      children: [{ label: 'Forms' }, { label: 'Overlay' }, { label: 'Data' }],
+    },
+    {
+      label: 'Deprecated',
+      disabled: true,
+      children: [{ label: 'Legacy API' }],
+    },
+    { label: 'Changelog' },
   ];
 
   protected readonly fruitOptions = FRUIT_OPTIONS;
