@@ -12,6 +12,12 @@
       "path": "../../libs/theme/presets/aura"
     },
     {
+      "path": "../../libs/components/data/virtual-scroll"
+    },
+    {
+      "path": "../../libs/components/data/tree-table"
+    },
+    {
       "path": "../../libs/components/forms/tree-select"
     },
     {
@@ -91,6 +97,9 @@
     },
     {
       "path": "../../libs/components/forms/password"
+    },
+    {
+      "path": "../../libs/components/panel/panel-menu"
     },
     {
       "path": "../../libs/components/panel/panel"

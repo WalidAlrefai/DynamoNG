@@ -9,12 +9,28 @@ import {
 } from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { DynamoSelect } from './select';
 import { DynamoSelectHarness } from './select.harness';
 import type { DynamoSelectOption } from './select.types';
 
 const THREE_OPTIONS: DynamoSelectOption<string>[] = createMockSelectOptions(3);
+
+// jsdom has no real `Element.scrollTo` implementation at all. When
+// `virtualScroll` is enabled, DynamoSelect's own constructor effect calls
+// the virtual-scroll viewport's `scrollToIndex()` (via CDK's viewport,
+// which calls `scrollTo` internally) every time `activeIndex` changes —
+// asynchronously, inside the effect, so a per-test try/catch can't reach
+// it the way a direct synchronous call could. A minimal stub (jsdom-only;
+// this is a real, universally-supported browser API) lets these tests
+// exercise the real keyboard-nav-while-virtualized behavior instead of
+// crashing the whole run with an unhandled effect exception.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (): void {
+    /* jsdom gap — see comment above */
+  };
+}
 
 // The CDK overlay portals `role="listbox"` content into a
 // `.cdk-overlay-container` appended near document.body — outside the
@@ -607,6 +623,109 @@ describe('DynamoSelect', () => {
     });
   });
 
+  describe('virtual scroll', () => {
+    const MANY_OPTIONS: DynamoSelectOption<string>[] = createMockSelectOptions(50);
+
+    it('renders the option list through dg-virtual-scroll when enabled (ungrouped case)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: MANY_OPTIONS, virtualScroll: true },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('dg-virtual-scroll')).toBeTruthy();
+    });
+
+    it('still renders real option rows and supports selecting one by click', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: MANY_OPTIONS, virtualScroll: true } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getOptionByText('Option 1'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('option-1');
+      expect(getPanel()).toBeNull(); // selecting closes the panel, same as the non-virtualized path
+    });
+
+    it('keyboard navigation still moves activeIndex while virtualized', async () => {
+      const { container, componentInstance } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: MANY_OPTIONS, virtualScroll: true },
+      });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+      trigger.focus();
+
+      await userEvent.keyboard('{ArrowDown}');
+      expect(componentInstance['activeIndex']()).toBe(0);
+
+      await userEvent.keyboard('{ArrowDown}');
+      expect(componentInstance['activeIndex']()).toBe(1);
+    });
+
+    // Regression test for a real bug: CDK's `scrollToIndex` is an
+    // unconditional absolute scroll (always jumps so the target index
+    // lands at the very top), not a "scroll into view only if needed"
+    // call. A prior version of this feature called it from a constructor
+    // `effect()` watching `activeIndex()` directly — which fired on every
+    // hover too (hover sets `activeIndex` via `(mouseenter)`), visibly
+    // jumping the panel on every hover even though the hovered row was
+    // already on-screen (the only way to hover it at all). The fix moved
+    // the `scrollToIndex` call to only the keyboard-driven call sites.
+    it('does not scroll the viewport when hovering an option, only on keyboard navigation', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: MANY_OPTIONS, virtualScroll: true },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const viewportDebugEl = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      );
+      const viewport = viewportDebugEl.componentInstance as DynamoVirtualScroll<unknown>;
+      const scrollSpy = vi.spyOn(viewport, 'scrollToIndex');
+
+      getOptionByText('Option 2').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await settle(fixture);
+      expect(scrollSpy).not.toHaveBeenCalled();
+
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+      trigger.focus();
+      await userEvent.keyboard('{ArrowDown}');
+      expect(scrollSpy).toHaveBeenCalled();
+    });
+
+    it('falls back to the full, non-virtualized render for grouped options even when virtualScroll is true', async () => {
+      const groupedOptions: DynamoSelectOption<string>[] = [
+        { label: 'Ava', value: 'ava', group: 'Engineering' },
+        { label: 'Bea', value: 'bea', group: 'Design' },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: groupedOptions, virtualScroll: true },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('dg-virtual-scroll')).toBeNull();
+      expect(getPanel()?.querySelectorAll('[role="presentation"]').length).toBeGreaterThan(0);
+    });
+
+    it('does not virtualize when virtualScroll is left at its default (false)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: MANY_OPTIONS },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('dg-virtual-scroll')).toBeNull();
+      expect(getOptions()).toHaveLength(50);
+    });
+  });
+
   describe('harness', () => {
     it('opens, closes, and reports state via close()/isDisabled()/getOptionTexts()/getActiveOptionText()', async () => {
       const { fixture } = renderDynamoComponent(DynamoSelect, {
@@ -690,6 +809,29 @@ describe('DynamoSelect', () => {
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
 
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations when open and virtualized', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: {
+          options: createMockSelectOptions(50),
+          ariaLabel: 'Choose an option',
+          virtualScroll: true,
+        },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      // The virtualized branch inserts CDK's viewport/content-wrapper divs
+      // between `role="listbox"` and its `role="option"` children — neither
+      // carries a role of their own, so they stay accessibility-tree
+      // transparent and shouldn't trip `aria-required-children`, but that's
+      // exactly the kind of assumption worth confirming with axe rather
+      // than just reasoning about it.
       await expect(
         expectNoA11yViolations(getOverlayContainer()),
       ).resolves.toBeUndefined();

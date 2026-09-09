@@ -21,6 +21,12 @@ const ROWS: DocEmployee[] = [
   { name: 'Priya Shah', role: 'Backend Engineer', status: 'Invited' },
 ];
 
+const MANY_ROWS: DocEmployee[] = Array.from({ length: 5000 }, (_, i) => ({
+  name: `Employee ${i + 1}`,
+  role: i % 2 === 0 ? 'Engineer' : 'Designer',
+  status: i % 5 === 0 ? 'Invited' : 'Active',
+}));
+
 @Component({
   selector: 'docs-table-page',
   standalone: true,
@@ -49,6 +55,17 @@ const ROWS: DocEmployee[] = [
         [pageSize]="2" [(page)]="page" [selectable]="true"
         [(selected)]="selected" [filterable]="true" [(filterText)]="filterText"
         /&gt;
+      </div>
+      <div demo>
+        <dg-table [columns]="columns" [data]="manyRows" ariaLabel="Employees (virtualized)" [virtualScroll]="true" />
+        <p class="mt-2 text-sm text-text-muted">
+          5,000 rows — only a small rendered window ever mounts in the DOM. Sorting still works;
+          pagination and row selection aren't supported together with <code class="font-mono">virtualScroll</code>
+          in v1.
+        </p>
+      </div>
+      <div code>
+        &lt;dg-table [columns]="columns" [data]="manyRows" ariaLabel="Employees" [virtualScroll]="true" /&gt;
       </div>
       <table api class="w-full border-collapse text-sm">
         <thead>
@@ -128,19 +145,45 @@ const ROWS: DocEmployee[] = [
             <td class="py-2 pr-4 font-mono">string (model)</td>
             <td class="py-2 font-mono">''</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">noMatchesMessage</td>
             <td class="py-2 pr-4 font-mono">string</td>
             <td class="py-2 font-mono">'No matching rows'</td>
           </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">virtualScroll</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">virtualScrollItemSize</td>
+            <td class="py-2 pr-4 font-mono">number</td>
+            <td class="py-2 font-mono">40</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">virtualScrollHeight</td>
+            <td class="py-2 pr-4 font-mono">number</td>
+            <td class="py-2 font-mono">400</td>
+          </tr>
         </tbody>
       </table>
+      <p class="mt-4 text-sm text-text-muted">
+        <code class="font-mono">virtualScroll</code> renders a <code class="font-mono">role="table"</code>
+        CSS Grid, not a real <code class="font-mono">&lt;table&gt;</code> — a real
+        <code class="font-mono">&lt;tbody&gt;</code> can't have
+        <code class="font-mono">@dynamong/virtual-scroll</code>'s viewport
+        <code class="font-mono">&lt;div&gt;</code> as a child without the browser foster-parenting it
+        out. Equal-width columns only in v1. Mutually exclusive with
+        <code class="font-mono">pageSize</code> (renders every sorted/filtered row through the
+        viewport instead) and not supported together with <code class="font-mono">selectable</code>.
+      </p>
     </docs-page-shell>
   `,
 })
 export class TableDocPage {
   protected readonly columns = COLUMNS;
   protected readonly rows = ROWS;
+  protected readonly manyRows = MANY_ROWS;
   protected readonly page = signal(1);
   protected readonly selected = signal<DocEmployee[]>([]);
   protected readonly filterText = signal('');

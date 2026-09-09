@@ -82,6 +82,11 @@ import { DynamoTieredMenu } from '@dynamong/tiered-menu';
 import type { DynamoTieredMenuItem } from '@dynamong/tiered-menu';
 import { DynamoMenubar } from '@dynamong/menubar';
 import type { DynamoMenubarItem } from '@dynamong/menubar';
+import { DynamoPanelMenu } from '@dynamong/panel-menu';
+import type { DynamoPanelMenuItem } from '@dynamong/panel-menu';
+import { DynamoTreeTable } from '@dynamong/tree-table';
+import type { DynamoTreeTableColumn, DynamoTreeTableNode } from '@dynamong/tree-table';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -280,6 +285,9 @@ const EMPLOYEES: Employee[] = [
     DynamoInputGroup,
     DynamoTieredMenu,
     DynamoMenubar,
+    DynamoPanelMenu,
+    DynamoTreeTable,
+    DynamoVirtualScroll,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -476,6 +484,71 @@ export class App {
     },
     { label: 'Help' },
   ];
+
+  protected readonly lastPanelMenuAction = signal<string | null>(null);
+  protected readonly panelMenuExpanded = signal<string[]>(['0']);
+  protected readonly panelMenuItems: DynamoPanelMenuItem[] = [
+    {
+      label: 'Getting Started',
+      children: [
+        { label: 'Installation' },
+        { label: 'Quick Start' },
+        {
+          label: 'Configuration',
+          children: [{ label: 'Themes' }, { label: 'Tokens' }],
+        },
+      ],
+    },
+    {
+      label: 'Components',
+      children: [{ label: 'Forms' }, { label: 'Overlay' }, { label: 'Data' }],
+    },
+    {
+      label: 'Deprecated',
+      disabled: true,
+      children: [{ label: 'Legacy API' }],
+    },
+    { label: 'Changelog' },
+  ];
+
+  protected readonly treeTableExpanded = signal<string[]>(['docs']);
+  protected readonly treeTableColumns: DynamoTreeTableColumn<{
+    name: string;
+    size: string;
+    modified: string;
+  }>[] = [
+    { field: 'name', header: 'Name', sortable: true },
+    { field: 'size', header: 'Size', sortable: true },
+    { field: 'modified', header: 'Modified', sortable: true },
+  ];
+  protected readonly treeTableItems: DynamoTreeTableNode<{
+    name: string;
+    size: string;
+    modified: string;
+  }>[] = [
+    {
+      id: 'docs',
+      data: { name: 'Documents', size: '—', modified: '2026-08-01' },
+      children: [
+        { id: 'resume', data: { name: 'Resume.pdf', size: '120 KB', modified: '2026-08-14' } },
+        { id: 'cover', data: { name: 'Cover Letter.pdf', size: '80 KB', modified: '2026-07-30' } },
+      ],
+    },
+    {
+      id: 'photos',
+      data: { name: 'Photos', size: '—', modified: '2026-08-20' },
+      children: [
+        { id: 'beach', data: { name: 'Beach.jpg', size: '2.4 MB', modified: '2026-08-22' } },
+        { id: 'family', data: { name: 'Family.jpg', size: '1.8 MB', modified: '2026-08-25' } },
+      ],
+    },
+    { id: 'notes', data: { name: 'Notes.txt', size: '2 KB', modified: '2026-09-01' } },
+  ];
+
+  protected readonly virtualScrollItems: string[] = Array.from(
+    { length: 5000 },
+    (_, i) => `Row ${i + 1}`,
+  );
 
   protected readonly fruitOptions = FRUIT_OPTIONS;
   protected readonly fruit = signal('');

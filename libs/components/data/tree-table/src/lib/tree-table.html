@@ -1,0 +1,87 @@
+<div [class]="rootClasses()">
+  <table role="treegrid" [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
+    <thead>
+      <tr role="row" [class]="headerRowClasses">
+        @for (column of columns(); track column.field) {
+          <th
+            role="columnheader"
+            scope="col"
+            [class]="headerCellClasses"
+            [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+          >
+            @if (column.sortable) {
+              <button type="button" [class]="sortButtonClasses" (click)="toggleSort(column)">
+                <span>{{ column.header }}</span>
+                <svg
+                  [class]="sortIconClasses(sortDirectionFor(column.field))"
+                  [attr.aria-hidden]="true"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                >
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            } @else {
+              {{ column.header }}
+            }
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (entry of visibleEntries(); track entry.node.id) {
+        <tr
+          #rowEl
+          role="row"
+          [class]="rowClasses(entry)"
+          [tabindex]="isActive(entry) ? 0 : -1"
+          [attr.aria-level]="entry.depth + 1"
+          [attr.aria-expanded]="hasChildren(entry.node) ? isExpanded(entry.node.id) : null"
+          [attr.aria-disabled]="entry.node.disabled ? 'true' : null"
+          (keydown)="onRowKeydown($event, entry)"
+          (focus)="onRowFocus(entry)"
+        >
+          @for (column of columns(); track column.field; let i = $index) {
+            <td role="gridcell" [class]="cellClasses">
+              @if (i === 0) {
+                <span [class]="firstCellContentClasses" [style.paddingLeft.rem]="indentRem(entry.depth)">
+                  @if (hasChildren(entry.node)) {
+                    <span
+                      [class]="chevronButtonClasses"
+                      data-testid="chevron"
+                      [attr.aria-hidden]="true"
+                      (click)="toggleExpanded(entry.node.id)"
+                    >
+                      <svg [class]="chevronClasses(entry.node)" [attr.aria-hidden]="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </span>
+                  } @else {
+                    <span [class]="chevronPlaceholderClasses" [attr.aria-hidden]="true"></span>
+                  }
+                  @if (column.cellTemplate) {
+                    <ng-container [ngTemplateOutlet]="column.cellTemplate" [ngTemplateOutletContext]="cellContext(entry.node, entry.depth)" />
+                  } @else {
+                    {{ cellValue(entry.node.data, column) }}
+                  }
+                </span>
+              } @else if (column.cellTemplate) {
+                <ng-container [ngTemplateOutlet]="column.cellTemplate" [ngTemplateOutletContext]="cellContext(entry.node, entry.depth)" />
+              } @else {
+                {{ cellValue(entry.node.data, column) }}
+              }
+            </td>
+          }
+        </tr>
+      } @empty {
+        <tr role="row">
+          <td role="gridcell" [attr.colspan]="columns().length" [class]="emptyCellClasses">
+            <span role="status">{{ emptyMessage() }}</span>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

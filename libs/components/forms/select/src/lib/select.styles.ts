@@ -83,6 +83,17 @@ export const selectClearButtonStyles =
 export const selectPanelWrapperStyles =
   'z-10 min-w-[12rem] max-h-60 overflow-auto rounded-md border border-border bg-surface-0 shadow-lg';
 
+// When virtualized, `@dynamong/virtual-scroll`'s own viewport (a fixed
+// `height`) is the sole scrolling region — this wrapper must NOT also
+// constrain/scroll height, or two nested scrollable regions both activate
+// at once (a "double scrollbar" bug): the viewport's fixed height plus
+// this wrapper's own filter-box/padding easily exceeds `max-h-60`, so the
+// outer wrapper starts scrolling too. `overflow-hidden` (not `overflow-auto`,
+// and no `max-h-60`) clips any minor rounding overflow without ever
+// introducing its own scrollbar.
+export const selectPanelWrapperVirtualStyles =
+  'z-10 min-w-[12rem] overflow-hidden rounded-md border border-border bg-surface-0 shadow-lg';
+
 export const selectListboxStyles = 'py-1';
 
 // Shared by DynamoSelect and DynamoMultiSelect — the panel/option/group

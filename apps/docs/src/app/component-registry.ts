@@ -533,4 +533,28 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'An always-visible, top-level horizontal navigation bar — dropdown submenus with nested side-flyout submenus and full keyboard navigation.',
   },
+  {
+    slug: 'panel-menu',
+    name: 'PanelMenu',
+    domain: 'panel',
+    category: 'Menu',
+    description:
+      'A vertical, always-visible nested action menu that expands and collapses in place, with full keyboard navigation.',
+  },
+  {
+    slug: 'tree-table',
+    name: 'TreeTable',
+    domain: 'data',
+    category: 'Data',
+    description:
+      'A hierarchical table — Tree\'s expand/collapse rows combined with Table\'s columns and sorting — for data like a file system or org chart.',
+  },
+  {
+    slug: 'virtual-scroll',
+    name: 'VirtualScroll',
+    domain: 'data',
+    category: 'Data',
+    description:
+      'A fixed-size virtual-scrolling viewport for rendering large lists efficiently — used to power optional virtualization in Select and Table.',
+  },
 ];
