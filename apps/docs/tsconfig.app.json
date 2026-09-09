@@ -12,6 +12,9 @@
       "path": "../../libs/theme/presets/aura"
     },
     {
+      "path": "../../libs/components/data/tree-table"
+    },
+    {
       "path": "../../libs/components/forms/tree-select"
     },
     {

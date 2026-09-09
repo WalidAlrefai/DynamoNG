@@ -14,6 +14,9 @@
       "path": "../../libs/components/feedback/progress"
     },
     {
+      "path": "../../libs/components/data/tree-table"
+    },
+    {
       "path": "../../libs/components/panel/panel-menu"
     },
     {

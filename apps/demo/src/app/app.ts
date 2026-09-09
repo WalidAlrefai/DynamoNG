@@ -84,6 +84,8 @@ import { DynamoMenubar } from '@dynamong/menubar';
 import type { DynamoMenubarItem } from '@dynamong/menubar';
 import { DynamoPanelMenu } from '@dynamong/panel-menu';
 import type { DynamoPanelMenuItem } from '@dynamong/panel-menu';
+import { DynamoTreeTable } from '@dynamong/tree-table';
+import type { DynamoTreeTableColumn, DynamoTreeTableNode } from '@dynamong/tree-table';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -283,6 +285,7 @@ const EMPLOYEES: Employee[] = [
     DynamoTieredMenu,
     DynamoMenubar,
     DynamoPanelMenu,
+    DynamoTreeTable,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -504,6 +507,40 @@ export class App {
       children: [{ label: 'Legacy API' }],
     },
     { label: 'Changelog' },
+  ];
+
+  protected readonly treeTableExpanded = signal<string[]>(['docs']);
+  protected readonly treeTableColumns: DynamoTreeTableColumn<{
+    name: string;
+    size: string;
+    modified: string;
+  }>[] = [
+    { field: 'name', header: 'Name', sortable: true },
+    { field: 'size', header: 'Size', sortable: true },
+    { field: 'modified', header: 'Modified', sortable: true },
+  ];
+  protected readonly treeTableItems: DynamoTreeTableNode<{
+    name: string;
+    size: string;
+    modified: string;
+  }>[] = [
+    {
+      id: 'docs',
+      data: { name: 'Documents', size: '—', modified: '2026-08-01' },
+      children: [
+        { id: 'resume', data: { name: 'Resume.pdf', size: '120 KB', modified: '2026-08-14' } },
+        { id: 'cover', data: { name: 'Cover Letter.pdf', size: '80 KB', modified: '2026-07-30' } },
+      ],
+    },
+    {
+      id: 'photos',
+      data: { name: 'Photos', size: '—', modified: '2026-08-20' },
+      children: [
+        { id: 'beach', data: { name: 'Beach.jpg', size: '2.4 MB', modified: '2026-08-22' } },
+        { id: 'family', data: { name: 'Family.jpg', size: '1.8 MB', modified: '2026-08-25' } },
+      ],
+    },
+    { id: 'notes', data: { name: 'Notes.txt', size: '2 KB', modified: '2026-09-01' } },
   ];
 
   protected readonly fruitOptions = FRUIT_OPTIONS;

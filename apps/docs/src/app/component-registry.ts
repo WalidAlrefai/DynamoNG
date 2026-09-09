@@ -541,4 +541,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A vertical, always-visible nested action menu that expands and collapses in place, with full keyboard navigation.',
   },
+  {
+    slug: 'tree-table',
+    name: 'TreeTable',
+    domain: 'data',
+    category: 'Data',
+    description:
+      'A hierarchical table — Tree\'s expand/collapse rows combined with Table\'s columns and sorting — for data like a file system or org chart.',
+  },
 ];

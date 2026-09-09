@@ -334,4 +334,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/panel-menu-doc').then((m) => m.PanelMenuDocPage),
   },
+  {
+    path: 'components/tree-table',
+    loadComponent: () =>
+      import('./pages/tree-table-doc').then((m) => m.TreeTableDocPage),
+  },
 ];
