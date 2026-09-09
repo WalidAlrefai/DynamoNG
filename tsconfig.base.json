@@ -148,7 +148,8 @@
       ],
       "@dynamong/tiered-menu": [
         "./libs/components/overlay/tiered-menu/src/index.ts"
-      ]
+      ],
+      "@dynamong/menubar": ["./libs/components/overlay/menubar/src/index.ts"]
     }
   }
 }

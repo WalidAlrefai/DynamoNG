@@ -525,4 +525,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A nested multi-level action menu — submenus flyout to the side, with full keyboard navigation across levels.',
   },
+  {
+    slug: 'menubar',
+    name: 'Menubar',
+    domain: 'overlay',
+    category: 'Menu',
+    description:
+      'An always-visible, top-level horizontal navigation bar — dropdown submenus with nested side-flyout submenus and full keyboard navigation.',
+  },
 ];

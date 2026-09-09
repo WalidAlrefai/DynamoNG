@@ -204,6 +204,22 @@
   </section>
 
   <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="menubar-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Menubar</h2>
+    <dg-menubar [items]="menubarItems" ariaLabel="Demo menu" (itemSelect)="lastMenubarAction.set($event.label)">
+      <span start class="pl-2 font-semibold">Acme</span>
+      <dg-input-text end placeholder="Search…" ariaLabel="Search" />
+    </dg-menubar>
+    @if (lastMenubarAction(); as action) {
+      <p class="text-sm text-text-muted">
+        Last action: <span class="font-mono">{{ action }}</span>
+      </p>
+    }
+  </section>
+
+  <section
     class="flex flex-wrap gap-2 rounded-lg border border-border p-6"
     data-testid="toast-section"
   >
