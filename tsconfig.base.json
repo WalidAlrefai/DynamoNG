@@ -153,7 +153,12 @@
       "@dynamong/panel-menu": [
         "./libs/components/panel/panel-menu/src/index.ts"
       ],
-      "@dynamong/tree-table": ["./libs/components/data/tree-table/src/index.ts"]
+      "@dynamong/tree-table": [
+        "./libs/components/data/tree-table/src/index.ts"
+      ],
+      "@dynamong/virtual-scroll": [
+        "./libs/components/data/virtual-scroll/src/index.ts"
+      ]
     }
   }
 }

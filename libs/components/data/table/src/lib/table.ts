@@ -12,6 +12,7 @@ import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoPagination } from '@dynamong/pagination';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { cn } from '@dynamong/utils/class-merge';
 import { filterRows } from './table.filter';
 import { sortRows, type DynamoTableSortDirection } from './table.sort';
@@ -27,6 +28,9 @@ import {
   tableSortButtonStyles,
   tableSortIconStyles,
   tableStyles,
+  tableVirtualBodyRowStyles,
+  tableVirtualHeaderRowStyles,
+  tableVirtualStyles,
   tableWrapperStyles,
 } from './table.styles';
 import type {
@@ -46,6 +50,7 @@ import type {
     DynamoCheckbox,
     DynamoInputText,
     DynamoPagination,
+    DynamoVirtualScroll,
   ],
   templateUrl: './table.html',
 })
@@ -137,6 +142,29 @@ export class DynamoTable<
    * mistake "nothing matched my search" for "there's no data at all".
    */
   readonly noMatchesMessage = input('No matching rows');
+
+  /**
+   * Opt-in — renders the body through `@dynamong/virtual-scroll` instead
+   * of a plain `@for`, for large datasets. Mutually exclusive with
+   * `pageSize` in v1: enabling this renders `sortedData()` directly
+   * (bypassing `pagedData()`'s slice — virtualizing an already-small
+   * paginated page defeats the purpose), and the pagination footer is
+   * hidden while this is on. Not supported together with `selectable` in
+   * v1 — the checkbox column isn't woven into the virtualized path's CSS
+   * Grid layout. A real `<table>`/`<tbody>` cannot have a non-`<tr>` child
+   * (CDK's viewport is a `<div>` — the HTML parser would foster-parent it
+   * right out of the table), so this path is a genuinely different DOM
+   * shape, not just an added feature — see table.html's own comment for
+   * the CSS-Grid-with-explicit-ARIA-roles technique used instead. Equal-
+   * width columns only in v1 (both grid contexts — header and body — share
+   * one `virtualGridTemplate()` string; there's no per-column width input
+   * yet to make that anything but equal).
+   */
+  readonly virtualScroll = input(false);
+  /** Row height in px when virtualized. */
+  readonly virtualScrollItemSize = input(40);
+  /** Viewport height in px when virtualized. */
+  readonly virtualScrollHeight = input(400);
 
   /** Sole source of truth for the active sort — mirrors DatePicker's single-signal pattern. */
   protected readonly sortState = signal<{
@@ -235,6 +263,14 @@ export class DynamoTable<
   protected readonly emptyCellClasses = tableEmptyCellStyles;
   protected readonly paginationWrapperClasses = tablePaginationWrapperStyles;
   protected readonly filterWrapperClasses = tableFilterWrapperStyles;
+  protected readonly virtualTableClasses = tableVirtualStyles;
+  protected readonly virtualHeaderRowClasses = tableVirtualHeaderRowStyles;
+  protected readonly virtualBodyRowClasses = tableVirtualBodyRowStyles;
+
+  /** Shared verbatim by the header row and every body row — see `virtualScroll`'s own doc comment for why this can't rely on native table auto-layout. */
+  protected readonly virtualGridTemplate = computed(
+    () => `repeat(${this.columns().length}, minmax(0, 1fr))`,
+  );
 
   protected readonly headerCellClasses = computed(() =>
     tableHeaderCellStyles({ size: this.size() }),

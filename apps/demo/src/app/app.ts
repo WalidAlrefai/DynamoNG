@@ -86,6 +86,7 @@ import { DynamoPanelMenu } from '@dynamong/panel-menu';
 import type { DynamoPanelMenuItem } from '@dynamong/panel-menu';
 import { DynamoTreeTable } from '@dynamong/tree-table';
 import type { DynamoTreeTableColumn, DynamoTreeTableNode } from '@dynamong/tree-table';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -286,6 +287,7 @@ const EMPLOYEES: Employee[] = [
     DynamoMenubar,
     DynamoPanelMenu,
     DynamoTreeTable,
+    DynamoVirtualScroll,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -542,6 +544,11 @@ export class App {
     },
     { id: 'notes', data: { name: 'Notes.txt', size: '2 KB', modified: '2026-09-01' } },
   ];
+
+  protected readonly virtualScrollItems: string[] = Array.from(
+    { length: 5000 },
+    (_, i) => `Row ${i + 1}`,
+  );
 
   protected readonly fruitOptions = FRUIT_OPTIONS;
   protected readonly fruit = signal('');

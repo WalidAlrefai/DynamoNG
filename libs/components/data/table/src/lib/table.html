@@ -11,6 +11,7 @@
     />
   </div>
   }
+  @if (!virtualScroll()) {
   <table [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
     <thead>
       <tr [class]="headerRowClasses">
@@ -98,7 +99,95 @@
       }
     </tbody>
   </table>
-  @if (pageSize()) {
+  } @else {
+  <!--
+    Virtualized path — a fundamentally different DOM shape from the native
+    <table> above, not just an added feature: CDK's virtual-scroll viewport
+    is a <div>, and a real <table>/<tbody> cannot have a non-<tr> child —
+    the HTML parser foster-parents it right out of the table, breaking
+    column alignment entirely. So this branch never uses <table>/<tr>/<td>
+    at all — it's CSS Grid divs with explicit ARIA table roles
+    (role="table"/"row"/"columnheader"/"cell"), the same technique
+    real-world virtualized tables use. The header and body are two
+    SEPARATE grid contexts (the header must stay outside the scrolling
+    viewport), so column alignment can't rely on the browser's native
+    table auto-layout negotiating widths across them the way the <table>
+    path gets for free — both share one `virtualGridTemplate()` string
+    instead (equal-width columns only in v1 — see table.ts's own doc
+    comment on `virtualScroll` for why, and for the `selectable` v1 cut
+    this path doesn't support the extra checkbox column at all).
+  -->
+  <div role="table" [class]="virtualTableClasses" [attr.aria-label]="ariaLabel() ?? null">
+    <div role="rowgroup">
+      <div role="row" [class]="virtualHeaderRowClasses" [style.gridTemplateColumns]="virtualGridTemplate()">
+        @for (column of columns(); track column.field) {
+        <div
+          role="columnheader"
+          [class]="headerCellClasses()"
+          [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+        >
+          @if (column.sortable) {
+          <button
+            type="button"
+            [class]="sortButtonClasses"
+            (click)="toggleSort(column)"
+          >
+            <span>{{ column.header }}</span>
+            <svg
+              [class]="sortIconClasses(sortDirectionFor(column.field))"
+              [attr.aria-hidden]="true"
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+            >
+              <path
+                d="M4 6l4 4 4-4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          } @else { {{ column.header }} }
+        </div>
+        }
+      </div>
+    </div>
+    <div role="rowgroup">
+      @if (sortedData().length === 0) {
+      <div role="row">
+        <div role="cell" [class]="emptyCellClasses">
+          <span role="status">{{ emptyStateMessage() }}</span>
+        </div>
+      </div>
+      } @else {
+      <dg-virtual-scroll
+        [items]="sortedData()"
+        [itemSize]="virtualScrollItemSize()"
+        [height]="virtualScrollHeight()"
+      >
+        <ng-template let-row let-i="index">
+          <div role="row" [class]="virtualBodyRowClasses" [style.gridTemplateColumns]="virtualGridTemplate()">
+            @for (column of columns(); track column.field) {
+            <div role="cell" [class]="bodyCellClasses()">
+              @if (column.cellTemplate) {
+              <ng-container
+                [ngTemplateOutlet]="column.cellTemplate"
+                [ngTemplateOutletContext]="cellContext(row, i)"
+              />
+              } @else { {{ cellValue(row, column) }} }
+            </div>
+            }
+          </div>
+        </ng-template>
+      </dg-virtual-scroll>
+      }
+    </div>
+  </div>
+  }
+  @if (pageSize() && !virtualScroll()) {
   <div [class]="paginationWrapperClasses">
     <dg-pagination
       [totalItems]="sortedData().length"

@@ -1207,4 +1207,141 @@ describe('DynamoTable', () => {
       ).resolves.toBeUndefined();
     });
   });
+
+  describe('virtual scroll', () => {
+    // CDK's viewport measures its own size asynchronously (an
+    // `afterNextRender`-driven check, not synchronous with construction)
+    // before deciding how many rows to render — same "flush before
+    // asserting" idiom `@dynamong/virtual-scroll`'s own spec already uses.
+    async function settle(fixture: { detectChanges(): void }): Promise<void> {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      fixture.detectChanges();
+    }
+
+    const MANY_PEOPLE: Person[] = Array.from({ length: 200 }, (_, i) => ({
+      name: `Person ${i}`,
+      age: 20 + (i % 50),
+    }));
+
+    it('renders a role="table" div (not a real <table>) when enabled', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: MANY_PEOPLE, virtualScroll: true },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('table')).toBeNull();
+      expect(container.querySelector('[role="table"]')).toBeTruthy();
+      expect(container.querySelectorAll('[role="columnheader"]')).toHaveLength(2);
+    });
+
+    it('renders real row/cell content through the virtualized path', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: MANY_PEOPLE, virtualScroll: true },
+      });
+      await settle(fixture);
+
+      const rows = container.querySelectorAll('[role="row"]');
+      // At least the header row, plus some rendered body rows.
+      expect(rows.length).toBeGreaterThan(1);
+      expect(container.querySelector('[role="cell"]')?.textContent?.trim()).toBe('Person 0');
+    });
+
+    it('shares one grid-template-columns string between the header row and body rows', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: MANY_PEOPLE, virtualScroll: true },
+      });
+      await settle(fixture);
+
+      const rows = Array.from(container.querySelectorAll<HTMLElement>('[role="row"]'));
+      const templates = new Set(rows.map((row) => row.style.gridTemplateColumns));
+      expect(templates.size).toBe(1);
+      expect(templates.has('repeat(2, minmax(0, 1fr))')).toBe(true);
+    });
+
+    it('sorting still works while virtualized', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE, virtualScroll: true },
+      });
+      await settle(fixture);
+
+      const nameHeader = within(container).getByRole('button', { name: /Name/ });
+      await userEvent.click(nameHeader);
+      await settle(fixture);
+
+      const firstCell = container.querySelector('[role="cell"]');
+      expect(firstCell?.textContent?.trim()).toBe('Ada'); // alphabetically first
+    });
+
+    it('renders the empty-state message instead of the viewport when there is no data', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: [], virtualScroll: true },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('dg-virtual-scroll')).toBeNull();
+      expect(within(container).getByRole('status').textContent?.trim()).toBe('No data');
+    });
+
+    it('hides the pagination footer even when pageSize is set', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: {
+          columns: SORTABLE_COLUMNS,
+          data: MANY_PEOPLE,
+          virtualScroll: true,
+          pageSize: 10,
+        },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('[aria-label="Previous page"]')).toBeNull();
+    });
+
+    it('does not virtualize when virtualScroll is left at its default (false)', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('table')).toBeTruthy();
+      expect(container.querySelector('[role="table"]')).toBeNull();
+    });
+  });
+
+  describe('accessibility (virtual scroll)', () => {
+    async function settle(fixture: { detectChanges(): void }): Promise<void> {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      fixture.detectChanges();
+    }
+
+    it('has no axe violations when virtualized with data', async () => {
+      const many: Person[] = Array.from({ length: 200 }, (_, i) => ({
+        name: `Person ${i}`,
+        age: 20 + (i % 50),
+      }));
+      const { fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: many, virtualScroll: true },
+      });
+      await settle(fixture);
+
+      // Same reasoning as `role="listbox"` in DynamoSelect's own virtualized
+      // axe test: CDK's viewport/content-wrapper divs carry no role of their
+      // own, so they stay accessibility-tree transparent between
+      // role="rowgroup" and its role="row" children — confirming that
+      // holds here too, not just assuming it from the Select case.
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations when virtualized with no data', async () => {
+      const { fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: [], virtualScroll: true },
+      });
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+  });
 });

@@ -253,6 +253,22 @@
   </section>
 
   <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="virtual-scroll-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">VirtualScroll</h2>
+    <div class="rounded-md border border-border p-2">
+      <dg-virtual-scroll [items]="virtualScrollItems" [itemSize]="32" [height]="240">
+        <ng-template let-item let-i="index">
+          <div class="border-b border-border px-3 py-1.5 text-sm text-text-primary">
+            {{ i }}: {{ item }}
+          </div>
+        </ng-template>
+      </dg-virtual-scroll>
+    </div>
+  </section>
+
+  <section
     class="flex flex-wrap gap-2 rounded-lg border border-border p-6"
     data-testid="toast-section"
   >

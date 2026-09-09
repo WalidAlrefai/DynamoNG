@@ -102,3 +102,24 @@ export const tableFilterWrapperStyles =
 
 // v4 reuses DynamoInputText directly instead of a hand-styled native
 // `<input type="search">` — no local filter-input styles needed anymore.
+
+// --- v5: virtual scroll ---
+
+// The virtualized path's own root — a `role="table"` div, not a real
+// `<table>` (see table.html's own comment on why). `border-collapse`/
+// `text-left` (on `tableStyles`, the native-table equivalent) are
+// table-specific CSS properties that mean nothing on a div, so this is a
+// deliberately separate, smaller constant rather than reusing `tableStyles`.
+export const tableVirtualStyles = 'w-full text-sm text-text-primary';
+
+// `grid` + a per-render `grid-template-columns` (bound inline in
+// table.html via `virtualGridTemplate()`, shared verbatim by every body
+// row) is what keeps columns aligned across the header's and body's two
+// separate grid contexts — CSS table auto-layout can't negotiate widths
+// across them the way a real `<table>` gets for free once the body lives
+// inside CDK's viewport. Border/background otherwise match the native
+// table path's `tableHeaderRowStyles` exactly.
+export const tableVirtualHeaderRowStyles = 'grid border-b border-border bg-surface-50';
+
+export const tableVirtualBodyRowStyles =
+  'grid items-center border-b border-border last:border-b-0 hover:bg-surface-50';

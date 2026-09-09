@@ -549,4 +549,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A hierarchical table — Tree\'s expand/collapse rows combined with Table\'s columns and sorting — for data like a file system or org chart.',
   },
+  {
+    slug: 'virtual-scroll',
+    name: 'VirtualScroll',
+    domain: 'data',
+    category: 'Data',
+    description:
+      'A fixed-size virtual-scrolling viewport for rendering large lists efficiently — used to power optional virtualization in Select and Table.',
+  },
 ];

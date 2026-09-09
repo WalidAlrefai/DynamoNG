@@ -339,4 +339,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/tree-table-doc').then((m) => m.TreeTableDocPage),
   },
+  {
+    path: 'components/virtual-scroll',
+    loadComponent: () =>
+      import('./pages/virtual-scroll-doc').then((m) => m.VirtualScrollDocPage),
+  },
 ];

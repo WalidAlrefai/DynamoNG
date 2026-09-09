@@ -1,0 +1,10 @@
+<cdk-virtual-scroll-viewport
+  [itemSize]="itemSize()"
+  [style.height.px]="height()"
+  [class]="viewportClasses()"
+  [attr.data-testid]="'DynamoVirtualScroll'"
+>
+  <div *cdkVirtualFor="let item of items(); let i = index; trackBy: trackByFn">
+    <ng-container [ngTemplateOutlet]="itemTemplate()" [ngTemplateOutletContext]="itemContext(item, i)" />
+  </div>
+</cdk-virtual-scroll-viewport>

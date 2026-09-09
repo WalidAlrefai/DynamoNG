@@ -58,7 +58,7 @@
 </div>
 
 <ng-template #panelTemplate>
-  <div [class]="panelWrapperClasses">
+  <div [class]="panelWrapperClasses()">
     @if (filterable()) {
     <div [class]="filterWrapperClasses">
       <div [class]="filterFieldWrapperClasses">
@@ -94,9 +94,33 @@
     <ul
       [id]="listboxId"
       role="listbox"
-      [class]="listboxClasses"
+      [class]="isVirtualized() ? '' : listboxClasses"
       [attr.aria-label]="ariaLabel() ?? 'Options'"
     >
+      @if (isVirtualized()) {
+        <dg-virtual-scroll
+          [items]="visibleOptions()"
+          [itemSize]="virtualScrollItemSize()"
+          [height]="virtualScrollHeight()"
+        >
+          <ng-template let-option let-i="index">
+            <li
+              [id]="optionId(i)"
+              role="option"
+              tabindex="-1"
+              [attr.aria-selected]="isSelected(option)"
+              [attr.aria-disabled]="option.disabled ? 'true' : null"
+              [class]="optionClasses(option, i)"
+              (click)="selectOption(option)"
+              (keydown.enter)="selectOption(option)"
+              (keydown.space)="selectOption(option)"
+              (mouseenter)="activeIndex.set(i)"
+            >
+              {{ option.label }}
+            </li>
+          </ng-template>
+        </dg-virtual-scroll>
+      } @else {
       @for (item of renderItems(); track entryKey(item)) { @if (item.kind ===
       'heading') {
       <li role="presentation" [class]="groupHeadingClasses">
@@ -117,7 +141,9 @@
       >
         {{ item.option.label }}
       </li>
-      } } @if (showNoResults()) {
+      } }
+      }
+      @if (showNoResults()) {
       <li role="presentation" [class]="noResultsClasses">
         <span role="status">{{ noResultsMessage() }}</span>
       </li>

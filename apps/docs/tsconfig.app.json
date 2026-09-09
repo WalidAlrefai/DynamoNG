@@ -12,6 +12,9 @@
       "path": "../../libs/theme/presets/aura"
     },
     {
+      "path": "../../libs/components/data/virtual-scroll"
+    },
+    {
       "path": "../../libs/components/data/tree-table"
     },
     {

@@ -14,6 +14,7 @@ import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { FormsModule } from '@angular/forms';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoSelectOption } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoListboxBase } from './listbox-base.component';
@@ -36,6 +37,7 @@ import {
   selectNoResultsStyles,
   selectOptionStyles,
   selectPanelWrapperStyles,
+  selectPanelWrapperVirtualStyles,
   selectTriggerButtonStyles,
   selectTriggerStyles,
 } from './select.styles';
@@ -54,7 +56,7 @@ type DynamoSelectRenderItem<TValue> =
   selector: 'dg-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DynamoInputText],
+  imports: [FormsModule, DynamoInputText, DynamoVirtualScroll],
   templateUrl: './select.html',
   providers: [
     {
@@ -85,11 +87,27 @@ export class DynamoSelect<TValue = unknown>
   readonly filterPlaceholder = input('Search...');
   /** Shown when `options()` is non-empty but the filter matched nothing — distinct from a genuinely empty `options()`, which renders no message. */
   readonly noResultsMessage = input('No matching options');
+  /**
+   * Opt-in — renders the option list through `@dynamong/virtual-scroll`
+   * instead of a plain `@for`, for large option lists. Only takes effect
+   * for the ungrouped case (see `isVirtualized`): `@dynamong/virtual-scroll`
+   * is fixed-row-height only, and a grouped list's heading rows are a
+   * different height than option rows — mixing the two would misalign
+   * CDK's scroll-position math. A grouped/filterable-with-groups Select
+   * silently falls back to today's full, non-virtualized render — no
+   * visual regression, just no perf win for that specific shape.
+   */
+  readonly virtualScroll = input(false);
+  /** Row height in px when virtualized — matched to `selectOptionStyles`' actual rendered height (`px-4 py-2 text-sm`). */
+  readonly virtualScrollItemSize = input(36);
+  /** Viewport height in px when virtualized — matches `selectPanelWrapperStyles`' own `max-h-60` (240px) so the virtualized panel is roughly the same size as today's CSS-scrolled one. */
+  readonly virtualScrollHeight = input(240);
 
   private readonly triggerEl =
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  private readonly virtualScrollRef = viewChild(DynamoVirtualScroll);
 
   protected readonly triggerId = this.idGenerator.next('dg-select-trigger');
   protected readonly listboxId = this.idGenerator.next('dg-select-listbox');
@@ -134,6 +152,11 @@ export class DynamoSelect<TValue = unknown>
       this.options().length > 0,
   );
 
+  /** True only for the ungrouped case — see `virtualScroll`'s own doc comment for why grouped lists can't be virtualized in v1. `groupedOptions()` always yields at least one bucket (a single `group: null` one for ungrouped input), so "ungrouped" is exactly "at most one group". */
+  protected readonly isVirtualized = computed(
+    () => this.virtualScroll() && this.groupedOptions().length <= 1,
+  );
+
   protected readonly selectedOption = computed(() => {
     const value = this.value();
     return this.options().find((option) => option.value === value) ?? null;
@@ -165,7 +188,10 @@ export class DynamoSelect<TValue = unknown>
     selectChevronStyles({ open: this.isOpen() }),
   );
   protected readonly clearButtonClasses = selectClearButtonStyles;
-  protected readonly panelWrapperClasses = selectPanelWrapperStyles;
+  /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
+  protected readonly panelWrapperClasses = computed(() =>
+    this.isVirtualized() ? selectPanelWrapperVirtualStyles : selectPanelWrapperStyles,
+  );
   protected readonly listboxClasses = selectListboxStyles;
   protected readonly filterWrapperClasses = selectFilterWrapperStyles;
   protected readonly filterFieldWrapperClasses = selectFilterFieldWrapperStyles;
@@ -246,6 +272,7 @@ export class DynamoSelect<TValue = unknown>
         ? selectedIndex
         : (findEnabledIndex(options, -1, 1) ?? -1),
     );
+    this.scrollActiveIntoView();
   }
 
   protected close(): void {
@@ -271,6 +298,7 @@ export class DynamoSelect<TValue = unknown>
   protected onFilterInputChange(value: string): void {
     this.filterText.set(value);
     this.activeIndex.set(findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1);
+    this.scrollActiveIntoView();
   }
 
   protected onFilterKeydown(event: KeyboardEvent): void {
@@ -320,6 +348,7 @@ export class DynamoSelect<TValue = unknown>
           this.activeIndex.set(
             findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1,
           );
+          this.scrollActiveIntoView();
         }
         break;
       case 'End':
@@ -328,6 +357,7 @@ export class DynamoSelect<TValue = unknown>
           this.activeIndex.set(
             findEnabledIndex(this.visibleOptions(), 0, -1) ?? -1,
           );
+          this.scrollActiveIntoView();
         }
         break;
       case 'Enter':
@@ -355,7 +385,35 @@ export class DynamoSelect<TValue = unknown>
       this.activeIndex(),
       delta,
     );
-    if (next !== null) this.activeIndex.set(next);
+    if (next !== null) {
+      this.activeIndex.set(next);
+      this.scrollActiveIntoView();
+    }
+  }
+
+  /**
+   * Scrolls the virtualized viewport so `activeIndex` is actually rendered
+   * — load-bearing, not a UX nicety: once virtualized, an off-screen
+   * "active" option may not exist in the DOM at all, and
+   * `aria-activedescendant` (`activeOptionId`) would point at a nonexistent
+   * id without this. Called explicitly only from keyboard-driven moves
+   * (openList/moveActive/Home/End/filter-reset) — deliberately NOT from
+   * the `(mouseenter)="activeIndex.set(i)"` hover handlers in select.html.
+   * CDK's own `scrollToIndex` is an unconditional absolute scroll (always
+   * jumps so the target index lands at the very top — confirmed by reading
+   * `FixedSizeVirtualScrollStrategy.scrollToIndex` directly, it's not a
+   * "scroll into view only if needed" call), so calling it on every
+   * `activeIndex` change — including hover, which only ever targets an
+   * already-visible row — was the bug: the panel visibly jumped on every
+   * hover. A prior version of this method was a constructor `effect()`
+   * watching `activeIndex()` directly, which had exactly this problem: an
+   * effect can't distinguish *why* the signal changed, and that's exactly
+   * what matters here.
+   */
+  private scrollActiveIntoView(): void {
+    if (!this.isVirtualized()) return;
+    const index = this.activeIndex();
+    if (index >= 0) this.virtualScrollRef()?.scrollToIndex(index);
   }
 
   writeValue(value: TValue | null): void {
