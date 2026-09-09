@@ -80,6 +80,8 @@ import { DynamoFieldset } from '@dynamong/fieldset';
 import { DynamoInputGroup } from '@dynamong/input-group';
 import { DynamoTieredMenu } from '@dynamong/tiered-menu';
 import type { DynamoTieredMenuItem } from '@dynamong/tiered-menu';
+import { DynamoMenubar } from '@dynamong/menubar';
+import type { DynamoMenubarItem } from '@dynamong/menubar';
 import { DynamoProgress } from '@dynamong/progress';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
@@ -277,6 +279,7 @@ const EMPLOYEES: Employee[] = [
     DynamoFieldset,
     DynamoInputGroup,
     DynamoTieredMenu,
+    DynamoMenubar,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -444,6 +447,34 @@ export class App {
     },
     { label: 'Print' },
     { label: 'Share', disabled: true },
+  ];
+
+  protected readonly lastMenubarAction = signal<string | null>(null);
+  protected readonly menubarItems: DynamoMenubarItem[] = [
+    {
+      label: 'File',
+      children: [
+        {
+          label: 'New',
+          children: [{ label: 'Document' }, { label: 'Spreadsheet' }, { label: 'Presentation' }],
+        },
+        {
+          label: 'Export',
+          children: [{ label: 'PDF' }, { label: 'CSV' }],
+        },
+        { label: 'Print' },
+        { label: 'Share', disabled: true },
+      ],
+    },
+    {
+      label: 'Edit',
+      children: [{ label: 'Undo' }, { label: 'Redo' }, { label: 'Cut' }, { label: 'Copy' }, { label: 'Paste' }],
+    },
+    {
+      label: 'View',
+      children: [{ label: 'Zoom In' }, { label: 'Zoom Out' }, { label: 'Fullscreen' }],
+    },
+    { label: 'Help' },
   ];
 
   protected readonly fruitOptions = FRUIT_OPTIONS;

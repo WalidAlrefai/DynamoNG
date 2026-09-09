@@ -105,6 +105,9 @@
       "path": "../../libs/components/forms/multi-select"
     },
     {
+      "path": "../../libs/components/overlay/menubar"
+    },
+    {
       "path": "../../libs/components/forms/listbox"
     },
     {

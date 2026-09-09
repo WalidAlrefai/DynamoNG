@@ -1,0 +1,89 @@
+<div [class]="rootClasses()" [attr.data-testid]="'DynamoMenubar'">
+  <div [class]="startClasses" data-testid="DynamoMenubar-start">
+    <ng-content select="[start]" />
+  </div>
+
+  <div
+    role="menubar"
+    tabindex="-1"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [class]="barClasses"
+    (keydown)="onMenubarKeydown($event)"
+  >
+    @for (item of items(); track item; let i = $index) {
+      <!--
+        role swaps to "combobox" only while THIS item's own dropdown is open —
+        aria-activedescendant is only a valid attribute on a handful of
+        composite ARIA roles (menu/menubar/combobox/listbox/tree/grid/...), and
+        plain "menuitem" isn't one of them. Same pragmatic axe-core workaround
+        Tiered Menu already applies to its one fixed trigger (see menubar.ts's
+        class doc comment), just applied per-item here since any of the N bar
+        items could be the one currently holding an open dropdown.
+      -->
+      <button
+        #barItemEl
+        type="button"
+        [attr.role]="openIndex() === i ? 'combobox' : 'menuitem'"
+        [tabindex]="focusedIndex() === i ? 0 : -1"
+        [attr.aria-haspopup]="item.children?.length ? 'menu' : null"
+        [attr.aria-expanded]="item.children?.length ? openIndex() === i : null"
+        [attr.aria-controls]="openIndex() === i ? panelIdForLevel(0) : null"
+        [attr.aria-activedescendant]="openIndex() === i ? activeDescendantId() : null"
+        [attr.aria-disabled]="item.disabled ? 'true' : null"
+        [class]="barItemClasses(i, item)"
+        (mouseenter)="onBarItemHover(i)"
+        (click)="onBarItemClick(i)"
+      >
+        <span>{{ item.label }}</span>
+        @if (item.children?.length) {
+          <svg [class]="chevronClasses(i)" [attr.aria-hidden]="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        }
+      </button>
+    }
+  </div>
+
+  <div [class]="endClasses" data-testid="DynamoMenubar-end">
+    <ng-content select="[end]" />
+  </div>
+</div>
+
+<!--
+  One shared template, reused for the open bar item's own dropdown (level 0)
+  and every nested flyout beneath it (levels 1..N). menubar.ts always attaches
+  it with an explicit `{ levelIndex }` context (0 for the root dropdown), so
+  no fallback resolution is needed here — same shape as Tiered Menu's own
+  panelTemplate, minus its implicit-undefined trick (Menubar's "root" isn't
+  fixed, so being explicit here is clearer).
+-->
+<ng-template #panelTemplate let-levelIndex="levelIndex">
+  @if (levels()[levelIndex]; as level) {
+    <div
+      [id]="panelIdForLevel(levelIndex)"
+      role="menu"
+      [attr.aria-label]="ariaLabel() ?? null"
+      [class]="panelClasses"
+    >
+      @for (item of level.items; track item; let i = $index) {
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the bar's own keydown (see menubar.ts's class doc comment on the aria-activedescendant focus model) -->
+        <div
+          [id]="rowId(levelIndex, i)"
+          role="menuitem"
+          tabindex="-1"
+          [attr.aria-disabled]="item.disabled ? 'true' : null"
+          [class]="rowClasses(item, levelIndex, i)"
+          (mouseenter)="onRowHover(levelIndex, i)"
+          (click)="onRowClick(levelIndex, i)"
+        >
+          <span>{{ item.label }}</span>
+          @if (item.children?.length) {
+            <svg [class]="caretClasses" width="16" height="16" viewBox="0 0 16 16" fill="none" [attr.aria-hidden]="true">
+              <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          }
+        </div>
+      }
+    </div>
+  }
+</ng-template>

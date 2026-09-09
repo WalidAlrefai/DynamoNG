@@ -324,4 +324,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/tiered-menu-doc').then((m) => m.TieredMenuDocPage),
   },
+  {
+    path: 'components/menubar',
+    loadComponent: () =>
+      import('./pages/menubar-doc').then((m) => m.MenubarDocPage),
+  },
 ];
