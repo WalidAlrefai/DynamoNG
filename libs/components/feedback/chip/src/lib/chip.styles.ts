@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — chip.html only ever binds `[class]="...Classes()"` or a
@@ -97,6 +98,6 @@ export const chipStyles = cva(
 // resolved to, so the hover state reads correctly on both solid (colored
 // background) and outline (transparent background) chips alike.
 export const chipRemoveButtonStyles =
-  '-mr-1 inline-flex shrink-0 items-center justify-center rounded-full p-0.5 ' +
-  'transition-colors hover:bg-current/10 focus-visible:outline-none focus-visible:ring-2 ' +
-  'focus-visible:ring-ring focus-visible:ring-offset-1';
+  '-me-1 inline-flex shrink-0 items-center justify-center rounded-full p-0.5 ' +
+  'transition-colors hover:bg-current/10 ' +
+  focusRingClass;

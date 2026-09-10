@@ -1,4 +1,9 @@
 import { cva } from 'class-variance-authority';
+import {
+  focusRingClass,
+  focusRingInvalidClass,
+  focusRingWithinClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — multi-select.html only ever binds `[class]="...Classes()"`.
@@ -11,17 +16,20 @@ import { cva } from 'class-variance-authority';
 // pills themselves are genuinely different and get their own styles below.
 export const multiSelectTriggerStyles = cva(
   'flex w-full flex-wrap items-center gap-1.5 rounded-md border bg-surface-0 ' +
-    'text-text-primary transition-colors focus-within:ring-2 focus-within:ring-offset-2',
+    'text-text-primary transition-colors ' +
+    focusRingWithinClass,
   {
     variants: {
+      // A wrapping tag field — `min-h-*` + `py-*`, not the fixed
+      // `controlSizeVariants` height triad.
       size: {
         sm: 'min-h-8 px-2 py-1 text-sm',
         md: 'min-h-10 px-3 py-1.5 text-base',
         lg: 'min-h-12 px-4 py-2 text-lg',
       },
       invalid: {
-        true: 'border-danger focus-within:ring-danger',
-        false: 'border-border focus-within:ring-ring',
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: 'border-border',
       },
       disabled: {
         true: 'pointer-events-none opacity-60',
@@ -49,9 +57,9 @@ export const multiSelectOverflowTagStyles =
 
 // Mirrors `chipRemoveButtonStyles`'s `hover:bg-current/10` trick.
 export const multiSelectTagRemoveButtonStyles =
-  '-mr-0.5 inline-flex shrink-0 items-center justify-center rounded-full p-0.5 ' +
-  'transition-colors hover:bg-current/10 focus-visible:outline-none focus-visible:ring-2 ' +
-  'focus-visible:ring-ring focus-visible:ring-offset-1';
+  '-me-0.5 inline-flex shrink-0 items-center justify-center rounded-full p-0.5 ' +
+  'transition-colors hover:bg-current/10 ' +
+  focusRingClass;
 
 // Holds the optional select-all checkbox + filter field in one row —
 // matches PrimeNG's MultiSelect header (a single tri-state checkbox

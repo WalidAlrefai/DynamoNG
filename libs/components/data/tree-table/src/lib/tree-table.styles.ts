@@ -1,18 +1,19 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — tree-table.html only ever binds `[class]="...Classes()"` or
 // a plain exported string constant.
 export const treeTableRootStyles = 'w-full overflow-x-auto rounded-md border border-border';
-export const treeTableStyles = 'w-full border-collapse text-left text-sm text-text-primary';
+export const treeTableStyles = 'w-full border-collapse text-start text-sm text-text-primary';
 export const treeTableHeaderRowStyles = 'border-b border-border bg-surface-50';
 
 export const treeTableHeaderCellStyles = 'px-4 py-2.5 font-medium text-text-muted';
 
 export const treeTableSortButtonStyles =
   'inline-flex items-center gap-1 rounded-sm font-medium text-text-muted transition-colors ' +
-  'hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
-  'focus-visible:ring-offset-2';
+  'hover:text-text-primary ' +
+  focusRingClass;
 
 // Copied from Table's own tableSortIconStyles shape — "none" dims the icon
 // to signal sortable-but-inactive.

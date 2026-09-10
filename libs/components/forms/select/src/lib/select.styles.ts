@@ -42,7 +42,7 @@ export const selectTriggerStyles = cva(
 // unstyled beyond layout, since the wrapper already provides the visible
 // border/background/padding.
 export const selectTriggerButtonStyles =
-  'min-w-0 flex-1 truncate bg-transparent text-left outline-none disabled:cursor-not-allowed';
+  'min-w-0 flex-1 truncate bg-transparent text-start outline-none disabled:cursor-not-allowed';
 
 // `ms-auto` pins the chevron to the end of the trigger row. In
 // `DynamoSelect` this is a no-op — the inner combobox `<button>` already has
@@ -119,12 +119,12 @@ export const selectFilterWrapperStyles = 'border-b border-border p-2';
 export const selectFilterFieldWrapperStyles = 'relative min-w-0 flex-1';
 
 export const selectFilterIconStyles =
-  'pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted';
+  'pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted';
 
 // Passed as `<dg-input-text>`'s `[styleClass]` so typed text doesn't run
 // under the icon. `cn()`'s `tailwind-merge` correctly resolves this against
 // `inputTextStyles`'s own `px-*` (overrides only the right side).
-export const selectFilterInputExtraClasses = 'pr-8';
+export const selectFilterInputExtraClasses = 'pe-8';
 
 export const selectGroupHeadingStyles = sectionHeadingClass;
 

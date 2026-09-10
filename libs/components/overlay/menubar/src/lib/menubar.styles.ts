@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass, overlayPanelClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — menubar.html only ever binds `[class]="...Classes()"` / a raw
@@ -29,7 +30,8 @@ export const menubarEndStyles = 'flex shrink-0 items-center gap-2';
 // dropdown is currently showing (Menu's precedent). Both can be true at once.
 export const menubarItemStyles = cva(
   'flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-text-primary ' +
-    'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    'transition-colors ' +
+    focusRingClass,
   {
     variants: {
       open: {
@@ -56,14 +58,14 @@ export const menubarChevronStyles = cva('shrink-0 transition-transform duration-
 });
 
 export const menubarPanelStyles =
-  'z-10 min-w-[10rem] rounded-md border border-border bg-surface-0 py-1 shadow-lg';
+  'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;
 
 // Rows are virtual-focus-only (aria-activedescendant, not real DOM focus —
 // see menubar.ts's doc comment), so `active` is a real, JS-driven visual
 // variant here rather than relying on :focus-visible — same idiom as Tiered
 // Menu's own tieredMenuItemStyles.
 export const menubarRowStyles = cva(
-  'flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2 text-left text-sm text-text-primary',
+  'flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2 text-start text-sm text-text-primary',
   {
     variants: {
       active: {

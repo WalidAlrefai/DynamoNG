@@ -24,7 +24,7 @@ const FLOATED_SHARED =
   'group-has-[:is(input,textarea):not(:placeholder-shown)]:text-xs';
 
 export const floatLabelTextStyles = cva(
-  'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 origin-left ' +
+  'pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 origin-left rtl:origin-right ' +
     'text-sm text-text-muted transition-all duration-200 ease-out ' +
     FLOATED_SHARED,
   {
@@ -59,4 +59,4 @@ export const iftaLabelRootStyles =
   'relative block [&_:is(input,textarea,select)]:pt-5 [&_:is(input,textarea,select)]:pb-1';
 
 export const iftaLabelTextStyles =
-  'pointer-events-none absolute left-3 top-1 text-xs font-medium text-text-muted';
+  'pointer-events-none absolute start-3 top-1 text-xs font-medium text-text-muted';

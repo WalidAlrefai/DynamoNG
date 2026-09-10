@@ -8,18 +8,22 @@ import type { DynamoOverlayBadgePosition } from './overlay-badge.types';
 export const overlayBadgeRootStyles = 'relative inline-flex';
 
 // Positions the overlaid marker half-outside the wrapped element's corner.
+// `end-0`/`start-0` follow the writing direction; Tailwind has no logical
+// `translate`, so the horizontal push-out is mirrored explicitly under `rtl:`.
 const CORNER: Record<DynamoOverlayBadgePosition, string> = {
-  'top-right': 'top-0 right-0 -translate-y-1/2 translate-x-1/2',
-  'top-left': 'top-0 left-0 -translate-y-1/2 -translate-x-1/2',
-  'bottom-right': 'bottom-0 right-0 translate-y-1/2 translate-x-1/2',
-  'bottom-left': 'bottom-0 left-0 translate-y-1/2 -translate-x-1/2',
+  'top-right': 'top-0 end-0 -translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2',
+  'top-left': 'top-0 start-0 -translate-y-1/2 -translate-x-1/2 rtl:translate-x-1/2',
+  'bottom-right':
+    'bottom-0 end-0 translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2',
+  'bottom-left':
+    'bottom-0 start-0 translate-y-1/2 -translate-x-1/2 rtl:translate-x-1/2',
 };
 
 // Passed to `<dg-badge [styleClass]>` — shrinks it to an overlay size and
 // pins it to the chosen corner. `cn()`/tailwind-merge inside DynamoBadge
 // resolves this against its own `px-*`/`text-*`.
 export const overlayBadgeBadgeStyles = cva(
-  'pointer-events-none absolute z-10 min-w-4 justify-center px-1 text-[10px] leading-4',
+  'pointer-events-none absolute z-10 min-w-4 justify-center px-1 text-xs',
   {
     variants: {
       position: {

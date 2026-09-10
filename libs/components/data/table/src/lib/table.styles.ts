@@ -7,7 +7,7 @@ import { focusRingClass } from '@dynamong/utils/styles';
 export const tableWrapperStyles =
   'w-full overflow-x-auto rounded-md border border-border';
 export const tableStyles =
-  'w-full border-collapse text-left text-sm text-text-primary';
+  'w-full border-collapse text-start text-sm text-text-primary';
 export const tableHeaderRowStyles = 'border-b border-border bg-surface-50';
 
 export const tableHeaderCellStyles = cva('font-medium text-text-muted', {

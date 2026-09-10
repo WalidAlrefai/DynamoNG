@@ -41,6 +41,7 @@ export interface DynamoRadiusTokens {
   md: string;
   lg: string;
   xl: string;
+  '2xl': string;
   full: string;
 }
 

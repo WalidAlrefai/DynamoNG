@@ -1,3 +1,5 @@
+import { overlayPanelClass } from '@dynamong/utils/styles';
+
 // The only place Tailwind utility classes are allowed to live for this
 // component — popover.html only ever binds `[class]="...Classes"`. No
 // cva() here at all — unlike most components, nothing about Popover's own
@@ -6,4 +8,4 @@
 export const popoverTriggerStyles = 'inline-block cursor-pointer';
 
 export const popoverPanelStyles =
-  'z-10 min-w-[12rem] rounded-md border border-border bg-surface-0 p-4 shadow-lg focus-visible:outline-none';
+  'z-popover min-w-[12rem] p-4 focus-visible:outline-none ' + overlayPanelClass;

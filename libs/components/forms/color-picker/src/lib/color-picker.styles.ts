@@ -1,4 +1,10 @@
 import { cva } from 'class-variance-authority';
+import {
+  controlSizeVariants,
+  focusRingClass,
+  focusRingInvalidClass,
+  focusRingWithinClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — color-picker.html only ever binds `[class]="...Classes()"`,
@@ -14,17 +20,14 @@ import { cva } from 'class-variance-authority';
 // not on either child).
 export const colorPickerWrapperStyles = cva(
   'flex w-full items-center gap-2 rounded-md border bg-surface-0 text-text-primary ' +
-    'transition-colors focus-within:ring-2 focus-within:ring-offset-2',
+    'transition-colors ' +
+    focusRingWithinClass,
   {
     variants: {
-      size: {
-        sm: 'h-8 px-3 text-sm',
-        md: 'h-10 px-4 text-base',
-        lg: 'h-12 px-5 text-lg',
-      },
+      size: controlSizeVariants,
       invalid: {
-        true: 'border-danger focus-within:ring-danger',
-        false: 'border-border focus-within:ring-ring',
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: 'border-border',
       },
       disabled: {
         true: 'pointer-events-none opacity-60',
@@ -39,9 +42,8 @@ export const colorPickerHexInputStyles =
   'min-w-0 flex-1 bg-transparent outline-none disabled:cursor-not-allowed';
 
 export const colorPickerSwatchButtonStyles = cva(
-  'shrink-0 rounded-md border border-border transition-shadow ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ' +
-    'disabled:cursor-not-allowed',
+  'shrink-0 rounded-md border border-border transition-shadow disabled:cursor-not-allowed ' +
+    focusRingClass,
   {
     variants: {
       size: {
@@ -58,7 +60,7 @@ export const colorPickerSwatchGridStyles = 'grid grid-cols-5 gap-2 p-3';
 
 export const colorPickerSwatchOptionStyles = cva(
   'h-8 w-8 rounded-md border border-border transition-shadow cursor-pointer ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    focusRingClass,
   {
     variants: {
       selected: {

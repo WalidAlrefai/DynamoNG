@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — stepper.html only ever binds `[class]="...Classes()"`.
@@ -10,7 +11,7 @@ export const stepperControlsStyles = 'flex items-center justify-between';
 
 export const stepperStepButtonStyles = cva(
   'flex flex-col items-center gap-1.5 rounded-md text-center transition-colors ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    focusRingClass,
   {
     variants: {
       disabled: {

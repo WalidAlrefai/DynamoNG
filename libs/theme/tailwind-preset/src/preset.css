@@ -64,6 +64,7 @@
   --radius-md: var(--dg-radius-md);
   --radius-lg: var(--dg-radius-lg);
   --radius-xl: var(--dg-radius-xl);
+  --radius-2xl: var(--dg-radius-2xl);
   --radius-full: var(--dg-radius-full);
 
   /* The single multiplier Tailwind's whole spacing scale derives from — the
@@ -135,6 +136,20 @@
       0 0 0 var(--dg-focus-ring-offset) var(--dg-color-surface-0),
       0 0 0 calc(var(--dg-focus-ring-offset) + var(--dg-focus-ring-width))
         var(--dg-focus-ring-color, var(--dg-color-ring));
+  }
+}
+
+/*
+ * Inset variant — the ring is drawn INSIDE the element's box with no offset
+ * gap. For full-width interactive rows (accordion header, tree row, panel
+ * header, splitter handle) where an outset ring is clipped by an
+ * `overflow-hidden` ancestor or overlaps the neighbouring row.
+ */
+@utility dg-focus-ring-inset {
+  &:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: inset 0 0 0 var(--dg-focus-ring-width)
+      var(--dg-focus-ring-color, var(--dg-color-ring));
   }
 }
 

@@ -1,12 +1,13 @@
 import { cva } from 'class-variance-authority';
+import { focusRingInsetClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — never inline in tree.html/tree-item.html.
 export const treeRootStyles = 'flex flex-col gap-0.5 rounded-md';
 
 export const treeRowStyles = cva(
-  'flex items-center gap-1.5 rounded-md py-1.5 pr-2 text-sm text-text-primary ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+  'flex items-center gap-1.5 rounded-md py-1.5 pe-2 text-sm text-text-primary ' +
+    focusRingInsetClass,
   {
     variants: {
       active: {

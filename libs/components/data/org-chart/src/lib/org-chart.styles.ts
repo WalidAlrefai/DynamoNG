@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — never inline in org-chart.html / org-chart-item.html.
@@ -39,8 +40,7 @@ export const orgChartItemStyles =
 export const orgChartBoxStyles = cva(
   'relative z-10 inline-flex flex-col items-stretch rounded-md border border-border ' +
     'bg-surface-0 px-4 py-2 text-sm text-text-primary ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
-    'focus-visible:ring-offset-1',
+    focusRingClass,
   {
     variants: {
       selectable: {

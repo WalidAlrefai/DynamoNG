@@ -19,6 +19,14 @@ export const focusRingWithinClass = 'dg-focus-ring-within';
 export const focusRingPeerClass = 'dg-focus-ring-peer';
 
 /**
+ * Inset ring (drawn inside the box, no offset) — for full-width interactive rows
+ * where an outset ring would be clipped by an `overflow-hidden` ancestor or
+ * overlap the neighbouring row: Accordion header, Tree row, Panel header,
+ * Splitter handle, PanelMenu row.
+ */
+export const focusRingInsetClass = 'dg-focus-ring-inset';
+
+/**
  * Add alongside `focusRingClass` / `focusRingWithinClass` on an **invalid** form
  * field so the ring is tinted with the danger colour instead of the accent.
  * Sets the `--dg-focus-ring-color` custom property the `@utility` reads.

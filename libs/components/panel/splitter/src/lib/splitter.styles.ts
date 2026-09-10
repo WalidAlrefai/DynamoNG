@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingInsetClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — splitter.html only ever binds `[class]="...Classes()"`, except
@@ -19,8 +20,7 @@ export const splitterRootStyles = cva('flex w-full', {
 export const splitterPanelStyles = 'min-w-0 min-h-0 overflow-auto';
 
 export const splitterDividerStyles = cva(
-  'shrink-0 bg-border transition-colors hover:bg-primary/40 focus-visible:outline-none ' +
-    'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+  'shrink-0 bg-border transition-colors hover:bg-primary/40 ' + focusRingInsetClass,
   {
     variants: {
       orientation: {

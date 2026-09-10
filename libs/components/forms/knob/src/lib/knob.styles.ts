@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — knob.html only ever binds `[class]="...Classes()"`, except the
@@ -24,8 +25,7 @@ export const knobTrackStyles = 'stroke-surface-200 fill-none';
 // looks wrong on a circular dial. rounded-full lets the ring/box-shadow
 // utilities below curve to match, same focus-ring shape Slider's (equally
 // circular) thumb uses.
-export const knobDialStyles =
-  'rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+export const knobDialStyles = 'rounded-full outline-none ' + focusRingClass;
 
 // -rotate-90/origin-center are constants (the arc always starts at 12
 // o'clock), not continuous values, so they belong here rather than as an

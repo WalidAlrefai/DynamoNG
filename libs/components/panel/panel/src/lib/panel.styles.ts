@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingInsetClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — panel.html only ever binds `[class]="...Classes()"`.
@@ -18,9 +19,9 @@ export const panelStyles = cva('overflow-hidden rounded-lg text-text-primary', {
 // Plain div when not collapsible, a `<button>` when it is — same base shape
 // either way (near-identical to cardHeaderStyles).
 export const panelHeaderStyles =
-  'flex w-full items-center justify-between gap-2 border-b border-border px-4 py-3 text-left';
+  'flex w-full items-center justify-between gap-2 border-b border-border px-4 py-3 text-start';
 export const panelHeaderButtonStyles =
-  'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset hover:text-primary';
+  'transition-colors hover:text-primary ' + focusRingInsetClass;
 export const panelTitleStyles = 'text-base font-semibold text-text-primary';
 
 // The 0fr/1fr grid-rows trick, copied verbatim from Accordion

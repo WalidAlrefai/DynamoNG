@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — fieldset.html only ever binds `[class]="...Classes()"`.
@@ -24,8 +25,8 @@ export const fieldsetLegendStyles =
 // legend being replaced by a synthetic header the way Panel's collapsible
 // header is.
 export const fieldsetToggleButtonStyles =
-  'inline-flex items-center gap-1 rounded transition-colors focus-visible:outline-none ' +
-  'focus-visible:ring-2 focus-visible:ring-ring hover:text-primary';
+  'inline-flex items-center gap-1 rounded-sm transition-colors hover:text-primary ' +
+  focusRingClass;
 
 // The 0fr/1fr grid-rows trick, copied verbatim from Accordion/Panel — no
 // ResizeObserver or JS height measurement.

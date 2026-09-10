@@ -19,13 +19,13 @@ export const selectButtonSegmentStyles = cva(
   {
     variants: {
       position: {
-        first: 'rounded-l-md',
+        first: 'rounded-s-md',
         middle: '',
-        last: 'rounded-r-md',
+        last: 'rounded-e-md',
         only: 'rounded-md',
       },
       isNotFirst: {
-        true: '-ml-px',
+        true: '-ms-px',
         false: '',
       },
       selected: {

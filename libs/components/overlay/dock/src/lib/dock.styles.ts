@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — dock.html binds `[class]="...Classes()"` (the one exception is
@@ -35,8 +36,8 @@ export const dockListStyles = cva(
 export const dockItemStyles = cva(
   'group/tile relative flex h-12 w-12 items-center justify-center rounded-xl bg-surface-100 text-lg text-text-primary ' +
     'transition-transform duration-150 ease-out will-change-transform motion-reduce:transition-none ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ' +
-    'aria-disabled:cursor-not-allowed aria-disabled:opacity-40',
+    'aria-disabled:cursor-not-allowed aria-disabled:opacity-40 ' +
+    focusRingClass,
   {
     variants: {
       position: {
@@ -51,7 +52,7 @@ export const dockItemStyles = cva(
 );
 
 export const dockLabelStyles = cva(
-  'pointer-events-none absolute whitespace-nowrap rounded bg-surface-900 px-1.5 py-0.5 text-xs text-surface-0 ' +
+  'pointer-events-none absolute whitespace-nowrap rounded-sm bg-surface-900 px-1.5 py-0.5 text-xs text-surface-0 ' +
     'opacity-0 transition-opacity duration-150 group-hover/tile:opacity-100 group-focus-visible/tile:opacity-100',
   {
     variants: {

@@ -91,11 +91,19 @@ design tokens (libs/theme/tokens)
 The token contract covers **colour** (brand roles, surface ramp, text roles, ring, scrim), **radius**,
 **spacing** (a single `--dg-spacing-unit` that Tailwind's whole scale multiplies — the density knob),
 **typography** (family, size + line-height, weight), **elevation** (`shadow-sm/md/lg`), **motion**
-(durations, easings), **focus** (the `dg-focus-ring` / `-within` / `-peer` `@utility`), and a named
-**z-index** layer scale (`z-dropdown` … `z-tooltip`). `mapped-theme-keys.ts` mirrors the `@theme` keys and
-a test parses `preset.css` to keep them from drifting. Cross-component recipes that would otherwise be
-copy-pasted (the `sm/md/lg` control-size triad, the focus ring, section headings, overlay-panel chrome)
-live in `@dynamong/utils/styles`. Rendered reference: the docs app's **Foundations** page.
+(durations, easings), **focus** (the `dg-focus-ring` / `-within` / `-peer` / `-inset` `@utility`), and a
+named **z-index** layer scale (`z-dropdown` … `z-tooltip`). `mapped-theme-keys.ts` mirrors the `@theme`
+keys and a test parses `preset.css` to keep them from drifting. Cross-component recipes that would
+otherwise be copy-pasted (the `sm/md/lg` control-size triad, the focus ring, section headings,
+overlay-panel chrome) live in `@dynamong/utils/styles`. Rendered reference: the docs app's
+**Foundations** page.
+
+Every component styles with **writing-mode-relative** (logical) Tailwind utilities — `ms-*`/`me-*`,
+`ps-*`/`pe-*`, `start-*`/`end-*`, `text-start`/`text-end`, `border-s`/`border-e`, `rounded-s*`/`rounded-e*`
+— so setting `dir="rtl"` on a container mirrors layout with no per-component configuration. An ESLint
+rule (`no-restricted-syntax` in the `*.styles.ts` override) fails the build on a physical directional
+utility. Drawer/Dock keep a physical `left`/`right` position API by design and are exempted; JS-driven
+transforms (slider fill, carousel track) are a follow-up.
 
 Swapping a theme means swapping the `--dg-*` values at `:root`, never touching a component template. Set
 `unstyled` on any component to opt out of built-in classes entirely (the `styleClass`/`pt` inputs on

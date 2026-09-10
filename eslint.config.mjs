@@ -175,7 +175,43 @@ export default [
     // matures, or author a small custom rule against our own `cva()` convention.
     files: ['**/*.styles.ts'],
     plugins: { tailwindcss },
-    rules: {},
+    rules: {
+      // Enforce writing-mode-relative (logical) Tailwind utilities so
+      // components work in RTL without per-instance overrides. The regex is
+      // tuned against the whole component set: it does NOT flag `rounded-lg`,
+      // `border-red-*`/`border-lime-*`, already-logical `ms-*`/`pe-*`, or a
+      // physical value deliberately gated behind an `rtl:`/`ltr:` variant
+      // (any `:`-prefixed occurrence). Genuinely-physical position APIs
+      // (Drawer, Dock) and placement-coupled arrow offsets (Tooltip) are
+      // exempted in the block below.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "Literal[value=/(?<![\\w:])(?:m[lr]-|p[lr]-|left-|right-|text-(?:left|right)|border-[lr](?![a-z])|rounded-(?:[lr]|[tb][lr])(?![a-z]))/]",
+          message:
+            'Use logical Tailwind utilities in *.styles.ts: ms-*/me-* not ml-*/mr-*, ps-*/pe-* not pl-*/pr-*, start-*/end-* not left-*/right-*, text-start/text-end not text-left/text-right, border-s/border-e not border-l/border-r, rounded-s*/rounded-e* not rounded-l*/rounded-r*. Gate a genuinely physical value behind an rtl:/ltr: variant.',
+        },
+        {
+          selector:
+            "TemplateElement[value.cooked=/(?<![\\w:])(?:m[lr]-|p[lr]-|left-|right-|text-(?:left|right)|border-[lr](?![a-z])|rounded-(?:[lr]|[tb][lr])(?![a-z]))/]",
+          message:
+            'Use logical Tailwind utilities in *.styles.ts (ms-/me-/ps-/pe-/start-/end-/text-start/text-end/border-s/border-e/rounded-s*/rounded-e*), not physical ones. Gate a genuinely physical value behind an rtl:/ltr: variant.',
+        },
+      ],
+    },
+  },
+  {
+    // Exempt the components whose positioning is deliberately physical:
+    // Drawer/Dock expose a `left`/`right` keyed position API (matching
+    // PrimeNG — the consumer names the side), and Tooltip's arrow offsets
+    // must track the (not-yet-RTL-aware) JS placement side.
+    files: [
+      '**/drawer/src/lib/*.styles.ts',
+      '**/dock/src/lib/*.styles.ts',
+      '**/tooltip/src/lib/*.styles.ts',
+    ],
+    rules: { 'no-restricted-syntax': 'off' },
   },
   {
     files: ['**/*.json'],

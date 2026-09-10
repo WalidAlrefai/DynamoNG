@@ -1,10 +1,11 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass, overlayPanelClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — split-button.html only ever binds `[class]="...Classes()"` /
 // `[styleClass]`.
 export const splitButtonRootStyles = 'inline-flex';
-export const splitButtonPrimaryStyles = 'rounded-r-none';
+export const splitButtonPrimaryStyles = 'rounded-e-none';
 
 // Mirrors button.styles.ts's severity x variant color matrix so the chevron
 // reads as part of the same control — it can't reuse <dg-button> itself
@@ -13,9 +14,9 @@ export const splitButtonPrimaryStyles = 'rounded-r-none';
 // scoped duplication of Button's own matrix, the same kind of independent
 // redeclaration Badge/Chip/Tag already do for their own severity colors.
 export const splitButtonTriggerStyles = cva(
-  'inline-flex aspect-square shrink-0 -ml-px items-center justify-center rounded-l-none rounded-r-md ' +
-    'font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
-    'focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60',
+  'inline-flex aspect-square shrink-0 -ms-px items-center justify-center rounded-s-none rounded-e-md ' +
+    'font-medium transition-colors disabled:pointer-events-none disabled:opacity-60 ' +
+    focusRingClass,
   {
     variants: {
       size: {
@@ -74,10 +75,10 @@ export const splitButtonTriggerStyles = cva(
 // exported from @dynamong/menu, so this isn't importable even if desired
 // (per-component style redeclaration is the norm in this codebase).
 export const splitButtonPanelStyles =
-  'z-10 min-w-[10rem] rounded-md border border-border bg-surface-0 py-1 shadow-lg';
+  'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;
 
 export const splitButtonItemStyles = cva(
-  'block w-full cursor-pointer px-4 py-2 text-left text-sm text-text-primary ' +
+  'block w-full cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
     'focus-visible:outline-none focus-visible:bg-surface-100',
   {
     variants: {

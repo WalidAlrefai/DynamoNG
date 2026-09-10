@@ -174,6 +174,34 @@ const Z_LAYERS = [
 
       <section class="space-y-3">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+          Focus ring
+        </h2>
+        <p class="text-sm text-text-muted">
+          One themeable treatment, driven by
+          <code class="rounded bg-surface-100 px-1">--dg-focus-*</code>. Tab to
+          each control to see it. Use the inset variant on full-width rows where
+          an outset ring would be clipped.
+        </p>
+        <div class="flex flex-wrap items-center gap-4">
+          <button
+            type="button"
+            class="dg-focus-ring rounded-md border border-border bg-surface-0 px-4 py-2 text-sm text-text-primary"
+          >
+            dg-focus-ring
+          </button>
+          <div class="w-56 overflow-hidden rounded-md border border-border">
+            <button
+              type="button"
+              class="dg-focus-ring-inset block w-full px-4 py-2 text-start text-sm text-text-primary"
+            >
+              dg-focus-ring-inset
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
           Z-index layers
         </h2>
         <p class="text-sm text-text-muted">
@@ -200,6 +228,23 @@ const Z_LAYERS = [
           from one token —
           <code class="rounded bg-surface-100 px-1">--dg-spacing-unit</code>
           (0.25rem by default). Lowering it compacts the whole system at once.
+        </p>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+          Writing mode (RTL)
+        </h2>
+        <p class="text-sm text-text-muted">
+          Components style with writing-mode-relative utilities
+          (<code class="rounded bg-surface-100 px-1">ms-*</code> /
+          <code class="rounded bg-surface-100 px-1">pe-*</code> /
+          <code class="rounded bg-surface-100 px-1">text-start</code> /
+          <code class="rounded bg-surface-100 px-1">border-s</code>), enforced by
+          an ESLint rule. Set
+          <code class="rounded bg-surface-100 px-1">dir="rtl"</code> on a
+          container (or <code class="rounded bg-surface-100 px-1">&lt;html&gt;</code>)
+          and layout mirrors — no per-component configuration.
         </p>
       </section>
     </article>

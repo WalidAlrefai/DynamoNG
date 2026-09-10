@@ -1,10 +1,11 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — alert.html only ever binds `[class]="...Classes()"` or a
 // plain exported string constant.
 export const alertCardStyles = cva(
-  'flex items-start gap-3 rounded-md border-l-4 bg-surface-0 p-4 text-sm text-text-primary',
+  'flex items-start gap-3 rounded-md border-s-4 bg-surface-0 p-4 text-sm text-text-primary',
   {
     variants: {
       severity: {
@@ -38,5 +39,6 @@ export const alertTitleStyles = 'font-medium text-text-primary';
 export const alertMessageStyles = 'text-text-muted';
 
 export const alertCloseButtonStyles =
-  'ml-auto shrink-0 rounded-md p-1 text-text-muted transition-colors hover:bg-surface-100 ' +
-  'hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'ms-auto shrink-0 rounded-md p-1 text-text-muted transition-colors hover:bg-surface-100 ' +
+  'hover:text-text-primary ' +
+  focusRingClass;

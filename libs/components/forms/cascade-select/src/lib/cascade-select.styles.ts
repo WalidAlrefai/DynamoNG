@@ -9,7 +9,7 @@ import { cva } from 'class-variance-authority';
 // expand/collapse toggle state here, since a click always drills in) are
 // genuinely new.
 export const cascadeSelectRowStyles = cva(
-  'flex w-full cursor-pointer items-center justify-between gap-2 rounded px-2 py-1.5 text-sm text-text-primary',
+  'flex w-full cursor-pointer items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm text-text-primary',
   {
     variants: {
       active: {

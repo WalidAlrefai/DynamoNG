@@ -113,12 +113,12 @@ describe('DynamoOverlayBadge', () => {
       );
 
       expect(badgeSpan(container)?.className).toContain('top-0');
-      expect(badgeSpan(container)?.className).toContain('right-0');
+      expect(badgeSpan(container)?.className).toContain('end-0');
 
       componentInstance.position.set('bottom-left');
       fixture.detectChanges();
       expect(badgeSpan(container)?.className).toContain('bottom-0');
-      expect(badgeSpan(container)?.className).toContain('left-0');
+      expect(badgeSpan(container)?.className).toContain('start-0');
     });
   });
 

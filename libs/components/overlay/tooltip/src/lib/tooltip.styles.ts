@@ -2,10 +2,15 @@ import { cva } from 'class-variance-authority';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — tooltip.html only ever binds `[class]="...Classes()"`.
+//
+// The arrow's per-side `left-[-4px]` / `right-[-4px]` offsets stay physical
+// because they must track the panel side that tooltip.ts's (not yet
+// RTL-aware) placement logic actually resolves to — this file is exempted
+// from the logical-utilities lint rule until that JS work lands.
 export const tooltipTriggerStyles = cva('inline-block');
 
 export const tooltipPanelStyles = cva(
-  'relative pointer-events-none z-50 max-w-xs rounded-md bg-surface-900 px-2.5 py-1.5 text-sm text-surface-0 shadow-md',
+  'relative pointer-events-none z-tooltip max-w-xs rounded-md bg-surface-900 px-2.5 py-1.5 text-sm text-surface-0 shadow-md',
   {
     variants: {
       position: {

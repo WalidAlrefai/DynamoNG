@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingInsetClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — never inline in panel-menu.html/panel-menu-node.html.
@@ -8,8 +9,8 @@ export const panelMenuRootStyles = 'flex flex-col gap-0.5 rounded-md';
 // `active` is a real, JS-driven visual variant rather than relying on
 // :focus-visible alone, same idiom as Tree's treeRowStyles.
 export const panelMenuRowStyles = cva(
-  'flex w-full items-center gap-1.5 rounded-md py-1.5 pr-2 text-left text-sm text-text-primary ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+  'flex w-full items-center gap-1.5 rounded-md py-1.5 pe-2 text-start text-sm text-text-primary ' +
+    focusRingInsetClass,
   {
     variants: {
       active: {

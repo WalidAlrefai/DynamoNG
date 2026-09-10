@@ -23,13 +23,13 @@ export const carouselSlideStyles = 'w-full flex-shrink-0';
 // tailwind-merge resolves the conflicting rounded-md/sizing classes from
 // buttonStyles cleanly — no !important needed.
 export const carouselPrevArrowStyles =
-  'absolute left-2 top-1/2 z-10 -translate-y-1/2 h-8 w-8 rounded-full p-0 shadow-md';
+  'absolute start-2 top-1/2 z-10 -translate-y-1/2 h-8 w-8 rounded-full p-0 shadow-md';
 export const carouselNextArrowStyles =
-  'absolute right-2 top-1/2 z-10 -translate-y-1/2 h-8 w-8 rounded-full p-0 shadow-md';
+  'absolute end-2 top-1/2 z-10 -translate-y-1/2 h-8 w-8 rounded-full p-0 shadow-md';
 export const carouselIndicatorsStyles =
   'flex items-center justify-center gap-2 pt-3';
 export const carouselPlayToggleStyles =
-  'absolute bottom-2 right-2 z-10 rounded-full shadow-md';
+  'absolute bottom-2 end-2 z-10 rounded-full shadow-md';
 
 // The two states here are a real visual variant axis (unlike most of the
 // plain strings above), same shape as stepperConnectorStyles' `completed`

@@ -4,11 +4,19 @@
  */
 
 /**
- * The "eyebrow" heading above an option group or list section — was duplicated
- * in Listbox, Order List, Pick List, Select, and Mega Menu.
+ * The "eyebrow" heading above an option group or list section — typography only,
+ * no padding. Use when the component already applies its own padding (e.g. a
+ * header row): Order List, Pick List, Mega Menu.
  */
-export const sectionHeadingClass =
-  'px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted';
+export const sectionHeadingBaseClass =
+  'text-xs font-semibold uppercase tracking-wide text-text-muted';
+
+/**
+ * `sectionHeadingBaseClass` plus the standard `px-4 pt-2 pb-1` inset — for a
+ * heading that sits directly inside a scrolling list (Select option groups,
+ * Listbox).
+ */
+export const sectionHeadingClass = 'px-4 pt-2 pb-1 ' + sectionHeadingBaseClass;
 
 /**
  * Border + surface + elevation chrome shared by every floating overlay panel

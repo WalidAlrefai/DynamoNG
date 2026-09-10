@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { sectionHeadingClass } from '@dynamong/utils/styles';
 
 export const listboxRootStyles =
   'max-h-72 overflow-auto rounded-md border border-border bg-surface-0 py-1';
@@ -12,8 +13,7 @@ export const listboxRootStyles =
 export const listboxRootVirtualStyles =
   'rounded-md border border-border bg-surface-0';
 
-export const listboxGroupHeadingStyles =
-  'px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted';
+export const listboxGroupHeadingStyles = sectionHeadingClass;
 
 export const listboxOptionStyles = cva(
   'flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-text-primary',
@@ -30,7 +30,7 @@ export const listboxOptionStyles = cva(
 // Mirrors MultiSelect's own panel-row checkbox: an empty bordered square
 // that only shows the check glyph once selected.
 export const listboxOptionCheckboxStyles = cva(
-  'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+  'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border',
   {
     variants: {
       checked: {

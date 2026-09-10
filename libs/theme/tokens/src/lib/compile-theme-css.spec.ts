@@ -37,7 +37,14 @@ const baseTokens: DynamoThemeTokens = {
     ring: '#6366f1',
     scrim: 'rgb(0 0 0 / 0.5)',
   },
-  radius: { sm: '0.25rem', md: '0.375rem', lg: '0.5rem', xl: '0.75rem', full: '9999px' },
+  radius: {
+    sm: '0.25rem',
+    md: '0.375rem',
+    lg: '0.5rem',
+    xl: '0.75rem',
+    '2xl': '1rem',
+    full: '9999px',
+  },
   focus: { ringWidth: '2px', ringOffset: '2px' },
   spacing: { unit: '0.25rem' },
   typography: {

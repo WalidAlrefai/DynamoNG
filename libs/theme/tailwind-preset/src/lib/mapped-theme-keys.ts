@@ -44,6 +44,7 @@ export const DYNAMO_TAILWIND_THEME_KEYS = [
   '--radius-md',
   '--radius-lg',
   '--radius-xl',
+  '--radius-2xl',
   '--radius-full',
   '--spacing',
   '--font-sans',

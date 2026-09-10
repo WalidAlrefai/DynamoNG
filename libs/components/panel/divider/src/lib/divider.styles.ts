@@ -6,7 +6,7 @@ export const dividerLineStyles = cva('border-border', {
   variants: {
     orientation: {
       horizontal: 'border-t flex-1',
-      vertical: 'border-l self-stretch',
+      vertical: 'border-s self-stretch',
     },
   },
   defaultVariants: { orientation: 'horizontal' },

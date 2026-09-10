@@ -1,11 +1,13 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass, focusRingWithinClass } from '@dynamong/utils/styles';
 
 // Outer wrapper: focus visually belongs to the whole control (toolbar +
 // content), not one native input, so it reacts to focus-within the same way
 // Password's wrapper does across its input + toggle button.
 export const editorRootStyles = cva(
   'flex flex-col overflow-hidden rounded-md border bg-surface-0 text-text-primary ' +
-    'transition-colors focus-within:ring-2 focus-within:ring-offset-2',
+    'transition-colors ' +
+    focusRingWithinClass,
   {
     variants: {
       disabled: {
@@ -25,10 +27,10 @@ export const editorToolbarStyles = 'flex flex-wrap items-center gap-1 border-b b
 // "pressed" state to copy) but follows the exact same cva() boolean-variant
 // idiom as InputText's `invalid` variant.
 export const editorButtonStyles = cva(
-  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-sm text-text-muted ' +
+  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-sm text-text-muted ' +
     'transition-colors hover:bg-surface-200 hover:text-text-primary ' +
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ' +
-    'disabled:pointer-events-none disabled:opacity-40',
+    'disabled:pointer-events-none disabled:opacity-40 ' +
+    focusRingClass,
   {
     variants: {
       active: {
@@ -51,7 +53,7 @@ export const editorButtonStyles = cva(
 // apply CSS).
 export const editorContentStyles = cva(
   'min-h-32 overflow-y-auto p-3 text-sm outline-none ' +
-    '[&_a]:text-primary [&_a]:underline [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6',
+    '[&_a]:text-primary [&_a]:underline [&_ol]:list-decimal [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6',
   {
     variants: {
       disabled: {

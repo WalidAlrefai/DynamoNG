@@ -6,7 +6,7 @@ import { focusRingClass } from '@dynamong/utils/styles';
 export const toastContainerStyles = 'flex flex-col gap-2';
 
 export const toastCardStyles = cva(
-  'flex items-start gap-3 rounded-md border-l-4 bg-surface-0 p-4 text-sm text-text-primary shadow-lg',
+  'flex items-start gap-3 rounded-md border-s-4 bg-surface-0 p-4 text-sm text-text-primary shadow-lg',
   {
     variants: {
       severity: {
@@ -40,6 +40,6 @@ export const toastTitleStyles = 'font-medium text-text-primary';
 export const toastMessageStyles = 'text-text-muted';
 
 export const toastCloseButtonStyles =
-  'ml-auto shrink-0 rounded-md p-1 text-text-muted transition-colors hover:bg-surface-100 ' +
+  'ms-auto shrink-0 rounded-md p-1 text-text-muted transition-colors hover:bg-surface-100 ' +
   'hover:text-text-primary ' +
   focusRingClass;
