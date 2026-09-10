@@ -88,6 +88,12 @@ import { DynamoTreeTable } from '@dynamong/tree-table';
 import type { DynamoTreeTableColumn, DynamoTreeTableNode } from '@dynamong/tree-table';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { DynamoProgress } from '@dynamong/progress';
+import { DynamoDataView } from '@dynamong/data-view';
+import { DynamoMegaMenu } from '@dynamong/mega-menu';
+import type { DynamoMegaMenuItem } from '@dynamong/mega-menu';
+import { DynamoFloatLabel, DynamoIftaLabel } from '@dynamong/float-label';
+import { DynamoSpeedDial } from '@dynamong/speed-dial';
+import type { DynamoSpeedDialAction } from '@dynamong/speed-dial';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
 // Self-contained inline SVG data-URI, matching the docs app's own
@@ -235,6 +241,11 @@ const EMPLOYEES: Employee[] = [
     DynamoMultiSelect,
     DynamoPagination,
     DynamoProgress,
+    DynamoDataView,
+    DynamoMegaMenu,
+    DynamoFloatLabel,
+    DynamoIftaLabel,
+    DynamoSpeedDial,
     DynamoRadio,
     DynamoSelect,
     DynamoSwitch,
@@ -550,6 +561,13 @@ export class App {
     (_, i) => `Row ${i + 1}`,
   );
 
+  protected readonly manySelectOptions: DynamoSelectOption<string>[] = Array.from(
+    { length: 5000 },
+    (_, i) => ({ label: `Option ${i + 1}`, value: `option-${i + 1}` }),
+  );
+  protected readonly manySkills = signal<string[]>([]);
+  protected readonly manyAutocompleteValue = signal('');
+
   protected readonly fruitOptions = FRUIT_OPTIONS;
   protected readonly fruit = signal('');
   protected readonly lastFruitSelected = signal<string | null>(null);
@@ -610,6 +628,55 @@ export class App {
   protected readonly listboxView = signal<string | null>('list');
   protected readonly listboxTags = signal<string[]>(['bug']);
   protected readonly listboxProduce = signal<string | null>(null);
+  protected readonly listboxManyValue = signal<string | null>(null);
+
+  protected readonly manyTreeSelectNodes: DynamoTreeNode<string>[] = [
+    {
+      id: 'all',
+      label: 'All items (5,000)',
+      children: Array.from({ length: 5000 }, (_, i) => ({
+        id: `tsn-${i + 1}`,
+        label: `Item ${i + 1}`,
+        value: `tsn-${i + 1}`,
+      })),
+    },
+  ];
+  protected readonly treeSelectManyValue = signal<string | null>(null);
+  protected readonly manyCascadeSelectNodes: DynamoTreeNode<string>[] =
+    Array.from({ length: 100 }, (_, c) => ({
+      id: `csc-${c + 1}`,
+      label: `Category ${c + 1}`,
+      children: Array.from({ length: 100 }, (_, i) => ({
+        id: `csc-${c + 1}-${i + 1}`,
+        label: `Item ${c + 1}.${i + 1}`,
+        value: `csc-${c + 1}-${i + 1}`,
+      })),
+    }));
+  protected readonly cascadeSelectManyValue = signal<string | null>(null);
+
+  protected readonly dataViewItems = Array.from({ length: 18 }, (_, i) => ({
+    id: i + 1,
+    name: `Item ${i + 1}`,
+    price: 10 + i * 5,
+  }));
+  protected readonly dataViewLayout = signal<'list' | 'grid'>('list');
+  protected readonly megaMenuItems: DynamoMegaMenuItem[] = [
+    {
+      label: 'Products',
+      columns: [
+        { header: 'Laptops', items: [{ label: 'Air' }, { label: 'Pro' }] },
+        { header: 'Desktops', items: [{ label: 'Mini' }, { label: 'Studio' }] },
+      ],
+    },
+    { label: 'Pricing' },
+  ];
+  protected readonly floatName = signal('');
+  protected readonly iftaEmail = signal('');
+  protected readonly speedDialActions: DynamoSpeedDialAction[] = [
+    { label: 'Add', icon: '+' },
+    { label: 'Edit', icon: '✎' },
+    { label: 'Share', icon: '↗' },
+  ];
 
   protected readonly cascadeSelectNodes: DynamoTreeNode<string>[] = [
     {

@@ -1,0 +1,7 @@
+<!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -- the labelled control is content-projected (a single labelable element the consumer passes in), so the association is implicit via nesting and can't be seen statically -->
+<label [class]="rootClasses()" data-testid="DynamoFloatLabel">
+  <span [class]="labelClasses()" data-testid="DynamoFloatLabel-label">
+    {{ label() }}
+  </span>
+  <ng-content />
+</label>

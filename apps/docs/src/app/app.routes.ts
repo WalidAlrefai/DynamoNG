@@ -344,4 +344,24 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/virtual-scroll-doc').then((m) => m.VirtualScrollDocPage),
   },
+  {
+    path: 'components/data-view',
+    loadComponent: () =>
+      import('./pages/data-view-doc').then((m) => m.DataViewDocPage),
+  },
+  {
+    path: 'components/mega-menu',
+    loadComponent: () =>
+      import('./pages/mega-menu-doc').then((m) => m.MegaMenuDocPage),
+  },
+  {
+    path: 'components/float-label',
+    loadComponent: () =>
+      import('./pages/float-label-doc').then((m) => m.FloatLabelDocPage),
+  },
+  {
+    path: 'components/speed-dial',
+    loadComponent: () =>
+      import('./pages/speed-dial-doc').then((m) => m.SpeedDialDocPage),
+  },
 ];

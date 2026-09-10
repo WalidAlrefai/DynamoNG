@@ -12,6 +12,11 @@ const SKILL_OPTIONS: DynamoSelectOption<string>[] = [
   { label: 'CSS (disabled)', value: 'css', disabled: true },
 ];
 
+const MANY_OPTIONS: DynamoSelectOption<string>[] = Array.from(
+  { length: 5000 },
+  (_, i) => ({ label: `Option ${i + 1}`, value: `option-${i + 1}` }),
+);
+
 @Component({
   selector: 'docs-multi-select-page',
   standalone: true,
@@ -34,6 +39,23 @@ const SKILL_OPTIONS: DynamoSelectOption<string>[] = [
       <div code>
         &lt;dg-multi-select [options]="options" [(value)]="skills"
         ariaLabel="Skills" [filterable]="true" [maxVisibleTags]="3" /&gt;
+      </div>
+      <div demo class="max-w-sm">
+        <dg-multi-select
+          [options]="manyOptions"
+          ariaLabel="Option (virtualized)"
+          placeholder="Choose from 5,000 options"
+          [filterable]="true"
+          [maxVisibleTags]="3"
+          [virtualScroll]="true"
+        />
+        <p class="mt-2 text-sm text-text-muted">
+          5,000 options — only a small rendered window ever mounts in the DOM.
+        </p>
+      </div>
+      <div code>
+        &lt;dg-multi-select [options]="manyOptions" ariaLabel="Option"
+        [filterable]="true" [virtualScroll]="true" /&gt;
       </div>
       <table api class="w-full border-collapse text-sm">
         <thead>
@@ -94,16 +116,38 @@ const SKILL_OPTIONS: DynamoSelectOption<string>[] = [
             <td class="py-2 pr-4 font-mono">number | undefined</td>
             <td class="py-2 font-mono">undefined (show all)</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">tagRemoved</td>
             <td class="py-2 pr-4 font-mono">output&lt;TValue&gt;</td>
             <td class="py-2 font-mono">—</td>
           </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">virtualScroll</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">virtualScrollItemSize</td>
+            <td class="py-2 pr-4 font-mono">number</td>
+            <td class="py-2 font-mono">36</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">virtualScrollHeight</td>
+            <td class="py-2 pr-4 font-mono">number</td>
+            <td class="py-2 font-mono">240</td>
+          </tr>
         </tbody>
       </table>
+      <p class="mt-4 text-sm text-text-muted">
+        <code class="font-mono">virtualScroll</code> only takes effect for the ungrouped case — it's
+        powered by <code class="font-mono">@dynamong/virtual-scroll</code>, which is fixed-row-height
+        only, and a grouped list's heading rows are a different height than option rows. A grouped
+        MultiSelect silently falls back to the full, non-virtualized render.
+      </p>
     </docs-page-shell>
   `,
 })
 export class MultiSelectDocPage {
   protected readonly options = SKILL_OPTIONS;
+  protected readonly manyOptions = MANY_OPTIONS;
 }

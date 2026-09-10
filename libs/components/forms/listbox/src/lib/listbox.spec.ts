@@ -1,12 +1,34 @@
+import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
 } from '@dynamong/testing';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { within } from '@testing-library/dom';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoListbox } from './listbox';
 import { DynamoListboxHarness } from './listbox.harness';
+
+// jsdom has no real `Element.scrollTo`. When `virtualScroll` is enabled,
+// DynamoListbox's explicit keyboard-nav `scrollActiveIntoView()` calls
+// reach the virtual-scroll viewport's `scrollToIndex()` (CDK's viewport
+// calls `scrollTo` internally). A minimal stub lets these tests exercise
+// the real keyboard-nav-while-virtualized behavior instead of throwing.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (): void {
+    /* jsdom gap — see comment above */
+  };
+}
+
+// jsdom reports a zero-height viewport, so CDK's fixed-size strategy
+// renders zero rows synchronously — flush a real setTimeout(0) +
+// detectChanges() before asserting on virtualized content.
+async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  fixture.detectChanges();
+}
 
 const OPTIONS = [
   { label: 'List', value: 'list' },
@@ -342,6 +364,133 @@ describe('DynamoListbox', () => {
       const { container } = renderDynamoComponent(DynamoListbox, {
         inputs: { options: GROUPED_OPTIONS, ariaLabel: 'Produce' },
       });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('virtual scroll', () => {
+    const MANY_OPTIONS = Array.from({ length: 50 }, (_, i) => ({
+      label: `Option ${i + 1}`,
+      value: `option-${i + 1}`,
+    }));
+
+    it('renders the option list through dg-virtual-scroll when enabled (ungrouped case)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoListbox, {
+        inputs: { options: MANY_OPTIONS, virtualScroll: true, ariaLabel: 'Many' },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('dg-virtual-scroll')).toBeTruthy();
+    });
+
+    it('still renders real option rows and selects one by click', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoListbox,
+        {
+          inputs: {
+            options: MANY_OPTIONS,
+            virtualScroll: true,
+            ariaLabel: 'Many',
+          },
+        },
+      );
+      await settle(fixture);
+
+      const option = within(container)
+        .getAllByRole('option')
+        .find((el) => el.textContent?.trim() === 'Option 1') as HTMLElement;
+      await userEvent.click(option);
+
+      expect(componentInstance.value()).toBe('option-1');
+    });
+
+    it('keyboard navigation still moves the active option while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoListbox,
+        {
+          inputs: {
+            options: MANY_OPTIONS,
+            virtualScroll: true,
+            ariaLabel: 'Many',
+          },
+        },
+      );
+      await settle(fixture);
+      const root = container.querySelector('[role="listbox"]') as HTMLElement;
+
+      dispatchKey(root, 'ArrowDown');
+      fixture.detectChanges();
+      // activeIndex is seeded to the first option (option-1), so one
+      // ArrowDown lands on option-2; single-select active-follows-focus
+      // moves the value with it.
+      expect(componentInstance.value()).toBe('option-2');
+    });
+
+    // Regression test for the same bug fixed in DynamoSelect: CDK's
+    // `scrollToIndex` is an unconditional absolute scroll, so wiring it to
+    // every `activeIndex` change — including `(mouseenter)` hover — would
+    // jump the list on every mouseover. `scrollActiveIntoView()` runs only
+    // via `setActiveIndex()` (the keyboard path).
+    it('does not scroll the viewport when hovering an option, only on keyboard navigation', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoListbox, {
+        inputs: {
+          options: MANY_OPTIONS,
+          virtualScroll: true,
+          multiple: true,
+          ariaLabel: 'Many',
+        },
+      });
+      await settle(fixture);
+      const viewport = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      ).componentInstance as DynamoVirtualScroll<unknown>;
+      const scrollSpy = vi.spyOn(viewport, 'scrollToIndex');
+
+      const secondOption = within(container).getAllByRole('option')[1] as HTMLElement;
+      secondOption.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await settle(fixture);
+      expect(scrollSpy).not.toHaveBeenCalled();
+
+      dispatchKey(
+        container.querySelector('[role="listbox"]') as HTMLElement,
+        'ArrowDown',
+      );
+      fixture.detectChanges();
+      expect(scrollSpy).toHaveBeenCalled();
+    });
+
+    it('falls back to the full, non-virtualized render for grouped options even when virtualScroll is true', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoListbox, {
+        inputs: {
+          options: GROUPED_OPTIONS,
+          virtualScroll: true,
+          ariaLabel: 'Produce',
+        },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('dg-virtual-scroll')).toBeNull();
+      expect(
+        container.querySelectorAll('li[role="presentation"]').length,
+      ).toBeGreaterThan(0);
+    });
+
+    it('does not virtualize when virtualScroll is left at its default (false)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoListbox, {
+        inputs: { options: MANY_OPTIONS, ariaLabel: 'Many' },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('dg-virtual-scroll')).toBeNull();
+      expect(within(container).getAllByRole('option')).toHaveLength(50);
+    });
+
+    it('has no axe violations when virtualized', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoListbox, {
+        inputs: { options: MANY_OPTIONS, virtualScroll: true, ariaLabel: 'Many' },
+      });
+      await settle(fixture);
+
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });

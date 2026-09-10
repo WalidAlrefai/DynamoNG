@@ -17,9 +17,11 @@ import {
   buildListboxPositions,
   selectChevronStyles,
   selectPanelWrapperStyles,
+  selectPanelWrapperVirtualStyles,
   selectTriggerButtonStyles,
   selectTriggerStyles,
 } from '@dynamong/select';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoTreeNode } from '@dynamong/tree';
 import type { DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
@@ -109,6 +111,7 @@ function findEnabledEntryIndex<TValue>(
   selector: 'dg-tree-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoVirtualScroll],
   templateUrl: './tree-select.html',
   providers: [
     {
@@ -133,11 +136,24 @@ export class DynamoTreeSelect<TValue = string>
   readonly expandedIds = model<string[]>([]);
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model<TValue | null>(null);
+  /**
+   * Opt-in — renders the visible-entry list through `@dynamong/virtual-scroll`
+   * instead of a plain `@for`, for large trees. `visibleEntries()` is already
+   * a flat, post-expand/collapse array, and every `treeitem` row is the same
+   * height (depth is `padding-left`, not extra height), so fixed-size
+   * virtualization applies with no grouping caveat.
+   */
+  readonly virtualScroll = input(false);
+  /** Row height in px when virtualized — matched to `treeSelectRowStyles`' actual rendered height. */
+  readonly virtualScrollItemSize = input(36);
+  /** Viewport height in px when virtualized — matches `selectPanelWrapperStyles`' own `max-h-60` (240px). */
+  readonly virtualScrollHeight = input(240);
 
   private readonly triggerEl =
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  private readonly virtualScrollRef = viewChild(DynamoVirtualScroll);
 
   protected readonly panelId = this.idGenerator.next('dg-tree-select-panel');
 
@@ -151,6 +167,7 @@ export class DynamoTreeSelect<TValue = string>
   protected readonly visibleEntries = computed(() =>
     flattenVisibleNodes(this.nodes(), this.expandedIds()),
   );
+  protected readonly isVirtualized = computed(() => this.virtualScroll());
   protected readonly selectedNode = computed(() =>
     findNodeByValue(this.nodes(), this.value()),
   );
@@ -178,7 +195,12 @@ export class DynamoTreeSelect<TValue = string>
   protected readonly chevronClasses = computed(() =>
     selectChevronStyles({ open: this.isOpen() }),
   );
-  protected readonly panelWrapperClasses = selectPanelWrapperStyles;
+  /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
+  protected readonly panelWrapperClasses = computed(() =>
+    this.isVirtualized()
+      ? selectPanelWrapperVirtualStyles
+      : selectPanelWrapperStyles,
+  );
   protected readonly expandButtonClasses = treeSelectExpandButtonStyles;
   protected readonly expandSpacerClasses = treeSelectExpandSpacerStyles;
 
@@ -271,6 +293,7 @@ export class DynamoTreeSelect<TValue = string>
         ? selectedIndex
         : (findEnabledEntryIndex(entries, -1, 1) ?? -1),
     );
+    this.scrollActiveIntoView();
   }
 
   protected close(): void {
@@ -330,12 +353,14 @@ export class DynamoTreeSelect<TValue = string>
       case 'Home':
         event.preventDefault();
         this.activeIndex.set(findEnabledEntryIndex(entries, -1, 1) ?? -1);
+        this.scrollActiveIntoView();
         break;
       case 'End':
         event.preventDefault();
         this.activeIndex.set(
           findEnabledEntryIndex(entries, entries.length, -1) ?? -1,
         );
+        this.scrollActiveIntoView();
         break;
       case 'ArrowRight': {
         event.preventDefault();
@@ -350,7 +375,10 @@ export class DynamoTreeSelect<TValue = string>
             (candidate, i) =>
               i > activeIndex && candidate.parentId === entry.node.id,
           );
-          if (next >= 0) this.activeIndex.set(next);
+          if (next >= 0) {
+            this.activeIndex.set(next);
+            this.scrollActiveIntoView();
+          }
         }
         break;
       }
@@ -366,7 +394,10 @@ export class DynamoTreeSelect<TValue = string>
           const parentIndex = entries.findIndex(
             (candidate) => candidate.node.id === entry.parentId,
           );
-          if (parentIndex >= 0) this.activeIndex.set(parentIndex);
+          if (parentIndex >= 0) {
+            this.activeIndex.set(parentIndex);
+            this.scrollActiveIntoView();
+          }
         }
         break;
       }
@@ -390,6 +421,29 @@ export class DynamoTreeSelect<TValue = string>
       this.activeIndex(),
       delta,
     );
-    if (next !== null) this.activeIndex.set(next);
+    if (next !== null) {
+      this.activeIndex.set(next);
+      this.scrollActiveIntoView();
+    }
+  }
+
+  /**
+   * Scrolls the virtualized viewport so `activeIndex` is actually rendered
+   * — load-bearing, not a UX nicety: once virtualized, an off-screen
+   * "active" entry may not exist in the DOM at all, and
+   * `aria-activedescendant` (`activeEntryId`) would point at a nonexistent
+   * id without this. Called explicitly only from keyboard-driven moves
+   * (openPanel/moveActive/Home/End/Arrow expand-collapse) — deliberately
+   * NOT from the `(mouseenter)="activeIndex.set(i)"` hover handler in
+   * tree-select.html. CDK's own `scrollToIndex` is an unconditional
+   * absolute scroll (always jumps so the target index lands at the very
+   * top — not a "scroll into view only if needed" call), so calling it on
+   * every `activeIndex` change including hover would visibly jump the panel
+   * on every hover.
+   */
+  private scrollActiveIntoView(): void {
+    if (!this.isVirtualized()) return;
+    const index = this.activeIndex();
+    if (index >= 0) this.virtualScrollRef()?.scrollToIndex(index);
   }
 }

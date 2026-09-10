@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import {
   DynamoListboxBase,
   buildListboxPositions,
@@ -25,6 +26,7 @@ import {
   selectNoResultsStyles,
   selectOptionStyles,
   selectPanelWrapperStyles,
+  selectPanelWrapperVirtualStyles,
 } from '@dynamong/select';
 import { cn } from '@dynamong/utils/class-merge';
 import { autocompleteFieldStyles } from './autocomplete.styles';
@@ -44,6 +46,7 @@ type DynamoAutocompleteRenderItem<TValue> =
   selector: 'dg-autocomplete',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoVirtualScroll],
   templateUrl: './autocomplete.html',
   providers: [
     {
@@ -66,6 +69,21 @@ export class DynamoAutocomplete<TValue = unknown>
   readonly disabled = model(false);
   readonly position = input<DynamoSelectPosition>('bottom-start');
   readonly noResultsMessage = input('No matching options');
+  /**
+   * Opt-in — renders the suggestion list through `@dynamong/virtual-scroll`
+   * instead of a plain `@for`, for large option lists. Only takes effect
+   * for the ungrouped case (see `isVirtualized`): `@dynamong/virtual-scroll`
+   * is fixed-row-height only, and a grouped list's heading rows are a
+   * different height than option rows — mixing the two would misalign
+   * CDK's scroll-position math. A grouped Autocomplete silently falls back
+   * to today's full, non-virtualized render — no visual regression, just
+   * no perf win for that specific shape.
+   */
+  readonly virtualScroll = input(false);
+  /** Row height in px when virtualized — matched to `selectOptionStyles`' actual rendered height (`px-4 py-2 text-sm`). */
+  readonly virtualScrollItemSize = input(36);
+  /** Viewport height in px when virtualized — matches `selectPanelWrapperStyles`' own `max-h-60` (240px) so the virtualized panel is roughly the same size as today's CSS-scrolled one. */
+  readonly virtualScrollHeight = input(240);
   /** Two-way bindable; also driven by Angular forms via `writeValue`. The free-typed text — never constrained to an option's value. */
   readonly value = model('');
   /** Fires with the full matched option when a suggestion is picked (click or Enter). */
@@ -75,6 +93,7 @@ export class DynamoAutocomplete<TValue = unknown>
     viewChild.required<ElementRef<HTMLInputElement>>('triggerEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  private readonly virtualScrollRef = viewChild(DynamoVirtualScroll);
 
   protected readonly fieldId = this.idGenerator.next('dg-autocomplete-field');
   protected readonly listboxId = this.idGenerator.next(
@@ -97,6 +116,10 @@ export class DynamoAutocomplete<TValue = unknown>
   /** Flat, post-filter/post-group list — what keyboard nav and `activeIndex` operate over. */
   protected readonly visibleOptions = computed(() =>
     flattenGroupedOptions(this.groupedOptions()),
+  );
+  /** True only for the ungrouped case — see `virtualScroll`'s own doc comment for why grouped lists can't be virtualized in v1. `groupedOptions()` always yields at least one bucket (a single `group: null` one for ungrouped input), so "ungrouped" is exactly "at most one group". */
+  protected readonly isVirtualized = computed(
+    () => this.virtualScroll() && this.groupedOptions().length <= 1,
   );
   protected readonly renderItems = computed<
     DynamoAutocompleteRenderItem<TValue>[]
@@ -135,7 +158,12 @@ export class DynamoAutocomplete<TValue = unknown>
           this.styleClass(),
         ),
   );
-  protected readonly panelWrapperClasses = selectPanelWrapperStyles;
+  /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
+  protected readonly panelWrapperClasses = computed(() =>
+    this.isVirtualized()
+      ? selectPanelWrapperVirtualStyles
+      : selectPanelWrapperStyles,
+  );
   protected readonly listboxClasses = selectListboxStyles;
   protected readonly groupHeadingClasses = selectGroupHeadingStyles;
   protected readonly noResultsClasses = selectNoResultsStyles;
@@ -229,6 +257,7 @@ export class DynamoAutocomplete<TValue = unknown>
           this.activeIndex.set(
             findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1,
           );
+          this.scrollActiveIntoView();
         }
         break;
       case 'End':
@@ -237,6 +266,7 @@ export class DynamoAutocomplete<TValue = unknown>
           this.activeIndex.set(
             findEnabledIndex(this.visibleOptions(), 0, -1) ?? -1,
           );
+          this.scrollActiveIntoView();
         }
         break;
       case 'Enter': {
@@ -272,6 +302,7 @@ export class DynamoAutocomplete<TValue = unknown>
     if (this.disabled()) return;
     this.isOpen.set(true);
     this.activeIndex.set(findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1);
+    this.scrollActiveIntoView();
   }
 
   private moveActive(delta: number): void {
@@ -280,7 +311,30 @@ export class DynamoAutocomplete<TValue = unknown>
       this.activeIndex(),
       delta,
     );
-    if (next !== null) this.activeIndex.set(next);
+    if (next !== null) {
+      this.activeIndex.set(next);
+      this.scrollActiveIntoView();
+    }
+  }
+
+  /**
+   * Scrolls the virtualized viewport so `activeIndex` is actually rendered
+   * — load-bearing, not a UX nicety: once virtualized, an off-screen
+   * "active" option may not exist in the DOM at all, and
+   * `aria-activedescendant` (`activeOptionId`) would point at a nonexistent
+   * id without this. Called explicitly only from keyboard-driven moves
+   * (openList/moveActive/Home/End) — deliberately NOT from the
+   * `(mouseenter)="activeIndex.set(i)"` hover handler in the template.
+   * CDK's own `scrollToIndex` is an unconditional absolute scroll (always
+   * jumps so the target index lands at the very top — it's not a "scroll
+   * into view only if needed" call), so calling it on every `activeIndex`
+   * change — including hover, which only ever targets an already-visible
+   * row — visibly jumps the panel on every hover.
+   */
+  private scrollActiveIntoView(): void {
+    if (!this.isVirtualized()) return;
+    const index = this.activeIndex();
+    if (index >= 0) this.virtualScrollRef()?.scrollToIndex(index);
   }
 
   protected close(): void {

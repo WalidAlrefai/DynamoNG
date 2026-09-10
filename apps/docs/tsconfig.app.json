@@ -66,6 +66,9 @@
       "path": "../../libs/components/feedback/spinner"
     },
     {
+      "path": "../../libs/components/overlay/speed-dial"
+    },
+    {
       "path": "../../libs/components/forms/slider"
     },
     {
@@ -117,6 +120,9 @@
       "path": "../../libs/components/overlay/menubar"
     },
     {
+      "path": "../../libs/components/overlay/mega-menu"
+    },
+    {
       "path": "../../libs/components/forms/listbox"
     },
     {
@@ -133,6 +139,9 @@
     },
     {
       "path": "../../libs/components/panel/image-gallery"
+    },
+    {
+      "path": "../../libs/components/forms/float-label"
     },
     {
       "path": "../../libs/components/forms/file-upload"
@@ -157,6 +166,9 @@
     },
     {
       "path": "../../libs/components/forms/date-picker"
+    },
+    {
+      "path": "../../libs/components/data/data-view"
     },
     {
       "path": "../../libs/components/overlay/menu"

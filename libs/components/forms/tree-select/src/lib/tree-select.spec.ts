@@ -7,11 +7,28 @@ import {
   renderDynamoComponent,
 } from '@dynamong/testing';
 import type { DynamoTreeNode } from '@dynamong/tree';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoTreeSelect } from './tree-select';
 import { DynamoTreeSelectHarness } from './tree-select.harness';
+
+// jsdom has no real `Element.scrollTo`. When `virtualScroll` is enabled,
+// DynamoTreeSelect's explicit keyboard-nav `scrollActiveIntoView()` calls
+// reach the virtual-scroll viewport's `scrollToIndex()` (CDK's viewport
+// calls `scrollTo` internally). A minimal stub lets these tests exercise
+// the real keyboard-nav-while-virtualized behavior instead of throwing.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (): void {
+    /* jsdom gap — see comment above */
+  };
+}
+
+const MANY_NODES: DynamoTreeNode<string>[] = Array.from(
+  { length: 50 },
+  (_, i) => ({ id: `n${i + 1}`, label: `Node ${i + 1}`, value: `n${i + 1}` }),
+);
 
 const NODES: DynamoTreeNode<string>[] = [
   {
@@ -533,6 +550,124 @@ describe('DynamoTreeSelect', () => {
       await settle(fixture);
 
       expect(componentInstance.value()).toBe('fruits');
+    });
+  });
+
+  describe('virtual scroll', () => {
+    it('renders the entry list through dg-virtual-scroll when enabled', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: MANY_NODES, virtualScroll: true, ariaLabel: 'Many' },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('dg-virtual-scroll')).toBeTruthy();
+    });
+
+    it('still selects a node by click and closes while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: { nodes: MANY_NODES, virtualScroll: true, ariaLabel: 'Many' },
+        },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Node 1'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('n1');
+      expect(getPanel()).toBeNull();
+    });
+
+    it('keyboard navigation still moves activeIndex while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: { nodes: MANY_NODES, virtualScroll: true, ariaLabel: 'Many' },
+        },
+      );
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+      trigger.focus();
+      await userEvent.keyboard('{ArrowDown}'); // open, active = 0
+      await settle(fixture);
+
+      await userEvent.keyboard('{ArrowDown}');
+      expect(componentInstance['activeIndex']()).toBe(1);
+    });
+
+    it('expand/collapse still updates the flat visible-entry set while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        { inputs: { nodes: NODES, virtualScroll: true, ariaLabel: 'Tree' } },
+      );
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+      trigger.focus();
+      await userEvent.keyboard('{ArrowDown}'); // open, active = Fruits
+      await settle(fixture);
+      const before = componentInstance['visibleEntries']().length;
+
+      await userEvent.keyboard('{ArrowRight}'); // expand Fruits
+      await settle(fixture);
+
+      expect(componentInstance['visibleEntries']().length).toBeGreaterThan(
+        before,
+      );
+    });
+
+    // Regression test for the same bug fixed in DynamoSelect: CDK's
+    // `scrollToIndex` is an unconditional absolute scroll — hover must not
+    // trigger it, keyboard nav must.
+    it('does not scroll the viewport when hovering a row, only on keyboard navigation', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: MANY_NODES, virtualScroll: true, ariaLabel: 'Many' },
+      });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+      await userEvent.click(trigger);
+      await settle(fixture);
+      const viewport = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      ).componentInstance as DynamoVirtualScroll<unknown>;
+      const scrollSpy = vi.spyOn(viewport, 'scrollToIndex');
+
+      getRowByText('Node 2').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+      expect(scrollSpy).not.toHaveBeenCalled();
+
+      trigger.focus();
+      await userEvent.keyboard('{ArrowDown}');
+      expect(scrollSpy).toHaveBeenCalled();
+    });
+
+    it('does not virtualize when virtualScroll is left at its default (false)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: MANY_NODES, ariaLabel: 'Many' },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('dg-virtual-scroll')).toBeNull();
+      expect(getRows()).toHaveLength(50);
+    });
+
+    it('has no axe violations when open and virtualized', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: MANY_NODES, virtualScroll: true, ariaLabel: 'Many' },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(
+          document.body.querySelector('.cdk-overlay-container') as HTMLElement,
+        ),
+      ).resolves.toBeUndefined();
     });
   });
 });

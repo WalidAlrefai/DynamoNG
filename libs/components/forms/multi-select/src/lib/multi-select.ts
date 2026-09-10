@@ -17,6 +17,7 @@ import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoCheckIcon } from '@dynamong/icons';
 import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import {
   DynamoListboxBase,
   buildListboxPositions,
@@ -33,6 +34,7 @@ import {
   selectNoResultsStyles,
   selectOptionStyles,
   selectPanelWrapperStyles,
+  selectPanelWrapperVirtualStyles,
 } from '@dynamong/select';
 import type {
   DynamoSelectOption,
@@ -61,7 +63,13 @@ type DynamoMultiSelectRenderItem<TValue> =
   selector: 'dg-multi-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DynamoInputText, DynamoCheckIcon, DynamoCheckbox],
+  imports: [
+    FormsModule,
+    DynamoInputText,
+    DynamoCheckIcon,
+    DynamoCheckbox,
+    DynamoVirtualScroll,
+  ],
   templateUrl: './multi-select.html',
   providers: [
     {
@@ -88,6 +96,21 @@ export class DynamoMultiSelect<TValue = unknown>
   readonly filterText = model('');
   readonly filterPlaceholder = input('Search...');
   readonly noResultsMessage = input('No matching options');
+  /**
+   * Opt-in — renders the option list through `@dynamong/virtual-scroll`
+   * instead of a plain `@for`, for large option lists. Only takes effect
+   * for the ungrouped case (see `isVirtualized`): `@dynamong/virtual-scroll`
+   * is fixed-row-height only, and a grouped list's heading rows are a
+   * different height than option rows — mixing the two would misalign
+   * CDK's scroll-position math. A grouped/filterable-with-groups MultiSelect
+   * silently falls back to today's full, non-virtualized render — no
+   * visual regression, just no perf win for that specific shape.
+   */
+  readonly virtualScroll = input(false);
+  /** Row height in px when virtualized — matched to `selectOptionStyles`' actual rendered height (`px-4 py-2 text-sm`; the `h-4` check indicator is shorter than the text line box, so it doesn't grow the row). */
+  readonly virtualScrollItemSize = input(36);
+  /** Viewport height in px when virtualized — matches `selectPanelWrapperStyles`' own `max-h-60` (240px) so the virtualized panel is roughly the same size as today's CSS-scrolled one. */
+  readonly virtualScrollHeight = input(240);
   /** Caps the number of selections; remaining unselected options become disabled once reached. */
   readonly maxSelected = input<number | undefined>(undefined);
   readonly maxSelectedMessage = input('Maximum selections reached');
@@ -106,6 +129,7 @@ export class DynamoMultiSelect<TValue = unknown>
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  private readonly virtualScrollRef = viewChild(DynamoVirtualScroll);
 
   protected readonly triggerId = this.idGenerator.next(
     'dg-multi-select-trigger',
@@ -142,6 +166,10 @@ export class DynamoMultiSelect<TValue = unknown>
   );
   protected readonly visibleOptions = computed(() =>
     flattenGroupedOptions(this.groupedOptions()),
+  );
+  /** True only for the ungrouped case — see `virtualScroll`'s own doc comment for why grouped lists can't be virtualized in v1. `groupedOptions()` always yields at least one bucket (a single `group: null` one for ungrouped input), so "ungrouped" is exactly "at most one group". */
+  protected readonly isVirtualized = computed(
+    () => this.virtualScroll() && this.groupedOptions().length <= 1,
   );
   protected readonly renderItems = computed<
     DynamoMultiSelectRenderItem<TValue>[]
@@ -225,7 +253,12 @@ export class DynamoMultiSelect<TValue = unknown>
   protected readonly chevronClasses = computed(() =>
     selectChevronStyles({ open: this.isOpen() }),
   );
-  protected readonly panelWrapperClasses = selectPanelWrapperStyles;
+  /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
+  protected readonly panelWrapperClasses = computed(() =>
+    this.isVirtualized()
+      ? selectPanelWrapperVirtualStyles
+      : selectPanelWrapperStyles,
+  );
   protected readonly listboxClasses = selectListboxStyles;
   protected readonly headerRowClasses = multiSelectHeaderRowStyles;
   protected readonly filterFieldWrapperClasses = selectFilterFieldWrapperStyles;
@@ -306,6 +339,7 @@ export class DynamoMultiSelect<TValue = unknown>
     if (this.disabled()) return;
     this.isOpen.set(true);
     this.activeIndex.set(findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1);
+    this.scrollActiveIntoView();
   }
 
   protected close(): void {
@@ -379,6 +413,7 @@ export class DynamoMultiSelect<TValue = unknown>
   protected onFilterInputChange(value: string): void {
     this.filterText.set(value);
     this.activeIndex.set(findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1);
+    this.scrollActiveIntoView();
   }
 
   protected onFilterKeydown(event: KeyboardEvent): void {
@@ -428,6 +463,7 @@ export class DynamoMultiSelect<TValue = unknown>
           this.activeIndex.set(
             findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1,
           );
+          this.scrollActiveIntoView();
         }
         break;
       case 'End':
@@ -436,6 +472,7 @@ export class DynamoMultiSelect<TValue = unknown>
           this.activeIndex.set(
             findEnabledIndex(this.visibleOptions(), 0, -1) ?? -1,
           );
+          this.scrollActiveIntoView();
         }
         break;
       case 'Enter':
@@ -463,7 +500,30 @@ export class DynamoMultiSelect<TValue = unknown>
       this.activeIndex(),
       delta,
     );
-    if (next !== null) this.activeIndex.set(next);
+    if (next !== null) {
+      this.activeIndex.set(next);
+      this.scrollActiveIntoView();
+    }
+  }
+
+  /**
+   * Scrolls the virtualized viewport so `activeIndex` is actually rendered
+   * — load-bearing, not a UX nicety: once virtualized, an off-screen
+   * "active" option may not exist in the DOM at all, and
+   * `aria-activedescendant` (`activeOptionId`) would point at a nonexistent
+   * id without this. Called explicitly only from keyboard-driven moves
+   * (openList/moveActive/Home/End/filter-reset) — deliberately NOT from
+   * the `(mouseenter)="activeIndex.set(i)"` hover handlers in the template.
+   * CDK's own `scrollToIndex` is an unconditional absolute scroll (always
+   * jumps so the target index lands at the very top — it's not a "scroll
+   * into view only if needed" call), so calling it on every `activeIndex`
+   * change — including hover, which only ever targets an already-visible
+   * row — visibly jumps the panel on every hover.
+   */
+  private scrollActiveIntoView(): void {
+    if (!this.isVirtualized()) return;
+    const index = this.activeIndex();
+    if (index >= 0) this.virtualScrollRef()?.scrollToIndex(index);
   }
 
   writeValue(value: TValue[] | null): void {

@@ -158,6 +158,16 @@
       ],
       "@dynamong/virtual-scroll": [
         "./libs/components/data/virtual-scroll/src/index.ts"
+      ],
+      "@dynamong/data-view": ["./libs/components/data/data-view/src/index.ts"],
+      "@dynamong/mega-menu": [
+        "./libs/components/overlay/mega-menu/src/index.ts"
+      ],
+      "@dynamong/float-label": [
+        "./libs/components/forms/float-label/src/index.ts"
+      ],
+      "@dynamong/speed-dial": [
+        "./libs/components/overlay/speed-dial/src/index.ts"
       ]
     }
   }

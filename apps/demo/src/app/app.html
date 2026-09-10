@@ -88,6 +88,20 @@
       />
     </div>
 
+    <div class="block space-y-1" data-testid="multi-select-virtual-field">
+      <span class="text-sm font-medium text-text-primary"
+        >Skills (virtualized, 5,000 options)</span
+      >
+      <dg-multi-select
+        [options]="manySelectOptions"
+        [(value)]="manySkills"
+        ariaLabel="Many options"
+        placeholder="Choose from 5,000 options"
+        [filterable]="true"
+        [virtualScroll]="true"
+      />
+    </div>
+
     <div class="block space-y-1" data-testid="date-picker-field">
       <span class="text-sm font-medium text-text-primary">Start date</span>
       <dg-date-picker
@@ -720,6 +734,15 @@
         </p>
       }
     </div>
+    <div class="max-w-sm" data-testid="autocomplete-virtual">
+      <dg-autocomplete
+        [options]="manySelectOptions"
+        [(value)]="manyAutocompleteValue"
+        ariaLabel="Many suggestions"
+        placeholder="Type to filter 5,000 items..."
+        [virtualScroll]="true"
+      />
+    </div>
   </section>
 
   <section
@@ -930,6 +953,15 @@
         Value: <span class="font-mono">{{ category.value ?? '(none)' }}</span>
       </p>
     </div>
+    <div class="max-w-xs" data-testid="tree-select-virtual">
+      <dg-tree-select
+        [nodes]="manyTreeSelectNodes"
+        [(value)]="treeSelectManyValue"
+        [virtualScroll]="true"
+        ariaLabel="Item (virtualized)"
+        placeholder="Expand to browse 5,000 items"
+      />
+    </div>
   </section>
 
   <section
@@ -1055,6 +1087,14 @@
         [(value)]="listboxProduce"
         ariaLabel="Produce"
       />
+      <dg-listbox
+        class="w-48"
+        data-testid="listbox-virtual"
+        [options]="manySelectOptions"
+        [(value)]="listboxManyValue"
+        [virtualScroll]="true"
+        ariaLabel="Option (virtualized)"
+      />
     </div>
   </section>
 
@@ -1072,6 +1112,80 @@
       <p class="mt-2 text-sm text-text-muted">
         Value: <span class="font-mono">{{ location.value ?? '(none)' }}</span>
       </p>
+    </div>
+    <div class="max-w-xs" data-testid="cascade-select-virtual">
+      <dg-cascade-select
+        [nodes]="manyCascadeSelectNodes"
+        [(value)]="cascadeSelectManyValue"
+        [virtualScroll]="true"
+        ariaLabel="Item (virtualized)"
+        placeholder="100 × 100 items"
+      />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="data-view-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">DataView</h2>
+    <div class="max-w-md">
+      <dg-data-view
+        [value]="dataViewItems"
+        [(layout)]="dataViewLayout"
+        [rows]="6"
+        dataKey="id"
+      >
+        <ng-template let-item>
+          <div class="flex items-center justify-between p-3">
+            <span>{{ item.name }}</span>
+            <span class="font-mono text-sm">{{ '$' + item.price }}</span>
+          </div>
+        </ng-template>
+      </dg-data-view>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="mega-menu-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">MegaMenu</h2>
+    <dg-mega-menu [items]="megaMenuItems" ariaLabel="Demo" />
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="float-label-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Float Label</h2>
+    <div class="flex max-w-xs flex-col gap-6">
+      <dg-float-label label="Name">
+        <dg-input-text [(ngModel)]="floatName" placeholder=" " ariaLabel="Name" />
+      </dg-float-label>
+      <dg-ifta-label label="Email">
+        <dg-input-text
+          [(ngModel)]="iftaEmail"
+          placeholder=" "
+          ariaLabel="Email"
+        />
+      </dg-ifta-label>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="speed-dial-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">SpeedDial</h2>
+    <div class="flex min-h-[14rem] items-end gap-16 p-6">
+      <dg-speed-dial [actions]="speedDialActions" type="linear" direction="up" />
+      <dg-speed-dial
+        [actions]="speedDialActions"
+        type="quarter-circle"
+        direction="up"
+        [radius]="90"
+      />
     </div>
   </section>
 

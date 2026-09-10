@@ -1,0 +1,98 @@
+<div [class]="rootClasses()" data-testid="DynamoMegaMenu">
+  <div [class]="startClasses" data-testid="DynamoMegaMenu-start">
+    <ng-content select="[start]" />
+  </div>
+
+  <div
+    role="menubar"
+    tabindex="-1"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-orientation]="orientation()"
+    [class]="barClasses()"
+    (keydown)="onBarKeydown($event)"
+  >
+    @for (item of items(); track item; let i = $index) {
+      <!--
+        role swaps to "combobox" only while THIS item's panel is open —
+        aria-activedescendant isn't valid on a plain "menuitem". Same
+        per-item axe-core workaround as Menubar.
+      -->
+      <button
+        #barItemEl
+        type="button"
+        [attr.role]="openIndex() === i ? 'combobox' : 'menuitem'"
+        [tabindex]="focusedIndex() === i ? 0 : -1"
+        [attr.aria-haspopup]="item.columns?.length ? 'menu' : null"
+        [attr.aria-expanded]="item.columns?.length ? openIndex() === i : null"
+        [attr.aria-controls]="openIndex() === i ? megaMenuId + '-panel' : null"
+        [attr.aria-activedescendant]="openIndex() === i ? activeDescendantId() : null"
+        [attr.aria-disabled]="item.disabled ? 'true' : null"
+        [class]="barItemClasses(i, item)"
+        (mouseenter)="onBarItemHover(i)"
+        (click)="onBarItemClick(i)"
+      >
+        <span>{{ item.label }}</span>
+        @if (item.columns?.length) {
+          <svg
+            [class]="chevronClasses(i)"
+            [attr.aria-hidden]="true"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+          >
+            <path
+              d="M4 6l4 4 4-4"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        }
+      </button>
+    }
+  </div>
+
+  <div [class]="endClasses" data-testid="DynamoMegaMenu-end">
+    <ng-content select="[end]" />
+  </div>
+</div>
+
+<ng-template #panelTemplate>
+  <div
+    [id]="megaMenuId + '-panel'"
+    role="menu"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [class]="panelClasses"
+    data-testid="DynamoMegaMenu-panel"
+  >
+    @for (column of openColumns(); track column; let c = $index) {
+      <div
+        role="group"
+        [attr.aria-label]="column.header ?? null"
+        [class]="columnClasses"
+      >
+        @if (column.header) {
+          <div [class]="columnHeaderClasses" [attr.aria-hidden]="true">
+            {{ column.header }}
+          </div>
+        }
+        @for (link of column.items; track link; let r = $index) {
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- links are tabindex="-1"/mouse-only; keyboard handling lives on the bar's own keydown (virtual-focus model, see mega-menu.ts) -->
+          <div
+            [id]="linkId(c, r)"
+            role="menuitem"
+            tabindex="-1"
+            [attr.aria-disabled]="link.disabled ? 'true' : null"
+            [class]="linkClasses(link, flatIndexOf(c, r))"
+            (mouseenter)="onLinkHover(flatIndexOf(c, r))"
+            (click)="onLinkClick(link)"
+          >
+            {{ link.label }}
+          </div>
+        }
+      </div>
+    }
+  </div>
+</ng-template>
