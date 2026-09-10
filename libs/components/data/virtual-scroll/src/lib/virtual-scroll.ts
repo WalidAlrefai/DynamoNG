@@ -4,7 +4,16 @@ import {
   CdkVirtualForOf,
   CdkVirtualScrollViewport,
 } from '@angular/cdk/scrolling';
-import { ChangeDetectionStrategy, Component, TemplateRef, computed, contentChild, input, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  TemplateRef,
+  afterNextRender,
+  computed,
+  contentChild,
+  input,
+  viewChild,
+} from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { virtualScrollViewportStyles } from './virtual-scroll.styles';
@@ -35,11 +44,25 @@ import type { DynamoVirtualScrollItemContext, DynamoVirtualScrollPart } from './
  * virtualized correctly with this component; consumers with that shape
  * should render the full list unvirtualized instead — a documented v1
  * constraint, not a bug to work around here.
+ *
+ * ARIA-transparent by design. This component carries no semantics of its
+ * own — it's a scroll viewport — so it, CDK's `<cdk-virtual-scroll-viewport>`,
+ * CDK's internal `.cdk-virtual-scroll-content-wrapper`, and the per-item
+ * `<div>` wrapper are all `role="presentation"`. That lets a consumer's
+ * `role="listbox"` / `role="rowgroup"` own the projected `role="option"` /
+ * `role="row"` rows directly, instead of through 3–4 roleless generic
+ * elements that would break the required owning relationship for assistive
+ * tech (both `DynamoSelect`'s virtualized panel and `DynamoTable`'s
+ * virtualized grid rely on this). Do not remove the presentation roles.
+ * A virtualized list also can't be counted from the DOM (most rows aren't
+ * mounted) — that's the consumer's job via `aria-setsize`/`aria-posinset`
+ * or `aria-rowcount`/`aria-rowindex` on the projected rows.
  */
 @Component({
   selector: 'dg-virtual-scroll',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { role: 'presentation' },
   imports: [NgTemplateOutlet, CdkVirtualScrollViewport, CdkFixedSizeVirtualScroll, CdkVirtualForOf],
   templateUrl: './virtual-scroll.html',
 })
@@ -58,6 +81,22 @@ export class DynamoVirtualScroll<T> extends DynamoBaseComponent<DynamoVirtualScr
   protected readonly viewportClasses = computed(() =>
     this.unstyled() ? this.styleClass() : cn(virtualScrollViewportStyles, this.styleClass()),
   );
+
+  constructor() {
+    super();
+    // CDK renders `.cdk-virtual-scroll-content-wrapper` inside the viewport
+    // and owns that element — it's the one link in the chain this component
+    // can't mark presentational from a template. Tag it after first render so
+    // the consumer's listbox/rowgroup owns the projected rows through an
+    // unbroken run of presentational elements. Guarded for non-DOM/SSR.
+    afterNextRender(() => {
+      this.viewportRef()
+        .elementRef.nativeElement.querySelector(
+          '.cdk-virtual-scroll-content-wrapper',
+        )
+        ?.setAttribute('role', 'presentation');
+    });
+  }
 
   protected itemContext(item: T, index: number): DynamoVirtualScrollItemContext<T> {
     return { $implicit: item, item, index };

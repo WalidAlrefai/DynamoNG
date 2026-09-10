@@ -827,13 +827,29 @@ describe('DynamoSelect', () => {
       await settle(fixture);
 
       // The virtualized branch inserts CDK's viewport/content-wrapper divs
-      // between `role="listbox"` and its `role="option"` children — neither
-      // carries a role of their own, so they stay accessibility-tree
-      // transparent and shouldn't trip `aria-required-children`, but that's
-      // exactly the kind of assumption worth confirming with axe rather
-      // than just reasoning about it.
+      // between `role="listbox"` and its `role="option"` children.
+      // `DynamoVirtualScroll` marks every one of those structural elements
+      // `role="presentation"` (host + viewport + item wrappers in its
+      // template, the CDK-owned content wrapper from its constructor), so
+      // the listbox owns its options through an unbroken presentational
+      // chain rather than through roleless generics.
+      const overlay = getOverlayContainer();
+      expect(
+        overlay.querySelector('dg-virtual-scroll')?.getAttribute('role'),
+      ).toBe('presentation');
+      expect(
+        overlay
+          .querySelector('cdk-virtual-scroll-viewport')
+          ?.getAttribute('role'),
+      ).toBe('presentation');
+      expect(
+        overlay
+          .querySelector('.cdk-virtual-scroll-content-wrapper')
+          ?.getAttribute('role'),
+      ).toBe('presentation');
+
       await expect(
-        expectNoA11yViolations(getOverlayContainer()),
+        expectNoA11yViolations(overlay),
       ).resolves.toBeUndefined();
     });
 

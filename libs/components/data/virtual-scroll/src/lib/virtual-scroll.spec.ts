@@ -178,6 +178,38 @@ describe('DynamoVirtualScroll', () => {
     });
   });
 
+  describe('ARIA transparency', () => {
+    // The component carries no semantics of its own — every structural
+    // element it introduces is role="presentation" so a consumer's
+    // role="listbox"/role="rowgroup" owns the projected rows directly
+    // (see the class doc). The content wrapper is CDK-owned and gets its
+    // role from the constructor's afterNextRender.
+    it('marks the host, viewport, content wrapper, and item wrappers as role="presentation"', async () => {
+      const { container, fixture } = renderDynamoComponent(VirtualScrollTestHostComponent);
+      await settle(fixture);
+
+      expect(container.querySelector('dg-virtual-scroll')?.getAttribute('role')).toBe(
+        'presentation',
+      );
+      expect(
+        container.querySelector('cdk-virtual-scroll-viewport')?.getAttribute('role'),
+      ).toBe('presentation');
+      expect(
+        container
+          .querySelector('.cdk-virtual-scroll-content-wrapper')
+          ?.getAttribute('role'),
+      ).toBe('presentation');
+
+      const itemWrappers = container.querySelectorAll(
+        '.cdk-virtual-scroll-content-wrapper > *',
+      );
+      expect(itemWrappers.length).toBeGreaterThan(0);
+      itemWrappers.forEach((el) =>
+        expect(el.getAttribute('role')).toBe('presentation'),
+      );
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations', async () => {
       const { container } = renderDynamoComponent(VirtualScrollTestHostComponent);

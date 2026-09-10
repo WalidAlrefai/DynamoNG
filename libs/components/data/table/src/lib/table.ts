@@ -2,8 +2,10 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  type OnInit,
   computed,
   input,
+  isDevMode,
   model,
   signal,
 } from '@angular/core';
@@ -54,9 +56,10 @@ import type {
   ],
   templateUrl: './table.html',
 })
-export class DynamoTable<
-  TRow = unknown,
-> extends DynamoBaseComponent<DynamoTablePart> {
+export class DynamoTable<TRow = unknown>
+  extends DynamoBaseComponent<DynamoTablePart>
+  implements OnInit
+{
   readonly columns = input.required<DynamoTableColumn<TRow>[]>();
   readonly data = input.required<readonly TRow[]>();
   readonly size = input<DynamoTableSize>('md');
@@ -308,6 +311,28 @@ export class DynamoTable<
     if (this.isAllSelected()) return false;
     return this.pagedData().some((row) => this.isRowSelected(row));
   });
+
+  /**
+   * Dev-only misconfiguration guard. `virtualScroll` is a static config
+   * input (not reactive state), so a one-shot check on init is enough — no
+   * `effect()`, keeping Table effect-free by design. The virtualized path
+   * genuinely can't render the selection checkbox column or the pagination
+   * footer in v1 (see `virtualScroll`'s own doc), and today it just drops
+   * them silently; this makes that visible while developing.
+   */
+  ngOnInit(): void {
+    if (!isDevMode()) return;
+    if (this.virtualScroll() && this.selectable()) {
+      console.warn(
+        '[dg-table] `selectable` is ignored while `virtualScroll` is enabled — the selection checkbox column is not supported on the virtualized path (v1).',
+      );
+    }
+    if (this.virtualScroll() && this.pageSize()) {
+      console.warn(
+        '[dg-table] `pageSize` is ignored while `virtualScroll` is enabled — the virtualized path renders all rows and hides the pagination footer (v1).',
+      );
+    }
+  }
 
   protected sortIconClasses(
     direction: DynamoTableSortDirection | 'none',
