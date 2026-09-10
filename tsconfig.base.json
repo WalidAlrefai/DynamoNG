@@ -192,7 +192,8 @@
       ],
       "@dynamong/key-filter": [
         "./libs/components/forms/key-filter/src/index.ts"
-      ]
+      ],
+      "@dynamong/org-chart": ["./libs/components/data/org-chart/src/index.ts"]
     }
   }
 }

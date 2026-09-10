@@ -146,6 +146,11 @@ export const appRoutes: Route[] = [
     loadComponent: () => import('./pages/tree-doc').then((m) => m.TreeDocPage),
   },
   {
+    path: 'components/org-chart',
+    loadComponent: () =>
+      import('./pages/org-chart-doc').then((m) => m.OrgChartDocPage),
+  },
+  {
     path: 'components/stepper',
     loadComponent: () =>
       import('./pages/stepper-doc').then((m) => m.StepperDocPage),

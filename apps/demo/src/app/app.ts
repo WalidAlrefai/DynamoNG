@@ -39,6 +39,8 @@ import { DynamoToastService } from '@dynamong/toast';
 import { DynamoTooltip } from '@dynamong/tooltip';
 import { DynamoTree } from '@dynamong/tree';
 import type { DynamoTreeNode } from '@dynamong/tree';
+import { DynamoOrgChart } from '@dynamong/org-chart';
+import type { DynamoOrgChartNode } from '@dynamong/org-chart';
 import { DynamoStep, DynamoStepper } from '@dynamong/stepper';
 import { DynamoPopover, DynamoPopoverContent } from '@dynamong/popover';
 import { DynamoSkeleton } from '@dynamong/skeleton';
@@ -268,6 +270,7 @@ const EMPLOYEES: Employee[] = [
     DynamoTextarea,
     DynamoTooltip,
     DynamoTree,
+    DynamoOrgChart,
     DynamoStepper,
     DynamoStep,
     DynamoPopover,
@@ -441,6 +444,30 @@ export class App {
   ]);
   protected readonly treeExpanded = signal<string[]>(['src']);
   protected readonly treeSelected = signal<string[]>([]);
+
+  protected readonly orgChartNodes = signal<DynamoOrgChartNode[]>([
+    {
+      id: 'ceo',
+      label: 'Ada Powell — CEO',
+      children: [
+        {
+          id: 'cto',
+          label: 'Bhavana Rao — CTO',
+          children: [
+            { id: 'eng-1', label: 'Dana Kim — Engineer' },
+            { id: 'eng-2', label: 'Eli Frost — Engineer' },
+          ],
+        },
+        {
+          id: 'cfo',
+          label: 'Gio Bassi — CFO',
+          children: [{ id: 'fin-1', label: 'Hana Lund — Analyst' }],
+        },
+      ],
+    },
+  ]);
+  protected readonly orgChartCollapsed = signal<string[]>([]);
+  protected readonly orgChartSelection = signal<string[]>([]);
 
   protected readonly stepperValue = signal<string | undefined>('account');
 

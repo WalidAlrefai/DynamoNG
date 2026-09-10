@@ -511,6 +511,22 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="org-chart-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">OrgChart</h2>
+    <div class="overflow-x-auto">
+      <dg-org-chart
+        [value]="orgChartNodes()"
+        [selectable]="true"
+        [(selection)]="orgChartSelection"
+        [(collapsedIds)]="orgChartCollapsed"
+        ariaLabel="Company org chart"
+      />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="stepper-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Stepper</h2>

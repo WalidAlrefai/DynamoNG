@@ -1,0 +1,12 @@
+<div [class]="rootClasses()" data-testid="DynamoOrgChart">
+  <div
+    role="tree"
+    [class]="treeClasses"
+    [attr.aria-label]="ariaLabel() ?? null"
+  >
+    @for (root of value(); track root.id) {
+      <dg-org-chart-item [node]="root" />
+    }
+  </div>
+  <ng-content />
+</div>

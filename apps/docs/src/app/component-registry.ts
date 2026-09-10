@@ -244,6 +244,14 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
       'A hierarchical, expandable tree with keyboard navigation and multi-select tri-state checkboxes.',
   },
   {
+    slug: 'org-chart',
+    name: 'OrgChart',
+    domain: 'data',
+    category: 'Data',
+    description:
+      'A top-down hierarchy diagram: each node is a box with its children in a connected row beneath. Collapsible subtrees, optional single/multiple node selection, and a projected node template.',
+  },
+  {
     slug: 'stepper',
     name: 'Stepper',
     domain: 'panel',

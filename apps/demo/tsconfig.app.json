@@ -176,6 +176,9 @@
       "path": "../../libs/components/panel/stepper"
     },
     {
+      "path": "../../libs/components/data/org-chart"
+    },
+    {
       "path": "../../libs/components/data/tree"
     },
     {
