@@ -1,0 +1,35 @@
+<div [class]="rootClasses()" data-testid="DynamoDock">
+  <ul
+    role="menu"
+    tabindex="-1"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-orientation]="isVertical() ? 'vertical' : 'horizontal'"
+    [class]="listClasses()"
+    (mousemove)="onPointerMove($event)"
+    (mouseleave)="resetScale()"
+    (keydown)="onKeydown($event)"
+  >
+    @for (item of items(); track item; let i = $index) {
+      <li role="none">
+        <button
+          #tileEl
+          type="button"
+          role="menuitem"
+          [tabindex]="focusedIndex() === i ? 0 : -1"
+          [attr.aria-disabled]="item.disabled ? 'true' : null"
+          [attr.aria-label]="item.label"
+          [class]="itemClasses()"
+          [style.transform]="tileTransform(i)"
+          (click)="run(i)"
+        >
+          <span [attr.aria-hidden]="true">
+            {{ item.icon ?? item.label.charAt(0) }}
+          </span>
+          <span [class]="labelClasses()" [attr.aria-hidden]="true">
+            {{ item.label }}
+          </span>
+        </button>
+      </li>
+    }
+  </ul>
+</div>

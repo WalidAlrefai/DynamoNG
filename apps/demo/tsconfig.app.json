@@ -59,6 +59,15 @@
       "path": "../../libs/components/forms/editor"
     },
     {
+      "path": "../../libs/components/panel/inplace"
+    },
+    {
+      "path": "../../libs/components/feedback/overlay-badge"
+    },
+    {
+      "path": "../../libs/components/overlay/dock"
+    },
+    {
       "path": "../../libs/components/forms/order-list"
     },
     {

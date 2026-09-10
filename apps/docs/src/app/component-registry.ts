@@ -605,4 +605,28 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A multi-segment labelled meter bar with a legend, for showing a breakdown like disk usage or a budget split. The multi-value sibling of Progress.',
   },
+  {
+    slug: 'dock',
+    name: 'Dock',
+    domain: 'overlay',
+    category: 'Menu',
+    description:
+      'A macOS-style dock — a row or column of icon items that magnify toward the pointer, with roving-focus keyboard navigation.',
+  },
+  {
+    slug: 'overlay-badge',
+    name: 'OverlayBadge',
+    domain: 'feedback',
+    category: 'Messages',
+    description:
+      'A wrapper that overlays a small badge (a count) or a dot on any element — an unread indicator on an avatar or icon button.',
+  },
+  {
+    slug: 'inplace',
+    name: 'Inplace',
+    domain: 'panel',
+    category: 'Misc',
+    description:
+      'Click-to-edit: a compact display region that swaps to an editor region on click, with Escape and a close button to dismiss.',
+  },
 ];

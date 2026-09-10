@@ -374,4 +374,18 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/meter-group-doc').then((m) => m.MeterGroupDocPage),
   },
+  {
+    path: 'components/dock',
+    loadComponent: () => import('./pages/dock-doc').then((m) => m.DockDocPage),
+  },
+  {
+    path: 'components/overlay-badge',
+    loadComponent: () =>
+      import('./pages/overlay-badge-doc').then((m) => m.OverlayBadgeDocPage),
+  },
+  {
+    path: 'components/inplace',
+    loadComponent: () =>
+      import('./pages/inplace-doc').then((m) => m.InplaceDocPage),
+  },
 ];

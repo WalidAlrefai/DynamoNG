@@ -73,6 +73,10 @@ import { DynamoKnob } from '@dynamong/knob';
 import { DynamoInputMask } from '@dynamong/input-mask';
 import { DynamoPicklist } from '@dynamong/picklist';
 import { DynamoOrderList } from '@dynamong/order-list';
+import { DynamoDock } from '@dynamong/dock';
+import type { DynamoDockItem } from '@dynamong/dock';
+import { DynamoOverlayBadge } from '@dynamong/overlay-badge';
+import { DynamoInplace } from '@dynamong/inplace';
 import { DynamoEditor } from '@dynamong/editor';
 import { DynamoImageGallery } from '@dynamong/image-gallery';
 import type { DynamoGalleryImage } from '@dynamong/image-gallery';
@@ -294,6 +298,9 @@ const EMPLOYEES: Employee[] = [
     DynamoInputMask,
     DynamoPicklist,
     DynamoOrderList,
+    DynamoDock,
+    DynamoOverlayBadge,
+    DynamoInplace,
     DynamoEditor,
     DynamoImageGallery,
     DynamoPanel,
@@ -460,6 +467,14 @@ export class App {
     { label: 'Cache', value: 18, severity: 'info' },
     { label: 'Free', value: 36, severity: 'success' },
   ];
+  protected readonly dockItems: DynamoDockItem[] = [
+    { label: 'Finder', icon: '🔍' },
+    { label: 'Mail', icon: '✉' },
+    { label: 'Calendar', icon: '📅' },
+    { label: 'Photos', icon: '🖼' },
+    { label: 'Trash', icon: '🗑', disabled: true },
+  ];
+  protected readonly inplaceName = signal('DynamoNG');
   protected readonly editorContent = new FormControl('<p>Hello <b>world</b></p>', {
     nonNullable: true,
   });

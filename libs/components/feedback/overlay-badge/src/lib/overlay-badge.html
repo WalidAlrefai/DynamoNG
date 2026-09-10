@@ -1,0 +1,21 @@
+<span [class]="rootClasses()" data-testid="DynamoOverlayBadge">
+  <ng-content />
+
+  @if (showDot()) {
+    <span
+      [class]="dotClasses()"
+      [attr.aria-hidden]="true"
+      data-testid="DynamoOverlayBadge-dot"
+    ></span>
+  } @else {
+    <dg-badge
+      [severity]="severity()"
+      size="sm"
+      [styleClass]="badgeOverlayClasses()"
+      [attr.aria-hidden]="true"
+      data-testid="DynamoOverlayBadge-badge"
+    >
+      {{ displayValue() }}
+    </dg-badge>
+  }
+</span>

@@ -174,7 +174,12 @@
       ],
       "@dynamong/meter-group": [
         "./libs/components/feedback/meter-group/src/index.ts"
-      ]
+      ],
+      "@dynamong/dock": ["./libs/components/overlay/dock/src/index.ts"],
+      "@dynamong/overlay-badge": [
+        "./libs/components/feedback/overlay-badge/src/index.ts"
+      ],
+      "@dynamong/inplace": ["./libs/components/panel/inplace/src/index.ts"]
     }
   }
 }

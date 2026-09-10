@@ -691,6 +691,42 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="dock-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Dock</h2>
+    <div class="flex justify-center py-4">
+      <dg-dock [items]="dockItems" ariaLabel="Apps" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="overlay-badge-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">OverlayBadge</h2>
+    <div class="flex items-center gap-8">
+      <dg-overlay-badge [value]="5" aria-label="Notifications, 5 unread">
+        <dg-avatar name="Ada Lovelace" />
+      </dg-overlay-badge>
+      <dg-overlay-badge [dot]="true" severity="success" position="bottom-right">
+        <dg-avatar name="Grace Hopper" />
+      </dg-overlay-badge>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="inplace-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Inplace</h2>
+    <dg-inplace>
+      <span display>{{ inplaceName() || 'Untitled' }}</span>
+      <dg-input-text editor size="sm" [(ngModel)]="inplaceName" ariaLabel="Name" />
+    </dg-inplace>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="editor-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Editor</h2>
