@@ -550,6 +550,13 @@ export class App {
     (_, i) => `Row ${i + 1}`,
   );
 
+  protected readonly manySelectOptions: DynamoSelectOption<string>[] = Array.from(
+    { length: 5000 },
+    (_, i) => ({ label: `Option ${i + 1}`, value: `option-${i + 1}` }),
+  );
+  protected readonly manySkills = signal<string[]>([]);
+  protected readonly manyAutocompleteValue = signal('');
+
   protected readonly fruitOptions = FRUIT_OPTIONS;
   protected readonly fruit = signal('');
   protected readonly lastFruitSelected = signal<string | null>(null);

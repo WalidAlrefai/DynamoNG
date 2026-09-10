@@ -88,6 +88,20 @@
       />
     </div>
 
+    <div class="block space-y-1" data-testid="multi-select-virtual-field">
+      <span class="text-sm font-medium text-text-primary"
+        >Skills (virtualized, 5,000 options)</span
+      >
+      <dg-multi-select
+        [options]="manySelectOptions"
+        [(value)]="manySkills"
+        ariaLabel="Many options"
+        placeholder="Choose from 5,000 options"
+        [filterable]="true"
+        [virtualScroll]="true"
+      />
+    </div>
+
     <div class="block space-y-1" data-testid="date-picker-field">
       <span class="text-sm font-medium text-text-primary">Start date</span>
       <dg-date-picker
@@ -719,6 +733,15 @@
           Last selected: <span class="font-mono">{{ selected }}</span>
         </p>
       }
+    </div>
+    <div class="max-w-sm" data-testid="autocomplete-virtual">
+      <dg-autocomplete
+        [options]="manySelectOptions"
+        [(value)]="manyAutocompleteValue"
+        ariaLabel="Many suggestions"
+        placeholder="Type to filter 5,000 items..."
+        [virtualScroll]="true"
+      />
     </div>
   </section>
 
