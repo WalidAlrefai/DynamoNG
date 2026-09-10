@@ -1,35 +1,67 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoSlider } from '@dynamong/slider';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
+
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'severity-size', title: 'Severity & Size' },
+  { id: 'disabled', title: 'Disabled' },
+];
 
 @Component({
   selector: 'docs-slider-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSlider, DocPageShell],
+  imports: [DynamoSlider, DocExamplesLayout, DocExample],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Slider"
       description="A draggable range input with keyboard stepping and click-to-jump."
+      [examples]="examples"
     >
-      <div demo class="flex flex-col gap-6">
-        <div class="flex flex-col gap-2">
-          <span class="text-sm text-text-muted"
-            >Volume: {{ volume() }}</span
-          >
+      <docs-example
+        exampleId="basic"
+        title="Basic"
+        description="Two-way bind the value with [(value)]; defaults to a 0–100 range."
+        [code]="basicCode"
+      >
+        <div preview class="flex flex-col gap-2">
+          <span class="text-sm text-text-muted">Volume: {{ volume() }}</span>
           <dg-slider [(value)]="volume" ariaLabel="Volume" />
         </div>
-        <dg-slider
-          [value]="70"
-          severity="success"
-          size="lg"
-          ariaLabel="Brightness"
-        />
-        <dg-slider [value]="40" [disabled]="true" ariaLabel="Disabled" />
-      </div>
-      <div code>
-        &lt;dg-slider [(value)]="volume" ariaLabel="Volume" /&gt;
-      </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="severity-size"
+        title="Severity & Size"
+        description="severity recolors the track/thumb; size sets the track thickness."
+        [code]="severitySizeCode"
+      >
+        <div preview>
+          <dg-slider
+            [value]="70"
+            severity="success"
+            size="lg"
+            ariaLabel="Brightness"
+          />
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="disabled"
+        title="Disabled"
+        description="disabled blocks drag, click, and keyboard interaction."
+        [code]="disabledCode"
+      >
+        <div preview>
+          <dg-slider [value]="40" [disabled]="true" ariaLabel="Disabled" />
+        </div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -74,9 +106,14 @@ import { DocPageShell } from '../components/doc-page-shell';
           </tr>
         </tbody>
       </table>
-    </docs-page-shell>
+    </docs-examples-layout>
   `,
 })
 export class SliderDocPage {
+  protected readonly examples = EXAMPLES;
   protected readonly volume = signal(50);
+
+  protected readonly basicCode = `<dg-slider [(value)]="volume" ariaLabel="Volume" />`;
+  protected readonly severitySizeCode = `<dg-slider [value]="70" severity="success" size="lg" ariaLabel="Brightness" />`;
+  protected readonly disabledCode = `<dg-slider [value]="40" [disabled]="true" ariaLabel="Disabled" />`;
 }

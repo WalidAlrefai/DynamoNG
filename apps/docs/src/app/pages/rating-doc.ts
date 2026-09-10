@@ -1,25 +1,52 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoRating } from '@dynamong/rating';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
+
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'read-only', title: 'Read Only' },
+];
 
 @Component({
   selector: 'docs-rating-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoRating, DocPageShell],
+  imports: [DynamoRating, DocExamplesLayout, DocExample],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Rating"
       description="A star rating control with click, hover-preview, and keyboard support."
+      [examples]="examples"
     >
-      <div demo class="flex flex-col gap-4">
-        <dg-rating [(value)]="stars" ariaLabel="Rate this product" />
-        <p class="text-sm text-text-muted">
-          Value: <span class="font-mono">{{ stars() }}</span>
-        </p>
-        <dg-rating [value]="4" [readOnly]="true" ariaLabel="Average rating" />
-      </div>
-      <div code>&lt;dg-rating [(value)]="stars" /&gt;</div>
+      <docs-example
+        exampleId="basic"
+        title="Basic"
+        description="Two-way bind the star count with [(value)]."
+        [code]="basicCode"
+      >
+        <div preview class="flex flex-col gap-2">
+          <dg-rating [(value)]="stars" ariaLabel="Rate this product" />
+          <p class="text-sm text-text-muted">
+            Value: <span class="font-mono">{{ stars() }}</span>
+          </p>
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="read-only"
+        title="Read Only"
+        description="readOnly renders a non-interactive rating — e.g. an average score."
+        [code]="readOnlyCode"
+      >
+        <div preview>
+          <dg-rating [value]="4" [readOnly]="true" ariaLabel="Average rating" />
+        </div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -56,9 +83,13 @@ import { DocPageShell } from '../components/doc-page-shell';
           </tr>
         </tbody>
       </table>
-    </docs-page-shell>
+    </docs-examples-layout>
   `,
 })
 export class RatingDocPage {
+  protected readonly examples = EXAMPLES;
   protected readonly stars = signal(3);
+
+  protected readonly basicCode = `<dg-rating [(value)]="stars" ariaLabel="Rate this product" />`;
+  protected readonly readOnlyCode = `<dg-rating [value]="4" [readOnly]="true" ariaLabel="Average rating" />`;
 }

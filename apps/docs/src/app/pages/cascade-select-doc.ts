@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoCascadeSelect } from '@dynamong/cascade-select';
 import type { DynamoTreeNode } from '@dynamong/tree';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocApiTable, type ApiTableRow } from '../components/api-table';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
 
 const NODES: DynamoTreeNode<string>[] = [
   {
@@ -42,8 +47,6 @@ const NODES: DynamoTreeNode<string>[] = [
   { id: 'mexico', label: 'Mexico', value: 'mexico' },
 ];
 
-// 100 categories × 100 items — every open level's row list renders
-// through `@dynamong/virtual-scroll`.
 const MANY_NODES: DynamoTreeNode<string>[] = Array.from(
   { length: 100 },
   (_, c) => ({
@@ -57,104 +60,87 @@ const MANY_NODES: DynamoTreeNode<string>[] = Array.from(
   }),
 );
 
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'virtual-scroll', title: 'Virtual Scroll' },
+];
+
+const API: ApiTableRow[] = [
+  { name: 'nodes', type: 'DynamoTreeNode[]', default: 'required' },
+  { name: 'placeholder', type: 'string', default: "'Select...'" },
+  { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
+  { name: 'invalid', type: 'boolean', default: 'false' },
+  { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  { name: 'virtualScroll', type: 'boolean', default: 'false' },
+  { name: 'virtualScrollItemSize', type: 'number', default: '36' },
+  { name: 'virtualScrollHeight', type: 'number', default: '240' },
+];
+
 @Component({
   selector: 'docs-cascade-select-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoCascadeSelect, ReactiveFormsModule, DocPageShell],
+  imports: [
+    DynamoCascadeSelect,
+    ReactiveFormsModule,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Cascade Select"
       description="A multi-level dependent dropdown — selecting a branch reveals its children in a side flyout, down to a leaf."
+      [examples]="examples"
     >
-      <div demo class="max-w-xs">
-        <dg-cascade-select
-          [nodes]="nodes"
-          [formControl]="location"
-          ariaLabel="Location"
-        />
-        <p class="mt-2 text-sm text-text-muted">
-          Value: <span class="font-mono">{{ location.value ?? '(none)' }}</span>
-        </p>
-      </div>
-      <div code>&lt;dg-cascade-select [nodes]="nodes" [formControl]="location" /&gt;</div>
-      <div demo class="max-w-xs">
-        <dg-cascade-select
-          [nodes]="manyNodes"
-          [(value)]="manyValue"
-          [virtualScroll]="true"
-          ariaLabel="Item (virtualized)"
-          placeholder="100 categories × 100 items"
-        />
-        <p class="mt-2 text-sm text-text-muted">
-          Every level — root and each flyout — renders its rows through
-          <code class="font-mono">@dynamong/virtual-scroll</code>.
-        </p>
-      </div>
-      <div code>
-        &lt;dg-cascade-select [nodes]="manyNodes" [(value)]="manyValue"
-        [virtualScroll]="true" /&gt;
-      </div>
-      <table api class="w-full border-collapse text-sm">
-        <thead>
-          <tr class="border-b border-border text-left text-text-muted">
-            <th class="py-2 pr-4">Input</th>
-            <th class="py-2 pr-4">Type</th>
-            <th class="py-2">Default</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">nodes</td>
-            <td class="py-2 pr-4 font-mono">DynamoTreeNode[]</td>
-            <td class="py-2 font-mono">required</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">placeholder</td>
-            <td class="py-2 pr-4 font-mono">string</td>
-            <td class="py-2 font-mono">'Select...'</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">size</td>
-            <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
-            <td class="py-2 font-mono">'md'</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">invalid</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">disabled</td>
-            <td class="py-2 pr-4 font-mono">boolean (model)</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">virtualScroll</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">virtualScrollItemSize</td>
-            <td class="py-2 pr-4 font-mono">number</td>
-            <td class="py-2 font-mono">36</td>
-          </tr>
-          <tr>
-            <td class="py-2 pr-4 font-mono">virtualScrollHeight</td>
-            <td class="py-2 pr-4 font-mono">number</td>
-            <td class="py-2 font-mono">240</td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="mt-4 text-sm text-text-muted">
-        <code class="font-mono">virtualScroll</code> renders every open level's row list through
-        <code class="font-mono">@dynamong/virtual-scroll</code>. Each level's nodes are a flat,
-        same-height list, so it applies with no grouping caveat.
-      </p>
-    </docs-page-shell>
+      <docs-example
+        exampleId="basic"
+        title="Basic"
+        description="Pass a DynamoTreeNode tree; only leaf nodes (those with a value) are selectable."
+      >
+        <div preview class="max-w-xs">
+          <dg-cascade-select
+            [nodes]="nodes"
+            [formControl]="location"
+            ariaLabel="Location"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Value:
+            <span class="font-mono">{{ location.value ?? '(none)' }}</span>
+          </p>
+        </div>
+        <div code>
+          &lt;dg-cascade-select [nodes]="nodes" [formControl]="location" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="virtual-scroll"
+        title="Virtual Scroll"
+        description="virtualScroll renders every open level's row list virtualized — no grouping caveat, since each level is a flat same-height list."
+      >
+        <div preview class="max-w-xs">
+          <dg-cascade-select
+            [nodes]="manyNodes"
+            [(value)]="manyValue"
+            [virtualScroll]="true"
+            ariaLabel="Item (virtualized)"
+            placeholder="100 categories × 100 items"
+          />
+        </div>
+        <div code>
+          &lt;dg-cascade-select [nodes]="manyNodes" [(value)]="manyValue"
+          [virtualScroll]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-api-table api [rows]="apiRows" />
+    </docs-examples-layout>
   `,
 })
 export class CascadeSelectDocPage {
+  protected readonly examples = EXAMPLES;
+  protected readonly apiRows = API;
   protected readonly nodes = NODES;
   protected readonly manyNodes = MANY_NODES;
   protected readonly location = new FormControl<string | null>(null);

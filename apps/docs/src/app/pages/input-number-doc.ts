@@ -1,25 +1,79 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoInputNumber } from '@dynamong/input-number';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
+
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'bounds', title: 'Min / Max / Step' },
+  { id: 'sizes', title: 'Sizes' },
+];
 
 @Component({
   selector: 'docs-input-number-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoInputNumber, ReactiveFormsModule, DocPageShell],
+  imports: [
+    DynamoInputNumber,
+    ReactiveFormsModule,
+    DocExamplesLayout,
+    DocExample,
+  ],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Input Number"
       description="A numeric spinner input with increment/decrement buttons, keyboard stepping, and min/max/step bounds."
+      [examples]="examples"
     >
-      <div demo class="max-w-xs">
-        <dg-input-number [formControl]="quantity" [min]="0" [max]="10" ariaLabel="Quantity" />
-        <p class="mt-2 text-sm text-text-muted">
-          Value: <span class="font-mono">{{ quantity.value ?? '(none)' }}</span>
-        </p>
-      </div>
-      <div code>&lt;dg-input-number [formControl]="quantity" [min]="0" [max]="10" /&gt;</div>
+      <docs-example
+        exampleId="basic"
+        title="Basic"
+        description="Bind a FormControl (or ngModel). The value is a number or null."
+        [code]="basicCode"
+      >
+        <div preview class="max-w-xs">
+          <dg-input-number [formControl]="quantity" ariaLabel="Quantity" />
+          <p class="mt-2 text-sm text-text-muted">
+            Value:
+            <span class="font-mono">{{ quantity.value ?? '(none)' }}</span>
+          </p>
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="bounds"
+        title="Min / Max / Step"
+        description="Clamp to a range and step by a custom amount; the spinner buttons and Arrow keys respect both."
+        [code]="boundsCode"
+      >
+        <div preview class="max-w-xs">
+          <dg-input-number
+            [formControl]="bounded"
+            [min]="0"
+            [max]="10"
+            [step]="2"
+            ariaLabel="Bounded quantity"
+          />
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="sizes"
+        title="Sizes"
+        description="Three control heights via the size input."
+        [code]="sizesCode"
+      >
+        <div preview class="flex max-w-xs flex-col gap-3">
+          <dg-input-number [formControl]="sizeCtl" size="sm" ariaLabel="Small" />
+          <dg-input-number [formControl]="sizeCtl" size="md" ariaLabel="Medium" />
+          <dg-input-number [formControl]="sizeCtl" size="lg" ariaLabel="Large" />
+        </div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -56,9 +110,18 @@ import { DocPageShell } from '../components/doc-page-shell';
           </tr>
         </tbody>
       </table>
-    </docs-page-shell>
+    </docs-examples-layout>
   `,
 })
 export class InputNumberDocPage {
+  protected readonly examples = EXAMPLES;
   protected readonly quantity = new FormControl<number | null>(3);
+  protected readonly bounded = new FormControl<number | null>(4);
+  protected readonly sizeCtl = new FormControl<number | null>(1);
+
+  protected readonly basicCode = `<dg-input-number [formControl]="quantity" ariaLabel="Quantity" />`;
+  protected readonly boundsCode = `<dg-input-number [formControl]="quantity" [min]="0" [max]="10" [step]="2" />`;
+  protected readonly sizesCode = `<dg-input-number [formControl]="q" size="sm" />
+<dg-input-number [formControl]="q" size="md" />
+<dg-input-number [formControl]="q" size="lg" />`;
 }

@@ -1,71 +1,91 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoChipsInput } from '@dynamong/chips-input';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocApiTable, type ApiTableRow } from '../components/api-table';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
+
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'max', title: 'Max Count' },
+];
+
+const API: ApiTableRow[] = [
+  { name: 'placeholder', type: 'string', default: "''" },
+  { name: 'max', type: 'number | undefined', default: 'undefined' },
+  { name: 'allowDuplicates', type: 'boolean', default: 'false' },
+  { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
+  { name: 'disabled', type: 'boolean (model)', default: 'false' },
+];
 
 @Component({
   selector: 'docs-chips-input-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoChipsInput, ReactiveFormsModule, DocPageShell],
+  imports: [
+    DynamoChipsInput,
+    ReactiveFormsModule,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Chips Input"
       description="A tag/multi-value text input with Enter-to-commit, backspace-to-remove, and paste-splitting."
+      [examples]="examples"
     >
-      <div demo class="max-w-md">
-        <dg-chips-input
-          [formControl]="tags"
-          placeholder="Add a tag..."
-          ariaLabel="Tags"
-        />
-        <p class="mt-2 text-sm text-text-muted">
-          Value:
-          <span class="font-mono">{{ tags.value.join(', ') || '(none)' }}</span>
-        </p>
-      </div>
-      <div code>&lt;dg-chips-input [formControl]="tags" placeholder="Add a tag..." /&gt;</div>
-      <table api class="w-full border-collapse text-sm">
-        <thead>
-          <tr class="border-b border-border text-left text-text-muted">
-            <th class="py-2 pr-4">Input</th>
-            <th class="py-2 pr-4">Type</th>
-            <th class="py-2">Default</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">placeholder</td>
-            <td class="py-2 pr-4 font-mono">string</td>
-            <td class="py-2 font-mono">''</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">max</td>
-            <td class="py-2 pr-4 font-mono">number | undefined</td>
-            <td class="py-2 font-mono">undefined</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">allowDuplicates</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">size</td>
-            <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
-            <td class="py-2 font-mono">'md'</td>
-          </tr>
-          <tr>
-            <td class="py-2 pr-4 font-mono">disabled</td>
-            <td class="py-2 pr-4 font-mono">boolean (model)</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-        </tbody>
-      </table>
-    </docs-page-shell>
+      <docs-example
+        exampleId="basic"
+        title="Basic"
+        description="Bind a string[] FormControl. Enter commits a chip, Backspace on an empty field removes the last one."
+      >
+        <div preview class="max-w-md">
+          <dg-chips-input
+            [formControl]="tags"
+            placeholder="Add a tag..."
+            ariaLabel="Tags"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Value:
+            <span class="font-mono">{{ tags.value.join(', ') || '(none)' }}</span>
+          </p>
+        </div>
+        <div code>
+          &lt;dg-chips-input [formControl]="tags" placeholder="Add a tag..." /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="max"
+        title="Max Count"
+        description="max caps the number of chips; the field stops accepting input once the cap is reached."
+      >
+        <div preview class="max-w-md">
+          <dg-chips-input
+            [formControl]="capped"
+            [max]="3"
+            placeholder="Up to 3 tags"
+            ariaLabel="Capped tags"
+          />
+        </div>
+        <div code>&lt;dg-chips-input [formControl]="tags" [max]="3" /&gt;</div>
+      </docs-example>
+
+      <docs-api-table api [rows]="apiRows" />
+    </docs-examples-layout>
   `,
 })
 export class ChipsInputDocPage {
+  protected readonly examples = EXAMPLES;
+  protected readonly apiRows = API;
   protected readonly tags = new FormControl<string[]>(['angular', 'tailwind'], {
+    nonNullable: true,
+  });
+  protected readonly capped = new FormControl<string[]>(['one'], {
     nonNullable: true,
   });
 }

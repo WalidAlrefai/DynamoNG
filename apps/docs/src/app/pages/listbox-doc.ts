@@ -1,6 +1,11 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoListbox } from '@dynamong/listbox';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocApiTable, type ApiTableRow } from '../components/api-table';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
 
 const VIEW_OPTIONS = [
   { label: 'List', value: 'list' },
@@ -27,19 +32,41 @@ const MANY_OPTIONS = Array.from({ length: 5000 }, (_, i) => ({
   value: `option-${i + 1}`,
 }));
 
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'single', title: 'Single Select' },
+  { id: 'multiple', title: 'Multiple Select' },
+  { id: 'grouped', title: 'Grouped Options' },
+  { id: 'virtual-scroll', title: 'Virtual Scroll' },
+];
+
+const API: ApiTableRow[] = [
+  { name: 'options', type: 'DynamoSelectOption[] (required)', default: '—' },
+  { name: 'value', type: 'TValue | TValue[] | null (model)', default: 'null' },
+  { name: 'multiple', type: 'boolean', default: 'false' },
+  { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
+  { name: 'disabled', type: 'boolean', default: 'false' },
+  { name: 'virtualScroll', type: 'boolean', default: 'false' },
+  { name: 'virtualScrollItemSize', type: 'number', default: '36' },
+  { name: 'virtualScrollHeight', type: 'number', default: '288' },
+];
+
 @Component({
   selector: 'docs-listbox-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoListbox, DocPageShell],
+  imports: [DynamoListbox, DocExamplesLayout, DocExample, DocApiTable],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Listbox"
       description="An always-visible, single- or multi-select option list — no trigger, no overlay."
+      [examples]="examples"
     >
-      <div demo class="flex flex-wrap gap-6">
-        <div class="flex flex-col gap-1">
-          <span class="text-sm text-text-muted">Single-select</span>
+      <docs-example
+        exampleId="single"
+        title="Single Select"
+        description="The default — one selected value bound with [(value)]."
+      >
+        <div preview>
           <dg-listbox
             class="w-48"
             [options]="viewOptions"
@@ -47,8 +74,17 @@ const MANY_OPTIONS = Array.from({ length: 5000 }, (_, i) => ({
             ariaLabel="View"
           />
         </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-sm text-text-muted">Multi-select</span>
+        <div code>
+          &lt;dg-listbox [options]="viewOptions" [(value)]="view" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="multiple"
+        title="Multiple Select"
+        description="multiple binds a value array; click or Space toggles each option."
+      >
+        <div preview>
           <dg-listbox
             class="w-48"
             [options]="tagOptions"
@@ -57,8 +93,18 @@ const MANY_OPTIONS = Array.from({ length: 5000 }, (_, i) => ({
             ariaLabel="Tags"
           />
         </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-sm text-text-muted">Grouped options</span>
+        <div code>
+          &lt;dg-listbox [options]="tagOptions" [(value)]="tags"
+          [multiple]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="grouped"
+        title="Grouped Options"
+        description="Options with a group field render non-selectable group headings."
+      >
+        <div preview>
           <dg-listbox
             class="w-48"
             [options]="produceOptions"
@@ -66,94 +112,46 @@ const MANY_OPTIONS = Array.from({ length: 5000 }, (_, i) => ({
             ariaLabel="Produce"
           />
         </div>
-      </div>
-      <div code>
-        &lt;dg-listbox [options]="viewOptions" [(value)]="view"
-        ariaLabel="View" /&gt;
-      </div>
-      <div demo class="max-w-xs">
-        <span class="text-sm text-text-muted">Virtualized (5,000 options)</span>
-        <dg-listbox
-          class="mt-1 w-48"
-          [options]="manyOptions"
-          [(value)]="manyValue"
-          [virtualScroll]="true"
-          ariaLabel="Option (virtualized)"
-        />
-        <p class="mt-2 text-sm text-text-muted">
-          5,000 options — only a small rendered window ever mounts in the DOM.
+        <div code>&lt;dg-listbox [options]="produceOptions" [(value)]="produce" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="virtual-scroll"
+        title="Virtual Scroll"
+        description="Set virtualScroll for large ungrouped lists — only a small rendered window mounts."
+      >
+        <div preview class="max-w-xs">
+          <dg-listbox
+            class="w-48"
+            [options]="manyOptions"
+            [(value)]="manyValue"
+            [virtualScroll]="true"
+            ariaLabel="Option (virtualized)"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            5,000 options — only a small rendered window ever mounts in the DOM.
+          </p>
+        </div>
+        <div code>
+          &lt;dg-listbox [options]="manyOptions" [(value)]="manyValue"
+          [virtualScroll]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <div api class="space-y-3">
+        <docs-api-table [rows]="apiRows" />
+        <p class="text-sm text-text-muted">
+          <code class="font-mono">virtualScroll</code> only takes effect for the
+          ungrouped case (fixed-row-height only). A grouped Listbox falls back to
+          the full, non-virtualized render.
         </p>
       </div>
-      <div code>
-        &lt;dg-listbox [options]="manyOptions" [(value)]="manyValue"
-        [virtualScroll]="true" ariaLabel="Option" /&gt;
-      </div>
-      <table api class="w-full border-collapse text-sm">
-        <thead>
-          <tr class="border-b border-border text-left text-text-muted">
-            <th class="py-2 pr-4">Input</th>
-            <th class="py-2 pr-4">Type</th>
-            <th class="py-2">Default</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">options</td>
-            <td class="py-2 pr-4 font-mono">DynamoSelectOption[] (required)</td>
-            <td class="py-2 font-mono">—</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">value</td>
-            <td class="py-2 pr-4 font-mono">TValue | TValue[] | null (model)</td>
-            <td class="py-2 font-mono">null</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">multiple</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">size</td>
-            <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
-            <td class="py-2 font-mono">'md'</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">disabled</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">ariaLabel</td>
-            <td class="py-2 pr-4 font-mono">string</td>
-            <td class="py-2 font-mono">—</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">virtualScroll</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">virtualScrollItemSize</td>
-            <td class="py-2 pr-4 font-mono">number</td>
-            <td class="py-2 font-mono">36</td>
-          </tr>
-          <tr>
-            <td class="py-2 pr-4 font-mono">virtualScrollHeight</td>
-            <td class="py-2 pr-4 font-mono">number</td>
-            <td class="py-2 font-mono">288</td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="mt-4 text-sm text-text-muted">
-        <code class="font-mono">virtualScroll</code> only takes effect for the ungrouped case — it's
-        powered by <code class="font-mono">@dynamong/virtual-scroll</code>, which is fixed-row-height
-        only, and a grouped list's heading rows are a different height than option rows. A grouped
-        Listbox silently falls back to the full, non-virtualized render.
-      </p>
-    </docs-page-shell>
+    </docs-examples-layout>
   `,
 })
 export class ListboxDocPage {
+  protected readonly examples = EXAMPLES;
+  protected readonly apiRows = API;
   protected readonly viewOptions = VIEW_OPTIONS;
   protected readonly tagOptions = TAG_OPTIONS;
   protected readonly produceOptions = PRODUCE_OPTIONS;

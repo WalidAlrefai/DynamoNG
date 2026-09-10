@@ -1,57 +1,74 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { DynamoSkeleton } from '@dynamong/skeleton';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocApiTable, type ApiTableRow } from '../components/api-table';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
+
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'variants', title: 'Variants' },
+  { id: 'card', title: 'Card Placeholder' },
+];
+
+const API: ApiTableRow[] = [
+  {
+    name: 'variant',
+    type: "'text' | 'circular' | 'rectangular'",
+    default: "'text'",
+  },
+  { name: 'width', type: 'string | number | undefined', default: 'undefined' },
+  { name: 'height', type: 'string | number | undefined', default: 'undefined' },
+];
 
 @Component({
   selector: 'docs-skeleton-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSkeleton, DocPageShell],
+  imports: [DynamoSkeleton, DocExamplesLayout, DocExample, DocApiTable],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Skeleton"
       description="An animated loading-placeholder block."
+      [examples]="examples"
     >
-      <div demo class="flex max-w-sm flex-col gap-4">
-        <div class="flex items-center gap-3">
+      <docs-example
+        exampleId="variants"
+        title="Variants"
+        description="variant sets the shape; width / height accept any CSS length."
+      >
+        <div preview class="flex max-w-sm flex-col gap-3">
+          <dg-skeleton variant="text" width="60%" />
+          <dg-skeleton variant="circular" />
+          <dg-skeleton variant="rectangular" height="6rem" />
+        </div>
+        <div code>&lt;dg-skeleton variant="text" width="60%" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="card"
+        title="Card Placeholder"
+        description="Compose several skeletons to mirror the layout you're loading."
+      >
+        <div preview class="flex max-w-sm items-center gap-3">
           <dg-skeleton variant="circular" />
           <div class="flex flex-1 flex-col gap-2">
             <dg-skeleton variant="text" width="60%" />
             <dg-skeleton variant="text" width="40%" />
           </div>
         </div>
-        <dg-skeleton variant="rectangular" height="8rem" />
-      </div>
-      <div code>&lt;dg-skeleton variant="text" width="60%" /&gt;</div>
-      <table api class="w-full border-collapse text-sm">
-        <thead>
-          <tr class="border-b border-border text-left text-text-muted">
-            <th class="py-2 pr-4">Input</th>
-            <th class="py-2 pr-4">Type</th>
-            <th class="py-2">Default</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">variant</td>
-            <td class="py-2 pr-4 font-mono">
-              'text' | 'circular' | 'rectangular'
-            </td>
-            <td class="py-2 font-mono">'text'</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">width</td>
-            <td class="py-2 pr-4 font-mono">string | number | undefined</td>
-            <td class="py-2 font-mono">undefined</td>
-          </tr>
-          <tr>
-            <td class="py-2 pr-4 font-mono">height</td>
-            <td class="py-2 pr-4 font-mono">string | number | undefined</td>
-            <td class="py-2 font-mono">undefined</td>
-          </tr>
-        </tbody>
-      </table>
-    </docs-page-shell>
+        <div code>
+          &lt;dg-skeleton variant="circular" /&gt; &lt;dg-skeleton variant="text"
+          width="60%" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-api-table api [rows]="apiRows" />
+    </docs-examples-layout>
   `,
 })
-export class SkeletonDocPage {}
+export class SkeletonDocPage {
+  protected readonly examples = EXAMPLES;
+  protected readonly apiRows = API;
+}
