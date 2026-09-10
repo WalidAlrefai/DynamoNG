@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — table.html only ever binds `[class]="...Classes()"` or a
@@ -22,8 +23,8 @@ export const tableHeaderCellStyles = cva('font-medium text-text-muted', {
 
 export const tableSortButtonStyles =
   'inline-flex items-center gap-1 rounded-sm font-medium text-text-muted transition-colors ' +
-  'hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
-  'focus-visible:ring-offset-2';
+  'hover:text-text-primary ' +
+  focusRingClass;
 
 // Reuses Menu's rotate-on-state chevron pattern rather than a new icon
 // asset — "none" dims it to signal sortable-but-inactive.

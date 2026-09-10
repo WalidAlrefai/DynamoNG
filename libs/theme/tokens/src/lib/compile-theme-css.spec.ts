@@ -26,16 +26,56 @@ const baseTokens: DynamoThemeTokens = {
     surface50: '#f9fafb',
     surface100: '#f3f4f6',
     surface200: '#e5e7eb',
+    surface300: '#d1d5db',
     surface700: '#374151',
     surface800: '#1f2937',
     surface900: '#111827',
     textPrimary: '#111827',
     textMuted: '#6b7280',
+    textDisabled: '#9ca3af',
     border: '#e5e7eb',
     ring: '#6366f1',
+    scrim: 'rgb(0 0 0 / 0.5)',
   },
-  radius: { sm: '0.25rem', md: '0.375rem', lg: '0.5rem', full: '9999px' },
+  radius: { sm: '0.25rem', md: '0.375rem', lg: '0.5rem', xl: '0.75rem', full: '9999px' },
   focus: { ringWidth: '2px', ringOffset: '2px' },
+  spacing: { unit: '0.25rem' },
+  typography: {
+    fontSans: 'ui-sans-serif, system-ui, sans-serif',
+    fontMono: 'ui-monospace, monospace',
+    fontSizeXs: '0.75rem',
+    fontSizeSm: '0.875rem',
+    fontSizeBase: '1rem',
+    fontSizeLg: '1.125rem',
+    lineHeightXs: '1rem',
+    lineHeightSm: '1.25rem',
+    lineHeightBase: '1.5rem',
+    lineHeightLg: '1.75rem',
+    weightNormal: '400',
+    weightMedium: '500',
+    weightSemibold: '600',
+  },
+  elevation: {
+    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+    md: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+  },
+  motion: {
+    durationFast: '150ms',
+    durationBase: '200ms',
+    durationSlow: '300ms',
+    easeStandard: 'cubic-bezier(0, 0, 0.2, 1)',
+    easeEmphasized: 'cubic-bezier(0.4, 0, 0.2, 1)',
+  },
+  zIndex: {
+    dropdown: '1000',
+    overlayPanel: '1100',
+    drawer: '1200',
+    modal: '1300',
+    popover: '1400',
+    toast: '1500',
+    tooltip: '1600',
+  },
 };
 
 describe('compileThemeCss', () => {
@@ -47,6 +87,15 @@ describe('compileThemeCss', () => {
     expect(css).toContain('--dg-color-primary-hover: #4f46e5;');
     expect(css).toContain('--dg-radius-sm: 0.25rem;');
     expect(css).toContain('--dg-focus-ring-width: 2px;');
+    // Categories added in the Phase-1 token expansion — the compiler is
+    // generic, so these must appear without any change to compile-theme-css.ts.
+    expect(css).toContain('--dg-spacing-unit: 0.25rem;');
+    expect(css).toContain('--dg-typography-font-size-sm: 0.875rem;');
+    expect(css).toContain('--dg-typography-weight-medium: 500;');
+    expect(css).toContain('--dg-elevation-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);');
+    expect(css).toContain('--dg-motion-duration-base: 200ms;');
+    expect(css).toContain('--dg-z-index-modal: 1300;');
+    expect(css).toContain('--dg-color-surface-300: #d1d5db;');
   });
 
   it('does not emit a dark block when no dark overrides are provided', () => {

@@ -84,8 +84,10 @@ providers: [provideDynamoNG(&#123; theme: 'aura' &#125;)]</code></pre>
             <div>
               <h4 class="mb-2 font-semibold text-text-primary">The token pipeline</h4>
               <p class="mb-2 text-sm text-text-muted">
-                Every color, radius, and focus-ring value used across DynamoNG's components traces back to one
-                set of design tokens:
+                Every colour, surface, radius, spacing, typography, elevation, motion, focus-ring and
+                z-index value used across DynamoNG's components traces back to one set of design tokens
+                (see the <a routerLink="/foundations" class="text-primary underline">Foundations</a> page
+                for the full contract, rendered):
               </p>
               <pre
                 class="overflow-x-auto rounded-lg border border-border bg-surface-100 p-4 text-sm text-text-primary"

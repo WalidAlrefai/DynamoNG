@@ -16,6 +16,11 @@ export const appRoutes: Route[] = [
       import('./pages/templates').then((m) => m.TemplatesPage),
   },
   {
+    path: 'foundations',
+    loadComponent: () =>
+      import('./pages/foundations-doc').then((m) => m.FoundationsDocPage),
+  },
+  {
     path: 'components/button',
     loadComponent: () =>
       import('./pages/button-doc').then((m) => m.ButtonDocPage),
