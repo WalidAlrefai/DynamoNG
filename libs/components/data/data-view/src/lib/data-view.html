@@ -1,0 +1,33 @@
+<div [class]="rootClasses()" data-testid="DynamoDataView">
+  <div [class]="headerClasses" data-testid="DynamoDataView-header">
+    <ng-content select="[header]" />
+  </div>
+
+  @if (value().length === 0) {
+    <div [class]="emptyClasses" role="status" data-testid="DynamoDataView-empty">
+      {{ emptyMessage() }}
+    </div>
+  } @else {
+    <div
+      [class]="layout() === 'grid' ? gridClasses : listClasses"
+      [attr.data-layout]="layout()"
+      data-testid="DynamoDataView-content"
+    >
+      @for (item of pagedValue(); track trackItem(item); let i = $index) {
+        <ng-container
+          [ngTemplateOutlet]="itemTemplate()"
+          [ngTemplateOutletContext]="{ $implicit: item, item: item, index: i }"
+        />
+      }
+    </div>
+
+    @if (paginator()) {
+      <dg-pagination
+        [totalItems]="value().length"
+        [(page)]="page"
+        [(pageSize)]="rows"
+        [pageSizeOptions]="rowsPerPageOptions()"
+      />
+    }
+  }
+</div>

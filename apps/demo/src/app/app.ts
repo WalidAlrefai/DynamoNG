@@ -88,6 +88,12 @@ import { DynamoTreeTable } from '@dynamong/tree-table';
 import type { DynamoTreeTableColumn, DynamoTreeTableNode } from '@dynamong/tree-table';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { DynamoProgress } from '@dynamong/progress';
+import { DynamoDataView } from '@dynamong/data-view';
+import { DynamoMegaMenu } from '@dynamong/mega-menu';
+import type { DynamoMegaMenuItem } from '@dynamong/mega-menu';
+import { DynamoFloatLabel, DynamoIftaLabel } from '@dynamong/float-label';
+import { DynamoSpeedDial } from '@dynamong/speed-dial';
+import type { DynamoSpeedDialAction } from '@dynamong/speed-dial';
 import type { DynamoSeverity } from '@dynamong/core/api';
 
 // Self-contained inline SVG data-URI, matching the docs app's own
@@ -235,6 +241,11 @@ const EMPLOYEES: Employee[] = [
     DynamoMultiSelect,
     DynamoPagination,
     DynamoProgress,
+    DynamoDataView,
+    DynamoMegaMenu,
+    DynamoFloatLabel,
+    DynamoIftaLabel,
+    DynamoSpeedDial,
     DynamoRadio,
     DynamoSelect,
     DynamoSwitch,
@@ -642,6 +653,30 @@ export class App {
       })),
     }));
   protected readonly cascadeSelectManyValue = signal<string | null>(null);
+
+  protected readonly dataViewItems = Array.from({ length: 18 }, (_, i) => ({
+    id: i + 1,
+    name: `Item ${i + 1}`,
+    price: 10 + i * 5,
+  }));
+  protected readonly dataViewLayout = signal<'list' | 'grid'>('list');
+  protected readonly megaMenuItems: DynamoMegaMenuItem[] = [
+    {
+      label: 'Products',
+      columns: [
+        { header: 'Laptops', items: [{ label: 'Air' }, { label: 'Pro' }] },
+        { header: 'Desktops', items: [{ label: 'Mini' }, { label: 'Studio' }] },
+      ],
+    },
+    { label: 'Pricing' },
+  ];
+  protected readonly floatName = signal('');
+  protected readonly iftaEmail = signal('');
+  protected readonly speedDialActions: DynamoSpeedDialAction[] = [
+    { label: 'Add', icon: '+' },
+    { label: 'Edit', icon: '✎' },
+    { label: 'Share', icon: '↗' },
+  ];
 
   protected readonly cascadeSelectNodes: DynamoTreeNode<string>[] = [
     {

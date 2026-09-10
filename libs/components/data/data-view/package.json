@@ -1,0 +1,13 @@
+{
+  "name": "@dynamong/data-view",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/common": "^22.0.0",
+    "@angular/core": "^22.0.0",
+    "@angular/cdk": "^22.0.0",
+    "@dynamong/core": "0.0.1",
+    "@dynamong/utils": "0.0.1",
+    "@dynamong/pagination": "0.0.1"
+  },
+  "sideEffects": false
+}

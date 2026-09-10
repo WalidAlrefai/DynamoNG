@@ -557,4 +557,36 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A fixed-size virtual-scrolling viewport for rendering large lists efficiently — used to power optional virtualization in Select and Table.',
   },
+  {
+    slug: 'data-view',
+    name: 'DataView',
+    domain: 'data',
+    category: 'Data',
+    description:
+      'Renders a data set as a paged list or card grid from a single item template, with a built-in paginator and optional client-side sort.',
+  },
+  {
+    slug: 'mega-menu',
+    name: 'MegaMenu',
+    domain: 'overlay',
+    category: 'Menu',
+    description:
+      'A horizontal (or vertical) bar whose items open a single multi-column panel of links, with full keyboard navigation.',
+  },
+  {
+    slug: 'float-label',
+    name: 'Float Label',
+    domain: 'forms',
+    category: 'Form',
+    description:
+      'Label wrappers for any form control — FloatLabel floats the label on focus or fill; IftaLabel pins an always-visible label inside the field.',
+  },
+  {
+    slug: 'speed-dial',
+    name: 'SpeedDial',
+    domain: 'overlay',
+    category: 'Button',
+    description:
+      'A floating action button that fans out action items along a line or around an arc, with roving-focus keyboard support.',
+  },
 ];
