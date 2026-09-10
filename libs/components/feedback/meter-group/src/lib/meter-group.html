@@ -1,0 +1,41 @@
+<div [class]="rootClasses()" data-testid="DynamoMeterGroup">
+  <div
+    [class]="trackClasses()"
+    role="group"
+    [attr.aria-label]="summaryLabel()"
+    data-testid="DynamoMeterGroup-track"
+  >
+    @for (item of value(); track item.label; let i = $index) {
+      <!-- Continuous per-segment size via an inline style — the one
+      deliberate exception to "visual values live only in .styles.ts",
+      exactly as Progress does for its fill width. -->
+      <div
+        role="meter"
+        [class]="segmentClasses(item)"
+        [style.flex-basis.%]="percentFor(i)"
+        [style.background-color]="item.color || null"
+        [attr.aria-valuenow]="item.value"
+        aria-valuemin="0"
+        [attr.aria-valuemax]="max()"
+        [attr.aria-label]="item.label"
+        data-testid="DynamoMeterGroup-segment"
+      ></div>
+    }
+  </div>
+
+  @if (showLegend()) {
+    <ul [class]="legendClasses" data-testid="DynamoMeterGroup-legend">
+      @for (item of value(); track item.label) {
+        <li [class]="legendItemClasses">
+          <span
+            [class]="markerClasses(item)"
+            [style.background-color]="item.color || null"
+            [attr.aria-hidden]="true"
+          ></span>
+          <span>{{ item.label }}</span>
+          <span [class]="legendValueClasses">{{ item.value }}</span>
+        </li>
+      }
+    </ul>
+  }
+</div>

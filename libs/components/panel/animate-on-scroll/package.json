@@ -1,0 +1,8 @@
+{
+  "name": "@dynamong/animate-on-scroll",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^22.0.0"
+  },
+  "sideEffects": false
+}

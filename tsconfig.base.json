@@ -168,7 +168,32 @@
       ],
       "@dynamong/speed-dial": [
         "./libs/components/overlay/speed-dial/src/index.ts"
-      ]
+      ],
+      "@dynamong/order-list": [
+        "./libs/components/forms/order-list/src/index.ts"
+      ],
+      "@dynamong/meter-group": [
+        "./libs/components/feedback/meter-group/src/index.ts"
+      ],
+      "@dynamong/dock": ["./libs/components/overlay/dock/src/index.ts"],
+      "@dynamong/overlay-badge": [
+        "./libs/components/feedback/overlay-badge/src/index.ts"
+      ],
+      "@dynamong/inplace": ["./libs/components/panel/inplace/src/index.ts"],
+      "@dynamong/focus-trap": [
+        "./libs/components/overlay/focus-trap/src/index.ts"
+      ],
+      "@dynamong/ripple": ["./libs/components/forms/ripple/src/index.ts"],
+      "@dynamong/style-class": [
+        "./libs/components/overlay/style-class/src/index.ts"
+      ],
+      "@dynamong/animate-on-scroll": [
+        "./libs/components/panel/animate-on-scroll/src/index.ts"
+      ],
+      "@dynamong/key-filter": [
+        "./libs/components/forms/key-filter/src/index.ts"
+      ],
+      "@dynamong/org-chart": ["./libs/components/data/org-chart/src/index.ts"]
     }
   }
 }

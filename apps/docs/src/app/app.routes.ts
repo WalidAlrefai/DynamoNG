@@ -146,6 +146,11 @@ export const appRoutes: Route[] = [
     loadComponent: () => import('./pages/tree-doc').then((m) => m.TreeDocPage),
   },
   {
+    path: 'components/org-chart',
+    loadComponent: () =>
+      import('./pages/org-chart-doc').then((m) => m.OrgChartDocPage),
+  },
+  {
     path: 'components/stepper',
     loadComponent: () =>
       import('./pages/stepper-doc').then((m) => m.StepperDocPage),
@@ -363,5 +368,56 @@ export const appRoutes: Route[] = [
     path: 'components/speed-dial',
     loadComponent: () =>
       import('./pages/speed-dial-doc').then((m) => m.SpeedDialDocPage),
+  },
+  {
+    path: 'components/order-list',
+    loadComponent: () =>
+      import('./pages/order-list-doc').then((m) => m.OrderListDocPage),
+  },
+  {
+    path: 'components/meter-group',
+    loadComponent: () =>
+      import('./pages/meter-group-doc').then((m) => m.MeterGroupDocPage),
+  },
+  {
+    path: 'components/dock',
+    loadComponent: () => import('./pages/dock-doc').then((m) => m.DockDocPage),
+  },
+  {
+    path: 'components/overlay-badge',
+    loadComponent: () =>
+      import('./pages/overlay-badge-doc').then((m) => m.OverlayBadgeDocPage),
+  },
+  {
+    path: 'components/inplace',
+    loadComponent: () =>
+      import('./pages/inplace-doc').then((m) => m.InplaceDocPage),
+  },
+  {
+    path: 'components/focus-trap',
+    loadComponent: () =>
+      import('./pages/focus-trap-doc').then((m) => m.FocusTrapDocPage),
+  },
+  {
+    path: 'components/ripple',
+    loadComponent: () =>
+      import('./pages/ripple-doc').then((m) => m.RippleDocPage),
+  },
+  {
+    path: 'components/key-filter',
+    loadComponent: () =>
+      import('./pages/key-filter-doc').then((m) => m.KeyFilterDocPage),
+  },
+  {
+    path: 'components/style-class',
+    loadComponent: () =>
+      import('./pages/style-class-doc').then((m) => m.StyleClassDocPage),
+  },
+  {
+    path: 'components/animate-on-scroll',
+    loadComponent: () =>
+      import('./pages/animate-on-scroll-doc').then(
+        (m) => m.AnimateOnScrollDocPage,
+      ),
   },
 ];

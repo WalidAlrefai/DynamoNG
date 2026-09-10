@@ -479,6 +479,16 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="meter-group-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">MeterGroup</h2>
+    <div class="max-w-md">
+      <dg-meter-group [value]="meterItems" ariaLabel="Disk usage" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="divider-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Divider</h2>
@@ -497,6 +507,22 @@
       [(selected)]="treeSelected"
       ariaLabel="Project files"
     />
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="org-chart-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">OrgChart</h2>
+    <div class="overflow-x-auto">
+      <dg-org-chart
+        [value]="orgChartNodes()"
+        [selectable]="true"
+        [(selection)]="orgChartSelection"
+        [(collapsedIds)]="orgChartCollapsed"
+        ariaLabel="Company org chart"
+      />
+    </div>
   </section>
 
   <section
@@ -669,6 +695,92 @@
   >
     <h2 class="text-lg font-semibold text-text-primary">PickList</h2>
     <dg-picklist [(source)]="picklistSource" [(target)]="picklistTarget" sourceLabel="Available" targetLabel="Selected" />
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="order-list-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">OrderList</h2>
+    <dg-order-list [(value)]="orderListItems" listLabel="Workflow" />
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="dock-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Dock</h2>
+    <div class="flex justify-center py-4">
+      <dg-dock [items]="dockItems" ariaLabel="Apps" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="overlay-badge-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">OverlayBadge</h2>
+    <div class="flex items-center gap-8">
+      <dg-overlay-badge [value]="5" aria-label="Notifications, 5 unread">
+        <dg-avatar name="Ada Lovelace" />
+      </dg-overlay-badge>
+      <dg-overlay-badge [dot]="true" severity="success" position="bottom-right">
+        <dg-avatar name="Grace Hopper" />
+      </dg-overlay-badge>
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="inplace-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Inplace</h2>
+    <dg-inplace>
+      <span display>{{ inplaceName() || 'Untitled' }}</span>
+      <dg-input-text editor size="sm" [(ngModel)]="inplaceName" ariaLabel="Name" />
+    </dg-inplace>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="directives-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Directives</h2>
+    <div class="flex flex-wrap items-center gap-4">
+      <button
+        type="button"
+        dgRipple
+        class="rounded-md bg-primary px-4 py-2 text-on-primary"
+      >
+        dgRipple
+      </button>
+      <input
+        dgKeyFilter="money"
+        class="rounded border border-border px-2 py-1"
+        aria-label="Money field"
+        placeholder="dgKeyFilter money"
+      />
+      <button
+        type="button"
+        dgStyleClass="@next"
+        toggleClass="hidden"
+        class="rounded-md border border-border px-3 py-1 text-sm"
+      >
+        dgStyleClass toggle
+      </button>
+      <span class="rounded bg-surface-100 px-2 py-1 text-sm">now you see me</span>
+    </div>
+    <div [dgFocusTrap]="true" class="flex gap-2 rounded-md border border-border p-3">
+      <input class="rounded border border-border px-2 py-1" aria-label="Trap A" placeholder="dgFocusTrap A" />
+      <input class="rounded border border-border px-2 py-1" aria-label="Trap B" placeholder="dgFocusTrap B" />
+    </div>
+    <div
+      dgAnimateOnScroll
+      enterClass="opacity-100"
+      class="rounded-md bg-surface-100 p-4 text-sm opacity-0 transition-opacity duration-500"
+    >
+      dgAnimateOnScroll — fades in once visible
+    </div>
   </section>
 
   <section

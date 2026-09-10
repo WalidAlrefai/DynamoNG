@@ -1,0 +1,35 @@
+<div [class]="rootClasses()" data-testid="DynamoInplace">
+  @if (!active()) {
+    <button
+      #displayEl
+      type="button"
+      [class]="displayClasses()"
+      [disabled]="disabled()"
+      data-testid="DynamoInplace-display"
+      (click)="activate()"
+    >
+      <ng-content select="[display]" />
+    </button>
+  } @else {
+    <div
+      #editorEl
+      [class]="editorClasses"
+      data-testid="DynamoInplace-editor"
+    >
+      <div [class]="editorBodyClasses">
+        <ng-content select="[editor]" />
+      </div>
+      @if (closable()) {
+        <button
+          type="button"
+          [class]="closeButtonClasses"
+          aria-label="Close editor"
+          data-testid="DynamoInplace-close"
+          (click)="deactivate()"
+        >
+          &times;
+        </button>
+      }
+    </div>
+  }
+</div>

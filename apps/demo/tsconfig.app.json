@@ -23,6 +23,9 @@
       "path": "../../libs/components/data/data-view"
     },
     {
+      "path": "../../libs/components/feedback/meter-group"
+    },
+    {
       "path": "../../libs/components/feedback/progress"
     },
     {
@@ -54,6 +57,33 @@
     },
     {
       "path": "../../libs/components/forms/editor"
+    },
+    {
+      "path": "../../libs/components/panel/animate-on-scroll"
+    },
+    {
+      "path": "../../libs/components/overlay/style-class"
+    },
+    {
+      "path": "../../libs/components/forms/key-filter"
+    },
+    {
+      "path": "../../libs/components/forms/ripple"
+    },
+    {
+      "path": "../../libs/components/overlay/focus-trap"
+    },
+    {
+      "path": "../../libs/components/panel/inplace"
+    },
+    {
+      "path": "../../libs/components/feedback/overlay-badge"
+    },
+    {
+      "path": "../../libs/components/overlay/dock"
+    },
+    {
+      "path": "../../libs/components/forms/order-list"
     },
     {
       "path": "../../libs/components/forms/picklist"
@@ -144,6 +174,9 @@
     },
     {
       "path": "../../libs/components/panel/stepper"
+    },
+    {
+      "path": "../../libs/components/data/org-chart"
     },
     {
       "path": "../../libs/components/data/tree"

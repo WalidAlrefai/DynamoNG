@@ -17,7 +17,8 @@ export interface DocComponentEntry {
     | 'Menu'
     | 'Messages'
     | 'Media'
-    | 'Misc';
+    | 'Misc'
+    | 'Directives';
   description: string;
 }
 
@@ -241,6 +242,14 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     category: 'Data',
     description:
       'A hierarchical, expandable tree with keyboard navigation and multi-select tri-state checkboxes.',
+  },
+  {
+    slug: 'org-chart',
+    name: 'OrgChart',
+    domain: 'data',
+    category: 'Data',
+    description:
+      'A top-down hierarchy diagram: each node is a box with its children in a connected row beneath. Collapsible subtrees, optional single/multiple node selection, and a projected node template.',
   },
   {
     slug: 'stepper',
@@ -588,5 +597,85 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     category: 'Button',
     description:
       'A floating action button that fans out action items along a line or around an arc, with roving-focus keyboard support.',
+  },
+  {
+    slug: 'order-list',
+    name: 'OrderList',
+    domain: 'forms',
+    category: 'Data',
+    description:
+      'A single reorderable list — drag-and-drop, ▲/▼ and move-to-edge buttons, and full keyboard navigation. The one-panel sibling of PickList.',
+  },
+  {
+    slug: 'meter-group',
+    name: 'MeterGroup',
+    domain: 'feedback',
+    category: 'Messages',
+    description:
+      'A multi-segment labelled meter bar with a legend, for showing a breakdown like disk usage or a budget split. The multi-value sibling of Progress.',
+  },
+  {
+    slug: 'dock',
+    name: 'Dock',
+    domain: 'overlay',
+    category: 'Menu',
+    description:
+      'A macOS-style dock — a row or column of icon items that magnify toward the pointer, with roving-focus keyboard navigation.',
+  },
+  {
+    slug: 'overlay-badge',
+    name: 'OverlayBadge',
+    domain: 'feedback',
+    category: 'Messages',
+    description:
+      'A wrapper that overlays a small badge (a count) or a dot on any element — an unread indicator on an avatar or icon button.',
+  },
+  {
+    slug: 'inplace',
+    name: 'Inplace',
+    domain: 'panel',
+    category: 'Misc',
+    description:
+      'Click-to-edit: a compact display region that swaps to an editor region on click, with Escape and a close button to dismiss.',
+  },
+  {
+    slug: 'focus-trap',
+    name: 'FocusTrap',
+    domain: 'overlay',
+    category: 'Directives',
+    description:
+      'dgFocusTrap — keeps Tab / Shift+Tab focus cycling within the host element while enabled. Wraps the shared DynamoFocusTrapService.',
+  },
+  {
+    slug: 'ripple',
+    name: 'Ripple',
+    domain: 'forms',
+    category: 'Directives',
+    description:
+      'dgRipple — a Material-style pointer ripple animated with the Web Animations API; honours prefers-reduced-motion.',
+  },
+  {
+    slug: 'key-filter',
+    name: 'KeyFilter',
+    domain: 'forms',
+    category: 'Directives',
+    description:
+      'dgKeyFilter — restricts what can be typed or pasted into an input to a preset (int, num, money, hex, alpha, alphanum, email) or a custom RegExp.',
+  },
+  {
+    slug: 'style-class',
+    name: 'StyleClass',
+    domain: 'overlay',
+    category: 'Directives',
+    description:
+      'dgStyleClass — on click, toggles / swaps CSS classes on a target element resolved by selector or the @next/@parent/@prev/@grandparent keywords.',
+  },
+  {
+    slug: 'animate-on-scroll',
+    name: 'AnimateOnScroll',
+    domain: 'panel',
+    category: 'Directives',
+    description:
+      'dgAnimateOnScroll — adds an animation class when the element scrolls into view (IntersectionObserver); optional enter/leave with once=false.',
   },
 ];

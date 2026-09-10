@@ -1,0 +1,87 @@
+<div [class]="rootClasses()" data-testid="DynamoOrderList">
+  <div [class]="headerClasses">
+    <span [class]="titleClasses">{{ listLabel() }}</span>
+    <div [class]="controlsClasses" data-part="controls">
+      @if (moveTopBottom()) {
+        <button
+          type="button"
+          [class]="buttonClasses"
+          [disabled]="!canMoveUp()"
+          [attr.aria-label]="'Move to top of ' + listLabel()"
+          (click)="moveTo('top')"
+        >
+          ⤒
+        </button>
+      }
+      <button
+        type="button"
+        [class]="buttonClasses"
+        [disabled]="!canMoveUp()"
+        [attr.aria-label]="'Move up in ' + listLabel()"
+        (click)="reorder(-1)"
+      >
+        ▲
+      </button>
+      <button
+        type="button"
+        [class]="buttonClasses"
+        [disabled]="!canMoveDown()"
+        [attr.aria-label]="'Move down in ' + listLabel()"
+        (click)="reorder(1)"
+      >
+        ▼
+      </button>
+      @if (moveTopBottom()) {
+        <button
+          type="button"
+          [class]="buttonClasses"
+          [disabled]="!canMoveDown()"
+          [attr.aria-label]="'Move to bottom of ' + listLabel()"
+          (click)="moveTo('bottom')"
+        >
+          ⤓
+        </button>
+      }
+    </div>
+  </div>
+
+  <ul
+    role="listbox"
+    cdkDropList
+    [cdkDropListDisabled]="disabled() || !dragdrop()"
+    [cdkDropListData]="value()"
+    [attr.aria-label]="listLabel()"
+    [attr.aria-multiselectable]="selectable() ? 'true' : null"
+    [attr.tabindex]="disabled() ? -1 : 0"
+    [class]="listClasses"
+    (cdkDropListDropped)="onDropped($event)"
+    (keydown)="onKeydown($event)"
+  >
+    @for (option of value(); track option.value; let i = $index) {
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are tabindex="-1"/mouse-only by design; all keyboard handling lives on the list root's (keydown), same reasoning as Picklist's/Listbox's own per-row bindings. -->
+      <li
+        role="option"
+        tabindex="-1"
+        cdkDrag
+        [cdkDragData]="option"
+        [cdkDragDisabled]="disabled() || !dragdrop() || !!option.disabled"
+        [attr.aria-selected]="
+          selectable() ? isSelected(option) : i === activeIndex()
+        "
+        [attr.aria-disabled]="option.disabled ? 'true' : null"
+        [class]="optionClasses(option, i)"
+        (click)="onRowClick(i)"
+        (mouseenter)="activeIndex.set(i)"
+      >
+        @if (selectable()) {
+          <span [class]="checkboxClasses(option)" [attr.aria-hidden]="true">
+            @if (isSelected(option)) {
+              <dg-icon-check size="sm" />
+            }
+          </span>
+        }
+        <span>{{ option.label }}</span>
+      </li>
+    }
+  </ul>
+</div>

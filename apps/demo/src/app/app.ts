@@ -39,6 +39,8 @@ import { DynamoToastService } from '@dynamong/toast';
 import { DynamoTooltip } from '@dynamong/tooltip';
 import { DynamoTree } from '@dynamong/tree';
 import type { DynamoTreeNode } from '@dynamong/tree';
+import { DynamoOrgChart } from '@dynamong/org-chart';
+import type { DynamoOrgChartNode } from '@dynamong/org-chart';
 import { DynamoStep, DynamoStepper } from '@dynamong/stepper';
 import { DynamoPopover, DynamoPopoverContent } from '@dynamong/popover';
 import { DynamoSkeleton } from '@dynamong/skeleton';
@@ -72,6 +74,16 @@ import { DynamoCascadeSelect } from '@dynamong/cascade-select';
 import { DynamoKnob } from '@dynamong/knob';
 import { DynamoInputMask } from '@dynamong/input-mask';
 import { DynamoPicklist } from '@dynamong/picklist';
+import { DynamoOrderList } from '@dynamong/order-list';
+import { DynamoDock } from '@dynamong/dock';
+import type { DynamoDockItem } from '@dynamong/dock';
+import { DynamoOverlayBadge } from '@dynamong/overlay-badge';
+import { DynamoInplace } from '@dynamong/inplace';
+import { DynamoFocusTrap } from '@dynamong/focus-trap';
+import { DynamoRipple } from '@dynamong/ripple';
+import { DynamoKeyFilter } from '@dynamong/key-filter';
+import { DynamoStyleClass } from '@dynamong/style-class';
+import { DynamoAnimateOnScroll } from '@dynamong/animate-on-scroll';
 import { DynamoEditor } from '@dynamong/editor';
 import { DynamoImageGallery } from '@dynamong/image-gallery';
 import type { DynamoGalleryImage } from '@dynamong/image-gallery';
@@ -88,6 +100,8 @@ import { DynamoTreeTable } from '@dynamong/tree-table';
 import type { DynamoTreeTableColumn, DynamoTreeTableNode } from '@dynamong/tree-table';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { DynamoProgress } from '@dynamong/progress';
+import { DynamoMeterGroup } from '@dynamong/meter-group';
+import type { DynamoMeterItem } from '@dynamong/meter-group';
 import { DynamoDataView } from '@dynamong/data-view';
 import { DynamoMegaMenu } from '@dynamong/mega-menu';
 import type { DynamoMegaMenuItem } from '@dynamong/mega-menu';
@@ -241,6 +255,7 @@ const EMPLOYEES: Employee[] = [
     DynamoMultiSelect,
     DynamoPagination,
     DynamoProgress,
+    DynamoMeterGroup,
     DynamoDataView,
     DynamoMegaMenu,
     DynamoFloatLabel,
@@ -255,6 +270,7 @@ const EMPLOYEES: Employee[] = [
     DynamoTextarea,
     DynamoTooltip,
     DynamoTree,
+    DynamoOrgChart,
     DynamoStepper,
     DynamoStep,
     DynamoPopover,
@@ -289,6 +305,15 @@ const EMPLOYEES: Employee[] = [
     DynamoKnob,
     DynamoInputMask,
     DynamoPicklist,
+    DynamoOrderList,
+    DynamoDock,
+    DynamoFocusTrap,
+    DynamoRipple,
+    DynamoKeyFilter,
+    DynamoStyleClass,
+    DynamoAnimateOnScroll,
+    DynamoOverlayBadge,
+    DynamoInplace,
     DynamoEditor,
     DynamoImageGallery,
     DynamoPanel,
@@ -420,6 +445,30 @@ export class App {
   protected readonly treeExpanded = signal<string[]>(['src']);
   protected readonly treeSelected = signal<string[]>([]);
 
+  protected readonly orgChartNodes = signal<DynamoOrgChartNode[]>([
+    {
+      id: 'ceo',
+      label: 'Ada Powell — CEO',
+      children: [
+        {
+          id: 'cto',
+          label: 'Bhavana Rao — CTO',
+          children: [
+            { id: 'eng-1', label: 'Dana Kim — Engineer' },
+            { id: 'eng-2', label: 'Eli Frost — Engineer' },
+          ],
+        },
+        {
+          id: 'cfo',
+          label: 'Gio Bassi — CFO',
+          children: [{ id: 'fin-1', label: 'Hana Lund — Analyst' }],
+        },
+      ],
+    },
+  ]);
+  protected readonly orgChartCollapsed = signal<string[]>([]);
+  protected readonly orgChartSelection = signal<string[]>([]);
+
   protected readonly stepperValue = signal<string | undefined>('account');
 
   protected readonly popoverFilterName = signal('');
@@ -444,6 +493,25 @@ export class App {
   protected readonly picklistTarget = signal<DynamoSelectOption<string>[]>([
     { label: 'TypeScript', value: 'ts' },
   ]);
+  protected readonly orderListItems = signal<DynamoSelectOption<string>[]>([
+    { label: 'Draft', value: '1' },
+    { label: 'Review', value: '2' },
+    { label: 'Approve', value: '3' },
+    { label: 'Publish', value: '4' },
+  ]);
+  protected readonly meterItems: DynamoMeterItem[] = [
+    { label: 'Used', value: 46, severity: 'primary' },
+    { label: 'Cache', value: 18, severity: 'info' },
+    { label: 'Free', value: 36, severity: 'success' },
+  ];
+  protected readonly dockItems: DynamoDockItem[] = [
+    { label: 'Finder', icon: '🔍' },
+    { label: 'Mail', icon: '✉' },
+    { label: 'Calendar', icon: '📅' },
+    { label: 'Photos', icon: '🖼' },
+    { label: 'Trash', icon: '🗑', disabled: true },
+  ];
+  protected readonly inplaceName = signal('DynamoNG');
   protected readonly editorContent = new FormControl('<p>Hello <b>world</b></p>', {
     nonNullable: true,
   });
