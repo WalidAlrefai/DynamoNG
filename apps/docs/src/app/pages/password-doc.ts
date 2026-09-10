@@ -1,29 +1,93 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DynamoPassword } from '@dynamong/password';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
+
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'strength-meter', title: 'Strength Meter' },
+  { id: 'invalid', title: 'Invalid' },
+  { id: 'disabled', title: 'Disabled' },
+];
 
 @Component({
   selector: 'docs-password-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoPassword, DocPageShell, FormsModule],
+  imports: [DynamoPassword, FormsModule, DocExamplesLayout, DocExample],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Password"
       description="A masked text input with a show/hide toggle and an optional password-strength meter."
+      [examples]="examples"
     >
-      <div demo class="flex max-w-sm flex-col gap-4">
-        <dg-password
-          [(ngModel)]="password"
-          placeholder="Enter a password"
-          [showStrengthMeter]="true"
-          ariaLabel="Password"
-        />
-        <dg-password placeholder="Invalid state" [invalid]="true" ariaLabel="Invalid example" />
-        <dg-password placeholder="Disabled" [disabled]="true" ariaLabel="Disabled example" />
-      </div>
-      <div code>&lt;dg-password [(ngModel)]="password" [showStrengthMeter]="true" ariaLabel="Password" /&gt;</div>
+      <docs-example
+        exampleId="basic"
+        title="Basic"
+        description="A masked input with a built-in show/hide eye toggle."
+      >
+        <div preview class="max-w-sm">
+          <dg-password
+            [(ngModel)]="password"
+            placeholder="Enter a password"
+            ariaLabel="Password"
+          />
+        </div>
+        <div code>&lt;dg-password [(ngModel)]="password" ariaLabel="Password" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="strength-meter"
+        title="Strength Meter"
+        description="showStrengthMeter renders a live strength bar beneath the field."
+      >
+        <div preview class="max-w-sm">
+          <dg-password
+            [(ngModel)]="password"
+            placeholder="Enter a password"
+            [showStrengthMeter]="true"
+            ariaLabel="Password with meter"
+          />
+        </div>
+        <div code>
+          &lt;dg-password [(ngModel)]="password" [showStrengthMeter]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="invalid"
+        title="Invalid"
+        description="invalid applies the error styling for a failed validation state."
+      >
+        <div preview class="max-w-sm">
+          <dg-password
+            placeholder="Invalid state"
+            [invalid]="true"
+            ariaLabel="Invalid example"
+          />
+        </div>
+        <div code>&lt;dg-password [invalid]="true" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="disabled"
+        title="Disabled"
+        description="disabled greys the field out and blocks input."
+      >
+        <div preview class="max-w-sm">
+          <dg-password
+            placeholder="Disabled"
+            [disabled]="true"
+            ariaLabel="Disabled example"
+          />
+        </div>
+        <div code>&lt;dg-password [disabled]="true" /&gt;</div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -55,9 +119,10 @@ import { DocPageShell } from '../components/doc-page-shell';
           </tr>
         </tbody>
       </table>
-    </docs-page-shell>
+    </docs-examples-layout>
   `,
 })
 export class PasswordDocPage {
+  protected readonly examples = EXAMPLES;
   protected readonly password = signal('');
 }

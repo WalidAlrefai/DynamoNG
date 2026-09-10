@@ -1,25 +1,61 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoOtpInput } from '@dynamong/otp-input';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
+
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'length', title: 'Custom Length' },
+];
 
 @Component({
   selector: 'docs-otp-input-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoOtpInput, ReactiveFormsModule, DocPageShell],
+  imports: [DynamoOtpInput, ReactiveFormsModule, DocExamplesLayout, DocExample],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="OTP Input"
       description="A segmented one-time-code input with auto-advance, backspace-to-previous, and paste support."
+      [examples]="examples"
     >
-      <div demo class="flex flex-col gap-3">
-        <dg-otp-input [formControl]="code" ariaLabel="Verification code" />
-        <p class="text-sm text-text-muted">
-          Value: <span class="font-mono">{{ code.value || '(empty)' }}</span>
-        </p>
-      </div>
-      <div code>&lt;dg-otp-input [formControl]="code" [length]="6" /&gt;</div>
+      <docs-example
+        exampleId="basic"
+        title="Basic"
+        description="Bind a FormControl. Typing auto-advances; pasting a full code fills every box."
+      >
+        <div preview class="flex flex-col gap-3">
+          <dg-otp-input [formControl]="code" ariaLabel="Verification code" />
+          <p class="text-sm text-text-muted">
+            Value: <span class="font-mono">{{ code.value || '(empty)' }}</span>
+          </p>
+        </div>
+        <div code>&lt;dg-otp-input [formControl]="code" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="length"
+        title="Custom Length"
+        description="length sets the number of boxes; numeric=false allows alphanumeric characters."
+      >
+        <div preview>
+          <dg-otp-input
+            [formControl]="shortCode"
+            [length]="4"
+            [numeric]="false"
+            ariaLabel="Short code"
+          />
+        </div>
+        <div code>
+          &lt;dg-otp-input [formControl]="code" [length]="4" [numeric]="false"
+          /&gt;
+        </div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -51,9 +87,11 @@ import { DocPageShell } from '../components/doc-page-shell';
           </tr>
         </tbody>
       </table>
-    </docs-page-shell>
+    </docs-examples-layout>
   `,
 })
 export class OtpInputDocPage {
+  protected readonly examples = EXAMPLES;
   protected readonly code = new FormControl('', { nonNullable: true });
+  protected readonly shortCode = new FormControl('', { nonNullable: true });
 }

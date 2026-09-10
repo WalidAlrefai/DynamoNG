@@ -31,14 +31,18 @@ function setup() {
   return { fixture, el: fixture.nativeElement as HTMLElement };
 }
 
+const codePane = (el: HTMLElement) => el.querySelector('pre');
+const previewPane = (el: HTMLElement) =>
+  codePane(el)?.previousElementSibling as HTMLElement;
+
 describe('DocExample', () => {
   it('shows the preview pane by default and the title/description', () => {
     const { el } = setup();
 
     expect(el.querySelector('h3')?.textContent).toContain('Basic');
     expect(el.textContent).toContain('what it shows');
-    expect(el.querySelector('[data-testid="the-preview"]')).toBeTruthy();
-    expect(el.querySelector('pre')).toBeNull();
+    expect(previewPane(el).hidden).toBe(false);
+    expect(codePane(el)?.hidden).toBe(true);
   });
 
   it('toggles to the code pane and back', () => {
@@ -52,16 +56,17 @@ describe('DocExample', () => {
 
     codeBtn.click();
     fixture.detectChanges();
-    expect(el.querySelector('pre')?.textContent).toContain(
+    expect(codePane(el)?.hidden).toBe(false);
+    expect(codePane(el)?.textContent).toContain(
       '<dg-select [options]="opts" />',
     );
-    expect(el.querySelector('[data-testid="the-preview"]')).toBeNull();
+    expect(previewPane(el).hidden).toBe(true);
     expect(codeBtn.getAttribute('aria-pressed')).toBe('true');
 
     previewBtn.click();
     fixture.detectChanges();
-    expect(el.querySelector('pre')).toBeNull();
-    expect(el.querySelector('[data-testid="the-preview"]')).toBeTruthy();
+    expect(previewPane(el).hidden).toBe(false);
+    expect(codePane(el)?.hidden).toBe(true);
   });
 
   it('copies the code to the clipboard via the Copy button', async () => {

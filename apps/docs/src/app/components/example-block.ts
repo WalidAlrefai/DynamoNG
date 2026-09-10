@@ -1,6 +1,8 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  inject,
   input,
   signal,
 } from '@angular/core';
@@ -8,9 +10,10 @@ import {
 /**
  * One example on a component doc page: a title, a short description, a live
  * **Preview** of the rendered example (projected via `[preview]`), and a
- * **Code** view of its source (`code` input, shown verbatim in a `<pre>`).
- * A segmented Preview/Code toggle flips between the two; a Copy button puts
- * the source on the clipboard.
+ * **Code** view of its source. Source is either the `code` input (a string,
+ * shown verbatim) or projected `[code]` content (HTML-escaped markup, same
+ * shape the old `DocPageShell` used). A segmented Preview/Code toggle flips
+ * between the two; a Copy button puts the source on the clipboard.
  *
  * `exampleId` is the anchor the page's right-hand on-page nav links to, so
  * it must be unique within the page and match the `id` passed to
@@ -72,15 +75,16 @@ import {
         </button>
       </div>
 
-      @if (view() === 'preview') {
+      <div [hidden]="view() !== 'preview'">
         <div class="rounded-lg border border-border p-6">
           <ng-content select="[preview]" />
         </div>
-      } @else {
-        <pre
-          class="overflow-x-auto rounded-lg border border-border bg-surface-100 p-4 text-sm text-text-primary"
-        ><code>{{ code() }}</code></pre>
-      }
+      </div>
+
+      <pre
+        [hidden]="view() !== 'code'"
+        class="overflow-x-auto rounded-lg border border-border bg-surface-100 p-4 text-sm text-text-primary"
+      ><code>{{ code() }}<ng-content select="[code]" /></code></pre>
     </section>
   `,
 })
@@ -88,16 +92,20 @@ export class DocExample {
   readonly exampleId = input.required<string>();
   readonly title = input.required<string>();
   readonly description = input('');
-  readonly code = input.required<string>();
+  readonly code = input('');
 
   protected readonly view = signal<'preview' | 'code'>('preview');
   protected readonly copied = signal(false);
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
   protected copy(): void {
-    const text = this.code();
+    const text = (
+      this.host.nativeElement.querySelector('pre')?.textContent ?? this.code()
+    ).trim();
     const clipboard =
       typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
-    if (!clipboard) return;
+    if (!clipboard || !text) return;
     void clipboard.writeText(text).then(() => {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 1500);

@@ -1,31 +1,69 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoKnob } from '@dynamong/knob';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
+
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'severity-size', title: 'Severity & Size' },
+  { id: 'disabled', title: 'Disabled' },
+];
 
 @Component({
   selector: 'docs-knob-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoKnob, DocPageShell],
+  imports: [DynamoKnob, DocExamplesLayout, DocExample],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Knob"
       description="A circular dial input adjustable by drag, scroll, or keyboard."
+      [examples]="examples"
     >
-      <div demo class="flex flex-wrap items-center gap-8">
-        <div class="flex flex-col items-center gap-2">
+      <docs-example
+        exampleId="basic"
+        title="Basic"
+        description="Two-way bind the value with [(value)]; the number is drawn in the centre."
+      >
+        <div preview class="flex flex-col items-center gap-2">
           <dg-knob [(value)]="volume" ariaLabel="Volume" />
           <span class="text-sm text-text-muted">Volume: {{ volume() }}</span>
         </div>
-        <dg-knob
-          [value]="70"
-          severity="success"
-          [diameter]="80"
-          ariaLabel="Brightness"
-        />
-        <dg-knob [value]="40" [disabled]="true" ariaLabel="Disabled" />
-      </div>
-      <div code>&lt;dg-knob [(value)]="volume" ariaLabel="Volume" /&gt;</div>
+        <div code>&lt;dg-knob [(value)]="volume" ariaLabel="Volume" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="severity-size"
+        title="Severity & Size"
+        description="severity recolors the arc; diameter sets the dial size in pixels."
+      >
+        <div preview>
+          <dg-knob
+            [value]="70"
+            severity="success"
+            [diameter]="80"
+            ariaLabel="Brightness"
+          />
+        </div>
+        <div code>
+          &lt;dg-knob [value]="70" severity="success" [diameter]="80" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="disabled"
+        title="Disabled"
+        description="disabled blocks drag, scroll, and keyboard adjustment."
+      >
+        <div preview>
+          <dg-knob [value]="40" [disabled]="true" ariaLabel="Disabled" />
+        </div>
+        <div code>&lt;dg-knob [value]="40" [disabled]="true" /&gt;</div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -80,9 +118,10 @@ import { DocPageShell } from '../components/doc-page-shell';
           </tr>
         </tbody>
       </table>
-    </docs-page-shell>
+    </docs-examples-layout>
   `,
 })
 export class KnobDocPage {
+  protected readonly examples = EXAMPLES;
   protected readonly volume = signal(50);
 }
