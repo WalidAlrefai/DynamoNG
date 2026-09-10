@@ -727,6 +727,48 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="directives-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">Directives</h2>
+    <div class="flex flex-wrap items-center gap-4">
+      <button
+        type="button"
+        dgRipple
+        class="rounded-md bg-primary px-4 py-2 text-on-primary"
+      >
+        dgRipple
+      </button>
+      <input
+        dgKeyFilter="money"
+        class="rounded border border-border px-2 py-1"
+        aria-label="Money field"
+        placeholder="dgKeyFilter money"
+      />
+      <button
+        type="button"
+        dgStyleClass="@next"
+        toggleClass="hidden"
+        class="rounded-md border border-border px-3 py-1 text-sm"
+      >
+        dgStyleClass toggle
+      </button>
+      <span class="rounded bg-surface-100 px-2 py-1 text-sm">now you see me</span>
+    </div>
+    <div [dgFocusTrap]="true" class="flex gap-2 rounded-md border border-border p-3">
+      <input class="rounded border border-border px-2 py-1" aria-label="Trap A" placeholder="dgFocusTrap A" />
+      <input class="rounded border border-border px-2 py-1" aria-label="Trap B" placeholder="dgFocusTrap B" />
+    </div>
+    <div
+      dgAnimateOnScroll
+      enterClass="opacity-100"
+      class="rounded-md bg-surface-100 p-4 text-sm opacity-0 transition-opacity duration-500"
+    >
+      dgAnimateOnScroll — fades in once visible
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="editor-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Editor</h2>

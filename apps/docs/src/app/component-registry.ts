@@ -17,7 +17,8 @@ export interface DocComponentEntry {
     | 'Menu'
     | 'Messages'
     | 'Media'
-    | 'Misc';
+    | 'Misc'
+    | 'Directives';
   description: string;
 }
 
@@ -628,5 +629,45 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     category: 'Misc',
     description:
       'Click-to-edit: a compact display region that swaps to an editor region on click, with Escape and a close button to dismiss.',
+  },
+  {
+    slug: 'focus-trap',
+    name: 'FocusTrap',
+    domain: 'overlay',
+    category: 'Directives',
+    description:
+      'dgFocusTrap — keeps Tab / Shift+Tab focus cycling within the host element while enabled. Wraps the shared DynamoFocusTrapService.',
+  },
+  {
+    slug: 'ripple',
+    name: 'Ripple',
+    domain: 'forms',
+    category: 'Directives',
+    description:
+      'dgRipple — a Material-style pointer ripple animated with the Web Animations API; honours prefers-reduced-motion.',
+  },
+  {
+    slug: 'key-filter',
+    name: 'KeyFilter',
+    domain: 'forms',
+    category: 'Directives',
+    description:
+      'dgKeyFilter — restricts what can be typed or pasted into an input to a preset (int, num, money, hex, alpha, alphanum, email) or a custom RegExp.',
+  },
+  {
+    slug: 'style-class',
+    name: 'StyleClass',
+    domain: 'overlay',
+    category: 'Directives',
+    description:
+      'dgStyleClass — on click, toggles / swaps CSS classes on a target element resolved by selector or the @next/@parent/@prev/@grandparent keywords.',
+  },
+  {
+    slug: 'animate-on-scroll',
+    name: 'AnimateOnScroll',
+    domain: 'panel',
+    category: 'Directives',
+    description:
+      'dgAnimateOnScroll — adds an animation class when the element scrolls into view (IntersectionObserver); optional enter/leave with once=false.',
   },
 ];

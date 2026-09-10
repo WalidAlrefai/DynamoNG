@@ -54,6 +54,9 @@
       "path": "../../libs/components/forms/switch"
     },
     {
+      "path": "../../libs/components/overlay/style-class"
+    },
+    {
       "path": "../../libs/components/panel/stepper"
     },
     {
@@ -82,6 +85,9 @@
     },
     {
       "path": "../../libs/components/overlay/scroll-top"
+    },
+    {
+      "path": "../../libs/components/forms/ripple"
     },
     {
       "path": "../../libs/components/forms/rating"
@@ -138,6 +144,9 @@
       "path": "../../libs/components/forms/knob"
     },
     {
+      "path": "../../libs/components/forms/key-filter"
+    },
+    {
       "path": "../../libs/components/forms/input-number"
     },
     {
@@ -151,6 +160,9 @@
     },
     {
       "path": "../../libs/components/panel/image-gallery"
+    },
+    {
+      "path": "../../libs/components/overlay/focus-trap"
     },
     {
       "path": "../../libs/components/forms/float-label"
@@ -232,6 +244,9 @@
     },
     {
       "path": "../../libs/components/forms/autocomplete"
+    },
+    {
+      "path": "../../libs/components/panel/animate-on-scroll"
     },
     {
       "path": "../../libs/components/feedback/alert"

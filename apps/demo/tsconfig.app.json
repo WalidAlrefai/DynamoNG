@@ -59,6 +59,21 @@
       "path": "../../libs/components/forms/editor"
     },
     {
+      "path": "../../libs/components/panel/animate-on-scroll"
+    },
+    {
+      "path": "../../libs/components/overlay/style-class"
+    },
+    {
+      "path": "../../libs/components/forms/key-filter"
+    },
+    {
+      "path": "../../libs/components/forms/ripple"
+    },
+    {
+      "path": "../../libs/components/overlay/focus-trap"
+    },
+    {
       "path": "../../libs/components/panel/inplace"
     },
     {

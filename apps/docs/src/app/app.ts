@@ -12,6 +12,7 @@ const CATEGORY_ORDER: DocComponentEntry['category'][] = [
   'Messages',
   'Media',
   'Misc',
+  'Directives',
 ];
 
 @Component({

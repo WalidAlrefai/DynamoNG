@@ -179,7 +179,20 @@
       "@dynamong/overlay-badge": [
         "./libs/components/feedback/overlay-badge/src/index.ts"
       ],
-      "@dynamong/inplace": ["./libs/components/panel/inplace/src/index.ts"]
+      "@dynamong/inplace": ["./libs/components/panel/inplace/src/index.ts"],
+      "@dynamong/focus-trap": [
+        "./libs/components/overlay/focus-trap/src/index.ts"
+      ],
+      "@dynamong/ripple": ["./libs/components/forms/ripple/src/index.ts"],
+      "@dynamong/style-class": [
+        "./libs/components/overlay/style-class/src/index.ts"
+      ],
+      "@dynamong/animate-on-scroll": [
+        "./libs/components/panel/animate-on-scroll/src/index.ts"
+      ],
+      "@dynamong/key-filter": [
+        "./libs/components/forms/key-filter/src/index.ts"
+      ]
     }
   }
 }

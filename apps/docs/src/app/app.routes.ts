@@ -388,4 +388,31 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/inplace-doc').then((m) => m.InplaceDocPage),
   },
+  {
+    path: 'components/focus-trap',
+    loadComponent: () =>
+      import('./pages/focus-trap-doc').then((m) => m.FocusTrapDocPage),
+  },
+  {
+    path: 'components/ripple',
+    loadComponent: () =>
+      import('./pages/ripple-doc').then((m) => m.RippleDocPage),
+  },
+  {
+    path: 'components/key-filter',
+    loadComponent: () =>
+      import('./pages/key-filter-doc').then((m) => m.KeyFilterDocPage),
+  },
+  {
+    path: 'components/style-class',
+    loadComponent: () =>
+      import('./pages/style-class-doc').then((m) => m.StyleClassDocPage),
+  },
+  {
+    path: 'components/animate-on-scroll',
+    loadComponent: () =>
+      import('./pages/animate-on-scroll-doc').then(
+        (m) => m.AnimateOnScrollDocPage,
+      ),
+  },
 ];

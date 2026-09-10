@@ -77,6 +77,11 @@ import { DynamoDock } from '@dynamong/dock';
 import type { DynamoDockItem } from '@dynamong/dock';
 import { DynamoOverlayBadge } from '@dynamong/overlay-badge';
 import { DynamoInplace } from '@dynamong/inplace';
+import { DynamoFocusTrap } from '@dynamong/focus-trap';
+import { DynamoRipple } from '@dynamong/ripple';
+import { DynamoKeyFilter } from '@dynamong/key-filter';
+import { DynamoStyleClass } from '@dynamong/style-class';
+import { DynamoAnimateOnScroll } from '@dynamong/animate-on-scroll';
 import { DynamoEditor } from '@dynamong/editor';
 import { DynamoImageGallery } from '@dynamong/image-gallery';
 import type { DynamoGalleryImage } from '@dynamong/image-gallery';
@@ -299,6 +304,11 @@ const EMPLOYEES: Employee[] = [
     DynamoPicklist,
     DynamoOrderList,
     DynamoDock,
+    DynamoFocusTrap,
+    DynamoRipple,
+    DynamoKeyFilter,
+    DynamoStyleClass,
+    DynamoAnimateOnScroll,
     DynamoOverlayBadge,
     DynamoInplace,
     DynamoEditor,
