@@ -479,6 +479,16 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="meter-group-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">MeterGroup</h2>
+    <div class="max-w-md">
+      <dg-meter-group [value]="meterItems" ariaLabel="Disk usage" />
+    </div>
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="divider-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Divider</h2>

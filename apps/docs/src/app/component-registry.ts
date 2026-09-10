@@ -597,4 +597,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A single reorderable list — drag-and-drop, ▲/▼ and move-to-edge buttons, and full keyboard navigation. The one-panel sibling of PickList.',
   },
+  {
+    slug: 'meter-group',
+    name: 'MeterGroup',
+    domain: 'feedback',
+    category: 'Messages',
+    description:
+      'A multi-segment labelled meter bar with a legend, for showing a breakdown like disk usage or a budget split. The multi-value sibling of Progress.',
+  },
 ];

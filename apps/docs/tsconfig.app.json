@@ -120,6 +120,9 @@
       "path": "../../libs/components/forms/multi-select"
     },
     {
+      "path": "../../libs/components/feedback/meter-group"
+    },
+    {
       "path": "../../libs/components/overlay/menubar"
     },
     {

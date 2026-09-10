@@ -23,6 +23,9 @@
       "path": "../../libs/components/data/data-view"
     },
     {
+      "path": "../../libs/components/feedback/meter-group"
+    },
+    {
       "path": "../../libs/components/feedback/progress"
     },
     {

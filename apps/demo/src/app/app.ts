@@ -89,6 +89,8 @@ import { DynamoTreeTable } from '@dynamong/tree-table';
 import type { DynamoTreeTableColumn, DynamoTreeTableNode } from '@dynamong/tree-table';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { DynamoProgress } from '@dynamong/progress';
+import { DynamoMeterGroup } from '@dynamong/meter-group';
+import type { DynamoMeterItem } from '@dynamong/meter-group';
 import { DynamoDataView } from '@dynamong/data-view';
 import { DynamoMegaMenu } from '@dynamong/mega-menu';
 import type { DynamoMegaMenuItem } from '@dynamong/mega-menu';
@@ -242,6 +244,7 @@ const EMPLOYEES: Employee[] = [
     DynamoMultiSelect,
     DynamoPagination,
     DynamoProgress,
+    DynamoMeterGroup,
     DynamoDataView,
     DynamoMegaMenu,
     DynamoFloatLabel,
@@ -452,6 +455,11 @@ export class App {
     { label: 'Approve', value: '3' },
     { label: 'Publish', value: '4' },
   ]);
+  protected readonly meterItems: DynamoMeterItem[] = [
+    { label: 'Used', value: 46, severity: 'primary' },
+    { label: 'Cache', value: 18, severity: 'info' },
+    { label: 'Free', value: 36, severity: 'success' },
+  ];
   protected readonly editorContent = new FormControl('<p>Hello <b>world</b></p>', {
     nonNullable: true,
   });

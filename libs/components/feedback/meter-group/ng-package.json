@@ -3,5 +3,6 @@
   "dest": "../../../../dist/libs/components/feedback/meter-group",
   "lib": {
     "entryFile": "src/index.ts"
-  }
+  },
+  "allowedNonPeerDependencies": ["class-variance-authority"]
 }

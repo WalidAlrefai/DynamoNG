@@ -369,4 +369,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/order-list-doc').then((m) => m.OrderListDocPage),
   },
+  {
+    path: 'components/meter-group',
+    loadComponent: () =>
+      import('./pages/meter-group-doc').then((m) => m.MeterGroupDocPage),
+  },
 ];
