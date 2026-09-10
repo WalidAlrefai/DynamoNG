@@ -22,6 +22,11 @@ const PRODUCE_OPTIONS = [
   { label: 'Potato', value: 'potato', group: 'Vegetables' },
 ];
 
+const MANY_OPTIONS = Array.from({ length: 5000 }, (_, i) => ({
+  label: `Option ${i + 1}`,
+  value: `option-${i + 1}`,
+}));
+
 @Component({
   selector: 'docs-listbox-page',
   standalone: true,
@@ -66,6 +71,23 @@ const PRODUCE_OPTIONS = [
         &lt;dg-listbox [options]="viewOptions" [(value)]="view"
         ariaLabel="View" /&gt;
       </div>
+      <div demo class="max-w-xs">
+        <span class="text-sm text-text-muted">Virtualized (5,000 options)</span>
+        <dg-listbox
+          class="mt-1 w-48"
+          [options]="manyOptions"
+          [(value)]="manyValue"
+          [virtualScroll]="true"
+          ariaLabel="Option (virtualized)"
+        />
+        <p class="mt-2 text-sm text-text-muted">
+          5,000 options — only a small rendered window ever mounts in the DOM.
+        </p>
+      </div>
+      <div code>
+        &lt;dg-listbox [options]="manyOptions" [(value)]="manyValue"
+        [virtualScroll]="true" ariaLabel="Option" /&gt;
+      </div>
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -100,13 +122,34 @@ const PRODUCE_OPTIONS = [
             <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">ariaLabel</td>
             <td class="py-2 pr-4 font-mono">string</td>
             <td class="py-2 font-mono">—</td>
           </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">virtualScroll</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">virtualScrollItemSize</td>
+            <td class="py-2 pr-4 font-mono">number</td>
+            <td class="py-2 font-mono">36</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">virtualScrollHeight</td>
+            <td class="py-2 pr-4 font-mono">number</td>
+            <td class="py-2 font-mono">288</td>
+          </tr>
         </tbody>
       </table>
+      <p class="mt-4 text-sm text-text-muted">
+        <code class="font-mono">virtualScroll</code> only takes effect for the ungrouped case — it's
+        powered by <code class="font-mono">@dynamong/virtual-scroll</code>, which is fixed-row-height
+        only, and a grouped list's heading rows are a different height than option rows. A grouped
+        Listbox silently falls back to the full, non-virtualized render.
+      </p>
     </docs-page-shell>
   `,
 })
@@ -114,7 +157,9 @@ export class ListboxDocPage {
   protected readonly viewOptions = VIEW_OPTIONS;
   protected readonly tagOptions = TAG_OPTIONS;
   protected readonly produceOptions = PRODUCE_OPTIONS;
+  protected readonly manyOptions = MANY_OPTIONS;
   protected readonly view = signal<string | null>('list');
   protected readonly tags = signal<string[]>(['bug']);
   protected readonly produce = signal<string | null>(null);
+  protected readonly manyValue = signal<string | null>(null);
 }

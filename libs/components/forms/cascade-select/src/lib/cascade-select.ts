@@ -10,6 +10,7 @@ import {
   model,
   signal,
   viewChild,
+  viewChildren,
 } from '@angular/core';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
@@ -19,9 +20,11 @@ import {
   buildListboxPositions,
   selectChevronStyles,
   selectPanelWrapperStyles,
+  selectPanelWrapperVirtualStyles,
   selectTriggerButtonStyles,
   selectTriggerStyles,
 } from '@dynamong/select';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoTreeNode } from '@dynamong/tree';
 import type { DynamoOverlayHandle } from '@dynamong/core/overlay';
 import type { DynamoSize } from '@dynamong/core/api';
@@ -92,6 +95,7 @@ function findEnabledNodeIndex<TValue>(
   selector: 'dg-cascade-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoVirtualScroll],
   templateUrl: './cascade-select.html',
   providers: [
     {
@@ -114,9 +118,30 @@ export class DynamoCascadeSelect<TValue = string>
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model<TValue | null>(null);
+  /**
+   * Opt-in — renders every open level's row list through
+   * `@dynamong/virtual-scroll` instead of a plain `@for`, for levels with
+   * many sibling nodes. Each `level.nodes` is already a flat array and every
+   * row is the same height, so fixed-size virtualization applies with no
+   * grouping caveat.
+   */
+  readonly virtualScroll = input(false);
+  /** Row height in px when virtualized — matched to `cascadeSelectRowStyles`' actual rendered height. */
+  readonly virtualScrollItemSize = input(36);
+  /** Viewport height in px when virtualized — matches `selectPanelWrapperStyles`' own `max-h-60` (240px). */
+  readonly virtualScrollHeight = input(240);
 
   private readonly triggerEl = viewChild.required<ElementRef<HTMLElement>>('triggerEl');
   private readonly panelTemplate = viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  // One `<dg-virtual-scroll>` per open level (the shared `#panelTemplate` is
+  // instantiated once per level, all via this component's own
+  // `viewContainerRef`, so this query captures them all). Indexed by level
+  // position — order matches level order for the common "navigate the
+  // deepest level" case; a transient mismatch is possible if a mid-stack
+  // flyout closes while a sibling opens, which just means one keyboard
+  // scroll-into-view lands on the wrong level until the next move. Only
+  // consulted while `isVirtualized()`.
+  private readonly virtualScrollRefs = viewChildren(DynamoVirtualScroll);
 
   protected readonly panelId = this.idGenerator.next('dg-cascade-select-panel');
 
@@ -145,6 +170,7 @@ export class DynamoCascadeSelect<TValue = string>
     if (!level || level.activeIndex < 0) return null;
     return this.rowId(levelIndex, level.activeIndex);
   });
+  protected readonly isVirtualized = computed(() => this.virtualScroll());
 
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
@@ -162,7 +188,12 @@ export class DynamoCascadeSelect<TValue = string>
   protected readonly chevronClasses = computed(() =>
     selectChevronStyles({ open: this.isOpen() }),
   );
-  protected readonly panelWrapperClasses = selectPanelWrapperStyles;
+  /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
+  protected readonly panelWrapperClasses = computed(() =>
+    this.isVirtualized()
+      ? selectPanelWrapperVirtualStyles
+      : selectPanelWrapperStyles,
+  );
   protected readonly caretClasses = cascadeSelectCaretStyles;
 
   constructor() {
@@ -278,6 +309,7 @@ export class DynamoCascadeSelect<TValue = string>
     this.isOpen.set(true);
     this.levels.set(this.buildInitialLevels());
     this.activeLevelIndex.set(0);
+    this.scrollActiveIntoView(0);
   }
 
   close(): void {
@@ -356,6 +388,7 @@ export class DynamoCascadeSelect<TValue = string>
         if (!node || node.disabled || !node.children?.length) break;
         this.drillInto(levelIndex, level.activeIndex);
         this.activeLevelIndex.set(levelIndex + 1);
+        this.scrollActiveIntoView(levelIndex + 1);
         break;
       }
       case 'ArrowLeft': {
@@ -363,6 +396,7 @@ export class DynamoCascadeSelect<TValue = string>
         if (levelIndex === 0) break;
         this.levels.update((current) => current.slice(0, levelIndex));
         this.activeLevelIndex.set(levelIndex - 1);
+        this.scrollActiveIntoView(levelIndex - 1);
         break;
       }
       case 'Enter':
@@ -373,6 +407,7 @@ export class DynamoCascadeSelect<TValue = string>
         if (node.children?.length) {
           this.drillInto(levelIndex, level.activeIndex);
           this.activeLevelIndex.set(levelIndex + 1);
+          this.scrollActiveIntoView(levelIndex + 1);
         } else {
           this.selectNode(node);
         }
@@ -396,7 +431,9 @@ export class DynamoCascadeSelect<TValue = string>
 
   // Moves the active row within a level, truncating any deeper levels first
   // (moving off a drilled row must close its flyout) — but does NOT open a
-  // new flyout for the newly active row. Used by Up/Down/Home/End.
+  // new flyout for the newly active row. Used by Up/Down/Home/End (all
+  // keyboard-driven), so scrolling the virtualized viewport here is safe —
+  // the hover path (`onRowHover`) goes through `drillInto`, never here.
   private moveActiveOnly(levelIndex: number, index: number): void {
     this.levels.update((current) => {
       const next = current.slice(0, levelIndex + 1);
@@ -405,6 +442,24 @@ export class DynamoCascadeSelect<TValue = string>
       next[levelIndex] = { ...level, activeIndex: index };
       return next;
     });
+    this.scrollActiveIntoView(levelIndex);
+  }
+
+  /**
+   * Scrolls level `levelIndex`'s virtualized viewport so its `activeIndex`
+   * row is actually rendered — load-bearing once virtualized, since an
+   * off-screen active row may not exist in the DOM and `activeDescendantId`
+   * would dangle. Called only from keyboard-driven sites (openPanel /
+   * moveActiveOnly / Arrow drill-in-out) — never from `onRowHover` /
+   * `drillInto`, which are the mouse path: CDK's `scrollToIndex` is an
+   * unconditional absolute scroll, so a hover-driven call would jump the
+   * panel on every mouseover.
+   */
+  private scrollActiveIntoView(levelIndex: number): void {
+    if (!this.isVirtualized()) return;
+    const level = this.levels()[levelIndex];
+    if (!level || level.activeIndex < 0) return;
+    this.virtualScrollRefs()[levelIndex]?.scrollToIndex(level.activeIndex);
   }
 
   // Sets the active row within a level AND opens its child flyout if it has

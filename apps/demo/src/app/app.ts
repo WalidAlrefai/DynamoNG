@@ -617,6 +617,31 @@ export class App {
   protected readonly listboxView = signal<string | null>('list');
   protected readonly listboxTags = signal<string[]>(['bug']);
   protected readonly listboxProduce = signal<string | null>(null);
+  protected readonly listboxManyValue = signal<string | null>(null);
+
+  protected readonly manyTreeSelectNodes: DynamoTreeNode<string>[] = [
+    {
+      id: 'all',
+      label: 'All items (5,000)',
+      children: Array.from({ length: 5000 }, (_, i) => ({
+        id: `tsn-${i + 1}`,
+        label: `Item ${i + 1}`,
+        value: `tsn-${i + 1}`,
+      })),
+    },
+  ];
+  protected readonly treeSelectManyValue = signal<string | null>(null);
+  protected readonly manyCascadeSelectNodes: DynamoTreeNode<string>[] =
+    Array.from({ length: 100 }, (_, c) => ({
+      id: `csc-${c + 1}`,
+      label: `Category ${c + 1}`,
+      children: Array.from({ length: 100 }, (_, i) => ({
+        id: `csc-${c + 1}-${i + 1}`,
+        label: `Item ${c + 1}.${i + 1}`,
+        value: `csc-${c + 1}-${i + 1}`,
+      })),
+    }));
+  protected readonly cascadeSelectManyValue = signal<string | null>(null);
 
   protected readonly cascadeSelectNodes: DynamoTreeNode<string>[] = [
     {

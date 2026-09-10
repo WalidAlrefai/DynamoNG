@@ -953,6 +953,15 @@
         Value: <span class="font-mono">{{ category.value ?? '(none)' }}</span>
       </p>
     </div>
+    <div class="max-w-xs" data-testid="tree-select-virtual">
+      <dg-tree-select
+        [nodes]="manyTreeSelectNodes"
+        [(value)]="treeSelectManyValue"
+        [virtualScroll]="true"
+        ariaLabel="Item (virtualized)"
+        placeholder="Expand to browse 5,000 items"
+      />
+    </div>
   </section>
 
   <section
@@ -1078,6 +1087,14 @@
         [(value)]="listboxProduce"
         ariaLabel="Produce"
       />
+      <dg-listbox
+        class="w-48"
+        data-testid="listbox-virtual"
+        [options]="manySelectOptions"
+        [(value)]="listboxManyValue"
+        [virtualScroll]="true"
+        ariaLabel="Option (virtualized)"
+      />
     </div>
   </section>
 
@@ -1095,6 +1112,15 @@
       <p class="mt-2 text-sm text-text-muted">
         Value: <span class="font-mono">{{ location.value ?? '(none)' }}</span>
       </p>
+    </div>
+    <div class="max-w-xs" data-testid="cascade-select-virtual">
+      <dg-cascade-select
+        [nodes]="manyCascadeSelectNodes"
+        [(value)]="cascadeSelectManyValue"
+        [virtualScroll]="true"
+        ariaLabel="Item (virtualized)"
+        placeholder="100 × 100 items"
+      />
     </div>
   </section>
 

@@ -3,6 +3,15 @@ import { cva } from 'class-variance-authority';
 export const listboxRootStyles =
   'max-h-72 overflow-auto rounded-md border border-border bg-surface-0 py-1';
 
+// When virtualized, `@dynamong/virtual-scroll`'s own viewport (a fixed
+// `height`) is the sole scrolling region — this root must NOT also
+// constrain/scroll height, or two nested scrollable regions both activate
+// at once (a "double scrollbar" bug). Also drops `py-1` so the viewport
+// sits flush inside the `<ul>`. Same reasoning as
+// `selectPanelWrapperVirtualStyles` in `@dynamong/select`.
+export const listboxRootVirtualStyles =
+  'rounded-md border border-border bg-surface-0';
+
 export const listboxGroupHeadingStyles =
   'px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted';
 

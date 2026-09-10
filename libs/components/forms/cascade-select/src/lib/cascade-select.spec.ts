@@ -7,11 +7,35 @@ import {
   renderDynamoComponent,
 } from '@dynamong/testing';
 import type { DynamoTreeNode } from '@dynamong/tree';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoCascadeSelect } from './cascade-select';
 import { DynamoCascadeSelectHarness } from './cascade-select.harness';
+
+// jsdom has no real `Element.scrollTo`. When `virtualScroll` is enabled,
+// DynamoCascadeSelect's explicit keyboard-nav `scrollActiveIntoView()`
+// calls reach the virtual-scroll viewport's `scrollToIndex()` (CDK's
+// viewport calls `scrollTo` internally). A minimal stub lets these tests
+// exercise the real keyboard-nav-while-virtualized behavior.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (): void {
+    /* jsdom gap — see comment above */
+  };
+}
+
+const MANY_CASCADE_NODES: DynamoTreeNode<string>[] = Array.from(
+  { length: 50 },
+  (_, i) => ({
+    id: `c${i + 1}`,
+    label: `Category ${i + 1}`,
+    children: [
+      { id: `c${i + 1}-a`, label: `Item ${i + 1}A`, value: `c${i + 1}-a` },
+      { id: `c${i + 1}-b`, label: `Item ${i + 1}B`, value: `c${i + 1}-b` },
+    ],
+  }),
+);
 
 // USA -> California -> Los Angeles -> Downtown/Uptown is 4 levels deep
 // (root=0, state=1, city=2, neighborhood=3) — deliberately deeper than a
@@ -628,6 +652,146 @@ describe('DynamoCascadeSelect', () => {
       fixture.detectChanges();
 
       expect(getListboxes()).toHaveLength(0);
+    });
+  });
+
+  describe('virtual scroll', () => {
+    it('renders the root level through dg-virtual-scroll when enabled', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
+        inputs: {
+          nodes: MANY_CASCADE_NODES,
+          virtualScroll: true,
+          ariaLabel: 'Many',
+        },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getListboxes()[0]?.querySelector('dg-virtual-scroll')).toBeTruthy();
+    });
+
+    it('hovering a branch row still opens its flyout, also virtualized', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
+        inputs: {
+          nodes: MANY_CASCADE_NODES,
+          virtualScroll: true,
+          ariaLabel: 'Many',
+        },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      getRowByText(getListboxes()[0]!, 'Category 1').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+
+      expect(getListboxes()).toHaveLength(2);
+      expect(getListboxes()[1]?.querySelector('dg-virtual-scroll')).toBeTruthy();
+    });
+
+    it('selecting a leaf through a virtualized flyout still sets the value', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        {
+          inputs: {
+            nodes: MANY_CASCADE_NODES,
+            virtualScroll: true,
+            ariaLabel: 'Many',
+          },
+        },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      getRowByText(getListboxes()[0]!, 'Category 1').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+      await userEvent.click(getRowByText(getListboxes()[1]!, 'Item 1A'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('c1-a');
+    });
+
+    it('keyboard ArrowDown still moves the active row of the current level while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        {
+          inputs: {
+            nodes: MANY_CASCADE_NODES,
+            virtualScroll: true,
+            ariaLabel: 'Many',
+          },
+        },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+
+      expect(componentInstance['levels']()[0]?.activeIndex).toBe(1);
+    });
+
+    // Regression test for the same bug fixed in DynamoSelect: hovering a row
+    // must not call the viewport's absolute `scrollToIndex`; keyboard nav
+    // must.
+    it('does not scroll a level when hovering its rows, only on keyboard navigation', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
+        inputs: {
+          nodes: MANY_CASCADE_NODES,
+          virtualScroll: true,
+          ariaLabel: 'Many',
+        },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const rootViewport = fixture.debugElement.queryAll(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      )[0]!.componentInstance as DynamoVirtualScroll<unknown>;
+      const scrollSpy = vi.spyOn(rootViewport, 'scrollToIndex');
+
+      getRowByText(getListboxes()[0]!, 'Category 3').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+      expect(scrollSpy).not.toHaveBeenCalled();
+
+      await userEvent.keyboard('{ArrowDown}');
+      expect(scrollSpy).toHaveBeenCalled();
+    });
+
+    it('does not virtualize when virtualScroll is left at its default (false)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
+        inputs: { nodes: MANY_CASCADE_NODES, ariaLabel: 'Many' },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getListboxes()[0]?.querySelector('dg-virtual-scroll')).toBeNull();
+      expect(getRowsIn(getListboxes()[0]!)).toHaveLength(50);
+    });
+
+    it('has no axe violations when open and virtualized', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
+        inputs: {
+          nodes: MANY_CASCADE_NODES,
+          virtualScroll: true,
+          ariaLabel: 'Many',
+        },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(
+          document.body.querySelector('.cdk-overlay-container') as HTMLElement,
+        ),
+      ).resolves.toBeUndefined();
     });
   });
 });

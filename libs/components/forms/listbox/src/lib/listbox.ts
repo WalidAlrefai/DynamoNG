@@ -6,10 +6,12 @@ import {
   input,
   model,
   signal,
+  viewChild,
 } from '@angular/core';
 import type { DynamoSelectOption } from '@dynamong/core/api';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoCheckIcon } from '@dynamong/icons';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   findEnabledListboxIndex,
@@ -21,6 +23,7 @@ import {
   listboxOptionCheckboxStyles,
   listboxOptionStyles,
   listboxRootStyles,
+  listboxRootVirtualStyles,
 } from './listbox.styles';
 import type {
   DynamoListboxPart,
@@ -41,7 +44,7 @@ type DynamoListboxRenderItem<TValue> =
   selector: 'dg-listbox',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoCheckIcon],
+  imports: [DynamoCheckIcon, DynamoVirtualScroll],
   templateUrl: './listbox.html',
 })
 export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoListboxPart> {
@@ -52,6 +55,21 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable. Scalar (`TValue | null`) in single-select mode, array (`TValue[]`) once `multiple` is true. */
   readonly value = model<DynamoListboxValue<TValue>>(null);
+  /**
+   * Opt-in — renders the option list through `@dynamong/virtual-scroll`
+   * instead of a plain `@for`, for large option lists. Only takes effect
+   * for the ungrouped case (see `isVirtualized`): `@dynamong/virtual-scroll`
+   * is fixed-row-height only, and a grouped list's heading rows are a
+   * different height than option rows. A grouped Listbox silently falls
+   * back to the full, non-virtualized render.
+   */
+  readonly virtualScroll = input(false);
+  /** Row height in px when virtualized — matched to `listboxOptionStyles`' actual rendered height (`px-4 py-2 text-sm`). */
+  readonly virtualScrollItemSize = input(36);
+  /** Viewport height in px when virtualized — matches `listboxRootStyles`' own `max-h-72` (288px) so the virtualized list is roughly the same size as today's CSS-scrolled one. */
+  readonly virtualScrollHeight = input(288);
+
+  private readonly virtualScrollRef = viewChild(DynamoVirtualScroll);
 
   protected readonly listboxId = this.idGenerator.next('dg-listbox');
   protected readonly activeIndex = signal(-1);
@@ -74,12 +92,21 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
     }
     return items;
   });
+  /** True only for the ungrouped case — see `virtualScroll`'s own doc comment for why grouped lists can't be virtualized in v1. `groupedOptions()` always yields at least one bucket (a single `group: null` one for ungrouped input), so "ungrouped" is exactly "at most one group". */
+  protected readonly isVirtualized = computed(
+    () => this.virtualScroll() && this.groupedOptions().length <= 1,
+  );
   protected readonly activeOptionId = computed(() => {
     const index = this.activeIndex();
     return index >= 0 ? this.optionId(index) : null;
   });
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(listboxRootStyles, this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(
+          this.isVirtualized() ? listboxRootVirtualStyles : listboxRootStyles,
+          this.styleClass(),
+        ),
   );
   protected readonly groupHeadingClasses = listboxGroupHeadingStyles;
 
@@ -186,6 +213,26 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
     if (next !== null) this.setActiveIndex(next);
   }
 
+  /**
+   * Scrolls the virtualized viewport so `activeIndex` is actually rendered
+   * — load-bearing, not a UX nicety: once virtualized, an off-screen
+   * "active" option may not exist in the DOM at all, and
+   * `aria-activedescendant` (`activeOptionId`) would point at a nonexistent
+   * id without this. Called only via `setActiveIndex()` (the keyboard-nav
+   * path: Arrow/Home/End) — deliberately NOT from the
+   * `(mouseenter)="activeIndex.set(i)"` hover handler in listbox.html, which
+   * writes the signal directly. CDK's own `scrollToIndex` is an
+   * unconditional absolute scroll (always jumps so the target index lands
+   * at the very top — not a "scroll into view only if needed" call), so
+   * calling it on every `activeIndex` change including hover would visibly
+   * jump the list on every hover.
+   */
+  private scrollActiveIntoView(): void {
+    if (!this.isVirtualized()) return;
+    const index = this.activeIndex();
+    if (index >= 0) this.virtualScrollRef()?.scrollToIndex(index);
+  }
+
   // Selection follows focus in single-select mode (the WAI-ARIA-recommended
   // default for single-select listboxes — the same "arrow moves AND selects"
   // behavior Select Button's segments use), matching how a native
@@ -194,6 +241,7 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
   // checkbox-group conventions (no arrow-key-toggles behavior exists there).
   private setActiveIndex(index: number): void {
     this.activeIndex.set(index);
+    this.scrollActiveIntoView();
     if (!this.multiple() && index >= 0) {
       const option = this.visibleOptions()[index];
       if (option) this.activate(option);
