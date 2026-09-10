@@ -72,6 +72,7 @@ import { DynamoCascadeSelect } from '@dynamong/cascade-select';
 import { DynamoKnob } from '@dynamong/knob';
 import { DynamoInputMask } from '@dynamong/input-mask';
 import { DynamoPicklist } from '@dynamong/picklist';
+import { DynamoOrderList } from '@dynamong/order-list';
 import { DynamoEditor } from '@dynamong/editor';
 import { DynamoImageGallery } from '@dynamong/image-gallery';
 import type { DynamoGalleryImage } from '@dynamong/image-gallery';
@@ -289,6 +290,7 @@ const EMPLOYEES: Employee[] = [
     DynamoKnob,
     DynamoInputMask,
     DynamoPicklist,
+    DynamoOrderList,
     DynamoEditor,
     DynamoImageGallery,
     DynamoPanel,
@@ -443,6 +445,12 @@ export class App {
   ]);
   protected readonly picklistTarget = signal<DynamoSelectOption<string>[]>([
     { label: 'TypeScript', value: 'ts' },
+  ]);
+  protected readonly orderListItems = signal<DynamoSelectOption<string>[]>([
+    { label: 'Draft', value: '1' },
+    { label: 'Review', value: '2' },
+    { label: 'Approve', value: '3' },
+    { label: 'Publish', value: '4' },
   ]);
   protected readonly editorContent = new FormControl('<p>Hello <b>world</b></p>', {
     nonNullable: true,

@@ -673,6 +673,14 @@
 
   <section
     class="space-y-4 rounded-lg border border-border p-6"
+    data-testid="order-list-section"
+  >
+    <h2 class="text-lg font-semibold text-text-primary">OrderList</h2>
+    <dg-order-list [(value)]="orderListItems" listLabel="Workflow" />
+  </section>
+
+  <section
+    class="space-y-4 rounded-lg border border-border p-6"
     data-testid="editor-section"
   >
     <h2 class="text-lg font-semibold text-text-primary">Editor</h2>

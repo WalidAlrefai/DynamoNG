@@ -168,6 +168,12 @@
       ],
       "@dynamong/speed-dial": [
         "./libs/components/overlay/speed-dial/src/index.ts"
+      ],
+      "@dynamong/order-list": [
+        "./libs/components/forms/order-list/src/index.ts"
+      ],
+      "@dynamong/meter-group": [
+        "./libs/components/feedback/meter-group/src/index.ts"
       ]
     }
   }

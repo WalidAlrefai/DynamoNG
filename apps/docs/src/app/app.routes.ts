@@ -364,4 +364,9 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/speed-dial-doc').then((m) => m.SpeedDialDocPage),
   },
+  {
+    path: 'components/order-list',
+    loadComponent: () =>
+      import('./pages/order-list-doc').then((m) => m.OrderListDocPage),
+  },
 ];

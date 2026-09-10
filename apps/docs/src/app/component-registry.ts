@@ -589,4 +589,12 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     description:
       'A floating action button that fans out action items along a line or around an arc, with roving-focus keyboard support.',
   },
+  {
+    slug: 'order-list',
+    name: 'OrderList',
+    domain: 'forms',
+    category: 'Data',
+    description:
+      'A single reorderable list — drag-and-drop, ▲/▼ and move-to-edge buttons, and full keyboard navigation. The one-panel sibling of PickList.',
+  },
 ];

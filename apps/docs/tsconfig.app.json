@@ -114,6 +114,9 @@
       "path": "../../libs/components/forms/otp-input"
     },
     {
+      "path": "../../libs/components/forms/order-list"
+    },
+    {
       "path": "../../libs/components/forms/multi-select"
     },
     {
