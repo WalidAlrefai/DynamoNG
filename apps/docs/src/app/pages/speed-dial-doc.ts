@@ -4,7 +4,12 @@ import type {
   DynamoSpeedDialAction,
   DynamoSpeedDialType,
 } from '@dynamong/speed-dial';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocApiTable, type ApiTableRow } from '../components/api-table';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
 
 const ACTIONS: DynamoSpeedDialAction[] = [
   { label: 'Add', icon: '+' },
@@ -13,80 +18,83 @@ const ACTIONS: DynamoSpeedDialAction[] = [
   { label: 'Delete', icon: '🗑' },
 ];
 
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'linear', title: 'Linear' },
+  { id: 'arc', title: 'Arc' },
+];
+
+const API: ApiTableRow[] = [
+  { name: 'actions', type: 'DynamoSpeedDialAction[] (required)', default: '—' },
+  {
+    name: 'direction',
+    type: "'up' | 'down' | 'left' | 'right'",
+    default: "'up'",
+  },
+  {
+    name: 'type',
+    type: "'linear' | 'circle' | 'semi-circle' | 'quarter-circle'",
+    default: "'linear'",
+  },
+  { name: 'open', type: 'boolean (model)', default: 'false' },
+  { name: 'openOnHover', type: 'boolean', default: 'false' },
+  { name: 'radius', type: 'number', default: '90' },
+  {
+    name: 'actionSelect',
+    type: 'output<DynamoSpeedDialAction>',
+    default: '—',
+  },
+];
+
 @Component({
   selector: 'docs-speed-dial-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSpeedDial, DocPageShell],
+  imports: [DynamoSpeedDial, DocExamplesLayout, DocExample, DocApiTable],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="SpeedDial"
       description="A floating action button that fans out action items along a line or around an arc, with roving-focus keyboard support."
+      [examples]="examples"
     >
-      <div demo class="flex min-h-[16rem] items-end gap-16 p-8">
-        <dg-speed-dial [actions]="actions" type="linear" direction="up" />
-        <dg-speed-dial
-          [actions]="actions"
-          [type]="arcType()"
-          direction="up"
-          [radius]="100"
-        />
-      </div>
-      <div code>
-        &lt;dg-speed-dial [actions]="actions" type="linear" direction="up" /&gt;
-      </div>
-      <table api class="w-full border-collapse text-sm">
-        <thead>
-          <tr class="border-b border-border text-left text-text-muted">
-            <th class="py-2 pr-4">Input</th>
-            <th class="py-2 pr-4">Type</th>
-            <th class="py-2">Default</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">actions</td>
-            <td class="py-2 pr-4 font-mono">DynamoSpeedDialAction[] (required)</td>
-            <td class="py-2 font-mono">—</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">direction</td>
-            <td class="py-2 pr-4 font-mono">'up' | 'down' | 'left' | 'right'</td>
-            <td class="py-2 font-mono">'up'</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">type</td>
-            <td class="py-2 pr-4 font-mono">
-              'linear' | 'circle' | 'semi-circle' | 'quarter-circle'
-            </td>
-            <td class="py-2 font-mono">'linear'</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">open</td>
-            <td class="py-2 pr-4 font-mono">boolean (model)</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">openOnHover</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">radius</td>
-            <td class="py-2 pr-4 font-mono">number</td>
-            <td class="py-2 font-mono">90</td>
-          </tr>
-          <tr>
-            <td class="py-2 pr-4 font-mono">actionSelect</td>
-            <td class="py-2 pr-4 font-mono">output&lt;DynamoSpeedDialAction&gt;</td>
-            <td class="py-2 font-mono">—</td>
-          </tr>
-        </tbody>
-      </table>
-    </docs-page-shell>
+      <docs-example
+        exampleId="linear"
+        title="Linear"
+        description="type=&quot;linear&quot; fans the actions out in a straight line along direction."
+      >
+        <div preview class="flex min-h-[14rem] items-end p-8">
+          <dg-speed-dial [actions]="actions" type="linear" direction="up" />
+        </div>
+        <div code>
+          &lt;dg-speed-dial [actions]="actions" type="linear" direction="up" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="arc"
+        title="Arc"
+        description="circle / semi-circle / quarter-circle arrange the actions around an arc of the given radius."
+      >
+        <div preview class="flex min-h-[16rem] items-end p-8">
+          <dg-speed-dial
+            [actions]="actions"
+            [type]="arcType()"
+            direction="up"
+            [radius]="100"
+          />
+        </div>
+        <div code>
+          &lt;dg-speed-dial [actions]="actions" type="quarter-circle"
+          [radius]="100" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-api-table api [rows]="apiRows" />
+    </docs-examples-layout>
   `,
 })
 export class SpeedDialDocPage {
+  protected readonly examples = EXAMPLES;
+  protected readonly apiRows = API;
   protected readonly actions = ACTIONS;
   protected readonly arcType = signal<DynamoSpeedDialType>('quarter-circle');
 }

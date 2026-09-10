@@ -1,68 +1,72 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoToggleButton } from '@dynamong/toggle-button';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocApiTable, type ApiTableRow } from '../components/api-table';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
+
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'severity', title: 'Severity' },
+];
+
+const API: ApiTableRow[] = [
+  { name: 'pressed', type: 'boolean (model)', default: 'false' },
+  { name: 'severity', type: 'DynamoSeverity', default: "'primary'" },
+  { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
+  { name: 'disabled', type: 'boolean', default: 'false' },
+  { name: 'ariaLabel', type: 'string', default: '—' },
+];
 
 @Component({
   selector: 'docs-toggle-button-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoToggleButton, DocPageShell],
+  imports: [DynamoToggleButton, DocExamplesLayout, DocExample, DocApiTable],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="Toggle Button"
       description="A single pressable button with a pressed/unpressed visual state."
+      [examples]="examples"
     >
-      <div demo class="flex flex-wrap items-center gap-2">
-        <dg-toggle-button [(pressed)]="bold">Bold</dg-toggle-button>
-        <dg-toggle-button [(pressed)]="italic">Italic</dg-toggle-button>
-        <dg-toggle-button severity="danger" [(pressed)]="muted"
-          >Mute</dg-toggle-button
-        >
-        <dg-toggle-button [disabled]="true">Disabled</dg-toggle-button>
-      </div>
-      <div code>
-        &lt;dg-toggle-button [(pressed)]="bold"&gt;Bold&lt;/dg-toggle-button&gt;
-      </div>
-      <table api class="w-full border-collapse text-sm">
-        <thead>
-          <tr class="border-b border-border text-left text-text-muted">
-            <th class="py-2 pr-4">Input</th>
-            <th class="py-2 pr-4">Type</th>
-            <th class="py-2">Default</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">pressed</td>
-            <td class="py-2 pr-4 font-mono">boolean (model)</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">severity</td>
-            <td class="py-2 pr-4 font-mono">DynamoSeverity</td>
-            <td class="py-2 font-mono">'primary'</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">size</td>
-            <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
-            <td class="py-2 font-mono">'md'</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">disabled</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
-            <td class="py-2 font-mono">false</td>
-          </tr>
-          <tr>
-            <td class="py-2 pr-4 font-mono">ariaLabel</td>
-            <td class="py-2 pr-4 font-mono">string</td>
-            <td class="py-2 font-mono">—</td>
-          </tr>
-        </tbody>
-      </table>
-    </docs-page-shell>
+      <docs-example
+        exampleId="basic"
+        title="Basic"
+        description="Two-way bind the pressed state with [(pressed)]."
+      >
+        <div preview class="flex flex-wrap items-center gap-2">
+          <dg-toggle-button [(pressed)]="bold">Bold</dg-toggle-button>
+          <dg-toggle-button [(pressed)]="italic">Italic</dg-toggle-button>
+          <dg-toggle-button [disabled]="true">Disabled</dg-toggle-button>
+        </div>
+        <div code>&lt;dg-toggle-button [(pressed)]="bold"&gt;Bold&lt;/dg-toggle-button&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="severity"
+        title="Severity"
+        description="severity recolors the pressed state."
+      >
+        <div preview>
+          <dg-toggle-button severity="danger" [(pressed)]="muted">
+            Mute
+          </dg-toggle-button>
+        </div>
+        <div code>
+          &lt;dg-toggle-button severity="danger"
+          [(pressed)]="muted"&gt;Mute&lt;/dg-toggle-button&gt;
+        </div>
+      </docs-example>
+
+      <docs-api-table api [rows]="apiRows" />
+    </docs-examples-layout>
   `,
 })
 export class ToggleButtonDocPage {
+  protected readonly examples = EXAMPLES;
+  protected readonly apiRows = API;
   protected readonly bold = signal(false);
   protected readonly italic = signal(false);
   protected readonly muted = signal(false);

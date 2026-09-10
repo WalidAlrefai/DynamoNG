@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { DynamoMeterGroup } from '@dynamong/meter-group';
 import type { DynamoMeterItem } from '@dynamong/meter-group';
-import { DocPageShell } from '../components/doc-page-shell';
+import { DocApiTable, type ApiTableRow } from '../components/api-table';
+import { DocExample } from '../components/example-block';
+import {
+  DocExamplesLayout,
+  type DocExampleRef,
+} from '../components/examples-layout';
 
 const STORAGE: DynamoMeterItem[] = [
   { label: 'Documents', value: 22, severity: 'primary' },
@@ -10,66 +15,74 @@ const STORAGE: DynamoMeterItem[] = [
   { label: 'Apps', value: 9, severity: 'success' },
 ];
 
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'horizontal', title: 'Horizontal' },
+  { id: 'vertical', title: 'Vertical' },
+];
+
+const API: ApiTableRow[] = [
+  { name: 'value', type: 'DynamoMeterItem[] (required)', default: '—' },
+  { name: 'max', type: 'number', default: '100' },
+  { name: 'orientation', type: "'horizontal' | 'vertical'", default: "'horizontal'" },
+  { name: 'showLegend', type: 'boolean', default: 'true' },
+  { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
+];
+
 @Component({
   selector: 'docs-meter-group-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoMeterGroup, DocPageShell],
+  imports: [DynamoMeterGroup, DocExamplesLayout, DocExample, DocApiTable],
   template: `
-    <docs-page-shell
+    <docs-examples-layout
       name="MeterGroup"
-      description="A multi-segment labelled meter bar with a legend — for showing a breakdown like disk usage or a budget split. The multi-value sibling of Progress."
+      description="A multi-segment labelled meter bar with a legend — for a breakdown like disk usage or a budget split. The multi-value sibling of Progress."
+      [examples]="examples"
     >
-      <div demo class="max-w-md space-y-6">
-        <dg-meter-group [value]="storage" ariaLabel="Storage breakdown" />
-        <dg-meter-group [value]="storage" orientation="vertical" [showLegend]="true" />
+      <docs-example
+        exampleId="horizontal"
+        title="Horizontal"
+        description="Pass an array of { label, value, severity? } items; segments are stacked left to right."
+      >
+        <div preview class="max-w-md">
+          <dg-meter-group [value]="storage" ariaLabel="Storage breakdown" />
+        </div>
+        <div code>&lt;dg-meter-group [value]="storage" ariaLabel="Storage" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="vertical"
+        title="Vertical"
+        description="orientation=&quot;vertical&quot; stacks the segments bottom to top."
+      >
+        <div preview class="max-w-md">
+          <dg-meter-group
+            [value]="storage"
+            orientation="vertical"
+            [showLegend]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-meter-group [value]="storage" orientation="vertical" /&gt;
+        </div>
+      </docs-example>
+
+      <div api class="space-y-3">
+        <docs-api-table [rows]="apiRows" />
+        <p class="text-sm text-text-muted">
+          Each <code class="font-mono">DynamoMeterItem</code> is
+          <code class="font-mono"
+            >&#123; label, value, severity?, color? &#125;</code
+          >. Segments that would sum past
+          <code class="font-mono">max</code> are scaled down proportionally so
+          the bar never overflows.
+        </p>
       </div>
-      <div code>&lt;dg-meter-group [value]="storage" ariaLabel="Storage" /&gt;</div>
-      <table api class="w-full border-collapse text-sm">
-        <thead>
-          <tr class="border-b border-border text-left text-text-muted">
-            <th class="py-2 pr-4">Input</th>
-            <th class="py-2 pr-4">Type</th>
-            <th class="py-2">Default</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">value</td>
-            <td class="py-2 pr-4 font-mono">DynamoMeterItem[] (required)</td>
-            <td class="py-2 font-mono">—</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">max</td>
-            <td class="py-2 pr-4 font-mono">number</td>
-            <td class="py-2 font-mono">100</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">orientation</td>
-            <td class="py-2 pr-4 font-mono">'horizontal' | 'vertical'</td>
-            <td class="py-2 font-mono">'horizontal'</td>
-          </tr>
-          <tr class="border-b border-border">
-            <td class="py-2 pr-4 font-mono">showLegend</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
-            <td class="py-2 font-mono">true</td>
-          </tr>
-          <tr>
-            <td class="py-2 pr-4 font-mono">size</td>
-            <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
-            <td class="py-2 font-mono">'md'</td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="mt-4 text-sm text-text-muted">
-        Each <code class="font-mono">DynamoMeterItem</code> is
-        <code class="font-mono">{{ '{' }} label, value, severity?, color? {{ '}' }}</code>. Segments
-        that would sum past <code class="font-mono">max</code> are scaled down proportionally so the
-        bar never overflows.
-      </p>
-    </docs-page-shell>
+    </docs-examples-layout>
   `,
 })
 export class MeterGroupDocPage {
+  protected readonly examples = EXAMPLES;
+  protected readonly apiRows = API;
   protected readonly storage = STORAGE;
 }
