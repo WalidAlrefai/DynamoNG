@@ -34,29 +34,101 @@ export const buttonStyles = cva(
     compoundVariants: [
       { size: 'lg', class: 'px-6' },
 
-      { severity: 'primary', variant: 'solid', class: 'bg-primary text-on-primary hover:bg-primary-hover' },
-      { severity: 'primary', variant: 'outline', class: 'text-primary border-primary hover:bg-primary/10' },
-      { severity: 'primary', variant: 'text', class: 'text-primary hover:bg-primary/10' },
+      {
+        severity: 'primary',
+        variant: 'solid',
+        class: 'bg-primary text-on-primary hover:bg-primary-hover',
+      },
+      {
+        severity: 'primary',
+        variant: 'outline',
+        class: 'text-primary border-primary hover:bg-primary/10',
+      },
+      {
+        severity: 'primary',
+        variant: 'text',
+        class: 'text-primary hover:bg-primary/10',
+      },
 
-      { severity: 'secondary', variant: 'solid', class: 'bg-secondary text-on-secondary hover:bg-secondary-hover' },
-      { severity: 'secondary', variant: 'outline', class: 'text-secondary border-secondary hover:bg-secondary/10' },
-      { severity: 'secondary', variant: 'text', class: 'text-secondary hover:bg-secondary/10' },
+      {
+        severity: 'secondary',
+        variant: 'solid',
+        class: 'bg-secondary text-on-secondary hover:bg-secondary-hover',
+      },
+      {
+        severity: 'secondary',
+        variant: 'outline',
+        class: 'text-secondary border-secondary hover:bg-secondary/10',
+      },
+      {
+        severity: 'secondary',
+        variant: 'text',
+        class: 'text-secondary hover:bg-secondary/10',
+      },
 
-      { severity: 'success', variant: 'solid', class: 'bg-success text-on-success hover:bg-success-hover' },
-      { severity: 'success', variant: 'outline', class: 'text-success border-success hover:bg-success/10' },
-      { severity: 'success', variant: 'text', class: 'text-success hover:bg-success/10' },
+      {
+        severity: 'success',
+        variant: 'solid',
+        class: 'bg-success text-on-success hover:bg-success-hover',
+      },
+      {
+        severity: 'success',
+        variant: 'outline',
+        class: 'text-success border-success hover:bg-success/10',
+      },
+      {
+        severity: 'success',
+        variant: 'text',
+        class: 'text-success hover:bg-success/10',
+      },
 
-      { severity: 'info', variant: 'solid', class: 'bg-info text-on-info hover:bg-info-hover' },
-      { severity: 'info', variant: 'outline', class: 'text-info border-info hover:bg-info/10' },
-      { severity: 'info', variant: 'text', class: 'text-info hover:bg-info/10' },
+      {
+        severity: 'info',
+        variant: 'solid',
+        class: 'bg-info text-on-info hover:bg-info-hover',
+      },
+      {
+        severity: 'info',
+        variant: 'outline',
+        class: 'text-info border-info hover:bg-info/10',
+      },
+      {
+        severity: 'info',
+        variant: 'text',
+        class: 'text-info hover:bg-info/10',
+      },
 
-      { severity: 'warning', variant: 'solid', class: 'bg-warning text-on-warning hover:bg-warning-hover' },
-      { severity: 'warning', variant: 'outline', class: 'text-warning border-warning hover:bg-warning/10' },
-      { severity: 'warning', variant: 'text', class: 'text-warning hover:bg-warning/10' },
+      {
+        severity: 'warning',
+        variant: 'solid',
+        class: 'bg-warning text-on-warning hover:bg-warning-hover',
+      },
+      {
+        severity: 'warning',
+        variant: 'outline',
+        class: 'text-warning border-warning hover:bg-warning/10',
+      },
+      {
+        severity: 'warning',
+        variant: 'text',
+        class: 'text-warning hover:bg-warning/10',
+      },
 
-      { severity: 'danger', variant: 'solid', class: 'bg-danger text-on-danger hover:bg-danger-hover' },
-      { severity: 'danger', variant: 'outline', class: 'text-danger border-danger hover:bg-danger/10' },
-      { severity: 'danger', variant: 'text', class: 'text-danger hover:bg-danger/10' },
+      {
+        severity: 'danger',
+        variant: 'solid',
+        class: 'bg-danger text-on-danger hover:bg-danger-hover',
+      },
+      {
+        severity: 'danger',
+        variant: 'outline',
+        class: 'text-danger border-danger hover:bg-danger/10',
+      },
+      {
+        severity: 'danger',
+        variant: 'text',
+        class: 'text-danger hover:bg-danger/10',
+      },
     ],
     defaultVariants: {
       severity: 'primary',

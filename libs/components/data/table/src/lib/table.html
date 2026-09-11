@@ -10,8 +10,7 @@
       [placeholder]="filterPlaceholder()"
     />
   </div>
-  }
-  @if (!virtualScroll()) {
+  } @if (!virtualScroll()) {
   <table [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
     <thead>
       <tr [class]="headerRowClasses">
@@ -131,7 +130,12 @@
     [attr.aria-rowcount]="sortedData().length + 1"
   >
     <div role="rowgroup">
-      <div role="row" aria-rowindex="1" [class]="virtualHeaderRowClasses" [style.gridTemplateColumns]="virtualGridTemplate()">
+      <div
+        role="row"
+        aria-rowindex="1"
+        [class]="virtualHeaderRowClasses"
+        [style.gridTemplateColumns]="virtualGridTemplate()"
+      >
         @for (column of columns(); track column.field) {
         <div
           role="columnheader"
@@ -181,7 +185,12 @@
         [height]="virtualScrollHeight()"
       >
         <ng-template let-row let-i="index">
-          <div role="row" [attr.aria-rowindex]="i + 2" [class]="virtualBodyRowClasses" [style.gridTemplateColumns]="virtualGridTemplate()">
+          <div
+            role="row"
+            [attr.aria-rowindex]="i + 2"
+            [class]="virtualBodyRowClasses"
+            [style.gridTemplateColumns]="virtualGridTemplate()"
+          >
             @for (column of columns(); track column.field) {
             <div role="cell" [class]="bodyCellClasses()">
               @if (column.cellTemplate) {
@@ -198,8 +207,7 @@
       }
     </div>
   </div>
-  }
-  @if (pageSize() && !virtualScroll()) {
+  } @if (pageSize() && !virtualScroll()) {
   <div [class]="paginationWrapperClasses">
     <dg-pagination
       [totalItems]="sortedData().length"

@@ -20,7 +20,8 @@ export const splitterRootStyles = cva('flex w-full', {
 export const splitterPanelStyles = 'min-w-0 min-h-0 overflow-auto';
 
 export const splitterDividerStyles = cva(
-  'shrink-0 bg-border transition-colors hover:bg-primary/40 ' + focusRingInsetClass,
+  'shrink-0 bg-border transition-colors hover:bg-primary/40 ' +
+    focusRingInsetClass,
   {
     variants: {
       orientation: {

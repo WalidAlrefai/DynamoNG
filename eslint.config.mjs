@@ -188,13 +188,13 @@ export default [
         'error',
         {
           selector:
-            "Literal[value=/(?<![\\w:])(?:m[lr]-|p[lr]-|left-|right-|text-(?:left|right)|border-[lr](?![a-z])|rounded-(?:[lr]|[tb][lr])(?![a-z]))/]",
+            'Literal[value=/(?<![\\w:])(?:m[lr]-|p[lr]-|left-|right-|text-(?:left|right)|border-[lr](?![a-z])|rounded-(?:[lr]|[tb][lr])(?![a-z]))/]',
           message:
             'Use logical Tailwind utilities in *.styles.ts: ms-*/me-* not ml-*/mr-*, ps-*/pe-* not pl-*/pr-*, start-*/end-* not left-*/right-*, text-start/text-end not text-left/text-right, border-s/border-e not border-l/border-r, rounded-s*/rounded-e* not rounded-l*/rounded-r*. Gate a genuinely physical value behind an rtl:/ltr: variant.',
         },
         {
           selector:
-            "TemplateElement[value.cooked=/(?<![\\w:])(?:m[lr]-|p[lr]-|left-|right-|text-(?:left|right)|border-[lr](?![a-z])|rounded-(?:[lr]|[tb][lr])(?![a-z]))/]",
+            'TemplateElement[value.cooked=/(?<![\\w:])(?:m[lr]-|p[lr]-|left-|right-|text-(?:left|right)|border-[lr](?![a-z])|rounded-(?:[lr]|[tb][lr])(?![a-z]))/]',
           message:
             'Use logical Tailwind utilities in *.styles.ts (ms-/me-/ps-/pe-/start-/end-/text-start/text-end/border-s/border-e/rounded-s*/rounded-e*), not physical ones. Gate a genuinely physical value behind an rtl:/ltr: variant.',
         },

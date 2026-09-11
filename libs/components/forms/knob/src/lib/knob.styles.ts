@@ -8,15 +8,18 @@ import { focusRingClass } from '@dynamong/utils/styles';
 // express them — same "deliberate inline/attr-binding exception" pattern as
 // Slider's fill width/thumb position, Progress's fill-width, Tree's
 // indent-depth, Skeleton's width/height, and Carousel's track transform.
-export const knobRootStyles = cva('relative inline-flex select-none items-center justify-center', {
-  variants: {
-    disabled: {
-      true: 'pointer-events-none opacity-60',
-      false: 'cursor-pointer',
+export const knobRootStyles = cva(
+  'relative inline-flex select-none items-center justify-center',
+  {
+    variants: {
+      disabled: {
+        true: 'pointer-events-none opacity-60',
+        false: 'cursor-pointer',
+      },
     },
+    defaultVariants: { disabled: false },
   },
-  defaultVariants: { disabled: false },
-});
+);
 
 export const knobTrackStyles = 'stroke-surface-200 fill-none';
 

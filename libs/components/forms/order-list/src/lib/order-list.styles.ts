@@ -1,5 +1,8 @@
 import { cva } from 'class-variance-authority';
-import { focusRingClass, sectionHeadingBaseClass } from '@dynamong/utils/styles';
+import {
+  focusRingClass,
+  sectionHeadingBaseClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — order-list.html only binds `[class]="...Classes()"`. Shapes

@@ -57,8 +57,7 @@ describe('@dynamong/full', () => {
     const actual = Object.keys(pkg.dependencies)
       .filter(
         (name) =>
-          name.startsWith('@dynamong/') &&
-          !foundationUmbrellas.includes(name),
+          name.startsWith('@dynamong/') && !foundationUmbrellas.includes(name),
       )
       .sort();
 

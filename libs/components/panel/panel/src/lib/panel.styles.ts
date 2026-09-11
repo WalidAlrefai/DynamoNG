@@ -44,12 +44,15 @@ export const panelContentInnerStyles = 'overflow-hidden min-h-0';
 export const panelContentBodyStyles = 'p-4';
 
 // Copied from accordionChevronStyles.
-export const panelChevronStyles = cva('shrink-0 transition-transform duration-200 ease-out', {
-  variants: {
-    expanded: {
-      true: 'rotate-180',
-      false: '',
+export const panelChevronStyles = cva(
+  'shrink-0 transition-transform duration-200 ease-out',
+  {
+    variants: {
+      expanded: {
+        true: 'rotate-180',
+        false: '',
+      },
     },
+    defaultVariants: { expanded: true },
   },
-  defaultVariants: { expanded: true },
-});
+);

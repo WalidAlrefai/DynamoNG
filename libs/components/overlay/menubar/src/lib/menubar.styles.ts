@@ -47,15 +47,18 @@ export const menubarItemStyles = cva(
   },
 );
 
-export const menubarChevronStyles = cva('shrink-0 transition-transform duration-200 ease-out', {
-  variants: {
-    open: {
-      true: 'rotate-180',
-      false: '',
+export const menubarChevronStyles = cva(
+  'shrink-0 transition-transform duration-200 ease-out',
+  {
+    variants: {
+      open: {
+        true: 'rotate-180',
+        false: '',
+      },
     },
+    defaultVariants: { open: false },
   },
-  defaultVariants: { open: false },
-});
+);
 
 export const menubarPanelStyles =
   'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;

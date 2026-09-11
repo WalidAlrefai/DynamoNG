@@ -82,7 +82,9 @@ const Z_LAYERS = [
       </header>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Colour roles
         </h2>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -98,7 +100,9 @@ const Z_LAYERS = [
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Surface ramp
         </h2>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -115,7 +119,9 @@ const Z_LAYERS = [
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Text roles
         </h2>
         <div class="space-y-1">
@@ -126,7 +132,9 @@ const Z_LAYERS = [
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Radius
         </h2>
         <div class="flex flex-wrap gap-4">
@@ -136,14 +144,18 @@ const Z_LAYERS = [
                 class="h-14 w-14 border border-border bg-surface-100"
                 [class]="r.className"
               ></div>
-              <span class="mt-1 block text-xs text-text-muted">{{ r.label }}</span>
+              <span class="mt-1 block text-xs text-text-muted">{{
+                r.label
+              }}</span>
             </div>
           }
         </div>
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Elevation
         </h2>
         <div class="flex flex-wrap gap-6 rounded-md bg-surface-50 p-6">
@@ -153,14 +165,18 @@ const Z_LAYERS = [
                 class="h-14 w-14 rounded-md bg-surface-0"
                 [class]="e.className"
               ></div>
-              <span class="mt-1 block text-xs text-text-muted">{{ e.label }}</span>
+              <span class="mt-1 block text-xs text-text-muted">{{
+                e.label
+              }}</span>
             </div>
           }
         </div>
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Type scale
         </h2>
         <div class="space-y-1">
@@ -173,7 +189,9 @@ const Z_LAYERS = [
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Focus ring
         </h2>
         <p class="text-sm text-text-muted">
@@ -201,12 +219,15 @@ const Z_LAYERS = [
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Z-index layers
         </h2>
         <p class="text-sm text-text-muted">
           Named stacking order for overlays — lowest to highest. Replaces a
-          single overloaded <code class="rounded bg-surface-100 px-1">z-10</code>.
+          single overloaded
+          <code class="rounded bg-surface-100 px-1">z-10</code>.
         </p>
         <ol class="space-y-1">
           @for (z of zLayers; track z) {
@@ -218,7 +239,9 @@ const Z_LAYERS = [
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Density
         </h2>
         <p class="text-sm text-text-muted">
@@ -232,19 +255,24 @@ const Z_LAYERS = [
       </section>
 
       <section class="space-y-3">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
           Writing mode (RTL)
         </h2>
         <p class="text-sm text-text-muted">
-          Components style with writing-mode-relative utilities
-          (<code class="rounded bg-surface-100 px-1">ms-*</code> /
-          <code class="rounded bg-surface-100 px-1">pe-*</code> /
+          Components style with writing-mode-relative utilities (<code
+            class="rounded bg-surface-100 px-1"
+            >ms-*</code
+          >
+          / <code class="rounded bg-surface-100 px-1">pe-*</code> /
           <code class="rounded bg-surface-100 px-1">text-start</code> /
-          <code class="rounded bg-surface-100 px-1">border-s</code>), enforced by
-          an ESLint rule. Set
+          <code class="rounded bg-surface-100 px-1">border-s</code>), enforced
+          by an ESLint rule. Set
           <code class="rounded bg-surface-100 px-1">dir="rtl"</code> on a
-          container (or <code class="rounded bg-surface-100 px-1">&lt;html&gt;</code>)
-          and layout mirrors — no per-component configuration.
+          container (or
+          <code class="rounded bg-surface-100 px-1">&lt;html&gt;</code>) and
+          layout mirrors — no per-component configuration.
         </p>
       </section>
     </article>

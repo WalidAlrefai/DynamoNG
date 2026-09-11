@@ -31,4 +31,5 @@ export const focusRingInsetClass = 'dg-focus-ring-inset';
  * field so the ring is tinted with the danger colour instead of the accent.
  * Sets the `--dg-focus-ring-color` custom property the `@utility` reads.
  */
-export const focusRingInvalidClass = '[--dg-focus-ring-color:var(--color-danger)]';
+export const focusRingInvalidClass =
+  '[--dg-focus-ring-color:var(--color-danger)]';

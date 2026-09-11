@@ -99,7 +99,9 @@ describe('compileThemeCss', () => {
     expect(css).toContain('--dg-spacing-unit: 0.25rem;');
     expect(css).toContain('--dg-typography-font-size-sm: 0.875rem;');
     expect(css).toContain('--dg-typography-weight-medium: 500;');
-    expect(css).toContain('--dg-elevation-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);');
+    expect(css).toContain(
+      '--dg-elevation-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);',
+    );
     expect(css).toContain('--dg-motion-duration-base: 200ms;');
     expect(css).toContain('--dg-z-index-modal: 1300;');
     expect(css).toContain('--dg-color-surface-300: #d1d5db;');

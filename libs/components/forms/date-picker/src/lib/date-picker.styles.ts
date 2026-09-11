@@ -20,8 +20,7 @@ export const datePickerTriggerStyles = cva(
   },
 );
 
-export const datePickerPanelStyles =
-  'z-dropdown w-72 p-3 ' + overlayPanelClass;
+export const datePickerPanelStyles = 'z-dropdown w-72 p-3 ' + overlayPanelClass;
 
 export const datePickerHeaderButtonStyles =
   'flex h-8 w-8 items-center justify-center rounded-md text-text-primary hover:bg-surface-100 ' +

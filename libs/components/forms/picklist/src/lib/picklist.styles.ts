@@ -1,5 +1,8 @@
 import { cva } from 'class-variance-authority';
-import { focusRingClass, sectionHeadingBaseClass } from '@dynamong/utils/styles';
+import {
+  focusRingClass,
+  sectionHeadingBaseClass,
+} from '@dynamong/utils/styles';
 
 export const picklistRootStyles = 'flex items-start gap-3';
 

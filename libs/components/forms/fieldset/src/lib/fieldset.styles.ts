@@ -46,12 +46,15 @@ export const fieldsetContentWrapperStyles = cva(
 export const fieldsetContentInnerStyles = 'overflow-hidden min-h-0';
 export const fieldsetContentBodyStyles = 'pt-2';
 
-export const fieldsetChevronStyles = cva('shrink-0 transition-transform duration-200 ease-out', {
-  variants: {
-    expanded: {
-      true: 'rotate-180',
-      false: '',
+export const fieldsetChevronStyles = cva(
+  'shrink-0 transition-transform duration-200 ease-out',
+  {
+    variants: {
+      expanded: {
+        true: 'rotate-180',
+        false: '',
+      },
     },
+    defaultVariants: { expanded: true },
   },
-  defaultVariants: { expanded: true },
-});
+);

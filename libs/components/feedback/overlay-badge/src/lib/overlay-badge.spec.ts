@@ -1,6 +1,9 @@
 import { Component, signal } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { describe, expect, it } from 'vitest';
 import { DynamoOverlayBadge } from './overlay-badge';
 import { DynamoOverlayBadgeHarness } from './overlay-badge.harness';
@@ -30,10 +33,14 @@ class OverlayBadgeHostComponent {
 
 /** The `<dg-badge>` renders its classes onto an inner `<span>`. */
 function badgeSpan(container: HTMLElement): HTMLElement | null {
-  return container.querySelector('[data-testid="DynamoOverlayBadge-badge"] span');
+  return container.querySelector(
+    '[data-testid="DynamoOverlayBadge-badge"] span',
+  );
 }
 function badgeText(container: HTMLElement): string | null {
-  const el = container.querySelector('[data-testid="DynamoOverlayBadge-badge"]');
+  const el = container.querySelector(
+    '[data-testid="DynamoOverlayBadge-badge"]',
+  );
   return el ? (el.textContent?.trim() ?? '') : null;
 }
 function dot(container: HTMLElement): HTMLElement | null {

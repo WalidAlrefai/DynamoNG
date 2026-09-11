@@ -66,7 +66,8 @@ export const megaMenuPanelStyles =
 
 export const megaMenuColumnStyles = 'flex min-w-[10rem] flex-col gap-1';
 
-export const megaMenuColumnHeaderStyles = 'px-2 pb-1 ' + sectionHeadingBaseClass;
+export const megaMenuColumnHeaderStyles =
+  'px-2 pb-1 ' + sectionHeadingBaseClass;
 
 // Links are virtual-focus-only (aria-activedescendant, not real DOM focus),
 // so `active` is a JS-driven visual variant rather than `:focus-visible` —

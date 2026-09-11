@@ -1224,49 +1224,87 @@ describe('DynamoTable', () => {
     }));
 
     it('renders a role="table" div (not a real <table>) when enabled', async () => {
-      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: MANY_PEOPLE, virtualScroll: true },
-      });
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+          },
+        },
+      );
       await settle(fixture);
 
       expect(container.querySelector('table')).toBeNull();
       expect(container.querySelector('[role="table"]')).toBeTruthy();
-      expect(container.querySelectorAll('[role="columnheader"]')).toHaveLength(2);
+      expect(container.querySelectorAll('[role="columnheader"]')).toHaveLength(
+        2,
+      );
     });
 
     it('renders real row/cell content through the virtualized path', async () => {
-      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: MANY_PEOPLE, virtualScroll: true },
-      });
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+          },
+        },
+      );
       await settle(fixture);
 
       const rows = container.querySelectorAll('[role="row"]');
       // At least the header row, plus some rendered body rows.
       expect(rows.length).toBeGreaterThan(1);
-      expect(container.querySelector('[role="cell"]')?.textContent?.trim()).toBe('Person 0');
+      expect(
+        container.querySelector('[role="cell"]')?.textContent?.trim(),
+      ).toBe('Person 0');
     });
 
     it('shares one grid-template-columns string between the header row and body rows', async () => {
-      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: MANY_PEOPLE, virtualScroll: true },
-      });
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+          },
+        },
+      );
       await settle(fixture);
 
-      const rows = Array.from(container.querySelectorAll<HTMLElement>('[role="row"]'));
-      const templates = new Set(rows.map((row) => row.style.gridTemplateColumns));
+      const rows = Array.from(
+        container.querySelectorAll<HTMLElement>('[role="row"]'),
+      );
+      const templates = new Set(
+        rows.map((row) => row.style.gridTemplateColumns),
+      );
       expect(templates.size).toBe(1);
       expect(templates.has('repeat(2, minmax(0, 1fr))')).toBe(true);
     });
 
     it('exposes aria-rowcount and sequential aria-rowindex (the DOM can not be counted while virtualized)', async () => {
-      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: MANY_PEOPLE, virtualScroll: true },
-      });
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+          },
+        },
+      );
       await settle(fixture);
 
       // 200 data rows + 1 header row — only a window of rows is ever mounted.
       expect(
-        container.querySelector('[role="table"]')?.getAttribute('aria-rowcount'),
+        container
+          .querySelector('[role="table"]')
+          ?.getAttribute('aria-rowcount'),
       ).toBe('201');
 
       const rowgroups = Array.from(
@@ -1275,29 +1313,42 @@ describe('DynamoTable', () => {
       expect(rowgroups).toHaveLength(2);
       const [headerGroup, bodyGroup] = rowgroups;
       expect(
-        headerGroup?.querySelector('[role="row"]')?.getAttribute('aria-rowindex'),
+        headerGroup
+          ?.querySelector('[role="row"]')
+          ?.getAttribute('aria-rowindex'),
       ).toBe('1');
 
       const bodyRows = Array.from(
         bodyGroup?.querySelectorAll<HTMLElement>('[role="row"]') ?? [],
       );
       expect(bodyRows.length).toBeGreaterThan(0);
-      const indices = bodyRows.map((r) => Number(r.getAttribute('aria-rowindex')));
+      const indices = bodyRows.map((r) =>
+        Number(r.getAttribute('aria-rowindex')),
+      );
       // First mounted body row is data row 0 -> aria-rowindex 2, consecutive from there.
       expect(indices).toEqual(indices.map((_, offset) => 2 + offset));
     });
 
     it('keeps CDK viewport wrappers accessibility-tree transparent (role="presentation")', async () => {
-      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: MANY_PEOPLE, virtualScroll: true },
-      });
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+          },
+        },
+      );
       await settle(fixture);
 
       expect(
         container.querySelector('dg-virtual-scroll')?.getAttribute('role'),
       ).toBe('presentation');
       expect(
-        container.querySelector('cdk-virtual-scroll-viewport')?.getAttribute('role'),
+        container
+          .querySelector('cdk-virtual-scroll-viewport')
+          ?.getAttribute('role'),
       ).toBe('presentation');
       expect(
         container
@@ -1307,12 +1358,21 @@ describe('DynamoTable', () => {
     });
 
     it('sorting still works while virtualized', async () => {
-      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE, virtualScroll: true },
-      });
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            virtualScroll: true,
+          },
+        },
+      );
       await settle(fixture);
 
-      const nameHeader = within(container).getByRole('button', { name: /Name/ });
+      const nameHeader = within(container).getByRole('button', {
+        name: /Name/,
+      });
       await userEvent.click(nameHeader);
       await settle(fixture);
 
@@ -1321,33 +1381,46 @@ describe('DynamoTable', () => {
     });
 
     it('renders the empty-state message instead of the viewport when there is no data', async () => {
-      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: [], virtualScroll: true },
-      });
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: { columns: SORTABLE_COLUMNS, data: [], virtualScroll: true },
+        },
+      );
       await settle(fixture);
 
       expect(container.querySelector('dg-virtual-scroll')).toBeNull();
-      expect(within(container).getByRole('status').textContent?.trim()).toBe('No data');
+      expect(within(container).getByRole('status').textContent?.trim()).toBe(
+        'No data',
+      );
     });
 
     it('hides the pagination footer even when pageSize is set', async () => {
-      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: {
-          columns: SORTABLE_COLUMNS,
-          data: MANY_PEOPLE,
-          virtualScroll: true,
-          pageSize: 10,
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+            pageSize: 10,
+          },
         },
-      });
+      );
       await settle(fixture);
 
-      expect(container.querySelector('[aria-label="Previous page"]')).toBeNull();
+      expect(
+        container.querySelector('[aria-label="Previous page"]'),
+      ).toBeNull();
     });
 
     it('does not virtualize when virtualScroll is left at its default (false)', async () => {
-      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE },
-      });
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE },
+        },
+      );
       await settle(fixture);
 
       expect(container.querySelector('table')).toBeTruthy();
@@ -1366,9 +1439,16 @@ describe('DynamoTable', () => {
         name: `Person ${i}`,
         age: 20 + (i % 50),
       }));
-      const { fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: many, virtualScroll: true },
-      });
+      const { fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: many,
+            virtualScroll: true,
+          },
+        },
+      );
       await settle(fixture);
 
       // Same reasoning as `role="listbox"` in DynamoSelect's own virtualized
@@ -1382,9 +1462,12 @@ describe('DynamoTable', () => {
     });
 
     it('has no axe violations when virtualized with no data', async () => {
-      const { fixture } = renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-        inputs: { columns: SORTABLE_COLUMNS, data: [], virtualScroll: true },
-      });
+      const { fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: { columns: SORTABLE_COLUMNS, data: [], virtualScroll: true },
+        },
+      );
       await settle(fixture);
 
       await expect(
@@ -1399,7 +1482,9 @@ describe('DynamoTable', () => {
     // path can't host the selection column or the pagination footer in v1),
     // so a dev-only `console.warn` makes the dropped feature visible.
     it('warns when `selectable` is combined with `virtualScroll`', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
 
       renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
         inputs: {
@@ -1411,13 +1496,17 @@ describe('DynamoTable', () => {
       });
 
       expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('`selectable` is ignored while `virtualScroll`'),
+        expect.stringContaining(
+          '`selectable` is ignored while `virtualScroll`',
+        ),
       );
       warn.mockRestore();
     });
 
     it('warns when `pageSize` is combined with `virtualScroll`', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
 
       renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
         inputs: {
@@ -1435,7 +1524,9 @@ describe('DynamoTable', () => {
     });
 
     it('does not warn for a valid configuration (selectable + pageSize, no virtualScroll)', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
 
       renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
         inputs: {

@@ -120,7 +120,8 @@ export const tableVirtualStyles = 'w-full text-sm text-text-primary';
 // across them the way a real `<table>` gets for free once the body lives
 // inside CDK's viewport. Border/background otherwise match the native
 // table path's `tableHeaderRowStyles` exactly.
-export const tableVirtualHeaderRowStyles = 'grid border-b border-border bg-surface-50';
+export const tableVirtualHeaderRowStyles =
+  'grid border-b border-border bg-surface-50';
 
 export const tableVirtualBodyRowStyles =
   'grid items-center border-b border-border last:border-b-0 hover:bg-surface-50';

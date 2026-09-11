@@ -17,6 +17,9 @@
     role="presentation"
     *cdkVirtualFor="let item of items(); let i = index; trackBy: trackByFn"
   >
-    <ng-container [ngTemplateOutlet]="itemTemplate()" [ngTemplateOutletContext]="itemContext(item, i)" />
+    <ng-container
+      [ngTemplateOutlet]="itemTemplate()"
+      [ngTemplateOutletContext]="itemContext(item, i)"
+    />
   </div>
 </cdk-virtual-scroll-viewport>

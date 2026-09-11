@@ -12,15 +12,18 @@ export const tieredMenuTriggerStyles = cva(
     focusRingClass,
 );
 
-export const tieredMenuChevronStyles = cva('shrink-0 transition-transform duration-200 ease-out', {
-  variants: {
-    open: {
-      true: 'rotate-180',
-      false: '',
+export const tieredMenuChevronStyles = cva(
+  'shrink-0 transition-transform duration-200 ease-out',
+  {
+    variants: {
+      open: {
+        true: 'rotate-180',
+        false: '',
+      },
     },
+    defaultVariants: { open: false },
   },
-  defaultVariants: { open: false },
-});
+);
 
 export const tieredMenuPanelStyles =
   'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;

@@ -19,7 +19,8 @@ export const editorRootStyles = cva(
   },
 );
 
-export const editorToolbarStyles = 'flex flex-wrap items-center gap-1 border-b border-border p-1.5';
+export const editorToolbarStyles =
+  'flex flex-wrap items-center gap-1 border-b border-border p-1.5';
 
 // Hand-rolled <button> chrome, near-identical to passwordToggleButtonStyles
 // — no @dynamong/button import (would force a tier bump for zero benefit

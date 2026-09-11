@@ -39,7 +39,8 @@ export const panelMenuChevronStyles = cva(
   },
 );
 
-export const panelMenuChevronPlaceholderStyles = 'inline-block h-4 w-4 shrink-0';
+export const panelMenuChevronPlaceholderStyles =
+  'inline-block h-4 w-4 shrink-0';
 
 export const panelMenuLabelStyles = 'truncate';
 

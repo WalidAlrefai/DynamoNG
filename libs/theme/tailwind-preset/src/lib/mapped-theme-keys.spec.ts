@@ -11,7 +11,9 @@ describe('DYNAMO_TAILWIND_THEME_KEYS', () => {
   });
 
   it('has no duplicate keys', () => {
-    expect(new Set(DYNAMO_TAILWIND_THEME_KEYS).size).toBe(DYNAMO_TAILWIND_THEME_KEYS.length);
+    expect(new Set(DYNAMO_TAILWIND_THEME_KEYS).size).toBe(
+      DYNAMO_TAILWIND_THEME_KEYS.length,
+    );
   });
 
   it('exactly mirrors the `@theme` declarations in preset.css', () => {

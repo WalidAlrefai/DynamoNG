@@ -18,7 +18,7 @@ export const orgChartTreeStyles = 'flex justify-center';
 // sibling bus.
 export const orgChartGroupStyles =
   'relative flex justify-center pt-6 ' +
-  "before:absolute before:left-1/2 before:top-0 before:h-6 before:w-px " +
+  'before:absolute before:left-1/2 before:top-0 before:h-6 before:w-px ' +
   "before:bg-border before:content-['']";
 
 // One node and its subtree. Set on the `<dg-org-chart-item>` host so the
@@ -29,9 +29,9 @@ export const orgChartGroupStyles =
 //   - trims: no bus past the first/last child; none at all for a lone child
 export const orgChartItemStyles =
   'relative flex flex-col items-center px-4 pt-6 ' +
-  "before:absolute before:right-1/2 before:top-0 before:h-px before:w-1/2 " +
+  'before:absolute before:right-1/2 before:top-0 before:h-px before:w-1/2 ' +
   "before:bg-border before:content-[''] " +
-  "after:absolute after:left-1/2 after:top-0 after:h-6 after:w-1/2 " +
+  'after:absolute after:left-1/2 after:top-0 after:h-6 after:w-1/2 ' +
   "after:border-l after:border-t after:border-border after:content-[''] " +
   'first:before:hidden ' +
   'last:after:w-px ' +

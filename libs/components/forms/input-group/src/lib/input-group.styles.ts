@@ -30,5 +30,7 @@ export const inputGroupWrapperStyles = cva(
 
 // No border of their own — they sit inside the wrapper's shared border,
 // same reasoning as Select's filter-icon docking (selectFilterIconStyles).
-export const inputGroupPrefixStyles = 'inline-flex shrink-0 items-center text-text-muted';
-export const inputGroupSuffixStyles = 'inline-flex shrink-0 items-center text-text-muted';
+export const inputGroupPrefixStyles =
+  'inline-flex shrink-0 items-center text-text-muted';
+export const inputGroupSuffixStyles =
+  'inline-flex shrink-0 items-center text-text-muted';

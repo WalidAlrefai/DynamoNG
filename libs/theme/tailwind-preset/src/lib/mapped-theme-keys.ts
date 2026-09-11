@@ -67,4 +67,5 @@ export const DYNAMO_TAILWIND_THEME_KEYS = [
   '--ease-emphasized',
 ] as const;
 
-export type DynamoTailwindThemeKey = (typeof DYNAMO_TAILWIND_THEME_KEYS)[number];
+export type DynamoTailwindThemeKey =
+  (typeof DYNAMO_TAILWIND_THEME_KEYS)[number];

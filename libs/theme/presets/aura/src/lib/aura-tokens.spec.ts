@@ -27,13 +27,27 @@ describe('auraLightTokens', () => {
 
   it('defines typography sizes/line-heights as lengths and weights as numeric strings', () => {
     const { typography } = auraLightTokens;
-    for (const key of ['fontSizeXs', 'fontSizeSm', 'fontSizeBase', 'fontSizeLg'] as const) {
+    for (const key of [
+      'fontSizeXs',
+      'fontSizeSm',
+      'fontSizeBase',
+      'fontSizeLg',
+    ] as const) {
       expect(typography[key], key).toMatch(CSS_LENGTH);
     }
-    for (const key of ['lineHeightXs', 'lineHeightSm', 'lineHeightBase', 'lineHeightLg'] as const) {
+    for (const key of [
+      'lineHeightXs',
+      'lineHeightSm',
+      'lineHeightBase',
+      'lineHeightLg',
+    ] as const) {
       expect(typography[key], key).toMatch(CSS_LENGTH);
     }
-    for (const key of ['weightNormal', 'weightMedium', 'weightSemibold'] as const) {
+    for (const key of [
+      'weightNormal',
+      'weightMedium',
+      'weightSemibold',
+    ] as const) {
       expect(typography[key], key).toMatch(/^[1-9]00$/);
     }
     expect(typography.fontSans).toContain('sans-serif');
@@ -48,7 +62,11 @@ describe('auraLightTokens', () => {
 
   it('defines motion durations in ms and easings as cubic-bezier curves', () => {
     const { motion } = auraLightTokens;
-    for (const key of ['durationFast', 'durationBase', 'durationSlow'] as const) {
+    for (const key of [
+      'durationFast',
+      'durationBase',
+      'durationSlow',
+    ] as const) {
       expect(motion[key], key).toMatch(/^\d+ms$/);
     }
     expect(motion.easeStandard).toMatch(/^cubic-bezier\(/);
@@ -75,7 +93,9 @@ describe('auraLightTokens', () => {
 
 describe('auraDarkTokens', () => {
   it('only overrides tokens that exist on the light token set', () => {
-    for (const group of Object.keys(auraDarkTokens) as (keyof typeof auraLightTokens)[]) {
+    for (const group of Object.keys(
+      auraDarkTokens,
+    ) as (keyof typeof auraLightTokens)[]) {
       const overrides = auraDarkTokens[group];
       if (!overrides) continue;
       for (const token of Object.keys(overrides)) {
@@ -87,11 +107,21 @@ describe('auraDarkTokens', () => {
 
 describe('AURA_THEME_CSS', () => {
   it('is derived from the token objects, not hand-duplicated', () => {
-    expect(AURA_THEME_CSS).toContain(`--dg-color-primary: ${auraLightTokens.color.primary};`);
-    expect(AURA_THEME_CSS).toContain(`--dg-spacing-unit: ${auraLightTokens.spacing.unit};`);
-    expect(AURA_THEME_CSS).toContain(`--dg-z-index-modal: ${auraLightTokens.zIndex.modal};`);
+    expect(AURA_THEME_CSS).toContain(
+      `--dg-color-primary: ${auraLightTokens.color.primary};`,
+    );
+    expect(AURA_THEME_CSS).toContain(
+      `--dg-spacing-unit: ${auraLightTokens.spacing.unit};`,
+    );
+    expect(AURA_THEME_CSS).toContain(
+      `--dg-z-index-modal: ${auraLightTokens.zIndex.modal};`,
+    );
     expect(AURA_THEME_CSS).toContain('.dark {');
-    expect(AURA_THEME_CSS).toContain(`--dg-color-surface-0: ${auraDarkTokens.color?.surface0};`);
-    expect(AURA_THEME_CSS).toContain(`--dg-elevation-lg: ${auraDarkTokens.elevation?.lg};`);
+    expect(AURA_THEME_CSS).toContain(
+      `--dg-color-surface-0: ${auraDarkTokens.color?.surface0};`,
+    );
+    expect(AURA_THEME_CSS).toContain(
+      `--dg-elevation-lg: ${auraDarkTokens.elevation?.lg};`,
+    );
   });
 });

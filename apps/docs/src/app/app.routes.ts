@@ -291,8 +291,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'components/knob',
-    loadComponent: () =>
-      import('./pages/knob-doc').then((m) => m.KnobDocPage),
+    loadComponent: () => import('./pages/knob-doc').then((m) => m.KnobDocPage),
   },
   {
     path: 'components/input-mask',

@@ -10,20 +10,23 @@ import { focusRingClass } from '@dynamong/utils/styles';
 // Carousel's track transform.
 export const sliderRootStyles = 'relative w-full py-2';
 
-export const sliderTrackStyles = cva('relative w-full rounded-full bg-surface-200', {
-  variants: {
-    size: {
-      sm: 'h-1',
-      md: 'h-1.5',
-      lg: 'h-2',
+export const sliderTrackStyles = cva(
+  'relative w-full rounded-full bg-surface-200',
+  {
+    variants: {
+      size: {
+        sm: 'h-1',
+        md: 'h-1.5',
+        lg: 'h-2',
+      },
+      disabled: {
+        true: 'pointer-events-none opacity-60',
+        false: 'cursor-pointer',
+      },
     },
-    disabled: {
-      true: 'pointer-events-none opacity-60',
-      false: 'cursor-pointer',
-    },
+    defaultVariants: { size: 'md', disabled: false },
   },
-  defaultVariants: { size: 'md', disabled: false },
-});
+);
 
 export const sliderFillStyles = cva('absolute inset-y-0 start-0 rounded-full', {
   variants: {

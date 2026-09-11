@@ -1,7 +1,10 @@
 import { Component } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { describe, expect, it } from 'vitest';
 import { DynamoVirtualScroll } from './virtual-scroll';
 import { DynamoVirtualScrollHarness } from './virtual-scroll.harness';
@@ -39,18 +42,26 @@ class VirtualScrollTestHostComponent {
 describe('DynamoVirtualScroll', () => {
   describe('creation', () => {
     it('renders the cdk viewport', () => {
-      const { container } = renderDynamoComponent(VirtualScrollTestHostComponent);
+      const { container } = renderDynamoComponent(
+        VirtualScrollTestHostComponent,
+      );
 
-      expect(container.querySelector('[data-testid="DynamoVirtualScroll"]')).toBeTruthy();
+      expect(
+        container.querySelector('[data-testid="DynamoVirtualScroll"]'),
+      ).toBeTruthy();
     });
   });
 
   describe('rendering', () => {
     it('renders items through the projected template, in order', async () => {
-      const { container, fixture } = renderDynamoComponent(VirtualScrollTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        VirtualScrollTestHostComponent,
+      );
       await settle(fixture);
 
-      const wrapper = container.querySelector('.cdk-virtual-scroll-content-wrapper');
+      const wrapper = container.querySelector(
+        '.cdk-virtual-scroll-content-wrapper',
+      );
       expect(wrapper?.textContent).toContain('0:Item 0');
       expect(wrapper?.textContent).toContain('1:Item 1');
     });
@@ -64,10 +75,14 @@ describe('DynamoVirtualScroll', () => {
     // verification section) — same posture as this session's other jsdom
     // gaps (canvas getContext, fieldset cascade).
     it('does not mount every item at once for a large list', async () => {
-      const { container, fixture } = renderDynamoComponent(VirtualScrollTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        VirtualScrollTestHostComponent,
+      );
       await settle(fixture);
 
-      const rendered = container.querySelectorAll('.cdk-virtual-scroll-content-wrapper > *');
+      const rendered = container.querySelectorAll(
+        '.cdk-virtual-scroll-content-wrapper > *',
+      );
       expect(rendered.length).toBeLessThan(1000);
     });
 
@@ -88,7 +103,9 @@ describe('DynamoVirtualScroll', () => {
 
       const { container, fixture } = renderDynamoComponent(SmallHostComponent);
       await settle(fixture);
-      const wrapper = container.querySelector('.cdk-virtual-scroll-content-wrapper');
+      const wrapper = container.querySelector(
+        '.cdk-virtual-scroll-content-wrapper',
+      );
 
       expect(wrapper?.textContent?.trim()).toBe('ABC');
     });
@@ -119,7 +136,12 @@ describe('DynamoVirtualScroll', () => {
         standalone: true,
         imports: [DynamoVirtualScroll],
         template: `
-          <dg-virtual-scroll [items]="items" [itemSize]="24" [height]="120" [trackBy]="trackByLabel">
+          <dg-virtual-scroll
+            [items]="items"
+            [itemSize]="24"
+            [height]="120"
+            [trackBy]="trackByLabel"
+          >
             <ng-template let-item>{{ item.label }}</ng-template>
           </dg-virtual-scroll>
         `,
@@ -147,7 +169,8 @@ describe('DynamoVirtualScroll', () => {
       const viewportDebugEl = fixture.debugElement.query(
         (node) => node.componentInstance instanceof DynamoVirtualScroll,
       );
-      const viewportComponent = viewportDebugEl?.componentInstance as DynamoVirtualScroll<string>;
+      const viewportComponent =
+        viewportDebugEl?.componentInstance as DynamoVirtualScroll<string>;
 
       try {
         viewportComponent.scrollToIndex(500);
@@ -168,7 +191,10 @@ describe('DynamoVirtualScroll', () => {
   describe('user interactions', () => {
     it('supports interaction through the DynamoVirtualScrollHarness', async () => {
       const { fixture } = renderDynamoComponent(VirtualScrollTestHostComponent);
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoVirtualScrollHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoVirtualScrollHarness,
+      );
 
       const count = await harness.getRenderedItemCount();
       expect(count).toBeGreaterThan(0);
@@ -185,14 +211,18 @@ describe('DynamoVirtualScroll', () => {
     // (see the class doc). The content wrapper is CDK-owned and gets its
     // role from the constructor's afterNextRender.
     it('marks the host, viewport, content wrapper, and item wrappers as role="presentation"', async () => {
-      const { container, fixture } = renderDynamoComponent(VirtualScrollTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        VirtualScrollTestHostComponent,
+      );
       await settle(fixture);
 
-      expect(container.querySelector('dg-virtual-scroll')?.getAttribute('role')).toBe(
-        'presentation',
-      );
       expect(
-        container.querySelector('cdk-virtual-scroll-viewport')?.getAttribute('role'),
+        container.querySelector('dg-virtual-scroll')?.getAttribute('role'),
+      ).toBe('presentation');
+      expect(
+        container
+          .querySelector('cdk-virtual-scroll-viewport')
+          ?.getAttribute('role'),
       ).toBe('presentation');
       expect(
         container
@@ -212,7 +242,9 @@ describe('DynamoVirtualScroll', () => {
 
   describe('accessibility', () => {
     it('has no axe violations', async () => {
-      const { container } = renderDynamoComponent(VirtualScrollTestHostComponent);
+      const { container } = renderDynamoComponent(
+        VirtualScrollTestHostComponent,
+      );
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });

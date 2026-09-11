@@ -17,7 +17,10 @@ import {
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { virtualScrollViewportStyles } from './virtual-scroll.styles';
-import type { DynamoVirtualScrollItemContext, DynamoVirtualScrollPart } from './virtual-scroll.types';
+import type {
+  DynamoVirtualScrollItemContext,
+  DynamoVirtualScrollPart,
+} from './virtual-scroll.types';
 
 /**
  * A fixed-size virtual-scrolling viewport, for rendering large lists
@@ -63,23 +66,34 @@ import type { DynamoVirtualScrollItemContext, DynamoVirtualScrollPart } from './
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { role: 'presentation' },
-  imports: [NgTemplateOutlet, CdkVirtualScrollViewport, CdkFixedSizeVirtualScroll, CdkVirtualForOf],
+  imports: [
+    NgTemplateOutlet,
+    CdkVirtualScrollViewport,
+    CdkFixedSizeVirtualScroll,
+    CdkVirtualForOf,
+  ],
   templateUrl: './virtual-scroll.html',
 })
-export class DynamoVirtualScroll<T> extends DynamoBaseComponent<DynamoVirtualScrollPart> {
+export class DynamoVirtualScroll<
+  T,
+> extends DynamoBaseComponent<DynamoVirtualScrollPart> {
   readonly items = input.required<readonly T[]>();
   /** Fixed row height in px — every rendered item, and the viewport's own scroll-position math, assumes this exact height. */
   readonly itemSize = input.required<number>();
   /** The viewport's own height in px — CDK's viewport needs an explicit CSS size to know its own bounds; it does not auto-size to its content or parent. */
   readonly height = input.required<number>();
   /** `@for`-style track escape hatch, mirroring `DynamoTable`'s own `trackBy` input shape. Falls back to item reference identity when omitted. */
-  readonly trackBy = input<((item: T, index: number) => unknown) | undefined>(undefined);
+  readonly trackBy = input<((item: T, index: number) => unknown) | undefined>(
+    undefined,
+  );
 
   protected readonly itemTemplate = contentChild.required(TemplateRef);
   private readonly viewportRef = viewChild.required(CdkVirtualScrollViewport);
 
   protected readonly viewportClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(virtualScrollViewportStyles, this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(virtualScrollViewportStyles, this.styleClass()),
   );
 
   constructor() {
@@ -98,7 +112,10 @@ export class DynamoVirtualScroll<T> extends DynamoBaseComponent<DynamoVirtualScr
     });
   }
 
-  protected itemContext(item: T, index: number): DynamoVirtualScrollItemContext<T> {
+  protected itemContext(
+    item: T,
+    index: number,
+  ): DynamoVirtualScrollItemContext<T> {
     return { $implicit: item, item, index };
   }
 

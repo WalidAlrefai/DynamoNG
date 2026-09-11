@@ -11,8 +11,10 @@ export const overlayBadgeRootStyles = 'relative inline-flex';
 // `end-0`/`start-0` follow the writing direction; Tailwind has no logical
 // `translate`, so the horizontal push-out is mirrored explicitly under `rtl:`.
 const CORNER: Record<DynamoOverlayBadgePosition, string> = {
-  'top-right': 'top-0 end-0 -translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2',
-  'top-left': 'top-0 start-0 -translate-y-1/2 -translate-x-1/2 rtl:translate-x-1/2',
+  'top-right':
+    'top-0 end-0 -translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2',
+  'top-left':
+    'top-0 start-0 -translate-y-1/2 -translate-x-1/2 rtl:translate-x-1/2',
   'bottom-right':
     'bottom-0 end-0 translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2',
   'bottom-left':

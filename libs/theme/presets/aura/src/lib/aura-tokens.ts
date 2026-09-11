@@ -1,4 +1,7 @@
-import type { DynamoThemeTokens, DynamoThemeTokensOverride } from '@dynamong/theme/tokens';
+import type {
+  DynamoThemeTokens,
+  DynamoThemeTokensOverride,
+} from '@dynamong/theme/tokens';
 
 /**
  * The default (light) token values for the "Aura" preset.

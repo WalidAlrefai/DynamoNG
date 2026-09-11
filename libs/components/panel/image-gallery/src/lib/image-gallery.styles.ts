@@ -42,7 +42,8 @@ export const imageGalleryThumbnailsStyles = 'flex gap-2 overflow-x-auto pb-1';
 // `active` button variant (editorButtonStyles) and Carousel's `active` dot
 // variant (carouselDotStyles).
 export const imageGalleryThumbnailStyles = cva(
-  'h-14 w-14 shrink-0 overflow-hidden rounded-md transition-all ' + focusRingClass,
+  'h-14 w-14 shrink-0 overflow-hidden rounded-md transition-all ' +
+    focusRingClass,
   {
     variants: {
       // No border/ring on the active thumbnail — full opacity vs. the
@@ -66,14 +67,17 @@ export const imageGalleryFallbackStyles =
 // how every overlay-domain component in this codebase (Dialog, Drawer,
 // Tooltip) independently implements its own fixed-position shape rather than
 // composing another component.
-export const imageGalleryLightboxBackdropStyles = 'fixed inset-0 z-modal bg-surface-900/90';
+export const imageGalleryLightboxBackdropStyles =
+  'fixed inset-0 z-modal bg-surface-900/90';
 
 export const imageGalleryLightboxPanelStyles =
   'fixed inset-0 z-modal flex flex-col items-center justify-center gap-4 p-4 outline-none';
 
-export const imageGalleryLightboxImageStyles = 'max-h-[80vh] max-w-full object-contain';
+export const imageGalleryLightboxImageStyles =
+  'max-h-[80vh] max-w-full object-contain';
 
-export const imageGalleryLightboxCaptionStyles = 'max-w-2xl text-center text-sm text-surface-0';
+export const imageGalleryLightboxCaptionStyles =
+  'max-w-2xl text-center text-sm text-surface-0';
 
 // Near-identical to dialogCloseButtonStyles, adjusted for the dark lightbox
 // backdrop instead of the light dialog panel background.
