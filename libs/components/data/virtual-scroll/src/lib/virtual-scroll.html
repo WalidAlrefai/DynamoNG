@@ -1,10 +1,25 @@
+<!--
+  `role="presentation"` throughout: this component is a scroll viewport with
+  no semantics of its own. Keeping every structural element it introduces
+  presentational lets a consumer's `role="listbox"`/`role="rowgroup"` own the
+  projected `role="option"`/`role="row"` rows directly (see the class doc).
+  The CDK-owned `.cdk-virtual-scroll-content-wrapper` between these two is
+  tagged from the constructor's `afterNextRender`.
+-->
 <cdk-virtual-scroll-viewport
+  role="presentation"
   [itemSize]="itemSize()"
   [style.height.px]="height()"
   [class]="viewportClasses()"
   [attr.data-testid]="'DynamoVirtualScroll'"
 >
-  <div *cdkVirtualFor="let item of items(); let i = index; trackBy: trackByFn">
-    <ng-container [ngTemplateOutlet]="itemTemplate()" [ngTemplateOutletContext]="itemContext(item, i)" />
+  <div
+    role="presentation"
+    *cdkVirtualFor="let item of items(); let i = index; trackBy: trackByFn"
+  >
+    <ng-container
+      [ngTemplateOutlet]="itemTemplate()"
+      [ngTemplateOutletContext]="itemContext(item, i)"
+    />
   </div>
 </cdk-virtual-scroll-viewport>

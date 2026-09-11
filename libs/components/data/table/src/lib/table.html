@@ -10,8 +10,7 @@
       [placeholder]="filterPlaceholder()"
     />
   </div>
-  }
-  @if (!virtualScroll()) {
+  } @if (!virtualScroll()) {
   <table [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
     <thead>
       <tr [class]="headerRowClasses">
@@ -117,9 +116,26 @@
     comment on `virtualScroll` for why, and for the `selectable` v1 cut
     this path doesn't support the extra checkbox column at all).
   -->
-  <div role="table" [class]="virtualTableClasses" [attr.aria-label]="ariaLabel() ?? null">
+  <!--
+    aria-rowcount / aria-rowindex are load-bearing here, not decorative: the
+    body is virtualized so most rows are never in the DOM for assistive tech
+    to count or position. Count is data rows + 1 header row; the header is
+    row 1, so body row `i` (0-based cdkVirtualFor index) is aria-rowindex
+    `i + 2`.
+  -->
+  <div
+    role="table"
+    [class]="virtualTableClasses"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-rowcount]="sortedData().length + 1"
+  >
     <div role="rowgroup">
-      <div role="row" [class]="virtualHeaderRowClasses" [style.gridTemplateColumns]="virtualGridTemplate()">
+      <div
+        role="row"
+        aria-rowindex="1"
+        [class]="virtualHeaderRowClasses"
+        [style.gridTemplateColumns]="virtualGridTemplate()"
+      >
         @for (column of columns(); track column.field) {
         <div
           role="columnheader"
@@ -169,7 +185,12 @@
         [height]="virtualScrollHeight()"
       >
         <ng-template let-row let-i="index">
-          <div role="row" [class]="virtualBodyRowClasses" [style.gridTemplateColumns]="virtualGridTemplate()">
+          <div
+            role="row"
+            [attr.aria-rowindex]="i + 2"
+            [class]="virtualBodyRowClasses"
+            [style.gridTemplateColumns]="virtualGridTemplate()"
+          >
             @for (column of columns(); track column.field) {
             <div role="cell" [class]="bodyCellClasses()">
               @if (column.cellTemplate) {
@@ -186,8 +207,7 @@
       }
     </div>
   </div>
-  }
-  @if (pageSize() && !virtualScroll()) {
+  } @if (pageSize() && !virtualScroll()) {
   <div [class]="paginationWrapperClasses">
     <dg-pagination
       [totalItems]="sortedData().length"

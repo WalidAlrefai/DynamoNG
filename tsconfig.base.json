@@ -27,6 +27,7 @@
       "@dynamong/utils": ["./libs/utils/src/index.ts"],
       "@dynamong/utils/dom": ["./libs/utils/dom/src/index.ts"],
       "@dynamong/utils/class-merge": ["./libs/utils/class-merge/src/index.ts"],
+      "@dynamong/utils/styles": ["./libs/utils/styles/src/index.ts"],
       "@dynamong/theme": ["./libs/theme/src/index.ts"],
       "@dynamong/theme/tokens": ["./libs/theme/tokens/src/index.ts"],
       "@dynamong/theme/tailwind-preset": [

@@ -1,4 +1,8 @@
 import { cva } from 'class-variance-authority';
+import {
+  focusRingClass,
+  sectionHeadingBaseClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — order-list.html only binds `[class]="...Classes()"`. Shapes
@@ -11,8 +15,7 @@ export const orderListRootStyles =
 export const orderListHeaderStyles =
   'flex items-center justify-between gap-2 border-b border-border px-3 py-2';
 
-export const orderListTitleStyles =
-  'text-xs font-semibold uppercase tracking-wide text-text-muted';
+export const orderListTitleStyles = sectionHeadingBaseClass;
 
 export const orderListControlsStyles = 'flex items-center gap-1';
 
@@ -33,7 +36,7 @@ export const orderListOptionStyles = cva(
 );
 
 export const orderListCheckboxStyles = cva(
-  'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+  'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border',
   {
     variants: {
       checked: {
@@ -49,7 +52,7 @@ export const orderListCheckboxStyles = cva(
 // buttons (no `@dynamong/button` import, which would force a tier bump for
 // zero benefit).
 export const orderListButtonStyles =
-  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-border ' +
+  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-border ' +
   'bg-surface-0 text-sm text-text-primary transition-colors hover:bg-surface-200 ' +
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ' +
-  'disabled:pointer-events-none disabled:opacity-40';
+  'disabled:pointer-events-none disabled:opacity-40 ' +
+  focusRingClass;

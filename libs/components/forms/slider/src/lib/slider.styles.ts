@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — slider.html only ever binds `[class]="...Classes()"`, except
@@ -9,22 +10,25 @@ import { cva } from 'class-variance-authority';
 // Carousel's track transform.
 export const sliderRootStyles = 'relative w-full py-2';
 
-export const sliderTrackStyles = cva('relative w-full rounded-full bg-surface-200', {
-  variants: {
-    size: {
-      sm: 'h-1',
-      md: 'h-1.5',
-      lg: 'h-2',
+export const sliderTrackStyles = cva(
+  'relative w-full rounded-full bg-surface-200',
+  {
+    variants: {
+      size: {
+        sm: 'h-1',
+        md: 'h-1.5',
+        lg: 'h-2',
+      },
+      disabled: {
+        true: 'pointer-events-none opacity-60',
+        false: 'cursor-pointer',
+      },
     },
-    disabled: {
-      true: 'pointer-events-none opacity-60',
-      false: 'cursor-pointer',
-    },
+    defaultVariants: { size: 'md', disabled: false },
   },
-  defaultVariants: { size: 'md', disabled: false },
-});
+);
 
-export const sliderFillStyles = cva('absolute inset-y-0 left-0 rounded-full', {
+export const sliderFillStyles = cva('absolute inset-y-0 start-0 rounded-full', {
   variants: {
     severity: {
       primary: 'bg-primary',
@@ -40,7 +44,8 @@ export const sliderFillStyles = cva('absolute inset-y-0 left-0 rounded-full', {
 
 export const sliderThumbStyles = cva(
   'absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-surface-0 shadow ' +
-    'transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    'transition-shadow ' +
+    focusRingClass,
   {
     variants: {
       size: {

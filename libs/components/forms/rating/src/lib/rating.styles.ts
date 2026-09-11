@@ -1,10 +1,10 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — rating.html only ever binds `[class]="...Classes()"`.
 export const ratingRootStyles = cva(
-  'inline-flex items-center gap-1 rounded focus-visible:outline-none ' +
-    'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+  'inline-flex items-center gap-1 rounded-sm ' + focusRingClass,
   {
     variants: {
       disabled: {
@@ -29,7 +29,7 @@ export const ratingStarStyles = cva('transition-colors', {
       lg: 'h-6 w-6',
     },
     filled: {
-      true: 'text-amber-400',
+      true: 'text-warning',
       false: 'text-surface-300',
     },
     interactive: {

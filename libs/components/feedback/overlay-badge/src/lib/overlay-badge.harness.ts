@@ -34,7 +34,7 @@ export class DynamoOverlayBadgeHarness extends ComponentHarness {
     if (!marker) return null;
     const cls = (await marker.getAttribute('class')) ?? '';
     const vertical = cls.includes('top-0') ? 'top' : 'bottom';
-    const horizontal = cls.includes('left-0') ? 'left' : 'right';
+    const horizontal = cls.includes('start-0') ? 'left' : 'right';
     return `${vertical}-${horizontal}` as DynamoOverlayBadgePosition;
   }
 }

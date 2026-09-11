@@ -1,7 +1,11 @@
 /**
  * The Tailwind `@theme` keys that `preset.css` maps onto `--dg-*` design tokens.
- * Kept in sync with `preset.css` manually; a test asserts the two stay aligned
- * so a forgotten mapping fails CI instead of silently producing an unstyled utility.
+ * Kept in sync with `preset.css` manually; `mapped-theme-keys.spec.ts` parses the
+ * CSS and asserts the two stay aligned, so a forgotten mapping fails CI instead
+ * of silently producing an unstyled utility.
+ *
+ * `@utility` rules in `preset.css` (the focus ring, the `z-*` layers) are NOT
+ * listed here — they are real utilities, not `@theme` scale entries.
  */
 export const DYNAMO_TAILWIND_THEME_KEYS = [
   '--color-primary',
@@ -26,17 +30,42 @@ export const DYNAMO_TAILWIND_THEME_KEYS = [
   '--color-surface-50',
   '--color-surface-100',
   '--color-surface-200',
+  '--color-surface-300',
   '--color-surface-700',
   '--color-surface-800',
   '--color-surface-900',
   '--color-text-primary',
   '--color-text-muted',
+  '--color-text-disabled',
   '--color-border',
   '--color-ring',
+  '--color-scrim',
   '--radius-sm',
   '--radius-md',
   '--radius-lg',
+  '--radius-xl',
+  '--radius-2xl',
   '--radius-full',
+  '--spacing',
+  '--font-sans',
+  '--font-mono',
+  '--text-xs',
+  '--text-xs--line-height',
+  '--text-sm',
+  '--text-sm--line-height',
+  '--text-base',
+  '--text-base--line-height',
+  '--text-lg',
+  '--text-lg--line-height',
+  '--font-weight-normal',
+  '--font-weight-medium',
+  '--font-weight-semibold',
+  '--shadow-sm',
+  '--shadow-md',
+  '--shadow-lg',
+  '--ease-standard',
+  '--ease-emphasized',
 ] as const;
 
-export type DynamoTailwindThemeKey = (typeof DYNAMO_TAILWIND_THEME_KEYS)[number];
+export type DynamoTailwindThemeKey =
+  (typeof DYNAMO_TAILWIND_THEME_KEYS)[number];

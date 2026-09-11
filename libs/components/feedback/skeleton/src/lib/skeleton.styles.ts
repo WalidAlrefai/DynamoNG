@@ -11,7 +11,7 @@ export const skeletonStyles = cva(
   {
     variants: {
       variant: {
-        text: 'h-4 w-full rounded',
+        text: 'h-4 w-full rounded-sm',
         circular: 'h-10 w-10 rounded-full',
         rectangular: 'h-24 w-full rounded-md',
       },

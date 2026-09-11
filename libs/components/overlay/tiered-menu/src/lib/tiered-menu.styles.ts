@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass, overlayPanelClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — tiered-menu.html only ever binds `[class]="...Classes()"`.
@@ -7,22 +8,25 @@ import { cva } from 'class-variance-authority';
 // rather than composing `@dynamong/menu`).
 export const tieredMenuTriggerStyles = cva(
   'flex items-center justify-between gap-2 rounded-md border border-border bg-surface-0 ' +
-    'px-4 py-2 text-left text-sm text-text-primary transition-colors focus-visible:outline-none ' +
-    'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:bg-surface-50',
+    'px-4 py-2 text-start text-sm text-text-primary transition-colors hover:bg-surface-50 ' +
+    focusRingClass,
 );
 
-export const tieredMenuChevronStyles = cva('shrink-0 transition-transform duration-200 ease-out', {
-  variants: {
-    open: {
-      true: 'rotate-180',
-      false: '',
+export const tieredMenuChevronStyles = cva(
+  'shrink-0 transition-transform duration-200 ease-out',
+  {
+    variants: {
+      open: {
+        true: 'rotate-180',
+        false: '',
+      },
     },
+    defaultVariants: { open: false },
   },
-  defaultVariants: { open: false },
-});
+);
 
 export const tieredMenuPanelStyles =
-  'z-10 min-w-[10rem] rounded-md border border-border bg-surface-0 py-1 shadow-lg';
+  'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;
 
 // Rows are virtual-focus-only (aria-activedescendant, not real DOM focus —
 // see tiered-menu.ts's doc comment), so `active` is a real, JS-driven visual
@@ -31,7 +35,7 @@ export const tieredMenuPanelStyles =
 // `active` variant, minus its `selected` axis (nothing here is ever
 // persistently "selected" the way a cascade value is).
 export const tieredMenuItemStyles = cva(
-  'flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2 text-left text-sm text-text-primary',
+  'flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2 text-start text-sm text-text-primary',
   {
     variants: {
       active: {

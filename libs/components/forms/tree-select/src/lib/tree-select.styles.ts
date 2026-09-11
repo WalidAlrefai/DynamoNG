@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only NEW Tailwind classes for this component live here — the trigger
 // and panel-wrapper look are reused directly from `@dynamong/select`
@@ -6,7 +7,7 @@ import { cva } from 'class-variance-authority';
 // `selectPanelWrapperStyles`), not redeclared. Only the tree row itself
 // (indentation, expand chevron, selected/active highlight) is genuinely new.
 export const treeSelectRowStyles = cva(
-  'flex w-full cursor-pointer items-center gap-1 rounded px-2 py-1.5 text-sm text-text-primary',
+  'flex w-full cursor-pointer items-center gap-1 rounded-sm px-2 py-1.5 text-sm text-text-primary',
   {
     variants: {
       active: {
@@ -27,8 +28,8 @@ export const treeSelectRowStyles = cva(
 );
 
 export const treeSelectExpandButtonStyles =
-  'flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-surface-200 ' +
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm hover:bg-surface-200 ' +
+  focusRingClass;
 
 // Keeps leaf rows' labels aligned with branch rows' labels (which have an
 // expand button occupying the same width).

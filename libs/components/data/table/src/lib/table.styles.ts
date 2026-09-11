@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — table.html only ever binds `[class]="...Classes()"` or a
@@ -6,7 +7,7 @@ import { cva } from 'class-variance-authority';
 export const tableWrapperStyles =
   'w-full overflow-x-auto rounded-md border border-border';
 export const tableStyles =
-  'w-full border-collapse text-left text-sm text-text-primary';
+  'w-full border-collapse text-start text-sm text-text-primary';
 export const tableHeaderRowStyles = 'border-b border-border bg-surface-50';
 
 export const tableHeaderCellStyles = cva('font-medium text-text-muted', {
@@ -22,8 +23,8 @@ export const tableHeaderCellStyles = cva('font-medium text-text-muted', {
 
 export const tableSortButtonStyles =
   'inline-flex items-center gap-1 rounded-sm font-medium text-text-muted transition-colors ' +
-  'hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ' +
-  'focus-visible:ring-offset-2';
+  'hover:text-text-primary ' +
+  focusRingClass;
 
 // Reuses Menu's rotate-on-state chevron pattern rather than a new icon
 // asset — "none" dims it to signal sortable-but-inactive.
@@ -119,7 +120,8 @@ export const tableVirtualStyles = 'w-full text-sm text-text-primary';
 // across them the way a real `<table>` gets for free once the body lives
 // inside CDK's viewport. Border/background otherwise match the native
 // table path's `tableHeaderRowStyles` exactly.
-export const tableVirtualHeaderRowStyles = 'grid border-b border-border bg-surface-50';
+export const tableVirtualHeaderRowStyles =
+  'grid border-b border-border bg-surface-50';
 
 export const tableVirtualBodyRowStyles =
   'grid items-center border-b border-border last:border-b-0 hover:bg-surface-50';

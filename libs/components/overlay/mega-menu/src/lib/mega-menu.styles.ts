@@ -1,4 +1,9 @@
 import { cva } from 'class-variance-authority';
+import {
+  focusRingClass,
+  overlayPanelClass,
+  sectionHeadingBaseClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — mega-menu.html only ever binds `[class]="...Classes()"` or a
@@ -34,7 +39,8 @@ export const megaMenuEndStyles = 'flex shrink-0 items-center gap-2';
 
 export const megaMenuItemStyles = cva(
   'flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-text-primary ' +
-    'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    'transition-colors ' +
+    focusRingClass,
   {
     variants: {
       open: { true: 'bg-surface-100', false: '' },
@@ -56,18 +62,18 @@ export const megaMenuChevronStyles = cva(
 );
 
 export const megaMenuPanelStyles =
-  'z-10 flex gap-8 rounded-md border border-border bg-surface-0 p-4 shadow-lg';
+  'z-dropdown flex gap-8 p-4 ' + overlayPanelClass;
 
 export const megaMenuColumnStyles = 'flex min-w-[10rem] flex-col gap-1';
 
 export const megaMenuColumnHeaderStyles =
-  'px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted';
+  'px-2 pb-1 ' + sectionHeadingBaseClass;
 
 // Links are virtual-focus-only (aria-activedescendant, not real DOM focus),
 // so `active` is a JS-driven visual variant rather than `:focus-visible` —
 // same idiom as Menubar's own `menubarRowStyles`.
 export const megaMenuLinkStyles = cva(
-  'block cursor-pointer rounded px-2 py-1.5 text-left text-sm text-text-primary',
+  'block cursor-pointer rounded-sm px-2 py-1.5 text-start text-sm text-text-primary',
   {
     variants: {
       active: { true: 'bg-surface-100', false: '' },

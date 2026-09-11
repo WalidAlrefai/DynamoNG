@@ -12,6 +12,11 @@
  *   @import "tailwindcss";
  *   @import "@dynamong/theme/tailwind-preset/preset.css";
  *   @import "@dynamong/theme-aura/theme.css";
+ *
+ * NOTE: the `@theme` keys mapped below are mirrored in `mapped-theme-keys.ts`,
+ * and a test parses this file to assert the two never drift. The `@utility`
+ * rules further down cover token categories Tailwind v4 has no `@theme`
+ * namespace for (z-index layers) or that need real declarations (the focus ring).
  */
 
 @theme {
@@ -43,17 +48,134 @@
   --color-surface-50: var(--dg-color-surface-50);
   --color-surface-100: var(--dg-color-surface-100);
   --color-surface-200: var(--dg-color-surface-200);
+  --color-surface-300: var(--dg-color-surface-300);
   --color-surface-700: var(--dg-color-surface-700);
   --color-surface-800: var(--dg-color-surface-800);
   --color-surface-900: var(--dg-color-surface-900);
 
   --color-text-primary: var(--dg-color-text-primary);
   --color-text-muted: var(--dg-color-text-muted);
+  --color-text-disabled: var(--dg-color-text-disabled);
   --color-border: var(--dg-color-border);
   --color-ring: var(--dg-color-ring);
+  --color-scrim: var(--dg-color-scrim);
 
   --radius-sm: var(--dg-radius-sm);
   --radius-md: var(--dg-radius-md);
   --radius-lg: var(--dg-radius-lg);
+  --radius-xl: var(--dg-radius-xl);
+  --radius-2xl: var(--dg-radius-2xl);
   --radius-full: var(--dg-radius-full);
+
+  /* The single multiplier Tailwind's whole spacing scale derives from — the
+     white-label density knob. Equal to Tailwind's own default (0.25rem), so
+     wiring it through changes nothing until a theme overrides it. */
+  --spacing: var(--dg-spacing-unit);
+
+  --font-sans: var(--dg-typography-font-sans);
+  --font-mono: var(--dg-typography-font-mono);
+
+  --text-xs: var(--dg-typography-font-size-xs);
+  --text-xs--line-height: var(--dg-typography-line-height-xs);
+  --text-sm: var(--dg-typography-font-size-sm);
+  --text-sm--line-height: var(--dg-typography-line-height-sm);
+  --text-base: var(--dg-typography-font-size-base);
+  --text-base--line-height: var(--dg-typography-line-height-base);
+  --text-lg: var(--dg-typography-font-size-lg);
+  --text-lg--line-height: var(--dg-typography-line-height-lg);
+
+  --font-weight-normal: var(--dg-typography-weight-normal);
+  --font-weight-medium: var(--dg-typography-weight-medium);
+  --font-weight-semibold: var(--dg-typography-weight-semibold);
+
+  --shadow-sm: var(--dg-elevation-sm);
+  --shadow-md: var(--dg-elevation-md);
+  --shadow-lg: var(--dg-elevation-lg);
+
+  --ease-standard: var(--dg-motion-ease-standard);
+  --ease-emphasized: var(--dg-motion-ease-emphasized);
+}
+
+/*
+ * Focus ring — one themeable treatment, replacing the
+ * `focus-visible:outline-none ring-2 ring-ring ring-offset-2` recipe that was
+ * copy-pasted across ~50 component style files. A two-layer box-shadow (a
+ * surface-coloured gap, then the ring) driven by `--dg-focus-*` + `--dg-color-*`.
+ *
+ * The ring colour reads `--dg-focus-ring-color` with a fallback to
+ * `--dg-color-ring`; an invalid form field sets that property to the danger
+ * colour via `[--dg-focus-ring-color:var(--color-danger)]`.
+ *
+ * `-within` is for a wrapper whose focus lives on a child (e.g. the Select
+ * trigger); `-peer` is for an element styled off a sibling `.peer` input's
+ * focus (e.g. the Checkbox box).
+ */
+@utility dg-focus-ring {
+  &:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow:
+      0 0 0 var(--dg-focus-ring-offset) var(--dg-color-surface-0),
+      0 0 0 calc(var(--dg-focus-ring-offset) + var(--dg-focus-ring-width))
+        var(--dg-focus-ring-color, var(--dg-color-ring));
+  }
+}
+
+@utility dg-focus-ring-within {
+  &:focus-within {
+    box-shadow:
+      0 0 0 var(--dg-focus-ring-offset) var(--dg-color-surface-0),
+      0 0 0 calc(var(--dg-focus-ring-offset) + var(--dg-focus-ring-width))
+        var(--dg-focus-ring-color, var(--dg-color-ring));
+  }
+}
+
+@utility dg-focus-ring-peer {
+  .peer:focus-visible ~ & {
+    box-shadow:
+      0 0 0 var(--dg-focus-ring-offset) var(--dg-color-surface-0),
+      0 0 0 calc(var(--dg-focus-ring-offset) + var(--dg-focus-ring-width))
+        var(--dg-focus-ring-color, var(--dg-color-ring));
+  }
+}
+
+/*
+ * Inset variant — the ring is drawn INSIDE the element's box with no offset
+ * gap. For full-width interactive rows (accordion header, tree row, panel
+ * header, splitter handle) where an outset ring is clipped by an
+ * `overflow-hidden` ancestor or overlaps the neighbouring row.
+ */
+@utility dg-focus-ring-inset {
+  &:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: inset 0 0 0 var(--dg-focus-ring-width)
+      var(--dg-focus-ring-color, var(--dg-color-ring));
+  }
+}
+
+/*
+ * Named z-index layers — Tailwind v4 has no `@theme` namespace for `z-*`, so
+ * these are real utilities. Replaces the single overloaded `z-10` that ~26
+ * overlay/panel style files shared with no ordering between them.
+ */
+@utility z-dropdown {
+  z-index: var(--dg-z-index-dropdown);
+}
+@utility z-overlay-panel {
+  z-index: var(--dg-z-index-overlay-panel);
+}
+@utility z-drawer {
+  z-index: var(--dg-z-index-drawer);
+}
+@utility z-modal {
+  z-index: var(--dg-z-index-modal);
+}
+@utility z-popover {
+  z-index: var(--dg-z-index-popover);
+}
+@utility z-toast {
+  z-index: var(--dg-z-index-toast);
+}
+@utility z-tooltip {
+  z-index: var(--dg-z-index-tooltip);
 }

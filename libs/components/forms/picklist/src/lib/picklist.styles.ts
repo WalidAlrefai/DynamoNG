@@ -1,4 +1,8 @@
 import { cva } from 'class-variance-authority';
+import {
+  focusRingClass,
+  sectionHeadingBaseClass,
+} from '@dynamong/utils/styles';
 
 export const picklistRootStyles = 'flex items-start gap-3';
 
@@ -8,7 +12,7 @@ export const picklistPanelStyles =
 export const picklistPanelHeaderStyles =
   'flex items-center justify-between gap-2 border-b border-border px-3 py-2';
 
-export const picklistPanelTitleStyles = 'text-xs font-semibold uppercase tracking-wide text-text-muted';
+export const picklistPanelTitleStyles = sectionHeadingBaseClass;
 
 export const picklistPanelListStyles = 'flex-1 overflow-auto py-1';
 
@@ -29,7 +33,7 @@ export const picklistOptionStyles = cva(
 // Mirrors listboxOptionCheckboxStyles/MultiSelect's own panel-row checkbox:
 // an empty bordered square that only shows the check glyph once selected.
 export const picklistOptionCheckboxStyles = cva(
-  'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+  'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border',
   {
     variants: {
       checked: {
@@ -49,7 +53,7 @@ export const picklistReorderButtonRowStyles = 'flex items-center gap-1';
 // button / Chips Input's remove-chip button — no @dynamong/button import
 // (would force a tier bump for zero benefit here).
 export const picklistButtonStyles =
-  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded border border-border ' +
+  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-border ' +
   'bg-surface-0 text-sm text-text-primary transition-colors hover:bg-surface-200 ' +
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ' +
-  'disabled:pointer-events-none disabled:opacity-40';
+  'disabled:pointer-events-none disabled:opacity-40 ' +
+  focusRingClass;

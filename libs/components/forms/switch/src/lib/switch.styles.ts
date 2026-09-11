@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingPeerClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — switch.html only ever binds `[class]="...Classes()"`.
@@ -23,7 +24,7 @@ export const switchRootStyles = cva('flex items-center gap-2 select-none', {
 
 export const switchTrackStyles = cva(
   'relative inline-block shrink-0 rounded-full border transition-colors ' +
-    'peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2',
+    focusRingPeerClass,
   {
     variants: {
       size: {
@@ -48,7 +49,7 @@ export const switchTrackStyles = cva(
 // constant 2px (left-0.5) inset on both sides, that's exactly the distance
 // from the track's left edge to its right edge for the thumb's own size.
 export const switchThumbStyles = cva(
-  'absolute left-0.5 top-1/2 -translate-y-1/2 rounded-full bg-surface-0 shadow-sm ' +
+  'absolute start-0.5 top-1/2 -translate-y-1/2 rounded-full bg-surface-0 shadow-sm ' +
     'transition-transform duration-150 motion-reduce:transition-none',
   {
     variants: {
@@ -62,10 +63,12 @@ export const switchThumbStyles = cva(
         false: 'translate-x-0',
       },
     },
+    // Tailwind has no logical `translate`, so the checked thumb travel is
+    // mirrored explicitly under `rtl:`.
     compoundVariants: [
-      { size: 'sm', checked: true, class: 'translate-x-4' },
-      { size: 'md', checked: true, class: 'translate-x-5' },
-      { size: 'lg', checked: true, class: 'translate-x-6' },
+      { size: 'sm', checked: true, class: 'translate-x-4 rtl:-translate-x-4' },
+      { size: 'md', checked: true, class: 'translate-x-5 rtl:-translate-x-5' },
+      { size: 'lg', checked: true, class: 'translate-x-6 rtl:-translate-x-6' },
     ],
     defaultVariants: { size: 'md', checked: false },
   },

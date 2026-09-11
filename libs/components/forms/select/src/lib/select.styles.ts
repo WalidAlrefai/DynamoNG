@@ -1,4 +1,12 @@
 import { cva } from 'class-variance-authority';
+import {
+  controlSizeVariants,
+  focusRingClass,
+  focusRingInvalidClass,
+  focusRingWithinClass,
+  overlayPanelClass,
+  sectionHeadingClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — select.html only ever binds `[class]="...Classes()"`.
@@ -12,17 +20,14 @@ import { cva } from 'class-variance-authority';
 // the focused element.
 export const selectTriggerStyles = cva(
   'flex w-full items-center gap-2 rounded-md border bg-surface-0 text-text-primary ' +
-    'transition-colors focus-within:ring-2 focus-within:ring-offset-2',
+    'transition-colors ' +
+    focusRingWithinClass,
   {
     variants: {
-      size: {
-        sm: 'h-8 px-3 text-sm',
-        md: 'h-10 px-4 text-base',
-        lg: 'h-12 px-5 text-lg',
-      },
+      size: controlSizeVariants,
       invalid: {
-        true: 'border-danger focus-within:ring-danger',
-        false: 'border-border focus-within:ring-ring',
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: 'border-border',
       },
       disabled: {
         true: 'pointer-events-none opacity-60',
@@ -37,7 +42,7 @@ export const selectTriggerStyles = cva(
 // unstyled beyond layout, since the wrapper already provides the visible
 // border/background/padding.
 export const selectTriggerButtonStyles =
-  'min-w-0 flex-1 truncate bg-transparent text-left outline-none disabled:cursor-not-allowed';
+  'min-w-0 flex-1 truncate bg-transparent text-start outline-none disabled:cursor-not-allowed';
 
 // `ms-auto` pins the chevron to the end of the trigger row. In
 // `DynamoSelect` this is a no-op — the inner combobox `<button>` already has
@@ -64,8 +69,8 @@ export const selectChevronStyles = cva(
 // whatever text color the trigger already resolved to.
 export const selectClearButtonStyles =
   'inline-flex shrink-0 items-center justify-center rounded-full p-0.5 ' +
-  'transition-colors hover:bg-current/10 focus-visible:outline-none focus-visible:ring-2 ' +
-  'focus-visible:ring-ring focus-visible:ring-offset-1';
+  'transition-colors hover:bg-current/10 ' +
+  focusRingClass;
 
 // The panel's outer wrapper — NOT the `<ul role="listbox">` itself. The
 // filter box and select-all/clear-all row (real `<input>`/`<button>`
@@ -81,7 +86,7 @@ export const selectClearButtonStyles =
 // can't rely on a `w-full`-inside-`relative` parent trick the way the old
 // CSS-positioned panel did. Same fixed-width approach as `menuPanelStyles`.
 export const selectPanelWrapperStyles =
-  'z-10 min-w-[12rem] max-h-60 overflow-auto rounded-md border border-border bg-surface-0 shadow-lg';
+  'z-overlay-panel min-w-[12rem] max-h-60 overflow-auto ' + overlayPanelClass;
 
 // When virtualized, `@dynamong/virtual-scroll`'s own viewport (a fixed
 // `height`) is the sole scrolling region — this wrapper must NOT also
@@ -92,7 +97,7 @@ export const selectPanelWrapperStyles =
 // and no `max-h-60`) clips any minor rounding overflow without ever
 // introducing its own scrollbar.
 export const selectPanelWrapperVirtualStyles =
-  'z-10 min-w-[12rem] overflow-hidden rounded-md border border-border bg-surface-0 shadow-lg';
+  'z-overlay-panel min-w-[12rem] overflow-hidden ' + overlayPanelClass;
 
 export const selectListboxStyles = 'py-1';
 
@@ -114,15 +119,14 @@ export const selectFilterWrapperStyles = 'border-b border-border p-2';
 export const selectFilterFieldWrapperStyles = 'relative min-w-0 flex-1';
 
 export const selectFilterIconStyles =
-  'pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted';
+  'pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted';
 
 // Passed as `<dg-input-text>`'s `[styleClass]` so typed text doesn't run
 // under the icon. `cn()`'s `tailwind-merge` correctly resolves this against
 // `inputTextStyles`'s own `px-*` (overrides only the right side).
-export const selectFilterInputExtraClasses = 'pr-8';
+export const selectFilterInputExtraClasses = 'pe-8';
 
-export const selectGroupHeadingStyles =
-  'px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted';
+export const selectGroupHeadingStyles = sectionHeadingClass;
 
 export const selectNoResultsStyles = 'px-4 py-2 text-sm text-text-muted';
 

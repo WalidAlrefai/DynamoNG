@@ -1,4 +1,9 @@
 import { cva } from 'class-variance-authority';
+import {
+  controlSizeVariants,
+  focusRingInvalidClass,
+  focusRingWithinClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — input-group.html only ever binds `[class]="...Classes()"`.
@@ -9,17 +14,14 @@ import { cva } from 'class-variance-authority';
 // projected inside is expected to sit flush against it, unstyled.
 export const inputGroupWrapperStyles = cva(
   'flex w-full items-center gap-1 rounded-md border bg-surface-0 text-text-primary ' +
-    'transition-colors focus-within:ring-2 focus-within:ring-offset-2',
+    'transition-colors ' +
+    focusRingWithinClass,
   {
     variants: {
-      size: {
-        sm: 'h-8 px-3 text-sm',
-        md: 'h-10 px-4 text-base',
-        lg: 'h-12 px-5 text-lg',
-      },
+      size: controlSizeVariants,
       invalid: {
-        true: 'border-danger focus-within:ring-danger',
-        false: 'border-border focus-within:ring-ring',
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: 'border-border',
       },
     },
     defaultVariants: { size: 'md', invalid: false },
@@ -28,5 +30,7 @@ export const inputGroupWrapperStyles = cva(
 
 // No border of their own — they sit inside the wrapper's shared border,
 // same reasoning as Select's filter-icon docking (selectFilterIconStyles).
-export const inputGroupPrefixStyles = 'inline-flex shrink-0 items-center text-text-muted';
-export const inputGroupSuffixStyles = 'inline-flex shrink-0 items-center text-text-muted';
+export const inputGroupPrefixStyles =
+  'inline-flex shrink-0 items-center text-text-muted';
+export const inputGroupSuffixStyles =
+  'inline-flex shrink-0 items-center text-text-muted';

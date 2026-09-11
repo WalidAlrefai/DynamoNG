@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingPeerClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — checkbox.html only ever binds `[class]="...Classes()"`.
@@ -22,7 +23,7 @@ export const checkboxRootStyles = cva('flex items-center gap-2 select-none', {
 
 export const checkboxBoxStyles = cva(
   'flex items-center justify-center rounded-sm border shrink-0 transition-colors ' +
-    'peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2',
+    focusRingPeerClass,
   {
     variants: {
       size: {

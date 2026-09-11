@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — drawer.html only ever binds `[class]="...Classes()"`.
@@ -8,8 +9,12 @@ import { cva } from 'class-variance-authority';
 // overlay components stay visually consistent). `visible` drives the
 // slide transform per edge — see drawer.ts's animation state machine for
 // why the class flip is deferred a frame rather than applied immediately.
+//
+// The `position` variants are deliberately physical (`left`/`right` keyed,
+// matching PrimeNG's Drawer API — the consumer names the side explicitly),
+// so this file is exempted from the logical-utilities lint rule.
 export const drawerPanelStyles = cva(
-  'fixed z-10 flex flex-col overflow-y-auto border-border bg-surface-0 p-6 shadow-lg ' +
+  'fixed z-drawer flex flex-col overflow-y-auto border-border bg-surface-0 p-6 shadow-lg ' +
     'transition-transform duration-200 motion-reduce:transition-none focus:outline-none',
   {
     variants: {
@@ -57,4 +62,5 @@ export const drawerPanelStyles = cva(
 
 export const drawerCloseButtonStyles =
   'inline-flex h-6 w-6 items-center justify-center rounded-md text-text-muted transition-colors ' +
-  'hover:bg-surface-100 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'hover:bg-surface-100 hover:text-text-primary ' +
+  focusRingClass;

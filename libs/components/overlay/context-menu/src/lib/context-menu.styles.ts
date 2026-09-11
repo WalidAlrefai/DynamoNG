@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { overlayPanelClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — context-menu.html only ever binds `[class]="...Classes()"`.
@@ -9,10 +10,10 @@ export const contextMenuTriggerStyles = '';
 // (per-component style redeclaration is the norm in this codebase, same as
 // SplitButton's copy).
 export const contextMenuPanelStyles =
-  'z-10 min-w-[10rem] rounded-md border border-border bg-surface-0 py-1 shadow-lg';
+  'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;
 
 export const contextMenuItemStyles = cva(
-  'block w-full cursor-pointer px-4 py-2 text-left text-sm text-text-primary ' +
+  'block w-full cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
     'focus-visible:outline-none focus-visible:bg-surface-100',
   {
     variants: {

@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority';
+import { focusRingInsetClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — accordion.html only ever binds `[class]="...Classes()"`.
@@ -18,9 +19,9 @@ export const accordionPanelStyles = cva(
 );
 
 export const accordionHeaderStyles = cva(
-  'flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium ' +
-    'transition-colors focus-visible:outline-none focus-visible:ring-2 ' +
-    'focus-visible:ring-ring focus-visible:ring-inset',
+  'flex w-full items-center justify-between gap-2 px-4 py-3 text-start text-sm font-medium ' +
+    'transition-colors ' +
+    focusRingInsetClass,
   {
     variants: {
       // `text-*` lives only here (not in the base string above) so exactly

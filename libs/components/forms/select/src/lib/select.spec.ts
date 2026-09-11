@@ -624,7 +624,8 @@ describe('DynamoSelect', () => {
   });
 
   describe('virtual scroll', () => {
-    const MANY_OPTIONS: DynamoSelectOption<string>[] = createMockSelectOptions(50);
+    const MANY_OPTIONS: DynamoSelectOption<string>[] =
+      createMockSelectOptions(50);
 
     it('renders the option list through dg-virtual-scroll when enabled (ungrouped case)', async () => {
       const { container, fixture } = renderDynamoComponent(DynamoSelect, {
@@ -653,9 +654,12 @@ describe('DynamoSelect', () => {
     });
 
     it('keyboard navigation still moves activeIndex while virtualized', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoSelect, {
-        inputs: { options: MANY_OPTIONS, virtualScroll: true },
-      });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        {
+          inputs: { options: MANY_OPTIONS, virtualScroll: true },
+        },
+      );
       const trigger = within(container).getByRole('combobox') as HTMLElement;
       trigger.focus();
 
@@ -684,10 +688,13 @@ describe('DynamoSelect', () => {
       const viewportDebugEl = fixture.debugElement.query(
         (node) => node.componentInstance instanceof DynamoVirtualScroll,
       );
-      const viewport = viewportDebugEl.componentInstance as DynamoVirtualScroll<unknown>;
+      const viewport =
+        viewportDebugEl.componentInstance as DynamoVirtualScroll<unknown>;
       const scrollSpy = vi.spyOn(viewport, 'scrollToIndex');
 
-      getOptionByText('Option 2').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      getOptionByText('Option 2').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
       await settle(fixture);
       expect(scrollSpy).not.toHaveBeenCalled();
 
@@ -710,7 +717,9 @@ describe('DynamoSelect', () => {
       await settle(fixture);
 
       expect(getPanel()?.querySelector('dg-virtual-scroll')).toBeNull();
-      expect(getPanel()?.querySelectorAll('[role="presentation"]').length).toBeGreaterThan(0);
+      expect(
+        getPanel()?.querySelectorAll('[role="presentation"]').length,
+      ).toBeGreaterThan(0);
     });
 
     it('does not virtualize when virtualScroll is left at its default (false)', async () => {
@@ -827,14 +836,28 @@ describe('DynamoSelect', () => {
       await settle(fixture);
 
       // The virtualized branch inserts CDK's viewport/content-wrapper divs
-      // between `role="listbox"` and its `role="option"` children — neither
-      // carries a role of their own, so they stay accessibility-tree
-      // transparent and shouldn't trip `aria-required-children`, but that's
-      // exactly the kind of assumption worth confirming with axe rather
-      // than just reasoning about it.
-      await expect(
-        expectNoA11yViolations(getOverlayContainer()),
-      ).resolves.toBeUndefined();
+      // between `role="listbox"` and its `role="option"` children.
+      // `DynamoVirtualScroll` marks every one of those structural elements
+      // `role="presentation"` (host + viewport + item wrappers in its
+      // template, the CDK-owned content wrapper from its constructor), so
+      // the listbox owns its options through an unbroken presentational
+      // chain rather than through roleless generics.
+      const overlay = getOverlayContainer();
+      expect(
+        overlay.querySelector('dg-virtual-scroll')?.getAttribute('role'),
+      ).toBe('presentation');
+      expect(
+        overlay
+          .querySelector('cdk-virtual-scroll-viewport')
+          ?.getAttribute('role'),
+      ).toBe('presentation');
+      expect(
+        overlay
+          .querySelector('.cdk-virtual-scroll-content-wrapper')
+          ?.getAttribute('role'),
+      ).toBe('presentation');
+
+      await expect(expectNoA11yViolations(overlay)).resolves.toBeUndefined();
     });
 
     it('has no axe violations when open with a filter box and a clear button', async () => {

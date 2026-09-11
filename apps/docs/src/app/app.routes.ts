@@ -16,6 +16,11 @@ export const appRoutes: Route[] = [
       import('./pages/templates').then((m) => m.TemplatesPage),
   },
   {
+    path: 'foundations',
+    loadComponent: () =>
+      import('./pages/foundations-doc').then((m) => m.FoundationsDocPage),
+  },
+  {
     path: 'components/button',
     loadComponent: () =>
       import('./pages/button-doc').then((m) => m.ButtonDocPage),
@@ -286,8 +291,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'components/knob',
-    loadComponent: () =>
-      import('./pages/knob-doc').then((m) => m.KnobDocPage),
+    loadComponent: () => import('./pages/knob-doc').then((m) => m.KnobDocPage),
   },
   {
     path: 'components/input-mask',

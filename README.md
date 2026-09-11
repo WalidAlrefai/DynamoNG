@@ -84,9 +84,26 @@ properties:
 ```
 design tokens (libs/theme/tokens)
   → compiled to --dg-* custom properties per theme (libs/theme/presets/aura)
-  → mapped onto Tailwind's @theme scale (libs/theme/tailwind-preset/src/preset.css)
+  → mapped onto Tailwind's @theme scale + a few @utility rules (libs/theme/tailwind-preset/src/preset.css)
   → consumed via ordinary Tailwind classes in *.styles.ts (bg-primary, text-on-primary, ...)
 ```
+
+The token contract covers **colour** (brand roles, surface ramp, text roles, ring, scrim), **radius**,
+**spacing** (a single `--dg-spacing-unit` that Tailwind's whole scale multiplies — the density knob),
+**typography** (family, size + line-height, weight), **elevation** (`shadow-sm/md/lg`), **motion**
+(durations, easings), **focus** (the `dg-focus-ring` / `-within` / `-peer` / `-inset` `@utility`), and a
+named **z-index** layer scale (`z-dropdown` … `z-tooltip`). `mapped-theme-keys.ts` mirrors the `@theme`
+keys and a test parses `preset.css` to keep them from drifting. Cross-component recipes that would
+otherwise be copy-pasted (the `sm/md/lg` control-size triad, the focus ring, section headings,
+overlay-panel chrome) live in `@dynamong/utils/styles`. Rendered reference: the docs app's
+**Foundations** page.
+
+Every component styles with **writing-mode-relative** (logical) Tailwind utilities — `ms-*`/`me-*`,
+`ps-*`/`pe-*`, `start-*`/`end-*`, `text-start`/`text-end`, `border-s`/`border-e`, `rounded-s*`/`rounded-e*`
+— so setting `dir="rtl"` on a container mirrors layout with no per-component configuration. An ESLint
+rule (`no-restricted-syntax` in the `*.styles.ts` override) fails the build on a physical directional
+utility. Drawer/Dock keep a physical `left`/`right` position API by design and are exempted; JS-driven
+transforms (slider fill, carousel track) are a follow-up.
 
 Swapping a theme means swapping the `--dg-*` values at `:root`, never touching a component template. Set
 `unstyled` on any component to opt out of built-in classes entirely (the `styleClass`/`pt` inputs on
@@ -269,6 +286,25 @@ type="search">`, wired via `[ngModel]`/`(ngModelChange)` since `DynamoInputText`
   `pageSize`/`page` left unset) alongside an externally-driven `dg-pagination` — a different, still-valid
   pattern for consumers who want their own pagination UI fully decoupled from Table (e.g. server-side
   paging), distinct from Table's own now-built-in footer.
+- **`@dynamong/virtual-scroll` and its retrofits** (supersedes the "no virtual scrolling" line in
+  the `DynamoTable` v1 entry above): `DynamoVirtualScroll` is a fixed-row-height CDK viewport wrapper
+  — a consumer projects one `<ng-template let-item let-i="index">` and it outlets each rendered item.
+  Fixed-size strategy only, so lists with non-uniform row heights (e.g. `DynamoSelect`'s grouped
+  options) fall back to a full non-virtualized render — `DynamoSelect` guards this with
+  `isVirtualized = virtualScroll() && groupedOptions().length <= 1`. It's **ARIA-transparent**: the
+  wrapper host, CDK's `<cdk-virtual-scroll-viewport>`, CDK's internal
+  `.cdk-virtual-scroll-content-wrapper` (tagged from an `afterNextRender`), and each per-item `<div>`
+  are all `role="presentation"`, so a consumer's `role="listbox"` / `role="rowgroup"` owns the
+  projected `role="option"` / `role="row"` rows directly instead of through roleless generics.
+  Because a virtualized list can't be counted from the DOM, `DynamoTable`'s virtualized grid path
+  sets `aria-rowcount` on the `role="table"` and `aria-rowindex` on every row; `DynamoSelect` keeps
+  its existing `aria-activedescendant` model and calls `scrollToIndex` so an off-screen active option
+  is mounted before it's referenced. Retrofitted into Select, MultiSelect, Autocomplete, Listbox,
+  TreeSelect, CascadeSelect, and Table. **Table's virtualized path is still v1-limited**: no
+  selection checkbox column and no pagination footer (both silently dropped — `DynamoTable` now emits
+  a dev-mode `console.warn` when `virtualScroll` is combined with `selectable` or `pageSize`), and
+  equal-width columns only (header and body are separate CSS-Grid contexts sharing one
+  `grid-template-columns` string).
 - **`DynamoSelect` v2 redesigns the panel around `DynamoOverlayService`/CDK Overlay** (matching
   `DynamoMenu`/`DynamoDatePicker`/`DynamoTooltip`) instead of v1's plain CSS `absolute` positioning —
   fixes clipping inside `overflow` ancestors, adds viewport-edge flipping via `position`'s 4-corner

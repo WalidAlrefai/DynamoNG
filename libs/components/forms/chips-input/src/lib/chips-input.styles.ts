@@ -1,4 +1,9 @@
 import { cva } from 'class-variance-authority';
+import {
+  focusRingClass,
+  focusRingInvalidClass,
+  focusRingWithinClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — chips-input.html only ever binds `[class]="...Classes()"`.
@@ -7,17 +12,20 @@ import { cva } from 'class-variance-authority';
 // plain text field alongside other content).
 export const chipsInputWrapperStyles = cva(
   'flex w-full flex-wrap items-center gap-1.5 rounded-md border bg-surface-0 ' +
-    'transition-colors focus-within:ring-2 focus-within:ring-offset-2',
+    'transition-colors ' +
+    focusRingWithinClass,
   {
     variants: {
+      // A growing / wrapping field, so `min-h-*` + `py-*` rather than the fixed
+      // `controlSizeVariants` height triad.
       size: {
         sm: 'min-h-8 px-2 py-1 text-sm',
         md: 'min-h-10 px-3 py-1.5 text-base',
         lg: 'min-h-12 px-4 py-2 text-lg',
       },
       invalid: {
-        true: 'border-danger focus-within:ring-danger',
-        false: 'border-border focus-within:ring-ring',
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: 'border-border',
       },
       disabled: {
         true: 'pointer-events-none opacity-60',
@@ -46,9 +54,9 @@ export const chipsInputChipStyles = cva(
 );
 
 export const chipsInputRemoveButtonStyles =
-  '-mr-0.5 inline-flex shrink-0 items-center justify-center rounded-full p-0.5 ' +
-  'transition-colors hover:bg-surface-300 focus-visible:outline-none focus-visible:ring-2 ' +
-  'focus-visible:ring-ring disabled:cursor-not-allowed';
+  '-me-0.5 inline-flex shrink-0 items-center justify-center rounded-full p-0.5 ' +
+  'transition-colors hover:bg-surface-300 disabled:cursor-not-allowed ' +
+  focusRingClass;
 
 export const chipsInputFieldStyles =
   'min-w-[6ch] flex-1 border-none bg-transparent outline-none disabled:cursor-not-allowed';

@@ -11,7 +11,8 @@
     "src/**/*.ts",
     "dom/src/**/*.ts",
     "class-merge/src/**/*.ts",
-    "class-merge/dom/src/**/*.ts"
+    "class-merge/dom/src/**/*.ts",
+    "styles/src/**/*.ts"
   ],
   "exclude": [
     "src/**/*.spec.ts",
@@ -21,6 +22,8 @@
     "class-merge/src/**/*.spec.ts",
     "class-merge/src/**/*.test.ts",
     "class-merge/dom/src/**/*.spec.ts",
-    "class-merge/dom/src/**/*.test.ts"
+    "class-merge/dom/src/**/*.test.ts",
+    "styles/src/**/*.spec.ts",
+    "styles/src/**/*.test.ts"
   ]
 }

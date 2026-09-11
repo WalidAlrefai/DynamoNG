@@ -1,11 +1,12 @@
 import { cva } from 'class-variance-authority';
+import { focusRingClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — toast-container.html only ever binds `[class]="...Classes()"`.
 export const toastContainerStyles = 'flex flex-col gap-2';
 
 export const toastCardStyles = cva(
-  'flex items-start gap-3 rounded-md border-l-4 bg-surface-0 p-4 text-sm text-text-primary shadow-lg',
+  'flex items-start gap-3 rounded-md border-s-4 bg-surface-0 p-4 text-sm text-text-primary shadow-lg',
   {
     variants: {
       severity: {
@@ -39,5 +40,6 @@ export const toastTitleStyles = 'font-medium text-text-primary';
 export const toastMessageStyles = 'text-text-muted';
 
 export const toastCloseButtonStyles =
-  'ml-auto shrink-0 rounded-md p-1 text-text-muted transition-colors hover:bg-surface-100 ' +
-  'hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'ms-auto shrink-0 rounded-md p-1 text-text-muted transition-colors hover:bg-surface-100 ' +
+  'hover:text-text-primary ' +
+  focusRingClass;
