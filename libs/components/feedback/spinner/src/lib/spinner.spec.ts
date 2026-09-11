@@ -18,7 +18,7 @@ describe('DynamoSpinner', () => {
   });
 
   describe('default behavior', () => {
-    it('renders as decorative (aria-hidden) with no role when label is unset', () => {
+    it('renders as decorative (aria-hidden) with no role when ariaLabel is unset', () => {
       const { container } = renderDynamoComponent(DynamoSpinner);
 
       const span = container.querySelector('span');
@@ -29,9 +29,9 @@ describe('DynamoSpinner', () => {
   });
 
   describe('input properties', () => {
-    it('renders as an announced status region when label is set', () => {
+    it('renders as an announced status region when ariaLabel is set', () => {
       const { container } = renderDynamoComponent(DynamoSpinner, {
-        inputs: { label: 'Loading results' },
+        inputs: { ariaLabel: 'Loading results' },
       });
 
       const status = within(container).getByRole('status');
@@ -65,7 +65,7 @@ describe('DynamoSpinner', () => {
 
     it('supports interaction through the DynamoSpinnerHarness', async () => {
       const { fixture } = renderDynamoComponent(DynamoSpinner, {
-        inputs: { label: 'Loading' },
+        inputs: { ariaLabel: 'Loading' },
       });
       const harness = await TestbedHarnessEnvironment.harnessForFixture(
         fixture,
@@ -84,22 +84,22 @@ describe('DynamoSpinner', () => {
 
     it('has no axe violations while announced with a label', async () => {
       const { container } = renderDynamoComponent(DynamoSpinner, {
-        inputs: { label: 'Loading results' },
+        inputs: { ariaLabel: 'Loading results' },
       });
       await expectNoA11yViolations(container);
     });
   });
 
   describe('edge cases', () => {
-    it('toggles between decorative and announced when label is set then cleared', () => {
+    it('toggles between decorative and announced when ariaLabel is set then cleared', () => {
       const { container, setInputs } = renderDynamoComponent(DynamoSpinner, {
-        inputs: { label: 'Loading' },
+        inputs: { ariaLabel: 'Loading' },
       });
       expect(container.querySelector('span')?.getAttribute('role')).toBe(
         'status',
       );
 
-      setInputs({ label: undefined });
+      setInputs({ ariaLabel: undefined });
 
       expect(container.querySelector('span')?.getAttribute('role')).toBeNull();
       expect(container.querySelector('span')?.getAttribute('aria-hidden')).toBe(

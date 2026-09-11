@@ -71,6 +71,10 @@ export const tableBodyCellStyles = cva('text-text-primary', {
 
 export const tableEmptyCellStyles = 'px-4 py-8 text-center text-text-muted';
 
+// Wraps the spinner + "Loading…" text shown in the empty-state slot while
+// `loading` is true, in place of `tableEmptyCellStyles`' plain centered text.
+export const tableLoadingWrapperStyles = 'inline-flex items-center gap-2';
+
 // --- v2: pagination + selection ---
 
 // Fixed-width, size-varying-padding-only column, shared by the header

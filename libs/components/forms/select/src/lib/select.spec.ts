@@ -802,6 +802,69 @@ describe('DynamoSelect', () => {
     });
   });
 
+  describe('loading', () => {
+    it('renders a spinner in the trigger only while loading', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, loading: false },
+      });
+      expect(container.querySelector('dg-spinner')).toBeNull();
+
+      setInputs({ loading: true });
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+    });
+
+    it('sets aria-busy="true" on the trigger while loading', () => {
+      const { container } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, loading: true },
+      });
+
+      expect(
+        within(container).getByRole('combobox').getAttribute('aria-busy'),
+      ).toBe('true');
+    });
+
+    it('disables the trigger while loading even if disabled was not explicitly set', () => {
+      const { container } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, loading: true },
+      });
+
+      expect(
+        (within(container).getByRole('combobox') as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+    });
+
+    it('does not open the panel while loading', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, loading: true },
+      });
+      const trigger = within(container).getByRole('combobox');
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
+    });
+
+    it('re-enables the trigger when loading transitions back to false', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, loading: true },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+
+      setInputs({ loading: false });
+
+      expect(
+        (within(container).getByRole('combobox') as HTMLButtonElement)
+          .disabled,
+      ).toBe(false);
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations when closed', async () => {
       const { container } = renderDynamoComponent(DynamoSelect, {

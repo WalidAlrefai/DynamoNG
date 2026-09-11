@@ -15,7 +15,7 @@ const EXAMPLES: DocExampleRef[] = [
 const API: ApiTableRow[] = [
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   {
-    name: 'label',
+    name: 'ariaLabel',
     type: 'string | undefined',
     default: 'undefined (decorative)',
   },
@@ -48,12 +48,12 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="labelled"
         title="Labelled"
-        description="Passing label turns it into an aria-live status region that announces the text."
+        description="Passing ariaLabel turns it into an aria-live status region that announces the text."
       >
         <div preview class="text-primary">
-          <dg-spinner label="Loading results" />
+          <dg-spinner ariaLabel="Loading results" />
         </div>
-        <div code>&lt;dg-spinner label="Loading results" /&gt;</div>
+        <div code>&lt;dg-spinner ariaLabel="Loading results" /&gt;</div>
       </docs-example>
 
       <docs-api-table api [rows]="apiRows" />

@@ -503,6 +503,64 @@ describe('DynamoTreeSelect', () => {
     });
   });
 
+  describe('loading', () => {
+    it('renders a spinner in the trigger only while loading', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoTreeSelect,
+        { inputs: { nodes: NODES, loading: false, ariaLabel: 'Choose' } },
+      );
+      expect(container.querySelector('dg-spinner')).toBeNull();
+
+      setInputs({ loading: true });
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+    });
+
+    it('sets aria-busy="true" on the trigger while loading', () => {
+      const { container } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, loading: true, ariaLabel: 'Choose' },
+      });
+
+      expect(
+        within(container).getByRole('combobox').getAttribute('aria-busy'),
+      ).toBe('true');
+    });
+
+    it('disables the trigger and does not open the panel while loading', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoTreeSelect,
+        { inputs: { nodes: NODES, loading: true, ariaLabel: 'Choose' } },
+      );
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLButtonElement;
+      expect(trigger.disabled).toBe(true);
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
+    });
+
+    it('re-enables the trigger when loading transitions back to false', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoTreeSelect,
+        { inputs: { nodes: NODES, loading: true, ariaLabel: 'Choose' } },
+      );
+      expect(
+        (within(container).getByRole('combobox') as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+
+      setInputs({ loading: false });
+
+      expect(
+        (within(container).getByRole('combobox') as HTMLButtonElement)
+          .disabled,
+      ).toBe(false);
+    });
+  });
+
   describe('accessibility', () => {
     it('sets aria-expanded on a branch row and none on a leaf row', async () => {
       const { container, fixture } = renderDynamoComponent(

@@ -45,6 +45,8 @@ export class DynamoRadio extends DynamoBaseComponent<DynamoRadioPart> {
   readonly value = input<string>('');
   readonly disabled = input(false);
   readonly size = input<DynamoRadioSize>('md');
+  /** Accessible name for the native radio when no visible label content is projected. */
+  readonly ariaLabel = input<string | undefined>(undefined);
 
   protected readonly inputId = this.idGenerator.next('dg-radio');
 

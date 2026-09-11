@@ -23,9 +23,11 @@ export class DynamoSpinner extends DynamoBaseComponent<DynamoSpinnerPart> {
    * Accessible name for a standalone, announced loading indicator (renders
    * `role="status"` + `aria-label`). Leave unset when the spinner is embedded
    * inside something that already announces its own busy state (e.g. Button's
-   * `aria-busy`) — it then renders `aria-hidden="true"` instead.
+   * `aria-busy`) — it then renders `aria-hidden="true"` instead. Named
+   * `ariaLabel` for consistency with every other component's accessible-name
+   * input (was `label` — renamed pre-1.0, no external consumers).
    */
-  readonly label = input<string>();
+  readonly ariaLabel = input<string>();
 
   protected readonly classes = computed(() =>
     this.unstyled()

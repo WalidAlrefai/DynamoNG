@@ -14,6 +14,7 @@ import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { FormsModule } from '@angular/forms';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoSelectOption } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
@@ -56,7 +57,7 @@ type DynamoSelectRenderItem<TValue> =
   selector: 'dg-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DynamoInputText, DynamoVirtualScroll],
+  imports: [FormsModule, DynamoInputText, DynamoSpinner, DynamoVirtualScroll],
   templateUrl: './select.html',
   providers: [
     {
@@ -77,6 +78,10 @@ export class DynamoSelect<TValue = unknown>
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<TValue | null>(null);
   readonly disabled = model(false);
+  /** Renders a small spinner in the trigger and makes the component fully
+   *  non-interactive, like `disabled`. Never emits back — the consumer
+   *  drives it. */
+  readonly loading = input(false);
   readonly invalid = input(false);
   /** Shows an "x" button in the trigger, clearing the value without opening the panel, once a value is selected. */
   readonly clearable = input(false);
@@ -171,6 +176,10 @@ export class DynamoSelect<TValue = unknown>
     return index >= 0 ? this.optionId(index) : null;
   });
 
+  protected readonly isDisabled = computed(
+    () => this.disabled() || this.loading(),
+  );
+
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
@@ -178,7 +187,7 @@ export class DynamoSelect<TValue = unknown>
           selectTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
-            disabled: this.disabled(),
+            disabled: this.isDisabled(),
           }),
           this.styleClass(),
         ),
@@ -252,7 +261,7 @@ export class DynamoSelect<TValue = unknown>
   }
 
   protected toggle(): void {
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     if (this.isOpen()) {
       this.close();
     } else {
@@ -261,7 +270,7 @@ export class DynamoSelect<TValue = unknown>
   }
 
   protected openList(): void {
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     this.isOpen.set(true);
     const options = this.visibleOptions();
     const selectedIndex = options.findIndex(
@@ -290,7 +299,7 @@ export class DynamoSelect<TValue = unknown>
 
   protected clearValue(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     this.value.set(null);
     this.onChangeFn(null);
   }

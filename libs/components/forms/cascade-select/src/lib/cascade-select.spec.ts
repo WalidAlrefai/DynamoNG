@@ -594,6 +594,64 @@ describe('DynamoCascadeSelect', () => {
     });
   });
 
+  describe('loading', () => {
+    it('renders a spinner in the trigger only while loading', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, loading: false, ariaLabel: 'Location' } },
+      );
+      expect(container.querySelector('dg-spinner')).toBeNull();
+
+      setInputs({ loading: true });
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+    });
+
+    it('sets aria-busy="true" on the trigger while loading', () => {
+      const { container } = renderDynamoComponent(DynamoCascadeSelect, {
+        inputs: { nodes: NODES, loading: true, ariaLabel: 'Location' },
+      });
+
+      expect(
+        within(container).getByRole('combobox').getAttribute('aria-busy'),
+      ).toBe('true');
+    });
+
+    it('disables the trigger and does not open the panel while loading', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, loading: true, ariaLabel: 'Location' } },
+      );
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLButtonElement;
+      expect(trigger.disabled).toBe(true);
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getListboxes()).toHaveLength(0);
+    });
+
+    it('re-enables the trigger when loading transitions back to false', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, loading: true, ariaLabel: 'Location' } },
+      );
+      expect(
+        (within(container).getByRole('combobox') as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+
+      setInputs({ loading: false });
+
+      expect(
+        (within(container).getByRole('combobox') as HTMLButtonElement)
+          .disabled,
+      ).toBe(false);
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations with the root panel open', async () => {
       const { container, fixture } = renderDynamoComponent(

@@ -9,11 +9,11 @@ import {
   model,
   signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoPagination } from '@dynamong/pagination';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { cn } from '@dynamong/utils/class-merge';
 import { filterRows } from './table.filter';
@@ -25,6 +25,7 @@ import {
   tableFilterWrapperStyles,
   tableHeaderCellStyles,
   tableHeaderRowStyles,
+  tableLoadingWrapperStyles,
   tablePaginationWrapperStyles,
   tableSelectionCellStyles,
   tableSortButtonStyles,
@@ -48,10 +49,10 @@ import type {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     NgTemplateOutlet,
-    FormsModule,
     DynamoCheckbox,
     DynamoInputText,
     DynamoPagination,
+    DynamoSpinner,
     DynamoVirtualScroll,
   ],
   templateUrl: './table.html',
@@ -64,6 +65,12 @@ export class DynamoTable<TRow = unknown>
   readonly data = input.required<readonly TRow[]>();
   readonly size = input<DynamoTableSize>('md');
   readonly emptyMessage = input('No data');
+  /** Renders a spinner + message in the empty-state slot and makes sorting,
+   *  selection, filtering, and pagination non-interactive. Never emits
+   *  back — the consumer drives it. */
+  readonly loading = input(false);
+  /** Shown in the empty-state slot instead of `emptyMessage`/`noMatchesMessage` while `loading` is true. */
+  readonly loadingMessage = input('Loading…');
   readonly ariaLabel = input<string | undefined>(undefined);
   /**
    * `@for` track escape hatch for when `data()` rows are freshly recreated
@@ -255,6 +262,9 @@ export class DynamoTable<TRow = unknown>
       : this.emptyMessage();
   });
 
+  /** Plain alias, not a `disabled`-merge — Table has no `disabled` input of its own to merge with. */
+  protected readonly isBusy = computed(() => this.loading());
+
   protected readonly wrapperClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
@@ -269,6 +279,7 @@ export class DynamoTable<TRow = unknown>
   protected readonly virtualTableClasses = tableVirtualStyles;
   protected readonly virtualHeaderRowClasses = tableVirtualHeaderRowStyles;
   protected readonly virtualBodyRowClasses = tableVirtualBodyRowStyles;
+  protected readonly loadingWrapperClasses = tableLoadingWrapperStyles;
 
   /** Shared verbatim by the header row and every body row — see `virtualScroll`'s own doc comment for why this can't rely on native table auto-layout. */
   protected readonly virtualGridTemplate = computed(
@@ -363,7 +374,7 @@ export class DynamoTable<TRow = unknown>
    * filtering: this operates on `columns()`, not row data.
    */
   protected toggleSort(column: DynamoTableColumn<TRow>): void {
-    if (!column.sortable) return;
+    if (this.isBusy() || !column.sortable) return;
     this.sortState.update((state) => {
       if (state?.field !== column.field)
         return { field: column.field, direction: 'asc' };
@@ -375,13 +386,19 @@ export class DynamoTable<TRow = unknown>
   }
 
   /**
-   * Wired to `<dg-input-text>`'s `(ngModelChange)` — `DynamoInputText` only
-   * exposes `ControlValueAccessor`, no direct value output, so this reads
-   * the emitted string rather than a raw DOM event. Writing `filterText`
-   * and resetting `page` to 1 together this way needs no `effect()`, the
-   * same technique `toggleSort` already uses above for its own page-reset.
+   * Wired to `<dg-input-text>`'s `(valueChange)` — its own public `value`
+   * model, not `[ngModel]`/`(ngModelChange)`: Angular's `NgModel` directive
+   * declares its own `@Input('disabled')` for template-driven disabling,
+   * which silently wins over `DynamoInputText`'s own `disabled` model when
+   * both are bound on the same element — discovered live via `loading()`'s
+   * `[disabled]` binding on the filter input never actually taking effect
+   * while `[ngModel]` was also present. `(valueChange)` sidesteps Angular
+   * Forms entirely, so there's no such collision. Writing `filterText` and
+   * resetting `page` to 1 together this way needs no `effect()`, the same
+   * technique `toggleSort` already uses above for its own page-reset.
    */
   protected onFilterTextChange(value: string): void {
+    if (this.isBusy()) return;
     this.filterText.set(value);
     this.page.set(1);
   }
@@ -427,6 +444,7 @@ export class DynamoTable<TRow = unknown>
   }
 
   protected toggleRowSelection(row: TRow): void {
+    if (this.isBusy()) return;
     const key = this.selectionKey(row);
     this.selected.update((rows) =>
       this.selectedKeys().has(key)
@@ -445,6 +463,7 @@ export class DynamoTable<TRow = unknown>
    * either way — only this page's membership is toggled.
    */
   protected toggleSelectAll(): void {
+    if (this.isBusy()) return;
     const rows = this.pagedData();
     if (this.isAllSelected()) {
       const keysOnPage = new Set(rows.map((row) => this.selectionKey(row)));

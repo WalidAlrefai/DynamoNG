@@ -205,6 +205,11 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
       this.triggerEl().nativeElement.focus();
       return;
     }
+    if (event.key === 'Tab') {
+      // Closes the open panel but doesn't trap focus — Tab moves on naturally.
+      this.close();
+      return;
+    }
 
     const buttons = this.itemButtons();
     let nextIndex: number | null;

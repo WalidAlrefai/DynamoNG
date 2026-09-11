@@ -395,6 +395,68 @@ describe('DynamoFileUpload', () => {
     });
   });
 
+  describe('loading', () => {
+    it('renders a spinner in the dropzone only while loading', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoFileUpload,
+        { inputs: { loading: false } },
+      );
+      expect(container.querySelector('dg-spinner')).toBeNull();
+
+      setInputs({ loading: true });
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+    });
+
+    it('sets aria-busy and blocks click, keyboard, and drag-and-drop while loading', () => {
+      const { container } = renderDynamoComponent(DynamoFileUpload, {
+        inputs: { loading: true },
+      });
+      const input = container.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const clickSpy = vi.spyOn(input, 'click');
+      const dropzone = within(container).getByRole('button');
+
+      expect(dropzone.getAttribute('aria-busy')).toBe('true');
+      expect(dropzone.getAttribute('aria-disabled')).toBe('true');
+      expect(dropzone.getAttribute('tabindex')).toBe('-1');
+      expect(input.disabled).toBe(true);
+
+      fireEvent.click(dropzone);
+      fireEvent.keyDown(dropzone, { key: 'Enter' });
+      expect(clickSpy).not.toHaveBeenCalled();
+
+      dropzone.dispatchEvent(dropEvent([makeFile('a.txt', 10)]));
+
+      expect(container.querySelector('li')).toBeNull();
+    });
+
+    it('disables each remove button while loading', () => {
+      const { container } = renderDynamoComponent(DynamoFileUpload, {
+        inputs: { loading: true, value: [makeFile('a.txt', 10)] },
+      });
+
+      const removeButton = within(container).getByLabelText(
+        'Remove a.txt',
+      ) as HTMLButtonElement;
+      expect(removeButton.disabled).toBe(true);
+    });
+
+    it('re-enables the dropzone when loading transitions back to false', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoFileUpload,
+        { inputs: { loading: true } },
+      );
+      const dropzone = within(container).getByRole('button');
+      expect(dropzone.getAttribute('aria-disabled')).toBe('true');
+
+      setInputs({ loading: false });
+
+      expect(dropzone.getAttribute('aria-disabled')).toBeNull();
+    });
+  });
+
   describe('accessibility', () => {
     it('falls back aria-label to the label text when unset', () => {
       const { container } = renderDynamoComponent(DynamoFileUpload);

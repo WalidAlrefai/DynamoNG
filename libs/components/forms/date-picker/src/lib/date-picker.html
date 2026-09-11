@@ -6,6 +6,8 @@
   [attr.aria-expanded]="open()"
   [attr.aria-controls]="open() ? dialogId : null"
   [attr.aria-label]="ariaLabel() ?? null"
+  [attr.aria-invalid]="invalid() ? true : null"
+  [attr.aria-readonly]="readOnly() ? true : null"
   [class]="triggerClasses()"
   [disabled]="disabled()"
   (click)="toggle()"

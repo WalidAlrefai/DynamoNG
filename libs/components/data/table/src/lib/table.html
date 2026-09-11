@@ -1,13 +1,14 @@
-<div [class]="wrapperClasses()">
+<div [class]="wrapperClasses()" [attr.aria-busy]="loading() ? 'true' : null">
   @if (filterable()) {
   <div [class]="filterWrapperClasses">
     <dg-input-text
       type="search"
       size="sm"
-      [ngModel]="filterText()"
-      (ngModelChange)="onFilterTextChange($event)"
+      [value]="filterText()"
+      (valueChange)="onFilterTextChange($event)"
       ariaLabel="Search table"
       [placeholder]="filterPlaceholder()"
+      [disabled]="loading()"
     />
   </div>
   } @if (!virtualScroll()) {
@@ -20,7 +21,7 @@
             size="sm"
             [checked]="isAllSelected()"
             [indeterminate]="isSomeSelected()"
-            [disabled]="pagedData().length === 0"
+            [disabled]="pagedData().length === 0 || loading()"
             (checkedChange)="toggleSelectAll()"
           >
             <span class="sr-only">Select all rows</span>
@@ -36,6 +37,7 @@
           <button
             type="button"
             [class]="sortButtonClasses"
+            [disabled]="loading()"
             (click)="toggleSort(column)"
           >
             <span>{{ column.header }}</span>
@@ -70,6 +72,7 @@
           <dg-checkbox
             size="sm"
             [checked]="isRowSelected(row)"
+            [disabled]="loading()"
             (checkedChange)="toggleRowSelection(row)"
           >
             <span class="sr-only">{{ 'Select row ' + ($index + 1) }}</span>
@@ -92,7 +95,14 @@
           [attr.colspan]="columns().length + (selectable() ? 1 : 0)"
           [class]="emptyCellClasses"
         >
+          @if (loading()) {
+          <span [class]="loadingWrapperClasses" role="status">
+            <dg-spinner size="sm" />
+            <span>{{ loadingMessage() }}</span>
+          </span>
+          } @else {
           <span role="status">{{ emptyStateMessage() }}</span>
+          }
         </td>
       </tr>
       }
@@ -146,6 +156,7 @@
           <button
             type="button"
             [class]="sortButtonClasses"
+            [disabled]="loading()"
             (click)="toggleSort(column)"
           >
             <span>{{ column.header }}</span>
@@ -175,7 +186,14 @@
       @if (sortedData().length === 0) {
       <div role="row">
         <div role="cell" [class]="emptyCellClasses">
+          @if (loading()) {
+          <span [class]="loadingWrapperClasses" role="status">
+            <dg-spinner size="sm" />
+            <span>{{ loadingMessage() }}</span>
+          </span>
+          } @else {
           <span role="status">{{ emptyStateMessage() }}</span>
+          }
         </div>
       </div>
       } @else {
@@ -215,6 +233,7 @@
       [pageSize]="pageSize() ?? 10"
       (pageSizeChange)="pageSize.set($event)"
       [pageSizeOptions]="pageSizeOptions()"
+      [disabled]="loading()"
       size="sm"
     />
   </div>

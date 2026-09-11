@@ -361,6 +361,10 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
         this.close();
         this.triggerEl().nativeElement.focus();
         break;
+      case 'Tab':
+        // Closes the open panel but doesn't trap focus — Tab moves on naturally.
+        this.close();
+        break;
     }
   }
 

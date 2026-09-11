@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import {
   DynamoListboxBase,
@@ -29,7 +30,11 @@ import {
   selectPanelWrapperVirtualStyles,
 } from '@dynamong/select';
 import { cn } from '@dynamong/utils/class-merge';
-import { autocompleteFieldStyles } from './autocomplete.styles';
+import {
+  autocompleteFieldStyles,
+  autocompleteFieldWrapperStyles,
+  autocompleteLoadingIndicatorStyles,
+} from './autocomplete.styles';
 import type {
   DynamoAutocompletePart,
   DynamoSelectOption,
@@ -46,7 +51,7 @@ type DynamoAutocompleteRenderItem<TValue> =
   selector: 'dg-autocomplete',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoVirtualScroll],
+  imports: [DynamoSpinner, DynamoVirtualScroll],
   templateUrl: './autocomplete.html',
   providers: [
     {
@@ -67,6 +72,15 @@ export class DynamoAutocomplete<TValue = unknown>
   readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: the current text stays visible and the input
+   *  stays focusable/tabbable, but typing and invoking the suggestion panel
+   *  are blocked. Unlike `disabled`, does not remove the control from the
+   *  tab order or dim its appearance. */
+  readonly readOnly = input(false);
+  /** Renders a small spinner over the field and makes the component fully
+   *  non-interactive, like `disabled`. Never emits back — the consumer
+   *  drives it. */
+  readonly loading = input(false);
   readonly position = input<DynamoSelectPosition>('bottom-start');
   readonly noResultsMessage = input('No matching options');
   /**
@@ -147,6 +161,10 @@ export class DynamoAutocomplete<TValue = unknown>
     return index >= 0 ? this.optionId(index) : null;
   });
 
+  protected readonly isDisabled = computed(
+    () => this.disabled() || this.loading(),
+  );
+
   protected readonly fieldClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
@@ -154,10 +172,14 @@ export class DynamoAutocomplete<TValue = unknown>
           autocompleteFieldStyles({
             size: this.size(),
             invalid: this.invalid(),
+            loading: this.loading(),
           }),
           this.styleClass(),
         ),
   );
+  protected readonly fieldWrapperClasses = autocompleteFieldWrapperStyles;
+  protected readonly loadingIndicatorClasses =
+    autocompleteLoadingIndicatorStyles;
   /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
   protected readonly panelWrapperClasses = computed(() =>
     this.isVirtualized()
@@ -287,7 +309,7 @@ export class DynamoAutocomplete<TValue = unknown>
   }
 
   protected selectOption(option: DynamoSelectOption<TValue>): void {
-    if (option.disabled) return;
+    if (this.readOnly() || option.disabled) return;
     this.value.set(option.label);
     this.onChangeFn(option.label);
     this.optionSelect.emit(option);
@@ -299,7 +321,7 @@ export class DynamoAutocomplete<TValue = unknown>
   }
 
   private openList(): void {
-    if (this.disabled()) return;
+    if (this.isDisabled() || this.readOnly()) return;
     this.isOpen.set(true);
     this.activeIndex.set(findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1);
     this.scrollActiveIntoView();

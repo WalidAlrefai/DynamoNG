@@ -45,9 +45,15 @@ export class DynamoChipsInput
   readonly allowDuplicates = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: the current chips stay visible and the field
+   *  stays focusable/tabbable, but adding or removing chips is blocked.
+   *  Unlike `disabled`, does not remove the control from the tab order or
+   *  dim its appearance. */
+  readonly readOnly = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
 
-  protected readonly chips = signal<string[]>([]);
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
+  readonly value = model<string[]>([]);
   protected readonly draftText = signal('');
   private readonly inputRef =
     viewChild.required<ElementRef<HTMLInputElement>>('input');
@@ -61,7 +67,7 @@ export class DynamoChipsInput
 
   protected readonly addDisabled = computed(() => {
     const max = this.max();
-    return max != null && this.chips().length >= max;
+    return max != null && this.value().length >= max;
   });
 
   protected readonly wrapperClasses = computed(() =>
@@ -83,7 +89,7 @@ export class DynamoChipsInput
   protected readonly fieldClasses = chipsInputFieldStyles;
 
   writeValue(value: string[] | null): void {
-    this.chips.set(value ?? []);
+    this.value.set(value ?? []);
   }
 
   registerOnChange(fn: (value: string[]) => void): void {
@@ -109,20 +115,26 @@ export class DynamoChipsInput
   }
 
   protected onInputKeydown(event: KeyboardEvent): void {
+    if (this.disabled() || this.readOnly()) {
+      return;
+    }
     if (event.key === 'Enter' || event.key === ',') {
       event.preventDefault();
       this.commitDraft();
     } else if (
       event.key === 'Backspace' &&
       this.draftText() === '' &&
-      this.chips().length > 0
+      this.value().length > 0
     ) {
       event.preventDefault();
-      this.removeChip(this.chips().length - 1);
+      this.removeChip(this.value().length - 1);
     }
   }
 
   protected onInputPaste(event: ClipboardEvent): void {
+    if (this.disabled() || this.readOnly()) {
+      return;
+    }
     const pasted = event.clipboardData?.getData('text') ?? '';
     // A plain single-value paste (no comma) is left to land in the field
     // normally — only a multi-value paste is worth intercepting.
@@ -141,10 +153,10 @@ export class DynamoChipsInput
   }
 
   protected removeChip(index: number): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
-    this.chips.update((values) => values.filter((_, i) => i !== index));
+    this.value.update((values) => values.filter((_, i) => i !== index));
     this.emitValue();
     this.inputRef().nativeElement.focus();
   }
@@ -168,15 +180,15 @@ export class DynamoChipsInput
     if (!text || this.addDisabled()) {
       return false;
     }
-    if (!this.allowDuplicates() && this.chips().includes(text)) {
+    if (!this.allowDuplicates() && this.value().includes(text)) {
       return false;
     }
-    this.chips.update((values) => [...values, text]);
+    this.value.update((values) => [...values, text]);
     this.emitValue();
     return true;
   }
 
   private emitValue(): void {
-    this.onChangeFn(this.chips());
+    this.onChangeFn(this.value());
   }
 }

@@ -65,6 +65,7 @@ const ITEM_COLUMNS: DynamoTableColumn<Item>[] = [
     [filterPlaceholder]="filterPlaceholder()"
     [(filterText)]="filterText"
     [noMatchesMessage]="noMatchesMessage()"
+    [loading]="loading()"
   />`,
 })
 class TableTestHostComponent {
@@ -82,6 +83,7 @@ class TableTestHostComponent {
   readonly filterPlaceholder = input('Search...');
   readonly filterText = model('');
   readonly noMatchesMessage = input('No matching rows');
+  readonly loading = input(false);
 }
 
 @Component({
@@ -1119,6 +1121,114 @@ describe('DynamoTable', () => {
       await harness.setFilterText('zzz');
 
       expect(await harness.getEmptyStateMessage()).toBe('No matching rows');
+    });
+  });
+
+  describe('loading', () => {
+    it('shows a spinner and loadingMessage in the empty-state slot instead of emptyStateMessage', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { data: [], loading: true },
+      });
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+      expect(container.textContent).toContain('Loading…');
+      expect(container.textContent).not.toContain('No data');
+    });
+
+    it('honors a custom loadingMessage', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: [],
+            loading: true,
+            loadingMessage: 'Fetching…',
+          },
+        },
+      );
+
+      expect(container.textContent).toContain('Fetching…');
+    });
+
+    it('shows the loading row in the virtualized empty-state slot too', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: [],
+            virtualScroll: true,
+            loading: true,
+          },
+        },
+      );
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+      expect(container.textContent).toContain('Loading…');
+    });
+
+    it('sets aria-busy="true" on the root wrapper while loading', () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { loading: true },
+      });
+
+      expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+    });
+
+    it('disables sorting, selection, filtering, and pagination while loading', async () => {
+      const { container } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: {
+          selectable: true,
+          filterable: true,
+          pageSize: 2,
+          loading: true,
+        },
+      });
+
+      const sortButton = within(container)
+        .getByText('Name')
+        .closest('button') as HTMLButtonElement;
+      expect(sortButton.disabled).toBe(true);
+
+      const selectAll = within(container).getByLabelText(
+        'Select all rows',
+      ) as HTMLInputElement;
+      expect(selectAll.disabled).toBe(true);
+
+      const rowCheckbox = within(container).getByLabelText(
+        'Select row 1',
+      ) as HTMLInputElement;
+      expect(rowCheckbox.disabled).toBe(true);
+
+      const filterInput = getFilterInput(container);
+      expect(filterInput.disabled).toBe(true);
+    });
+
+    it('ignores clicks on the sort button, checkboxes, and select-all while loading', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { selectable: true, loading: true } },
+      );
+
+      const sortButton = within(container)
+        .getByText('Name')
+        .closest('button') as HTMLButtonElement;
+      const headerCell = sortButton.closest('th') as HTMLElement;
+      await userEvent.click(sortButton);
+      expect(headerCell.getAttribute('aria-sort')).toBeNull();
+
+      const selectAll = within(container).getByLabelText(
+        'Select all rows',
+      ) as HTMLInputElement;
+      await userEvent.click(selectAll);
+      expect(componentInstance.selected()).toEqual([]);
+
+      const rowCheckbox = within(container).getByLabelText(
+        'Select row 1',
+      ) as HTMLInputElement;
+      await userEvent.click(rowCheckbox);
+      expect(componentInstance.selected()).toEqual([]);
     });
   });
 

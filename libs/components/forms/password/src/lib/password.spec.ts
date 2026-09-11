@@ -240,6 +240,45 @@ describe('DynamoPassword', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('blocks typed input, keeps the value unchanged, and reflects aria-readonly', async () => {
+      const { container } = renderDynamoComponent(DynamoPassword, {
+        inputs: { value: 'sekrit', readOnly: true, ariaLabel: 'Password' },
+      });
+      const input = container.querySelector('input') as HTMLInputElement;
+
+      await userEvent.type(input, 'more');
+
+      expect(input.value).toBe('sekrit');
+      expect(input.getAttribute('aria-readonly')).toBe('true');
+    });
+
+    it('stays focusable and not disabled, unlike the disabled state', () => {
+      const { container } = renderDynamoComponent(DynamoPassword, {
+        inputs: { readOnly: true, ariaLabel: 'Password' },
+      });
+      const input = container.querySelector('input') as HTMLInputElement;
+
+      expect(input.disabled).toBe(false);
+      expect(input.tabIndex).toBe(0);
+    });
+
+    it('leaves the show/hide toggle clickable and unaffected', () => {
+      const { fixture, container } = renderDynamoComponent(DynamoPassword, {
+        inputs: { value: 'sekrit', readOnly: true, ariaLabel: 'Password' },
+      });
+      const input = container.querySelector('input') as HTMLInputElement;
+      const toggle = container.querySelector('button') as HTMLButtonElement;
+
+      expect(toggle.disabled).toBe(false);
+      toggle.click();
+      fixture.detectChanges();
+
+      expect(input.type).toBe('text');
+      expect(input.value).toBe('sekrit');
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations with the meter hidden', async () => {
       const { container } = renderDynamoComponent(DynamoPassword, { inputs: { ariaLabel: 'Password' } });

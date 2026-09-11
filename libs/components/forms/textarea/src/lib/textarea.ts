@@ -7,7 +7,6 @@ import {
   forwardRef,
   input,
   model,
-  signal,
   viewChild,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
@@ -43,8 +42,13 @@ export class DynamoTextarea
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: the current value stays visible and the control
+   *  stays focusable/tabbable, but the user cannot change it. Unlike `disabled`,
+   *  does not remove the control from the tab order or dim its appearance. */
+  readonly readOnly = input(false);
 
-  protected readonly value = signal('');
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
+  readonly value = model('');
   private readonly textareaEl =
     viewChild<ElementRef<HTMLTextAreaElement>>('textareaEl');
 

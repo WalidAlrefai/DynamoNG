@@ -21,6 +21,7 @@ import {
   selectTriggerButtonStyles,
   selectTriggerStyles,
 } from '@dynamong/select';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoTreeNode } from '@dynamong/tree';
 import type { DynamoSize } from '@dynamong/core/api';
@@ -111,7 +112,7 @@ function findEnabledEntryIndex<TValue>(
   selector: 'dg-tree-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoVirtualScroll],
+  imports: [DynamoSpinner, DynamoVirtualScroll],
   templateUrl: './tree-select.html',
   providers: [
     {
@@ -131,6 +132,10 @@ export class DynamoTreeSelect<TValue = string>
   readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** Renders a small spinner in the trigger and makes the component fully
+   *  non-interactive, like `disabled`. Never emits back — the consumer
+   *  drives it. */
+  readonly loading = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable: which branch node ids are currently expanded. */
   readonly expandedIds = model<string[]>([]);
@@ -179,6 +184,10 @@ export class DynamoTreeSelect<TValue = string>
     return index >= 0 ? this.entryId(index) : null;
   });
 
+  protected readonly isDisabled = computed(
+    () => this.disabled() || this.loading(),
+  );
+
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
@@ -186,7 +195,7 @@ export class DynamoTreeSelect<TValue = string>
           selectTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
-            disabled: this.disabled(),
+            disabled: this.isDisabled(),
           }),
           this.styleClass(),
         ),
@@ -269,7 +278,7 @@ export class DynamoTreeSelect<TValue = string>
   }
 
   protected toggle(): void {
-    if (this.disabled()) {
+    if (this.isDisabled()) {
       return;
     }
     if (this.isOpen()) {
@@ -280,7 +289,7 @@ export class DynamoTreeSelect<TValue = string>
   }
 
   protected openPanel(): void {
-    if (this.disabled()) {
+    if (this.isDisabled()) {
       return;
     }
     this.isOpen.set(true);

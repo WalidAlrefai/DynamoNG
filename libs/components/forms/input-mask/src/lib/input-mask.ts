@@ -5,7 +5,6 @@ import {
   forwardRef,
   input,
   model,
-  signal,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoBaseComponent } from '@dynamong/core/base';
@@ -43,8 +42,13 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: the current value stays visible and the control
+   *  stays focusable/tabbable, but the user cannot change it. Unlike `disabled`,
+   *  does not remove the control from the tab order or dim its appearance. */
+  readonly readOnly = input(false);
 
-  protected readonly value = signal('');
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
+  readonly value = model('');
   protected readonly tokens = computed(() => this.tokenize(this.mask()));
 
   private onChangeFn: (value: string) => void = () => {
@@ -81,7 +85,7 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
   }
 
   protected onInput(event: Event): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const input = event.target as HTMLInputElement;
@@ -106,7 +110,7 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
   // native edit, which then flows through the ordinary onInput remask path
   // above with no special-casing needed.
   protected onKeydown(event: KeyboardEvent): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     if (event.key !== 'Backspace' && event.key !== 'Delete') {
@@ -159,7 +163,7 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
   }
 
   protected onPaste(event: ClipboardEvent): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     event.preventDefault();

@@ -661,6 +661,56 @@ describe('DynamoMultiSelect', () => {
     });
   });
 
+  describe('loading', () => {
+    it('renders a spinner in the trigger only while loading', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, loading: false } },
+      );
+      expect(container.querySelector('dg-spinner')).toBeNull();
+
+      setInputs({ loading: true });
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+    });
+
+    it('sets aria-busy="true" and aria-disabled/tabindex="-1" on the trigger while loading', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS, loading: true },
+      });
+      const trigger = within(container).getByRole('combobox');
+
+      expect(trigger.getAttribute('aria-busy')).toBe('true');
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('does not open the panel while loading', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, loading: true } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
+    });
+
+    it('re-enables the trigger when loading transitions back to false', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, loading: true } },
+      );
+      const trigger = within(container).getByRole('combobox');
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+
+      setInputs({ loading: false });
+
+      expect(trigger.getAttribute('aria-disabled')).toBeNull();
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations when closed', async () => {
       const { container } = renderDynamoComponent(DynamoMultiSelect, {

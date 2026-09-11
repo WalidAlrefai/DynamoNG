@@ -91,6 +91,7 @@
     role="textbox"
     aria-multiline="true"
     [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-invalid]="invalid() ? true : null"
     [attr.contenteditable]="disabled() ? null : true"
     (input)="onInput($event)"
     (blur)="onBlur()"

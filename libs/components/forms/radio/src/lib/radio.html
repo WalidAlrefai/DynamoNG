@@ -7,6 +7,7 @@
     [value]="value()"
     [checked]="checked()"
     [disabled]="disabled()"
+    [attr.aria-label]="ariaLabel() ?? null"
     (change)="onNativeChange($event)"
   />
   <span [class]="circleClasses()" [attr.aria-hidden]="true">

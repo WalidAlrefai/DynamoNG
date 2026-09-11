@@ -5,6 +5,11 @@ import { focusRingInsetClass } from '@dynamong/utils/styles';
 // component — never inline in tree.html/tree-item.html.
 export const treeRootStyles = 'flex flex-col gap-0.5 rounded-md';
 
+// Shown in place of the item list when `items()` is empty — a loading spin
+// + message while `loading` is true, or `emptyMessage()` otherwise.
+export const treeEmptyStateStyles =
+  'flex items-center justify-center gap-2 px-4 py-8 text-sm text-text-muted';
+
 export const treeRowStyles = cva(
   'flex items-center gap-1.5 rounded-md py-1.5 pe-2 text-sm text-text-primary ' +
     focusRingInsetClass,

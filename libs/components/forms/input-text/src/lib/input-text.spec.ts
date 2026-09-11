@@ -158,6 +158,30 @@ describe('DynamoInputText', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('blocks typed input, keeps the value unchanged, and reflects aria-readonly', async () => {
+      const { container } = renderDynamoComponent(DynamoInputText, {
+        inputs: { value: 'Ada', readOnly: true, ariaLabel: 'Name' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Lovelace');
+
+      expect(input.value).toBe('Ada');
+      expect(input.getAttribute('aria-readonly')).toBe('true');
+    });
+
+    it('stays focusable and not disabled, unlike the disabled state', () => {
+      const { container } = renderDynamoComponent(DynamoInputText, {
+        inputs: { readOnly: true, ariaLabel: 'Name' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      expect(input.disabled).toBe(false);
+      expect(input.tabIndex).toBe(0);
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations when given an accessible name via aria-label', async () => {
       const { container } = renderDynamoComponent(DynamoInputText, { inputs: { ariaLabel: 'Name' } });

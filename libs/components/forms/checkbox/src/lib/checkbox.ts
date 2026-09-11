@@ -28,6 +28,8 @@ export class DynamoCheckbox extends DynamoBaseComponent<DynamoCheckboxPart> {
   readonly indeterminate = input(false);
   readonly disabled = input(false);
   readonly size = input<DynamoCheckboxSize>('md');
+  /** Accessible name for the native checkbox when no visible label content is projected. */
+  readonly ariaLabel = input<string | undefined>(undefined);
 
   protected readonly inputId = this.idGenerator.next('dg-checkbox');
 

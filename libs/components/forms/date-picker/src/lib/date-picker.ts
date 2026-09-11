@@ -102,6 +102,12 @@ export class DynamoDatePicker
   readonly min = input<Date | undefined>(undefined);
   readonly max = input<Date | undefined>(undefined);
   readonly weekStartsOn = input<DynamoDatePickerWeekday>(0);
+  readonly invalid = input(false);
+  /** HTML `readonly` semantics: the trigger and calendar stay fully browsable
+   *  (open, navigate months, roving focus), but selecting a day is blocked.
+   *  Unlike `disabled`, does not remove the control from the tab order or
+   *  dim its appearance. */
+  readonly readOnly = input(false);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<Date | null>(null);
@@ -163,7 +169,13 @@ export class DynamoDatePicker
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
-      : cn(datePickerTriggerStyles({ size: this.size() }), this.styleClass()),
+      : cn(
+          datePickerTriggerStyles({
+            size: this.size(),
+            invalid: this.invalid(),
+          }),
+          this.styleClass(),
+        ),
   );
   protected readonly panelClasses = datePickerPanelStyles;
   protected readonly headerButtonClasses = datePickerHeaderButtonStyles;
@@ -246,7 +258,7 @@ export class DynamoDatePicker
   }
 
   protected selectDay(day: Date): void {
-    if (this.isDisabled(day)) return;
+    if (this.readOnly() || this.isDisabled(day)) return;
     this.focusedDate.set(day);
     this.commit(day);
   }

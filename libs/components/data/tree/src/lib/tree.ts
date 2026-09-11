@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoTreeItem } from './tree-item';
 import {
@@ -17,7 +18,7 @@ import {
   shouldCascadeCheck,
 } from './tree-selection';
 import { DynamoTreeState } from './tree-state';
-import { treeRootStyles } from './tree.styles';
+import { treeEmptyStateStyles, treeRootStyles } from './tree.styles';
 import type { DynamoTreeNode, DynamoTreePart } from './tree.types';
 
 interface DynamoTreeEntry {
@@ -30,7 +31,7 @@ interface DynamoTreeEntry {
   selector: 'dg-tree',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoTreeItem],
+  imports: [DynamoSpinner, DynamoTreeItem],
   providers: [DynamoTreeState],
   templateUrl: './tree.html',
 })
@@ -41,6 +42,14 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
   /** Two-way bindable: every node id (leaf or branch) currently fully checked. */
   readonly selected = model<string[]>([]);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Shown in place of the tree when `items()` is empty. */
+  readonly emptyMessage = input('No data');
+  /** Renders a spinner + message in the empty-state slot and makes
+   *  expand/collapse, checking, and row activation non-interactive. Never
+   *  emits back — the consumer drives it. */
+  readonly loading = input(false);
+  /** Shown in the empty-state slot instead of `emptyMessage` while `loading` is true. */
+  readonly loadingMessage = input('Loading…');
   /** Fires on Enter/Space or a row click — independent of checkbox toggling. */
   readonly nodeActivate = output<DynamoTreeNode>();
 
@@ -50,6 +59,10 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
   protected readonly rootClasses = computed(() =>
     this.unstyled() ? this.styleClass() : cn(treeRootStyles, this.styleClass()),
   );
+  protected readonly emptyStateClasses = treeEmptyStateStyles;
+
+  /** Plain alias, not a `disabled`-merge — Tree has no `disabled` input of its own to merge with. */
+  protected readonly isBusy = computed(() => this.loading());
 
   private readonly selectedSet = computed(() => new Set(this.selected()));
 
@@ -106,7 +119,10 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
     this.treeState.toggleExpanded = (id) => this.toggleExpanded(id);
     this.treeState.toggleChecked = (node) => this.toggleChecked(node);
     this.treeState.setActive = (id) => this.activeIdSignal.set(id);
-    this.treeState.activate = (node) => this.nodeActivate.emit(node);
+    this.treeState.activate = (node) => {
+      if (this.isBusy()) return;
+      this.nodeActivate.emit(node);
+    };
     // Bound per-row (co-located with each row's own click handler, which
     // template a11y lint requires) rather than on the root container — it
     // reads this.visibleEntries()/activeEntryId() reactively, so it works
@@ -116,6 +132,9 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
   }
 
   private onTreeKeydown(event: KeyboardEvent): void {
+    if (this.isBusy()) {
+      return;
+    }
     const entries = this.visibleEntries();
     if (entries.length === 0) {
       return;
@@ -235,6 +254,9 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
   }
 
   private toggleExpanded(id: string): void {
+    if (this.isBusy()) {
+      return;
+    }
     const current = this.expandedIds();
     this.expandedIds.set(
       current.includes(id)
@@ -244,7 +266,7 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
   }
 
   private toggleChecked(node: DynamoTreeNode): void {
-    if (node.disabled) {
+    if (this.isBusy() || node.disabled) {
       return;
     }
     const willCheck = shouldCascadeCheck(node, this.selectedSet());

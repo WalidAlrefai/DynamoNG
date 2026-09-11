@@ -54,10 +54,12 @@ const STATEFUL_COMMANDS: DynamoEditorStatefulCommand[] = [
 export class DynamoEditor extends DynamoBaseComponent<DynamoEditorPart> implements ControlValueAccessor {
   /** Accessible name for the editable region when no visible `<label>` wraps it. */
   readonly ariaLabel = input<string | undefined>(undefined);
+  readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
 
-  protected readonly value = signal('');
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
+  readonly value = model('');
   protected readonly activeStates = signal<Record<DynamoEditorStatefulCommand, boolean>>({
     bold: false,
     italic: false,
@@ -80,7 +82,13 @@ export class DynamoEditor extends DynamoBaseComponent<DynamoEditorPart> implemen
   protected readonly rootClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
-      : cn(editorRootStyles({ disabled: this.disabled() }), this.styleClass()),
+      : cn(
+          editorRootStyles({
+            disabled: this.disabled(),
+            invalid: this.invalid(),
+          }),
+          this.styleClass(),
+        ),
   );
   protected readonly toolbarClasses = editorToolbarStyles;
   protected readonly contentClasses = computed(() =>

@@ -219,6 +219,42 @@ describe('DynamoTextarea', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('blocks typed input, keeps the value unchanged, and reflects aria-readonly', async () => {
+      const { container } = renderDynamoComponent(DynamoTextarea, {
+        inputs: { value: 'draft', readOnly: true },
+      });
+      const textarea = within(container).getByRole(
+        'textbox',
+      ) as HTMLTextAreaElement;
+
+      await userEvent.type(textarea, 'more text');
+
+      expect(textarea.value).toBe('draft');
+      expect(textarea.getAttribute('aria-readonly')).toBe('true');
+    });
+
+    it('stays focusable and not disabled, unlike the disabled state', () => {
+      const { container } = renderDynamoComponent(DynamoTextarea, {
+        inputs: { readOnly: true },
+      });
+      const textarea = within(container).getByRole(
+        'textbox',
+      ) as HTMLTextAreaElement;
+
+      expect(textarea.disabled).toBe(false);
+      expect(textarea.tabIndex).toBe(0);
+    });
+
+    it('still runs the autoResize effect when value changes externally under readOnly', () => {
+      const { setInputs } = renderDynamoComponent(DynamoTextarea, {
+        inputs: { readOnly: true, autoResize: true },
+      });
+
+      expect(() => setInputs({ value: 'a\nb\nc\nd' })).not.toThrow();
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations when given an accessible name via aria-label', async () => {
       const { container } = renderDynamoComponent(DynamoTextarea, {

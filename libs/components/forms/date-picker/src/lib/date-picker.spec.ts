@@ -568,6 +568,63 @@ describe('DynamoDatePicker', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('still opens the dialog when the trigger is clicked', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { readOnly: true },
+      });
+      const trigger = within(container).getByRole('button');
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getDialog()).not.toBeNull();
+    });
+
+    it('still allows month navigation and arrow-key roving focus', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { readOnly: true },
+      });
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+      expect(getDialog()?.textContent).toContain('August 2026');
+
+      await userEvent.keyboard('{PageUp}');
+      expect(getDialog()?.textContent).toContain('July 2026');
+
+      await userEvent.keyboard('{ArrowRight}');
+      expect(getDayButtons()).toContain(document.activeElement);
+    });
+
+    it('does not change the value or close the panel when a day is selected', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { readOnly: true } },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(getDayButtonByText('19'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBeNull();
+      expect(getDialog()).not.toBeNull();
+    });
+
+    it('reflects aria-readonly on the trigger and keeps it focusable, not disabled', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { readOnly: true },
+      });
+      const trigger = within(container).getByRole('button') as HTMLButtonElement;
+
+      expect(trigger.getAttribute('aria-readonly')).toBe('true');
+      expect(trigger.disabled).toBe(false);
+      expect(trigger.tabIndex).toBe(0);
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations in its closed state', async () => {
       const { container } = renderDynamoComponent(DatePickerTestHostComponent);

@@ -2,6 +2,7 @@ import { cva } from 'class-variance-authority';
 import {
   controlSizeVariants,
   focusRingClass,
+  focusRingInvalidClass,
   overlayPanelClass,
 } from '@dynamong/utils/styles';
 
@@ -9,14 +10,19 @@ import {
 // component — date-picker.html only ever binds `[class]="...Classes()"` or
 // a plain exported string constant.
 export const datePickerTriggerStyles = cva(
-  'flex w-full items-center justify-between gap-2 rounded-md border border-border bg-surface-0 ' +
+  'flex w-full items-center justify-between gap-2 rounded-md border bg-surface-0 ' +
     'text-start text-text-primary transition-colors disabled:pointer-events-none disabled:opacity-60 ' +
     focusRingClass,
   {
     variants: {
       size: controlSizeVariants,
+      invalid: {
+        // Tint the shared focus ring danger; the accent-coloured ring is the default.
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: 'border-border',
+      },
     },
-    defaultVariants: { size: 'md' },
+    defaultVariants: { size: 'md', invalid: false },
   },
 );
 

@@ -8,6 +8,7 @@
     "@dynamong/core": "0.0.1",
     "@dynamong/utils": "0.0.1",
     "@dynamong/select": "0.0.1",
+    "@dynamong/spinner": "0.0.1",
     "@dynamong/tree": "0.0.1",
     "@dynamong/virtual-scroll": "0.0.1"
   },

@@ -1,4 +1,4 @@
-import { Component, model, signal } from '@angular/core';
+import { Component, input, model, signal } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -59,6 +59,7 @@ function sampleItems(): DynamoTreeNode[] {
       [(expandedIds)]="expanded"
       [(selected)]="selected"
       ariaLabel="Files"
+      [loading]="loading()"
       (nodeActivate)="onActivate($event)"
     />
   `,
@@ -67,6 +68,7 @@ class TreeTestHostComponent {
   readonly items = signal(sampleItems());
   readonly expanded = model<string[]>([]);
   readonly selected = model<string[]>([]);
+  readonly loading = input(false);
   readonly activated: DynamoTreeNode[] = [];
 
   onActivate(node: DynamoTreeNode): void {
@@ -368,6 +370,92 @@ describe('DynamoTree', () => {
       await userEvent.click(chevron(container, 'docs'));
       expect(await harness.isNodeExpanded('docs')).toBe(true);
       expect(await harness.getNodeCheckState('resume')).toBe('false');
+    });
+  });
+
+  describe('empty state', () => {
+    it('renders emptyMessage and no tree items when items is empty', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: [] },
+      });
+
+      expect(within(container).queryAllByRole('treeitem')).toHaveLength(0);
+      expect(container.textContent).toContain('No data');
+    });
+
+    it('honors a custom emptyMessage', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: [], emptyMessage: 'Nothing to show' },
+      });
+
+      expect(container.textContent).toContain('Nothing to show');
+    });
+
+    it('has no axe violations while empty', async () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: [], ariaLabel: 'Files' },
+      });
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('loading', () => {
+    it('shows a spinner and loadingMessage in the empty-state slot instead of emptyMessage', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: [], loading: true },
+      });
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+      expect(container.textContent).toContain('Loading…');
+      expect(container.textContent).not.toContain('No data');
+    });
+
+    it('honors a custom loadingMessage', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: [], loading: true, loadingMessage: 'Fetching…' },
+      });
+
+      expect(container.textContent).toContain('Fetching…');
+    });
+
+    it('sets aria-busy="true" on the empty-state status region while loading with no items', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: [], loading: true },
+      });
+
+      expect(within(container).getByRole('status').getAttribute('aria-busy')).toBe(
+        'true',
+      );
+    });
+
+    it('sets aria-busy="true" on the tree root while loading with items present', () => {
+      const { container } = renderDynamoComponent(TreeTestHostComponent, {
+        inputs: { loading: true },
+      });
+
+      expect(within(container).getByRole('tree').getAttribute('aria-busy')).toBe(
+        'true',
+      );
+    });
+
+    it('does not expand, check, or activate a node while loading', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeTestHostComponent,
+        { inputs: { loading: true } },
+      );
+
+      await userEvent.click(chevron(container, 'docs'));
+      expect(row(container, 'docs').getAttribute('aria-expanded')).toBe(
+        'false',
+      );
+      expect(componentInstance.expanded()).toEqual([]);
+
+      await userEvent.click(checkboxInput(container, 'notes'));
+      expect(componentInstance.selected()).toEqual([]);
+
+      row(container, 'docs').focus();
+      await userEvent.keyboard('{Enter}');
+      expect(componentInstance.activated).toEqual([]);
     });
   });
 

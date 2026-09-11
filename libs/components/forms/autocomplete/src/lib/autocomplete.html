@@ -1,23 +1,31 @@
-<input
-  #triggerEl
-  type="text"
-  role="combobox"
-  [id]="fieldId"
-  [class]="fieldClasses()"
-  [disabled]="disabled()"
-  [placeholder]="placeholder()"
-  [value]="value()"
-  aria-haspopup="listbox"
-  aria-autocomplete="list"
-  [attr.aria-expanded]="isOpen()"
-  [attr.aria-controls]="isOpen() ? listboxId : null"
-  [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
-  [attr.aria-invalid]="invalid() ? 'true' : null"
-  [attr.aria-label]="ariaLabel() ?? null"
-  (input)="onInput($event)"
-  (keydown)="onKeydown($event)"
-  (blur)="onBlur()"
-/>
+<div [class]="fieldWrapperClasses">
+  <input
+    #triggerEl
+    type="text"
+    role="combobox"
+    [id]="fieldId"
+    [class]="fieldClasses()"
+    [disabled]="isDisabled()"
+    [readOnly]="readOnly()"
+    [placeholder]="placeholder()"
+    [value]="value()"
+    aria-haspopup="listbox"
+    aria-autocomplete="list"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="isOpen() ? listboxId : null"
+    [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
+    [attr.aria-readonly]="readOnly() ? 'true' : null"
+    [attr.aria-busy]="loading() ? 'true' : null"
+    [attr.aria-label]="ariaLabel() ?? null"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+    (blur)="onBlur()"
+  />
+  @if (loading()) {
+    <dg-spinner size="sm" [styleClass]="loadingIndicatorClasses" />
+  }
+</div>
 
 <ng-template #panelTemplate>
   <div [class]="panelWrapperClasses()">
