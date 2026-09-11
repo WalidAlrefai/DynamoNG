@@ -45,7 +45,8 @@ export class DynamoInputNumber
   readonly max = input<number | undefined>(undefined);
   readonly step = input(1);
 
-  protected readonly value = signal<number | null>(null);
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
+  readonly value = model<number | null>(null);
   // Live keystrokes while focused, kept separate from `value` so partial
   // input ("-", "12.") isn't clobbered by a re-render before the user
   // finishes typing — parsing/clamping only happens in commit(), on blur.

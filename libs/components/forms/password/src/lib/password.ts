@@ -44,7 +44,8 @@ export class DynamoPassword extends DynamoBaseComponent<DynamoPasswordPart> impl
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
 
-  protected readonly value = signal('');
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
+  readonly value = model('');
   protected readonly visible = signal(false);
 
   private onChangeFn: (value: string) => void = () => {

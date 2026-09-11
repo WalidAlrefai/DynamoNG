@@ -7,7 +7,6 @@ import {
   forwardRef,
   input,
   model,
-  signal,
   viewChild,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
@@ -44,7 +43,8 @@ export class DynamoTextarea
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
 
-  protected readonly value = signal('');
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
+  readonly value = model('');
   private readonly textareaEl =
     viewChild<ElementRef<HTMLTextAreaElement>>('textareaEl');
 

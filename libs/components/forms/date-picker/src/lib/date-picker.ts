@@ -102,6 +102,7 @@ export class DynamoDatePicker
   readonly min = input<Date | undefined>(undefined);
   readonly max = input<Date | undefined>(undefined);
   readonly weekStartsOn = input<DynamoDatePickerWeekday>(0);
+  readonly invalid = input(false);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<Date | null>(null);
@@ -163,7 +164,13 @@ export class DynamoDatePicker
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
-      : cn(datePickerTriggerStyles({ size: this.size() }), this.styleClass()),
+      : cn(
+          datePickerTriggerStyles({
+            size: this.size(),
+            invalid: this.invalid(),
+          }),
+          this.styleClass(),
+        ),
   );
   protected readonly panelClasses = datePickerPanelStyles;
   protected readonly headerButtonClasses = datePickerHeaderButtonStyles;

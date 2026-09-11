@@ -25,6 +25,8 @@ export class DynamoSwitch extends DynamoBaseComponent<DynamoSwitchPart> {
   readonly checked = model(false);
   readonly disabled = input(false);
   readonly size = input<DynamoSwitchSize>('md');
+  /** Accessible name for the native switch when no visible label content is projected. */
+  readonly ariaLabel = input<string | undefined>(undefined);
 
   protected readonly inputId = this.idGenerator.next('dg-switch');
 

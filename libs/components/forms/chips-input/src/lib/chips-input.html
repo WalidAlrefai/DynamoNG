@@ -4,7 +4,7 @@
   [attr.data-testid]="'DynamoChipsInput'"
   (click)="onWrapperClick()"
 >
-  @for (chip of chips(); track chip; let i = $index) {
+  @for (chip of value(); track chip; let i = $index) {
     <span [class]="chipClasses()" [attr.data-testid]="'DynamoChipsInput-chip'">
       {{ chip }}
       <button
@@ -35,7 +35,7 @@
     type="text"
     [class]="fieldClasses"
     [value]="draftText()"
-    [placeholder]="chips().length === 0 ? placeholder() : ''"
+    [placeholder]="value().length === 0 ? placeholder() : ''"
     [disabled]="disabled()"
     [attr.aria-label]="ariaLabel() ?? null"
     [attr.aria-invalid]="invalid() ? 'true' : null"

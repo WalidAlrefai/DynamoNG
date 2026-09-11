@@ -5,7 +5,6 @@ import {
   forwardRef,
   input,
   model,
-  signal,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoBaseComponent } from '@dynamong/core/base';
@@ -44,7 +43,8 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
 
-  protected readonly value = signal('');
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
+  readonly value = model('');
   protected readonly tokens = computed(() => this.tokenize(this.mask()));
 
   private onChangeFn: (value: string) => void = () => {

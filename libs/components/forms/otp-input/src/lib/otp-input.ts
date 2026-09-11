@@ -3,12 +3,9 @@ import {
   Component,
   ElementRef,
   computed,
-  effect,
   forwardRef,
   input,
   model,
-  signal,
-  untracked,
   viewChildren,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
@@ -44,10 +41,21 @@ export class DynamoOtpInput
   readonly disabled = model(false);
   readonly ariaLabel = input<string | undefined>(undefined);
 
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
+  readonly value = model('');
+
   protected readonly boxes = computed(() =>
     Array.from({ length: Math.max(0, this.length()) }, (_, i) => i),
   );
-  protected readonly boxValues = signal<string[]>([]);
+  // Derived from `value()` — padded/truncated to `length()` characters, one
+  // per box. No separate stored state, so there's nothing to keep in sync.
+  protected readonly boxValues = computed(() => {
+    const chars = this.value().split('');
+    return Array.from(
+      { length: Math.max(0, this.length()) },
+      (_, i) => chars[i] ?? '',
+    );
+  });
 
   private readonly boxRefs =
     viewChildren<ElementRef<HTMLInputElement>>('box');
@@ -68,27 +76,8 @@ export class DynamoOtpInput
     otpInputBoxStyles({ size: this.size(), invalid: this.invalid() }),
   );
 
-  constructor() {
-    super();
-    effect(() => {
-      const len = this.length();
-      untracked(() =>
-        this.boxValues.update((current) => {
-          const next = current.slice(0, len);
-          while (next.length < len) {
-            next.push('');
-          }
-          return next;
-        }),
-      );
-    });
-  }
-
   writeValue(value: string | null): void {
-    const chars = (value ?? '').split('');
-    this.boxValues.set(
-      Array.from({ length: this.length() }, (_, i) => chars[i] ?? ''),
-    );
+    this.value.set(value ?? '');
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -110,12 +99,9 @@ export class DynamoOtpInput
       char = '';
       input.value = '';
     }
-    this.boxValues.update((values) => {
-      const next = [...values];
-      next[index] = char;
-      return next;
-    });
-    this.emitValue();
+    const chars = [...this.boxValues()];
+    chars[index] = char;
+    this.commit(chars.join(''));
     if (char && index < this.length() - 1) {
       this.boxRefs()[index + 1]?.nativeElement.focus();
     }
@@ -124,12 +110,9 @@ export class DynamoOtpInput
   protected onBoxKeydown(index: number, event: KeyboardEvent): void {
     if (event.key === 'Backspace' && !this.boxValues()[index] && index > 0) {
       event.preventDefault();
-      this.boxValues.update((values) => {
-        const next = [...values];
-        next[index - 1] = '';
-        return next;
-      });
-      this.emitValue();
+      const chars = [...this.boxValues()];
+      chars[index - 1] = '';
+      this.commit(chars.join(''));
       this.boxRefs()[index - 1]?.nativeElement.focus();
     } else if (event.key === 'ArrowLeft' && index > 0) {
       event.preventDefault();
@@ -143,22 +126,19 @@ export class DynamoOtpInput
   protected onBoxPaste(index: number, event: ClipboardEvent): void {
     event.preventDefault();
     const pasted = event.clipboardData?.getData('text') ?? '';
-    const chars = (this.numeric() ? pasted.replace(/\D/g, '') : pasted).split(
-      '',
-    );
+    const pastedChars = (
+      this.numeric() ? pasted.replace(/\D/g, '') : pasted
+    ).split('');
+    const chars = [...this.boxValues()];
     let cursor = index;
-    this.boxValues.update((values) => {
-      const next = [...values];
-      for (const char of chars) {
-        if (cursor >= this.length()) {
-          break;
-        }
-        next[cursor] = char;
-        cursor++;
+    for (const char of pastedChars) {
+      if (cursor >= this.length()) {
+        break;
       }
-      return next;
-    });
-    this.emitValue();
+      chars[cursor] = char;
+      cursor++;
+    }
+    this.commit(chars.join(''));
     const focusIndex = Math.min(cursor, this.length() - 1);
     this.boxRefs()[Math.max(focusIndex, 0)]?.nativeElement.focus();
   }
@@ -167,7 +147,8 @@ export class DynamoOtpInput
     this.onTouchedFn();
   }
 
-  private emitValue(): void {
-    this.onChangeFn(this.boxValues().join(''));
+  private commit(next: string): void {
+    this.value.set(next);
+    this.onChangeFn(next);
   }
 }

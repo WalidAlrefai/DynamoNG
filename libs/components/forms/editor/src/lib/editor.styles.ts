@@ -1,5 +1,9 @@
 import { cva } from 'class-variance-authority';
-import { focusRingClass, focusRingWithinClass } from '@dynamong/utils/styles';
+import {
+  focusRingClass,
+  focusRingInvalidClass,
+  focusRingWithinClass,
+} from '@dynamong/utils/styles';
 
 // Outer wrapper: focus visually belongs to the whole control (toolbar +
 // content), not one native input, so it reacts to focus-within the same way
@@ -14,8 +18,13 @@ export const editorRootStyles = cva(
         true: 'pointer-events-none opacity-60',
         false: '',
       },
+      invalid: {
+        // Tint the shared focus ring danger; the accent-coloured ring is the default.
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: 'border-border',
+      },
     },
-    defaultVariants: { disabled: false },
+    defaultVariants: { disabled: false, invalid: false },
   },
 );
 
