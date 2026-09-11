@@ -333,6 +333,51 @@ describe('DynamoInputNumber', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('blocks typed input and stepping via keyboard, keeps the value unchanged, and reflects aria-readonly', async () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { value: 5, readOnly: true, ariaLabel: 'Quantity' },
+      });
+      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      input.focus();
+
+      await userEvent.type(input, '9');
+      await userEvent.keyboard('{ArrowUp}{PageUp}{Home}{End}');
+
+      expect(input.value).toBe('5');
+      expect(input.getAttribute('aria-readonly')).toBe('true');
+    });
+
+    it('disables both stepper buttons but keeps the input focusable and not disabled', () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { value: 5, readOnly: true, ariaLabel: 'Quantity' },
+      });
+      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+
+      expect(input.disabled).toBe(false);
+      expect(input.tabIndex).toBe(0);
+      expect(
+        (within(container).getByLabelText('Increment') as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+      expect(
+        (within(container).getByLabelText('Decrement') as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+    });
+
+    it('ignores clicks on the stepper buttons', async () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { value: 5, readOnly: true, ariaLabel: 'Quantity' },
+      });
+      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+
+      await userEvent.click(within(container).getByLabelText('Increment'));
+
+      expect(input.value).toBe('5');
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations when given an accessible name via ariaLabel', async () => {
       const { container } = renderDynamoComponent(DynamoInputNumber, {

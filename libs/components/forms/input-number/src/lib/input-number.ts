@@ -41,6 +41,10 @@ export class DynamoInputNumber
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: the current value stays visible and the control
+   *  stays focusable/tabbable, but the user cannot change it. Unlike `disabled`,
+   *  does not remove the control from the tab order or dim its appearance. */
+  readonly readOnly = input(false);
   readonly min = input<number | undefined>(undefined);
   readonly max = input<number | undefined>(undefined);
   readonly step = input(1);
@@ -65,11 +69,19 @@ export class DynamoInputNumber
 
   protected readonly incrementDisabled = computed(() => {
     const max = this.max();
-    return this.disabled() || (max != null && (this.value() ?? 0) >= max);
+    return (
+      this.disabled() ||
+      this.readOnly() ||
+      (max != null && (this.value() ?? 0) >= max)
+    );
   });
   protected readonly decrementDisabled = computed(() => {
     const min = this.min();
-    return this.disabled() || (min != null && (this.value() ?? 0) <= min);
+    return (
+      this.disabled() ||
+      this.readOnly() ||
+      (min != null && (this.value() ?? 0) <= min)
+    );
   });
 
   protected readonly wrapperClasses = computed(() =>
@@ -120,7 +132,7 @@ export class DynamoInputNumber
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const step = this.step();

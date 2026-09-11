@@ -315,6 +315,65 @@ describe('DynamoChipsInput', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('blocks typed input and reflects aria-readonly', async () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { readOnly: true, ariaLabel: 'Tags' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      await userEvent.type(input, 'angular{Enter}');
+
+      expect(chips(container)).toEqual([]);
+      expect(input.value).toBe('');
+      expect(input.getAttribute('aria-readonly')).toBe('true');
+    });
+
+    it('does not remove the last chip on Backspace from an empty draft', async () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { value: ['one', 'two'], readOnly: true, ariaLabel: 'Tags' },
+      });
+      const input = within(container).getByRole('textbox');
+
+      await userEvent.type(input, '{Backspace}');
+
+      expect(chips(container)).toEqual(['one', 'two']);
+    });
+
+    it('ignores a comma-separated paste', () => {
+      const { fixture, container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { readOnly: true, ariaLabel: 'Tags' },
+      });
+      const input = within(container).getByRole('textbox');
+
+      input.dispatchEvent(pasteEvent('a,b,c'));
+      fixture.detectChanges();
+
+      expect(chips(container)).toEqual([]);
+    });
+
+    it('renders each chip\'s remove button as disabled', () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { value: ['one'], readOnly: true, ariaLabel: 'Tags' },
+      });
+
+      expect(
+        (within(container).getByLabelText('Remove one') as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+    });
+
+    it('stays focusable and not disabled, unlike the disabled state', () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { readOnly: true, ariaLabel: 'Tags' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      expect(input.disabled).toBe(false);
+      expect(input.tabIndex).toBe(0);
+    });
+  });
+
   describe('accessibility', () => {
     it('gives each remove button a "Remove {chip}" aria-label', async () => {
       const { container } = renderDynamoComponent(DynamoChipsInput, {

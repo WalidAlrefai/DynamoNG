@@ -67,6 +67,11 @@ export class DynamoAutocomplete<TValue = unknown>
   readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: the current text stays visible and the input
+   *  stays focusable/tabbable, but typing and invoking the suggestion panel
+   *  are blocked. Unlike `disabled`, does not remove the control from the
+   *  tab order or dim its appearance. */
+  readonly readOnly = input(false);
   readonly position = input<DynamoSelectPosition>('bottom-start');
   readonly noResultsMessage = input('No matching options');
   /**
@@ -287,7 +292,7 @@ export class DynamoAutocomplete<TValue = unknown>
   }
 
   protected selectOption(option: DynamoSelectOption<TValue>): void {
-    if (option.disabled) return;
+    if (this.readOnly() || option.disabled) return;
     this.value.set(option.label);
     this.onChangeFn(option.label);
     this.optionSelect.emit(option);
@@ -299,7 +304,7 @@ export class DynamoAutocomplete<TValue = unknown>
   }
 
   private openList(): void {
-    if (this.disabled()) return;
+    if (this.disabled() || this.readOnly()) return;
     this.isOpen.set(true);
     this.activeIndex.set(findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1);
     this.scrollActiveIntoView();

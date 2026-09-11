@@ -431,6 +431,56 @@ describe('DynamoInputMask', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('blocks typed input, keeps the value unchanged, and reflects aria-readonly', async () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, value: '(555) 123-4567', readOnly: true, ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      // Unlike `typeString`/`typeChar` above (which mutate `input.value`
+      // directly, bypassing the native `readonly` attribute the way a
+      // browser never would), `userEvent.type` respects `element.readOnly`
+      // the same way real keystrokes do — the correct way to exercise this.
+      await userEvent.type(input, '9');
+
+      expect(input.value).toBe('(555) 123-4567');
+      expect(input.getAttribute('aria-readonly')).toBe('true');
+    });
+
+    it('does not delete a masked character on Backspace', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, value: '(555) 123-4567', readOnly: true, ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      backspaceAt(input, input.value.length);
+
+      expect(input.value).toBe('(555) 123-4567');
+    });
+
+    it('ignores a paste', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, value: '(555) 123-4567', readOnly: true, ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      pasteText(input, '9998887777');
+
+      expect(input.value).toBe('(555) 123-4567');
+    });
+
+    it('stays focusable and not disabled, unlike the disabled state', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, readOnly: true, ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      expect(input.disabled).toBe(false);
+      expect(input.tabIndex).toBe(0);
+    });
+  });
+
   describe('template behavior', () => {
     it('applies different classes for the invalid vs. valid state', () => {
       const { container, setInputs } = renderDynamoComponent(DynamoInputMask, {

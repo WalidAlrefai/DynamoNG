@@ -43,6 +43,10 @@ export class DynamoPassword extends DynamoBaseComponent<DynamoPasswordPart> impl
   readonly showStrengthMeter = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: the current value stays visible and the control
+   *  stays focusable/tabbable, but the user cannot change it. Unlike `disabled`,
+   *  does not remove the control from the tab order or dim its appearance. */
+  readonly readOnly = input(false);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model('');

@@ -45,6 +45,11 @@ export class DynamoChipsInput
   readonly allowDuplicates = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: the current chips stay visible and the field
+   *  stays focusable/tabbable, but adding or removing chips is blocked.
+   *  Unlike `disabled`, does not remove the control from the tab order or
+   *  dim its appearance. */
+  readonly readOnly = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
@@ -110,6 +115,9 @@ export class DynamoChipsInput
   }
 
   protected onInputKeydown(event: KeyboardEvent): void {
+    if (this.disabled() || this.readOnly()) {
+      return;
+    }
     if (event.key === 'Enter' || event.key === ',') {
       event.preventDefault();
       this.commitDraft();
@@ -124,6 +132,9 @@ export class DynamoChipsInput
   }
 
   protected onInputPaste(event: ClipboardEvent): void {
+    if (this.disabled() || this.readOnly()) {
+      return;
+    }
     const pasted = event.clipboardData?.getData('text') ?? '';
     // A plain single-value paste (no comma) is left to land in the field
     // normally — only a multi-value paste is worth intercepting.
@@ -142,7 +153,7 @@ export class DynamoChipsInput
   }
 
   protected removeChip(index: number): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     this.value.update((values) => values.filter((_, i) => i !== index));
