@@ -17,6 +17,7 @@ import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoCheckIcon } from '@dynamong/icons';
 import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import {
   DynamoListboxBase,
@@ -68,6 +69,7 @@ type DynamoMultiSelectRenderItem<TValue> =
     DynamoInputText,
     DynamoCheckIcon,
     DynamoCheckbox,
+    DynamoSpinner,
     DynamoVirtualScroll,
   ],
   templateUrl: './multi-select.html',
@@ -90,6 +92,10 @@ export class DynamoMultiSelect<TValue = unknown>
   /** Two-way bindable array of selected values; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<TValue[]>([]);
   readonly disabled = model(false);
+  /** Renders a small spinner in the trigger and makes the component fully
+   *  non-interactive, like `disabled`. Never emits back — the consumer
+   *  drives it. */
+  readonly loading = input(false);
   readonly invalid = input(false);
   readonly position = input<DynamoSelectPosition>('bottom-start');
   readonly filterable = input(false);
@@ -234,6 +240,10 @@ export class DynamoMultiSelect<TValue = unknown>
     return index >= 0 ? this.optionId(index) : null;
   });
 
+  protected readonly isDisabled = computed(
+    () => this.disabled() || this.loading(),
+  );
+
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
@@ -241,7 +251,7 @@ export class DynamoMultiSelect<TValue = unknown>
           multiSelectTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
-            disabled: this.disabled(),
+            disabled: this.isDisabled(),
           }),
           this.styleClass(),
         ),
@@ -327,7 +337,7 @@ export class DynamoMultiSelect<TValue = unknown>
   }
 
   protected toggle(): void {
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     if (this.isOpen()) {
       this.close();
     } else {
@@ -336,7 +346,7 @@ export class DynamoMultiSelect<TValue = unknown>
   }
 
   protected openList(): void {
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     this.isOpen.set(true);
     this.activeIndex.set(findEnabledIndex(this.visibleOptions(), -1, 1) ?? -1);
     this.scrollActiveIntoView();
@@ -366,7 +376,7 @@ export class DynamoMultiSelect<TValue = unknown>
 
   protected removeTag(value: TValue, event: Event): void {
     event.stopPropagation();
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     const next = this.value().filter((v) => v !== value);
     this.value.set(next);
     this.onChangeFn(next);
@@ -374,7 +384,7 @@ export class DynamoMultiSelect<TValue = unknown>
   }
 
   protected selectAll(): void {
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     const current = this.value();
     const currentSet = new Set(current);
     let candidates = this.filteredOptions().filter(
@@ -392,7 +402,7 @@ export class DynamoMultiSelect<TValue = unknown>
   }
 
   protected clearAll(): void {
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     const visibleValues = new Set(
       this.filteredOptions().map((option) => option.value),
     );

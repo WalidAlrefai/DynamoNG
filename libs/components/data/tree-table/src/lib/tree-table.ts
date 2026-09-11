@@ -10,6 +10,7 @@ import {
   viewChildren,
 } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   treeTableCellStyles,
@@ -21,6 +22,7 @@ import {
   treeTableHeaderCellStyles,
   treeTableHeaderRowStyles,
   treeTableIndentRem,
+  treeTableLoadingWrapperStyles,
   treeTableRootStyles,
   treeTableRowStyles,
   treeTableSortButtonStyles,
@@ -116,11 +118,13 @@ function findEnabledEntryIndex<TRow>(
  * Table is `tier:3` and freely composes lower-tier `@dynamong/*` components
  * for its own optional selection/filter/pagination features, but none of
  * those are in TreeTable's v1 scope (see README), so there's nothing to
- * compose here; this keeps TreeTable at `tier:0`. Table's own sort/filter
- * helpers (`table.sort.ts`/`table.filter.ts`) aren't exported from its
- * `index.ts` regardless, so a small comparator is independently duplicated
- * here too, adapted to sort each tree level's siblings independently
- * rather than Table's flat global sort (which would destroy the hierarchy).
+ * compose from Table here. Table's own sort/filter helpers
+ * (`table.sort.ts`/`table.filter.ts`) aren't exported from its `index.ts`
+ * regardless, so a small comparator is independently duplicated here too,
+ * adapted to sort each tree level's siblings independently rather than
+ * Table's flat global sort (which would destroy the hierarchy). TreeTable
+ * is `tier:1`, not `tier:0`, though — it composes `@dynamong/spinner`
+ * (`tier:0`) for its `loading` empty-state.
  *
  * ARIA: unlike PanelMenu (which had to reject both `role="tree"` and
  * `role="menu"`), ARIA has a role built for exactly this hybrid —
@@ -133,7 +137,7 @@ function findEnabledEntryIndex<TRow>(
   selector: 'dg-tree-table',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, DynamoSpinner],
   templateUrl: './tree-table.html',
 })
 export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoTreeTablePart> {
@@ -143,6 +147,12 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   readonly expandedIds = model<string[]>([]);
   readonly ariaLabel = input<string | undefined>(undefined);
   readonly emptyMessage = input('No data');
+  /** Renders a spinner + message in the empty-state slot and makes sorting,
+   *  expand/collapse, and row navigation non-interactive. Never emits back
+   *  — the consumer drives it. */
+  readonly loading = input(false);
+  /** Shown in the empty-state slot instead of `emptyMessage` while `loading` is true. */
+  readonly loadingMessage = input('Loading…');
 
   private readonly activeIdSignal = signal<string | undefined>(undefined);
   // Matches visibleEntries()'s order 1:1 — both derive from the same
@@ -159,6 +169,9 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   protected readonly rootClasses = computed(() =>
     this.unstyled() ? this.styleClass() : cn(treeTableRootStyles, this.styleClass()),
   );
+
+  /** Plain alias, not a `disabled`-merge — TreeTable has no `disabled` input of its own to merge with. */
+  protected readonly isBusy = computed(() => this.loading());
 
   // Depth-first, sorting each level's own siblings before descending —
   // skipping children of collapsed nodes. A pure data walk, not a DOM
@@ -205,6 +218,7 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   protected readonly chevronButtonClasses = treeTableChevronButtonStyles;
   protected readonly chevronPlaceholderClasses = treeTableChevronPlaceholderStyles;
   protected readonly firstCellContentClasses = treeTableFirstCellContentStyles;
+  protected readonly loadingWrapperClasses = treeTableLoadingWrapperStyles;
 
   protected hasChildren(node: DynamoTreeTableNode<TRow>): boolean {
     return (node.children?.length ?? 0) > 0;
@@ -260,7 +274,7 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
    * the page-reset, since TreeTable has no pagination in v1).
    */
   protected toggleSort(column: DynamoTreeTableColumn<TRow>): void {
-    if (!column.sortable) return;
+    if (this.isBusy() || !column.sortable) return;
     this.sortState.update((state) => {
       if (state?.field !== column.field) return { field: column.field, direction: 'asc' };
       if (state.direction === 'asc') return { field: column.field, direction: 'desc' };
@@ -269,6 +283,7 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   }
 
   protected toggleExpanded(id: string): void {
+    if (this.isBusy()) return;
     const current = this.expandedIds();
     this.expandedIds.set(
       current.includes(id) ? current.filter((existing) => existing !== id) : [...current, id],
@@ -276,6 +291,7 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   }
 
   protected onRowKeydown(event: KeyboardEvent, entry: DynamoTreeTableEntry<TRow>): void {
+    if (this.isBusy()) return;
     const entries = this.visibleEntries();
     const currentIndex = entries.findIndex((candidate) => candidate.node.id === entry.node.id);
     if (currentIndex === -1) return;

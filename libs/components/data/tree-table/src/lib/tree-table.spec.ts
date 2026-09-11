@@ -402,6 +402,93 @@ describe('DynamoTreeTable', () => {
     });
   });
 
+  describe('loading', () => {
+    it('shows a spinner and loadingMessage in the empty-state slot instead of emptyMessage', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: [], columns: sampleColumns(), loading: true } },
+      );
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+      expect(container.textContent).toContain('Loading…');
+      expect(container.textContent).not.toContain('No data');
+    });
+
+    it('honors a custom loadingMessage', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: [],
+            columns: sampleColumns(),
+            loading: true,
+            loadingMessage: 'Fetching…',
+          },
+        },
+      );
+
+      expect(container.textContent).toContain('Fetching…');
+    });
+
+    it('sets aria-busy="true" on the root while loading', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: sampleItems(),
+            columns: sampleColumns(),
+            loading: true,
+          },
+        },
+      );
+
+      expect(
+        container.querySelector('[aria-busy="true"]'),
+      ).not.toBeNull();
+    });
+
+    it('disables the sort button and ignores clicks on it while loading', async () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: sampleItems(),
+            columns: sampleColumns(),
+            loading: true,
+          },
+        },
+      );
+      const header = Array.from(
+        container.querySelectorAll<HTMLButtonElement>('thead button'),
+      ).find((el) => el.textContent?.trim() === 'Name')!;
+      expect(header.disabled).toBe(true);
+
+      await userEvent.click(header);
+
+      expect(rowNames(container)).toEqual(['docs', 'photos', 'notes.txt']);
+    });
+
+    it('does not expand a branch when its chevron is clicked while loading', async () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          loading: true,
+        },
+      });
+      const chevron = rowByName(container, 'docs').querySelector<HTMLElement>(
+        '[data-testid="chevron"]',
+      )!;
+
+      await userEvent.click(chevron);
+
+      expect(componentInstance.expandedIds()).toEqual([]);
+      expect(rowNames(container)).toEqual(['docs', 'photos', 'notes.txt']);
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations when collapsed', async () => {
       const { container } = renderDynamoComponent(TreeTableTestHostComponent);

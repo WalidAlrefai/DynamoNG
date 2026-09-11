@@ -4,23 +4,27 @@
     role="combobox"
     [id]="triggerId"
     [class]="triggerButtonClasses"
-    [disabled]="disabled()"
+    [disabled]="isDisabled()"
     aria-haspopup="listbox"
     [attr.aria-expanded]="isOpen()"
     [attr.aria-controls]="isOpen() ? listboxId : null"
     [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
     [attr.aria-invalid]="invalid() ? 'true' : null"
+    [attr.aria-busy]="loading() ? 'true' : null"
     [attr.aria-label]="ariaLabel() ?? null"
     (click)="toggle()"
     (keydown)="onTriggerKeydown($event)"
   >
+    @if (loading()) {
+      <dg-spinner size="sm" />
+    }
     {{ selectedLabel() }}
   </button>
   @if (clearable() && selectedOption()) {
   <button
     type="button"
     [class]="clearButtonClasses"
-    [disabled]="disabled()"
+    [disabled]="isDisabled()"
     aria-label="Clear selection"
     (click)="clearValue($event)"
   >

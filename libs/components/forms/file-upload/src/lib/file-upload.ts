@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import type { DynamoSize } from '@dynamong/core/api';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   fileUploadDropzoneStyles,
@@ -54,6 +55,7 @@ function matchesAccept(file: File, accept: string): boolean {
   selector: 'dg-file-upload',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoSpinner],
   templateUrl: './file-upload.html',
 })
 export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> {
@@ -62,6 +64,10 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
   readonly maxFileSize = input<number | undefined>(undefined);
   readonly maxFiles = input<number | undefined>(undefined);
   readonly disabled = model(false);
+  /** Renders a small spinner in the dropzone and makes the component fully
+   *  non-interactive, like `disabled`. Never emits back — the consumer
+   *  drives it (e.g. while an externally-tracked upload is in flight). */
+  readonly loading = input(false);
   readonly size = input<DynamoSize>('md');
   readonly label = input('Drag and drop files here, or click to browse');
   readonly ariaLabel = input<string | undefined>(undefined);
@@ -76,6 +82,10 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
 
   protected readonly isDragging = signal(false);
 
+  protected readonly isDisabled = computed(
+    () => this.disabled() || this.loading(),
+  );
+
   protected readonly dropzoneClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
@@ -83,7 +93,7 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
           fileUploadDropzoneStyles({
             size: this.size(),
             dragging: this.isDragging(),
-            disabled: this.disabled(),
+            disabled: this.isDisabled(),
           }),
           this.styleClass(),
         ),
@@ -95,7 +105,7 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
   protected readonly removeButtonClasses = fileUploadRemoveButtonStyles;
 
   protected openBrowser(): void {
-    if (this.disabled()) {
+    if (this.isDisabled()) {
       return;
     }
     this.fileInputEl().nativeElement.click();
@@ -110,7 +120,7 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
 
   protected onDragOver(event: DragEvent): void {
     event.preventDefault();
-    if (this.disabled()) {
+    if (this.isDisabled()) {
       return;
     }
     this.isDragging.set(true);
@@ -124,7 +134,7 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
   protected onDrop(event: DragEvent): void {
     event.preventDefault();
     this.isDragging.set(false);
-    if (this.disabled()) {
+    if (this.isDisabled()) {
       return;
     }
     this.handleFiles(event.dataTransfer?.files ?? null);

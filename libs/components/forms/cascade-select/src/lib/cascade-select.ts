@@ -24,6 +24,7 @@ import {
   selectTriggerButtonStyles,
   selectTriggerStyles,
 } from '@dynamong/select';
+import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoTreeNode } from '@dynamong/tree';
 import type { DynamoOverlayHandle } from '@dynamong/core/overlay';
@@ -95,7 +96,7 @@ function findEnabledNodeIndex<TValue>(
   selector: 'dg-cascade-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoVirtualScroll],
+  imports: [DynamoSpinner, DynamoVirtualScroll],
   templateUrl: './cascade-select.html',
   providers: [
     {
@@ -115,6 +116,10 @@ export class DynamoCascadeSelect<TValue = string>
   readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** Renders a small spinner in the trigger and makes the component fully
+   *  non-interactive, like `disabled`. Never emits back — the consumer
+   *  drives it. */
+  readonly loading = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model<TValue | null>(null);
@@ -172,6 +177,10 @@ export class DynamoCascadeSelect<TValue = string>
   });
   protected readonly isVirtualized = computed(() => this.virtualScroll());
 
+  protected readonly isDisabled = computed(
+    () => this.disabled() || this.loading(),
+  );
+
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
@@ -179,7 +188,7 @@ export class DynamoCascadeSelect<TValue = string>
           selectTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
-            disabled: this.disabled(),
+            disabled: this.isDisabled(),
           }),
           this.styleClass(),
         ),
@@ -296,7 +305,7 @@ export class DynamoCascadeSelect<TValue = string>
   }
 
   protected toggle(): void {
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     if (this.isOpen()) {
       this.close();
     } else {
@@ -305,7 +314,7 @@ export class DynamoCascadeSelect<TValue = string>
   }
 
   protected openPanel(): void {
-    if (this.disabled()) return;
+    if (this.isDisabled()) return;
     this.isOpen.set(true);
     this.levels.set(this.buildInitialLevels());
     this.activeLevelIndex.set(0);

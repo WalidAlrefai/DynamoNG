@@ -433,6 +433,66 @@ describe('DynamoAutocomplete', () => {
     });
   });
 
+  describe('loading', () => {
+    it('renders a spinner over the field only while loading', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoAutocomplete,
+        { inputs: { options: THREE_OPTIONS, loading: false, ariaLabel: 'Fruit' } },
+      );
+      expect(container.querySelector('dg-spinner')).toBeNull();
+
+      setInputs({ loading: true });
+
+      expect(container.querySelector('dg-spinner')).not.toBeNull();
+    });
+
+    it('disables the field, sets aria-busy, and blocks typing while loading', async () => {
+      const { container } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: {
+          options: THREE_OPTIONS,
+          value: 'Option 1',
+          loading: true,
+          ariaLabel: 'Fruit',
+        },
+      });
+      const field = within(container).getByRole('combobox') as HTMLInputElement;
+
+      expect(field.disabled).toBe(true);
+      expect(field.getAttribute('aria-busy')).toBe('true');
+
+      await userEvent.type(field, '2');
+
+      expect(field.value).toBe('Option 1');
+    });
+
+    it('does not open the panel on ArrowDown while loading', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoAutocomplete,
+        { inputs: { options: THREE_OPTIONS, loading: true, ariaLabel: 'Fruit' } },
+      );
+      const field = within(container).getByRole('combobox');
+      field.focus();
+
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
+    });
+
+    it('re-enables the field when loading transitions back to false', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoAutocomplete,
+        { inputs: { options: THREE_OPTIONS, loading: true, ariaLabel: 'Fruit' } },
+      );
+      const field = within(container).getByRole('combobox') as HTMLInputElement;
+      expect(field.disabled).toBe(true);
+
+      setInputs({ loading: false });
+
+      expect(field.disabled).toBe(false);
+    });
+  });
+
   describe('grouped options', () => {
     it('renders a heading row per group', async () => {
       const groupedOptions: DynamoSelectOption<string>[] = [

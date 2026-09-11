@@ -3,17 +3,21 @@
   role="combobox"
   [id]="triggerId"
   [class]="triggerClasses()"
-  [attr.tabindex]="disabled() ? -1 : 0"
+  [attr.tabindex]="isDisabled() ? -1 : 0"
   aria-haspopup="listbox"
   [attr.aria-expanded]="isOpen()"
   [attr.aria-controls]="isOpen() ? listboxId : null"
   [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
   [attr.aria-invalid]="invalid() ? 'true' : null"
-  [attr.aria-disabled]="disabled() ? 'true' : null"
+  [attr.aria-disabled]="isDisabled() ? 'true' : null"
+  [attr.aria-busy]="loading() ? 'true' : null"
   [attr.aria-label]="ariaLabel() ?? null"
   (click)="toggle()"
   (keydown)="onTriggerKeydown($event)"
 >
+  @if (loading()) {
+  <dg-spinner size="sm" />
+  }
   @if (selectedOptions().length === 0) {
   <span [class]="placeholderClasses">{{ placeholder() }}</span>
   } @else { @for (tag of visibleTags(); track tag.value) {
@@ -22,7 +26,7 @@
     <button
       type="button"
       [class]="tagRemoveButtonClasses"
-      [disabled]="disabled()"
+      [disabled]="isDisabled()"
       [attr.aria-label]="'Remove ' + tag.label"
       (click)="removeTag(tag.value, $event)"
     >
@@ -74,7 +78,7 @@
         data-testid="dg-multi-select-select-all"
         [checked]="selectAllState().checked"
         [indeterminate]="selectAllState().indeterminate"
-        [disabled]="disabled() || visibleOptions().length === 0"
+        [disabled]="isDisabled() || visibleOptions().length === 0"
         (checkedChange)="onSelectAllToggle($event)"
       >
         <span class="sr-only">{{ selectAllLabel() }}</span>

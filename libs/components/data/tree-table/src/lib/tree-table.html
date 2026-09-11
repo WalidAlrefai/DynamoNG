@@ -1,4 +1,4 @@
-<div [class]="rootClasses()">
+<div [class]="rootClasses()" [attr.aria-busy]="loading() ? 'true' : null">
   <table role="treegrid" [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
     <thead>
       <tr role="row" [class]="headerRowClasses">
@@ -10,7 +10,7 @@
             [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
           >
             @if (column.sortable) {
-              <button type="button" [class]="sortButtonClasses" (click)="toggleSort(column)">
+              <button type="button" [class]="sortButtonClasses" [disabled]="loading()" (click)="toggleSort(column)">
                 <span>{{ column.header }}</span>
                 <svg
                   [class]="sortIconClasses(sortDirectionFor(column.field))"
@@ -78,7 +78,14 @@
       } @empty {
         <tr role="row">
           <td role="gridcell" [attr.colspan]="columns().length" [class]="emptyCellClasses">
-            <span role="status">{{ emptyMessage() }}</span>
+            @if (loading()) {
+              <span [class]="loadingWrapperClasses" role="status">
+                <dg-spinner size="sm" />
+                <span>{{ loadingMessage() }}</span>
+              </span>
+            } @else {
+              <span role="status">{{ emptyMessage() }}</span>
+            }
           </td>
         </tr>
       }
