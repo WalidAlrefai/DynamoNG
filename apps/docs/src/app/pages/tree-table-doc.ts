@@ -147,7 +147,8 @@ const API: ApiTableRow[] = [
           <p class="mt-2 text-sm text-text-muted">
             Checked: <span class="font-mono">{{ checkedIds().length }}</span>
             @if (lastSelected(); as node) {
-              — last toggled: <span class="font-mono">{{ node.data.name }}</span>
+              — last toggled:
+              <span class="font-mono">{{ node.data.name }}</span>
             }
           </p>
         </div>

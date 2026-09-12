@@ -50,7 +50,9 @@ const GROUPED_OPTIONS = [
 ];
 
 function dispatchKey(target: HTMLElement, key: string): void {
-  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  target.dispatchEvent(
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+  );
 }
 
 describe('DynamoListbox', () => {
@@ -60,9 +62,15 @@ describe('DynamoListbox', () => {
         inputs: { options: OPTIONS, ariaLabel: 'View' },
       });
 
-      expect(within(container).getByRole('listbox', { name: 'View' })).toBeTruthy();
+      expect(
+        within(container).getByRole('listbox', { name: 'View' }),
+      ).toBeTruthy();
       expect(within(container).getAllByRole('option')).toHaveLength(3);
-      expect(container.querySelector('[role="listbox"]')?.hasAttribute('aria-multiselectable')).toBe(false);
+      expect(
+        container
+          .querySelector('[role="listbox"]')
+          ?.hasAttribute('aria-multiselectable'),
+      ).toBe(false);
     });
 
     it('sets aria-multiselectable="true" in multi-select mode', () => {
@@ -71,7 +79,9 @@ describe('DynamoListbox', () => {
       });
 
       expect(
-        container.querySelector('[role="listbox"]')?.getAttribute('aria-multiselectable'),
+        container
+          .querySelector('[role="listbox"]')
+          ?.getAttribute('aria-multiselectable'),
       ).toBe('true');
     });
   });
@@ -108,10 +118,14 @@ describe('DynamoListbox', () => {
       fixture.detectChanges();
 
       expect(
-        within(container).getByRole('option', { name: 'Grid' }).getAttribute('aria-selected'),
+        within(container)
+          .getByRole('option', { name: 'Grid' })
+          .getAttribute('aria-selected'),
       ).toBe('true');
       expect(
-        within(container).getByRole('option', { name: 'List' }).getAttribute('aria-selected'),
+        within(container)
+          .getByRole('option', { name: 'List' })
+          .getAttribute('aria-selected'),
       ).toBe('false');
     });
   });
@@ -134,7 +148,9 @@ describe('DynamoListbox', () => {
     it('clicking an already-selected option removes it', () => {
       const { fixture, container, componentInstance } = renderDynamoComponent(
         DynamoListbox,
-        { inputs: { options: OPTIONS, multiple: true, value: ['list', 'grid'] } },
+        {
+          inputs: { options: OPTIONS, multiple: true, value: ['list', 'grid'] },
+        },
       );
 
       within(container).getByRole('option', { name: 'List' }).click();
@@ -167,7 +183,10 @@ describe('DynamoListbox', () => {
       const rows = Array.from(
         container.querySelectorAll('[role="option"], [role="presentation"]'),
       );
-      const summary = rows.map((row) => [row.getAttribute('role'), row.textContent?.trim()]);
+      const summary = rows.map((row) => [
+        row.getAttribute('role'),
+        row.textContent?.trim(),
+      ]);
 
       expect(summary).toEqual([
         ['presentation', 'Fruits'],
@@ -187,7 +206,10 @@ describe('DynamoListbox', () => {
         { inputs: { options: OPTIONS, value: 'card' } },
       );
 
-      dispatchKey(container.querySelector('[role="listbox"]') as HTMLElement, 'ArrowDown');
+      dispatchKey(
+        container.querySelector('[role="listbox"]') as HTMLElement,
+        'ArrowDown',
+      );
       fixture.detectChanges();
 
       expect(componentInstance.value()).toBe('list');
@@ -199,7 +221,10 @@ describe('DynamoListbox', () => {
         { inputs: { options: OPTIONS_WITH_DISABLED, value: 'list' } },
       );
 
-      dispatchKey(container.querySelector('[role="listbox"]') as HTMLElement, 'ArrowDown');
+      dispatchKey(
+        container.querySelector('[role="listbox"]') as HTMLElement,
+        'ArrowDown',
+      );
       fixture.detectChanges();
 
       expect(componentInstance.value()).toBe('card');
@@ -244,7 +269,10 @@ describe('DynamoListbox', () => {
         { inputs: { options: OPTIONS, multiple: true, value: ['list'] } },
       );
 
-      dispatchKey(container.querySelector('[role="listbox"]') as HTMLElement, 'ArrowDown');
+      dispatchKey(
+        container.querySelector('[role="listbox"]') as HTMLElement,
+        'ArrowDown',
+      );
       fixture.detectChanges();
 
       expect(componentInstance.value()).toEqual(['list']);
@@ -286,7 +314,9 @@ describe('DynamoListbox', () => {
       });
 
       expect(
-        container.querySelector('[role="listbox"]')?.hasAttribute('aria-activedescendant'),
+        container
+          .querySelector('[role="listbox"]')
+          ?.hasAttribute('aria-activedescendant'),
       ).toBe(false);
     });
   });
@@ -454,13 +484,12 @@ describe('DynamoListbox', () => {
     it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
       vi.useFakeTimers();
       try {
-        const { fixture, container, componentInstance } =
-          renderDynamoComponent<DynamoListbox<string>>(DynamoListbox, {
-            inputs: { options: FRUITS, multiple: true },
-          });
-        const root = container.querySelector(
-          '[role="listbox"]',
-        ) as HTMLElement;
+        const { fixture, container, componentInstance } = renderDynamoComponent<
+          DynamoListbox<string>
+        >(DynamoListbox, {
+          inputs: { options: FRUITS, multiple: true },
+        });
+        const root = container.querySelector('[role="listbox"]') as HTMLElement;
 
         dispatchKey(root, 'a');
         fixture.detectChanges();
@@ -546,7 +575,11 @@ describe('DynamoListbox', () => {
 
     it('renders the option list through dg-virtual-scroll when enabled (ungrouped case)', async () => {
       const { container, fixture } = renderDynamoComponent(DynamoListbox, {
-        inputs: { options: MANY_OPTIONS, virtualScroll: true, ariaLabel: 'Many' },
+        inputs: {
+          options: MANY_OPTIONS,
+          virtualScroll: true,
+          ariaLabel: 'Many',
+        },
       });
       await settle(fixture);
 
@@ -616,8 +649,12 @@ describe('DynamoListbox', () => {
       ).componentInstance as DynamoVirtualScroll<unknown>;
       const scrollSpy = vi.spyOn(viewport, 'scrollToIndex');
 
-      const secondOption = within(container).getAllByRole('option')[1] as HTMLElement;
-      secondOption.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      const secondOption = within(container).getAllByRole(
+        'option',
+      )[1] as HTMLElement;
+      secondOption.dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
       await settle(fixture);
       expect(scrollSpy).not.toHaveBeenCalled();
 
@@ -657,7 +694,11 @@ describe('DynamoListbox', () => {
 
     it('has no axe violations when virtualized', async () => {
       const { container, fixture } = renderDynamoComponent(DynamoListbox, {
-        inputs: { options: MANY_OPTIONS, virtualScroll: true, ariaLabel: 'Many' },
+        inputs: {
+          options: MANY_OPTIONS,
+          virtualScroll: true,
+          ariaLabel: 'Many',
+        },
       });
       await settle(fixture);
 

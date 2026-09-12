@@ -22,38 +22,38 @@ protected onItemSelect(option: DynamoSelectOption<string>): void { ... }
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `options` | `DynamoSelectOption<TValue>[]` (required) | — | |
-| `placeholder` | `string` | `'Select options'` | |
-| `size` | `DynamoSelectSize` | `'md'` | |
-| `ariaLabel` | `string \| undefined` | `undefined` | |
-| `value` | `TValue[]` (model) | `[]` | Two-way bindable array of selected values; also driven by Angular forms. |
-| `disabled` | `boolean` (model) | `false` | |
-| `loading` | `boolean` | `false` | Renders a small spinner in the trigger and makes the component fully non-interactive, like `disabled`. |
-| `invalid` | `boolean` | `false` | |
-| `position` | `DynamoSelectPosition` | `'bottom-start'` | |
-| `filterable` | `boolean` | `false` | Typeahead is disabled while this is on. |
-| `filterText` | `string` (model) | `''` | |
-| `filterPlaceholder` | `string` | `'Search...'` | |
-| `noResultsMessage` | `string` | `'No matching options'` | |
-| `virtualScroll` | `boolean` | `false` | Ungrouped lists only. |
-| `virtualScrollItemSize` | `number` | `36` | |
-| `virtualScrollHeight` | `number` | `240` | |
-| `maxSelected` | `number \| undefined` | `undefined` | Caps the number of selections; remaining unselected options become disabled once reached. |
-| `maxSelectedMessage` | `string` | `'Maximum selections reached'` | |
-| `showSelectAll` | `boolean` | `true` | |
-| `selectAllLabel` | `string` | `'Select all'` | |
-| `maxVisibleTags` | `number \| undefined` | `undefined` | Collapses the trigger's tag list to the first N plus a "+N more" summary. |
-| `overflowLabelFn` | `(count: number) => string` | `` (count) => `+${count} more` `` | |
+| Input                   | Type                                      | Default                           | Description                                                                                            |
+| ----------------------- | ----------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `options`               | `DynamoSelectOption<TValue>[]` (required) | —                                 |                                                                                                        |
+| `placeholder`           | `string`                                  | `'Select options'`                |                                                                                                        |
+| `size`                  | `DynamoSelectSize`                        | `'md'`                            |                                                                                                        |
+| `ariaLabel`             | `string \| undefined`                     | `undefined`                       |                                                                                                        |
+| `value`                 | `TValue[]` (model)                        | `[]`                              | Two-way bindable array of selected values; also driven by Angular forms.                               |
+| `disabled`              | `boolean` (model)                         | `false`                           |                                                                                                        |
+| `loading`               | `boolean`                                 | `false`                           | Renders a small spinner in the trigger and makes the component fully non-interactive, like `disabled`. |
+| `invalid`               | `boolean`                                 | `false`                           |                                                                                                        |
+| `position`              | `DynamoSelectPosition`                    | `'bottom-start'`                  |                                                                                                        |
+| `filterable`            | `boolean`                                 | `false`                           | Typeahead is disabled while this is on.                                                                |
+| `filterText`            | `string` (model)                          | `''`                              |                                                                                                        |
+| `filterPlaceholder`     | `string`                                  | `'Search...'`                     |                                                                                                        |
+| `noResultsMessage`      | `string`                                  | `'No matching options'`           |                                                                                                        |
+| `virtualScroll`         | `boolean`                                 | `false`                           | Ungrouped lists only.                                                                                  |
+| `virtualScrollItemSize` | `number`                                  | `36`                              |                                                                                                        |
+| `virtualScrollHeight`   | `number`                                  | `240`                             |                                                                                                        |
+| `maxSelected`           | `number \| undefined`                     | `undefined`                       | Caps the number of selections; remaining unselected options become disabled once reached.              |
+| `maxSelectedMessage`    | `string`                                  | `'Maximum selections reached'`    |                                                                                                        |
+| `showSelectAll`         | `boolean`                                 | `true`                            |                                                                                                        |
+| `selectAllLabel`        | `string`                                  | `'Select all'`                    |                                                                                                        |
+| `maxVisibleTags`        | `number \| undefined`                     | `undefined`                       | Collapses the trigger's tag list to the first N plus a "+N more" summary.                              |
+| `overflowLabelFn`       | `(count: number) => string`               | `` (count) => `+${count} more` `` |                                                                                                        |
 
 ## Outputs
 
-| Output | Payload | Fires when |
-|---|---|---|
-| `valueChange` | `TValue[]` | `value` changes (auto-generated by `model()`). |
-| `itemSelect` | `DynamoSelectOption<TValue>` | A user directly toggles an option (check or uncheck) — not from `selectAll()`/`clearAll()`/the header checkbox. |
-| `tagRemoved` | `TValue` | A tag's remove button is clicked (in addition to `value` updating). |
+| Output        | Payload                      | Fires when                                                                                                      |
+| ------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `valueChange` | `TValue[]`                   | `value` changes (auto-generated by `model()`).                                                                  |
+| `itemSelect`  | `DynamoSelectOption<TValue>` | A user directly toggles an option (check or uncheck) — not from `selectAll()`/`clearAll()`/the header checkbox. |
+| `tagRemoved`  | `TValue`                     | A tag's remove button is clicked (in addition to `value` updating).                                             |
 
 ## Accessibility
 

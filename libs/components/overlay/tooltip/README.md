@@ -18,14 +18,14 @@ protected readonly tooltipText = signal('Save changes');
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `content` | `string` | `''` | Plain-text hint. Nothing is shown, and the tooltip never opens, while empty/whitespace-only. |
-| `position` | `DynamoTooltipPosition` | `'top'` | Preferred side; its opposite is tried first on collision, then the two remaining sides. |
-| `showDelay` | `number` | `300` | Milliseconds of hover/focus before the tooltip attaches. |
-| `hideDelay` | `number` | `0` | Milliseconds before a hover-triggered hide (`mouseleave`) detaches the panel. Focus-out and `Escape` always hide immediately. |
-| `disabled` | `boolean` | `false` | Suppresses showing; force-hides an already-visible tooltip the instant it becomes `true`. |
-| `trigger` | `DynamoTooltipTrigger` | `'both'` | `'hover'`, `'focus'`, or `'both'`. Defaults to `'both'` so keyboard-only users can reach it too (WCAG 1.4.13). |
+| Input       | Type                    | Default  | Description                                                                                                                   |
+| ----------- | ----------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `content`   | `string`                | `''`     | Plain-text hint. Nothing is shown, and the tooltip never opens, while empty/whitespace-only.                                  |
+| `position`  | `DynamoTooltipPosition` | `'top'`  | Preferred side; its opposite is tried first on collision, then the two remaining sides.                                       |
+| `showDelay` | `number`                | `300`    | Milliseconds of hover/focus before the tooltip attaches.                                                                      |
+| `hideDelay` | `number`                | `0`      | Milliseconds before a hover-triggered hide (`mouseleave`) detaches the panel. Focus-out and `Escape` always hide immediately. |
+| `disabled`  | `boolean`               | `false`  | Suppresses showing; force-hides an already-visible tooltip the instant it becomes `true`.                                     |
+| `trigger`   | `DynamoTooltipTrigger`  | `'both'` | `'hover'`, `'focus'`, or `'both'`. Defaults to `'both'` so keyboard-only users can reach it too (WCAG 1.4.13).                |
 
 ## Outputs
 

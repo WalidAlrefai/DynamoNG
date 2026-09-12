@@ -209,7 +209,9 @@ export class DynamoSelect<TValue = unknown>
   protected readonly clearButtonClasses = selectClearButtonStyles;
   /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
   protected readonly panelWrapperClasses = computed(() =>
-    this.isVirtualized() ? selectPanelWrapperVirtualStyles : selectPanelWrapperStyles,
+    this.isVirtualized()
+      ? selectPanelWrapperVirtualStyles
+      : selectPanelWrapperStyles,
   );
   protected readonly listboxClasses = selectListboxStyles;
   protected readonly filterWrapperClasses = selectFilterWrapperStyles;
@@ -421,7 +423,11 @@ export class DynamoSelect<TValue = unknown>
     }
     const buffer = this.typeahead.append(event.key);
     const query = resolveTypeaheadQuery(buffer);
-    const match = findTypeaheadMatch(this.visibleOptions(), this.activeIndex(), query);
+    const match = findTypeaheadMatch(
+      this.visibleOptions(),
+      this.activeIndex(),
+      query,
+    );
     if (match === null) return;
     event.preventDefault();
     if (!this.isOpen()) this.isOpen.set(true);

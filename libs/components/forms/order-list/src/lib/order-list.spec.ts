@@ -1,6 +1,9 @@
 import type { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
 import { DynamoOrderList } from './order-list';
@@ -36,7 +39,10 @@ function getRowTexts(container: HTMLElement): string[] {
     .map((el) => el.textContent?.trim() ?? '');
 }
 
-function dropEvent(previousIndex: number, currentIndex: number): CdkDragDrop<unknown> {
+function dropEvent(
+  previousIndex: number,
+  currentIndex: number,
+): CdkDragDrop<unknown> {
   const container = {};
   return {
     previousContainer: container,
@@ -72,9 +78,9 @@ describe('DynamoOrderList', () => {
         { inputs: { value: ITEMS } },
       );
       // activate "Charlie" (index 2)
-      within(container).getAllByRole('option')[2]?.dispatchEvent(
-        new MouseEvent('mouseenter', { bubbles: true }),
-      );
+      within(container)
+        .getAllByRole('option')[2]
+        ?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
       fixture.detectChanges();
 
       within(container)
@@ -90,7 +96,9 @@ describe('DynamoOrderList', () => {
       ]);
       expect(getRowTexts(container)[1]).toBe('Charlie');
       expect(
-        within(container).getAllByRole('option')[1]?.getAttribute('aria-selected'),
+        within(container)
+          .getAllByRole('option')[1]
+          ?.getAttribute('aria-selected'),
       ).toBe('true');
     });
 
@@ -99,9 +107,9 @@ describe('DynamoOrderList', () => {
         DynamoOrderList,
         { inputs: { value: ITEMS } },
       );
-      within(container).getAllByRole('option')[1]?.dispatchEvent(
-        new MouseEvent('mouseenter', { bubbles: true }),
-      );
+      within(container)
+        .getAllByRole('option')[1]
+        ?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
       fixture.detectChanges();
 
       within(container)
@@ -187,7 +195,9 @@ describe('DynamoOrderList', () => {
 
       expect(componentInstance['selected']().has('a')).toBe(true);
       expect(
-        within(container).getAllByRole('option')[0]?.getAttribute('aria-selected'),
+        within(container)
+          .getAllByRole('option')[0]
+          ?.getAttribute('aria-selected'),
       ).toBe('true');
     });
   });
@@ -236,9 +246,9 @@ describe('DynamoOrderList', () => {
         DynamoOrderList,
         { inputs: { value: ITEMS } },
       );
-      within(container).getAllByRole('option')[0]?.dispatchEvent(
-        new MouseEvent('mouseenter', { bubbles: true }),
-      );
+      within(container)
+        .getAllByRole('option')[0]
+        ?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
       fixture.detectChanges();
       (
         componentInstance as unknown as { reorder: (d: -1 | 1) => void }

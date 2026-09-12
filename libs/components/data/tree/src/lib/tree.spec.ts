@@ -171,9 +171,7 @@ describe('DynamoTree', () => {
       row(container, 'docs').focus();
 
       await userEvent.keyboard('{ArrowRight}');
-      expect(row(container, 'docs').getAttribute('aria-expanded')).toBe(
-        'true',
-      );
+      expect(row(container, 'docs').getAttribute('aria-expanded')).toBe('true');
       expect(document.activeElement).toBe(row(container, 'docs'));
 
       await userEvent.keyboard('{ArrowRight}');
@@ -423,9 +421,9 @@ describe('DynamoTree', () => {
         inputs: { items: [], loading: true },
       });
 
-      expect(within(container).getByRole('status').getAttribute('aria-busy')).toBe(
-        'true',
-      );
+      expect(
+        within(container).getByRole('status').getAttribute('aria-busy'),
+      ).toBe('true');
     });
 
     it('sets aria-busy="true" on the tree root while loading with items present', () => {
@@ -433,9 +431,9 @@ describe('DynamoTree', () => {
         inputs: { loading: true },
       });
 
-      expect(within(container).getByRole('tree').getAttribute('aria-busy')).toBe(
-        'true',
-      );
+      expect(
+        within(container).getByRole('tree').getAttribute('aria-busy'),
+      ).toBe('true');
     });
 
     it('does not expand, check, or activate a node while loading', async () => {
@@ -655,11 +653,11 @@ describe('DynamoTree', () => {
         TreeEmptyChildrenHostComponent,
       );
 
+      expect(row(container, 'folder').getAttribute('aria-expanded')).toBeNull();
       expect(
-        row(container, 'folder').getAttribute('aria-expanded'),
-      ).toBeNull();
-      expect(
-        container.querySelector('[data-node-id="folder"] [data-testid="chevron"]'),
+        container.querySelector(
+          '[data-node-id="folder"] [data-testid="chevron"]',
+        ),
       ).toBeNull();
     });
 
@@ -690,9 +688,7 @@ describe('DynamoTree', () => {
         ]);
       }
 
-      expect(() =>
-        renderDynamoComponent(TreeDeepHostComponent),
-      ).not.toThrow();
+      expect(() => renderDynamoComponent(TreeDeepHostComponent)).not.toThrow();
     });
   });
 });

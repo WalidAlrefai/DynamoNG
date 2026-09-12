@@ -25,18 +25,18 @@ them.
 
 ### `dg-splitter`
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Layout axis of the panels and their dividers. |
-| `disabled` | `boolean` | `false` | Dividers become non-interactive (no drag, no keyboard resize) and are removed from the tab order. |
-| `gutterSize` | `number` | `8` | Divider thickness in pixels. |
+| Input         | Type                         | Default        | Description                                                                                       |
+| ------------- | ---------------------------- | -------------- | ------------------------------------------------------------------------------------------------- |
+| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Layout axis of the panels and their dividers.                                                     |
+| `disabled`    | `boolean`                    | `false`        | Dividers become non-interactive (no drag, no keyboard resize) and are removed from the tab order. |
+| `gutterSize`  | `number`                     | `8`            | Divider thickness in pixels.                                                                      |
 
 ### `dg-splitter-panel`
 
-| Input | Type | Default | Description |
-|---|---|---|---|
+| Input         | Type                  | Default     | Description                                                                                      |
+| ------------- | --------------------- | ----------- | ------------------------------------------------------------------------------------------------ |
 | `initialSize` | `number \| undefined` | `undefined` | Initial size as a percentage (0-100). Panels that omit it split the remaining percentage evenly. |
-| `minSize` | `number` | `0` | Minimum size (percentage) this panel can be resized down to. |
+| `minSize`     | `number`              | `0`         | Minimum size (percentage) this panel can be resized down to.                                     |
 
 `dg-splitter-panel` renders no DOM of its own — `DynamoSplitter` reads it via `contentChildren()` and stamps out the sized wrapper itself, so it does not extend the base component and has no `styleClass`/`pt`/`unstyled`.
 

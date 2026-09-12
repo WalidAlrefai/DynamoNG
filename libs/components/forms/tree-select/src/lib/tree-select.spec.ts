@@ -139,9 +139,9 @@ describe('DynamoTreeSelect', () => {
     it('shows the placeholder when nothing is selected', () => {
       const { container } = renderDynamoComponent(TreeSelectTestHostComponent);
 
-      expect(
-        within(container).getByRole('combobox').textContent?.trim(),
-      ).toBe('Select...');
+      expect(within(container).getByRole('combobox').textContent?.trim()).toBe(
+        'Select...',
+      );
     });
 
     it('defaults to closed and not disabled', () => {
@@ -179,7 +179,13 @@ describe('DynamoTreeSelect', () => {
       await settle(fixture);
 
       const labels = getRows().map((row) => row.textContent?.trim());
-      expect(labels).toEqual(['Fruits', 'Apple', 'Banana', 'Vegetables', 'Grain']);
+      expect(labels).toEqual([
+        'Fruits',
+        'Apple',
+        'Banana',
+        'Vegetables',
+        'Grain',
+      ]);
       expect(getPanel()).not.toBeNull();
       expect(componentInstance.value()).toBeNull();
     });
@@ -196,9 +202,9 @@ describe('DynamoTreeSelect', () => {
 
       expect(getPanel()).toBeNull();
       expect(componentInstance.value()).toBe('grain');
-      expect(
-        within(container).getByRole('combobox').textContent?.trim(),
-      ).toBe('Grain');
+      expect(within(container).getByRole('combobox').textContent?.trim()).toBe(
+        'Grain',
+      );
     });
 
     it('selects a branch node directly (not leaves-only)', async () => {
@@ -463,9 +469,8 @@ describe('DynamoTreeSelect', () => {
     });
 
     it('propagates a selected value to an [(ngModel)] binding', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(
-        NgModelHostComponent,
-      );
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(NgModelHostComponent);
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
 
@@ -485,16 +490,15 @@ describe('DynamoTreeSelect', () => {
       componentInstance.control.setValue('pea');
       fixture.detectChanges();
 
-      expect(
-        within(container).getByRole('combobox').textContent?.trim(),
-      ).toBe('Pea');
+      expect(within(container).getByRole('combobox').textContent?.trim()).toBe(
+        'Pea',
+      );
     });
 
     it('blocks opening entirely when disabled', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoTreeSelect,
-        { inputs: { nodes: NODES, ariaLabel: 'Choose an item', disabled: true } },
-      );
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, ariaLabel: 'Choose an item', disabled: true },
+      });
 
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
@@ -505,10 +509,9 @@ describe('DynamoTreeSelect', () => {
 
   describe('loading', () => {
     it('renders a spinner in the trigger only while loading', () => {
-      const { container, setInputs } = renderDynamoComponent(
-        DynamoTreeSelect,
-        { inputs: { nodes: NODES, loading: false, ariaLabel: 'Choose' } },
-      );
+      const { container, setInputs } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, loading: false, ariaLabel: 'Choose' },
+      });
       expect(container.querySelector('dg-spinner')).toBeNull();
 
       setInputs({ loading: true });
@@ -527,10 +530,9 @@ describe('DynamoTreeSelect', () => {
     });
 
     it('disables the trigger and does not open the panel while loading', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoTreeSelect,
-        { inputs: { nodes: NODES, loading: true, ariaLabel: 'Choose' } },
-      );
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, loading: true, ariaLabel: 'Choose' },
+      });
       const trigger = within(container).getByRole(
         'combobox',
       ) as HTMLButtonElement;
@@ -543,20 +545,17 @@ describe('DynamoTreeSelect', () => {
     });
 
     it('re-enables the trigger when loading transitions back to false', () => {
-      const { container, setInputs } = renderDynamoComponent(
-        DynamoTreeSelect,
-        { inputs: { nodes: NODES, loading: true, ariaLabel: 'Choose' } },
-      );
+      const { container, setInputs } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, loading: true, ariaLabel: 'Choose' },
+      });
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(true);
 
       setInputs({ loading: false });
 
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(false);
     });
   });
@@ -605,9 +604,7 @@ describe('DynamoTreeSelect', () => {
 
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
-      await userEvent.click(
-        within(getRowByText('Fruits')).getByRole('button'),
-      );
+      await userEvent.click(within(getRowByText('Fruits')).getByRole('button'));
 
       expect(emitted).toHaveLength(0);
     });
@@ -681,13 +678,12 @@ describe('DynamoTreeSelect', () => {
     it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
       vi.useFakeTimers();
       try {
-        const { container, fixture, componentInstance } =
-          renderDynamoComponent<DynamoTreeSelect<string>>(DynamoTreeSelect, {
-            inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' },
-          });
-        const trigger = within(container).getByRole(
-          'combobox',
-        ) as HTMLElement;
+        const { container, fixture, componentInstance } = renderDynamoComponent<
+          DynamoTreeSelect<string>
+        >(DynamoTreeSelect, {
+          inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' },
+        });
+        const trigger = within(container).getByRole('combobox') as HTMLElement;
 
         dispatchKey(trigger, 'a');
         fixture.detectChanges();

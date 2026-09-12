@@ -29,12 +29,12 @@ protected trackByRowId = (item: Row, index: number): unknown => item.id;
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `items` | `readonly T[]` (required) | — | |
-| `itemSize` | `number` (required) | — | Fixed row height in px. Every rendered item, and the viewport's own scroll-position math, assumes this exact height. |
-| `height` | `number` (required) | — | The viewport's own height in px — CDK's viewport needs an explicit CSS size and does not auto-size to its content or parent. |
-| `trackBy` | `((item: T, index: number) => unknown) \| undefined` | `undefined` | `@for`-style track escape hatch, mirroring `DynamoTable`'s `trackBy`. Falls back to item reference identity when omitted. |
+| Input      | Type                                                 | Default     | Description                                                                                                                  |
+| ---------- | ---------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `items`    | `readonly T[]` (required)                            | —           |                                                                                                                              |
+| `itemSize` | `number` (required)                                  | —           | Fixed row height in px. Every rendered item, and the viewport's own scroll-position math, assumes this exact height.         |
+| `height`   | `number` (required)                                  | —           | The viewport's own height in px — CDK's viewport needs an explicit CSS size and does not auto-size to its content or parent. |
+| `trackBy`  | `((item: T, index: number) => unknown) \| undefined` | `undefined` | `@for`-style track escape hatch, mirroring `DynamoTable`'s `trackBy`. Falls back to item reference identity when omitted.    |
 
 A required projected `<ng-template let-item let-i="index">` supplies each
 row's markup, receiving `{ $implicit: item, item, index }`.

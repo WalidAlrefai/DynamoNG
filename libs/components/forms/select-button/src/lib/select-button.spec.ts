@@ -126,7 +126,9 @@ describe('DynamoSelectButton', () => {
     it('clicking an already-selected segment removes it', () => {
       const { fixture, container, componentInstance } = renderDynamoComponent(
         DynamoSelectButton,
-        { inputs: { options: OPTIONS, multiple: true, value: ['list', 'grid'] } },
+        {
+          inputs: { options: OPTIONS, multiple: true, value: ['list', 'grid'] },
+        },
       );
 
       within(container).getByRole('button', { name: 'List' }).click();
@@ -251,7 +253,11 @@ describe('DynamoSelectButton', () => {
         { inputs: { options: OPTIONS_WITH_DISABLED } },
       );
 
-      (within(container).getByRole('radio', { name: 'Grid' }) as HTMLButtonElement).click();
+      (
+        within(container).getByRole('radio', {
+          name: 'Grid',
+        }) as HTMLButtonElement
+      ).click();
       fixture.detectChanges();
 
       expect(componentInstance.value()).toBeNull();
@@ -263,7 +269,11 @@ describe('DynamoSelectButton', () => {
       });
 
       expect(
-        (within(container).getByRole('radio', { name: 'Grid' }) as HTMLButtonElement).disabled,
+        (
+          within(container).getByRole('radio', {
+            name: 'Grid',
+          }) as HTMLButtonElement
+        ).disabled,
       ).toBe(true);
     });
 
@@ -274,7 +284,11 @@ describe('DynamoSelectButton', () => {
 
       for (const label of ['List', 'Grid', 'Card']) {
         expect(
-          (within(container).getByRole('radio', { name: label }) as HTMLButtonElement).disabled,
+          (
+            within(container).getByRole('radio', {
+              name: label,
+            }) as HTMLButtonElement
+          ).disabled,
         ).toBe(true);
       }
     });

@@ -161,7 +161,9 @@ class NgModelHostComponent {
 describe('DynamoCascadeSelect', () => {
   describe('creation', () => {
     it('renders a combobox trigger', () => {
-      const { container } = renderDynamoComponent(CascadeSelectTestHostComponent);
+      const { container } = renderDynamoComponent(
+        CascadeSelectTestHostComponent,
+      );
 
       expect(within(container).getByRole('combobox')).toBeTruthy();
     });
@@ -175,7 +177,9 @@ describe('DynamoCascadeSelect', () => {
 
   describe('default behavior', () => {
     it('shows the placeholder when nothing is selected', () => {
-      const { container } = renderDynamoComponent(CascadeSelectTestHostComponent);
+      const { container } = renderDynamoComponent(
+        CascadeSelectTestHostComponent,
+      );
 
       expect(within(container).getByRole('combobox').textContent?.trim()).toBe(
         'Select...',
@@ -214,7 +218,9 @@ describe('DynamoCascadeSelect', () => {
       await settle(fixture);
 
       expect(getListboxes()).toHaveLength(2);
-      const level1Labels = getRowsIn(getListboxes()[1]!).map((r) => r.textContent?.trim());
+      const level1Labels = getRowsIn(getListboxes()[1]!).map((r) =>
+        r.textContent?.trim(),
+      );
       expect(level1Labels).toEqual(['California', 'Texas']);
     });
 
@@ -248,7 +254,7 @@ describe('DynamoCascadeSelect', () => {
   });
 
   describe('sibling-switch truncation', () => {
-    it('hovering a sibling branch collapses the previous branch\'s deeper flyout', async () => {
+    it("hovering a sibling branch collapses the previous branch's deeper flyout", async () => {
       const { container, fixture } = renderDynamoComponent(
         CascadeSelectTestHostComponent,
       );
@@ -271,7 +277,9 @@ describe('DynamoCascadeSelect', () => {
       await settle(fixture);
 
       expect(getListboxes()).toHaveLength(3);
-      const level2Labels = getRowsIn(getListboxes()[2]!).map((r) => r.textContent?.trim());
+      const level2Labels = getRowsIn(getListboxes()[2]!).map((r) =>
+        r.textContent?.trim(),
+      );
       expect(level2Labels).toEqual(['Austin', 'Dallas']);
     });
   });
@@ -537,9 +545,8 @@ describe('DynamoCascadeSelect', () => {
     });
 
     it('propagates the committed value to an [(ngModel)] binding', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(
-        NgModelHostComponent,
-      );
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(NgModelHostComponent);
 
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
@@ -639,15 +646,13 @@ describe('DynamoCascadeSelect', () => {
         { inputs: { nodes: NODES, loading: true, ariaLabel: 'Location' } },
       );
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(true);
 
       setInputs({ loading: false });
 
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(false);
     });
   });
@@ -656,7 +661,9 @@ describe('DynamoCascadeSelect', () => {
     it('emits the full leaf node object when clicked', async () => {
       const { container, fixture, componentInstance } = renderDynamoComponent<
         DynamoCascadeSelect<string>
-      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: NODES, ariaLabel: 'Location' },
+      });
       const emitted: DynamoTreeNode<string>[] = [];
       componentInstance.itemSelect.subscribe((node) => emitted.push(node));
 
@@ -673,7 +680,9 @@ describe('DynamoCascadeSelect', () => {
     it('emits the same leaf node on keyboard Enter as on click', async () => {
       const { container, componentInstance } = renderDynamoComponent<
         DynamoCascadeSelect<string>
-      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: NODES, ariaLabel: 'Location' },
+      });
       const emitted: DynamoTreeNode<string>[] = [];
       componentInstance.itemSelect.subscribe((node) => emitted.push(node));
       const trigger = within(container).getByRole('combobox');
@@ -689,7 +698,9 @@ describe('DynamoCascadeSelect', () => {
     it('does not emit while drilling into a branch', async () => {
       const { container, fixture, componentInstance } = renderDynamoComponent<
         DynamoCascadeSelect<string>
-      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: NODES, ariaLabel: 'Location' },
+      });
       const emitted: DynamoTreeNode<string>[] = [];
       componentInstance.itemSelect.subscribe((node) => emitted.push(node));
 
@@ -706,7 +717,9 @@ describe('DynamoCascadeSelect', () => {
     it('does not emit for a disabled leaf', async () => {
       const { container, fixture, componentInstance } = renderDynamoComponent<
         DynamoCascadeSelect<string>
-      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: NODES, ariaLabel: 'Location' },
+      });
       const emitted: DynamoTreeNode<string>[] = [];
       componentInstance.itemSelect.subscribe((node) => emitted.push(node));
 
@@ -777,14 +790,12 @@ describe('DynamoCascadeSelect', () => {
     it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
       vi.useFakeTimers();
       try {
-        const { container, fixture, componentInstance } =
-          renderDynamoComponent<DynamoCascadeSelect<string>>(
-            DynamoCascadeSelect,
-            { inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' } },
-          );
-        const trigger = within(container).getByRole(
-          'combobox',
-        ) as HTMLElement;
+        const { container, fixture, componentInstance } = renderDynamoComponent<
+          DynamoCascadeSelect<string>
+        >(DynamoCascadeSelect, {
+          inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' },
+        });
+        const trigger = within(container).getByRole('combobox') as HTMLElement;
 
         dispatchKey(trigger, 'a');
         fixture.detectChanges();
@@ -803,7 +814,9 @@ describe('DynamoCascadeSelect', () => {
     it('clears the buffer on a level switch (ArrowRight/ArrowLeft)', async () => {
       const { container, fixture, componentInstance } = renderDynamoComponent<
         DynamoCascadeSelect<string>
-      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: NODES, ariaLabel: 'Location' },
+      });
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
       const trigger = within(container).getByRole('combobox') as HTMLElement;
@@ -901,28 +914,36 @@ describe('DynamoCascadeSelect', () => {
 
   describe('virtual scroll', () => {
     it('renders the root level through dg-virtual-scroll when enabled', async () => {
-      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
-        inputs: {
-          nodes: MANY_CASCADE_NODES,
-          virtualScroll: true,
-          ariaLabel: 'Many',
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        {
+          inputs: {
+            nodes: MANY_CASCADE_NODES,
+            virtualScroll: true,
+            ariaLabel: 'Many',
+          },
         },
-      });
+      );
 
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
 
-      expect(getListboxes()[0]?.querySelector('dg-virtual-scroll')).toBeTruthy();
+      expect(
+        getListboxes()[0]?.querySelector('dg-virtual-scroll'),
+      ).toBeTruthy();
     });
 
     it('hovering a branch row still opens its flyout, also virtualized', async () => {
-      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
-        inputs: {
-          nodes: MANY_CASCADE_NODES,
-          virtualScroll: true,
-          ariaLabel: 'Many',
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        {
+          inputs: {
+            nodes: MANY_CASCADE_NODES,
+            virtualScroll: true,
+            ariaLabel: 'Many',
+          },
         },
-      });
+      );
 
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
@@ -932,7 +953,9 @@ describe('DynamoCascadeSelect', () => {
       await settle(fixture);
 
       expect(getListboxes()).toHaveLength(2);
-      expect(getListboxes()[1]?.querySelector('dg-virtual-scroll')).toBeTruthy();
+      expect(
+        getListboxes()[1]?.querySelector('dg-virtual-scroll'),
+      ).toBeTruthy();
     });
 
     it('selecting a leaf through a virtualized flyout still sets the value', async () => {
@@ -983,13 +1006,16 @@ describe('DynamoCascadeSelect', () => {
     // must not call the viewport's absolute `scrollToIndex`; keyboard nav
     // must.
     it('does not scroll a level when hovering its rows, only on keyboard navigation', async () => {
-      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
-        inputs: {
-          nodes: MANY_CASCADE_NODES,
-          virtualScroll: true,
-          ariaLabel: 'Many',
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        {
+          inputs: {
+            nodes: MANY_CASCADE_NODES,
+            virtualScroll: true,
+            ariaLabel: 'Many',
+          },
         },
-      });
+      );
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
       const rootViewport = fixture.debugElement.queryAll(
@@ -1008,9 +1034,12 @@ describe('DynamoCascadeSelect', () => {
     });
 
     it('does not virtualize when virtualScroll is left at its default (false)', async () => {
-      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
-        inputs: { nodes: MANY_CASCADE_NODES, ariaLabel: 'Many' },
-      });
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        {
+          inputs: { nodes: MANY_CASCADE_NODES, ariaLabel: 'Many' },
+        },
+      );
 
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
@@ -1020,13 +1049,16 @@ describe('DynamoCascadeSelect', () => {
     });
 
     it('has no axe violations when open and virtualized', async () => {
-      const { container, fixture } = renderDynamoComponent(DynamoCascadeSelect, {
-        inputs: {
-          nodes: MANY_CASCADE_NODES,
-          virtualScroll: true,
-          ariaLabel: 'Many',
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        {
+          inputs: {
+            nodes: MANY_CASCADE_NODES,
+            virtualScroll: true,
+            ariaLabel: 'Many',
+          },
         },
-      });
+      );
 
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);

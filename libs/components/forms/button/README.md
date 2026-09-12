@@ -7,7 +7,13 @@ inline `@dynamong/spinner` and disables the control.
 ## Usage
 
 ```html
-<dg-button severity="primary" variant="solid" size="md" [loading]="isSaving()" (click)="onSave()">
+<dg-button
+  severity="primary"
+  variant="solid"
+  size="md"
+  [loading]="isSaving()"
+  (click)="onSave()"
+>
   Save
 </dg-button>
 ```
@@ -18,20 +24,20 @@ protected onSave(): void { ... }
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `severity` | `DynamoSeverity` | `'primary'` | |
-| `size` | `DynamoSize` | `'md'` | |
-| `variant` | `DynamoButtonVariant` (`'solid' \| 'outline' \| 'text'`) | `'solid'` | |
-| `type` | `DynamoButtonType` (`'button' \| 'submit' \| 'reset'`) | `'button'` | |
-| `disabled` | `boolean` | `false` | |
-| `loading` | `boolean` | `false` | Renders an inline `<dg-spinner size="sm">` before the projected content and forces the button disabled (`isDisabled = disabled() \|\| loading()`). |
-| `ariaLabel` | `string \| undefined` | `undefined` | Forwarded to the native `<button>` as `aria-label`. Needed for icon-only usage. |
-| `ariaCurrent` | `'page' \| 'step' \| 'location' \| 'date' \| 'time' \| 'true' \| 'false' \| undefined` | `undefined` | Forwarded as `aria-current` — e.g. `'page'` for a pagination control's active page button. |
-| `role` | `string \| undefined` | `undefined` | Forwarded as `role`, overriding the implicit button role — e.g. `'radio'` for a button acting as one segment of a single-select group. |
-| `ariaChecked` | `boolean \| undefined` | `undefined` | Forwarded as `aria-checked` — for a button acting as a radio-group segment. |
-| `ariaPressed` | `boolean \| undefined` | `undefined` | Forwarded as `aria-pressed` — for a button acting as a toggle in a multi-select group. |
-| `tabIndexOverride` | `number \| undefined` | `undefined` | Forwarded as `tabindex`, overriding the default tab-stop membership — for roving-tabindex patterns like Select Button's segmented control. |
+| Input              | Type                                                                                   | Default     | Description                                                                                                                                        |
+| ------------------ | -------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `severity`         | `DynamoSeverity`                                                                       | `'primary'` |                                                                                                                                                    |
+| `size`             | `DynamoSize`                                                                           | `'md'`      |                                                                                                                                                    |
+| `variant`          | `DynamoButtonVariant` (`'solid' \| 'outline' \| 'text'`)                               | `'solid'`   |                                                                                                                                                    |
+| `type`             | `DynamoButtonType` (`'button' \| 'submit' \| 'reset'`)                                 | `'button'`  |                                                                                                                                                    |
+| `disabled`         | `boolean`                                                                              | `false`     |                                                                                                                                                    |
+| `loading`          | `boolean`                                                                              | `false`     | Renders an inline `<dg-spinner size="sm">` before the projected content and forces the button disabled (`isDisabled = disabled() \|\| loading()`). |
+| `ariaLabel`        | `string \| undefined`                                                                  | `undefined` | Forwarded to the native `<button>` as `aria-label`. Needed for icon-only usage.                                                                    |
+| `ariaCurrent`      | `'page' \| 'step' \| 'location' \| 'date' \| 'time' \| 'true' \| 'false' \| undefined` | `undefined` | Forwarded as `aria-current` — e.g. `'page'` for a pagination control's active page button.                                                         |
+| `role`             | `string \| undefined`                                                                  | `undefined` | Forwarded as `role`, overriding the implicit button role — e.g. `'radio'` for a button acting as one segment of a single-select group.             |
+| `ariaChecked`      | `boolean \| undefined`                                                                 | `undefined` | Forwarded as `aria-checked` — for a button acting as a radio-group segment.                                                                        |
+| `ariaPressed`      | `boolean \| undefined`                                                                 | `undefined` | Forwarded as `aria-pressed` — for a button acting as a toggle in a multi-select group.                                                             |
+| `tabIndexOverride` | `number \| undefined`                                                                  | `undefined` | Forwarded as `tabindex`, overriding the default tab-stop membership — for roving-tabindex patterns like Select Button's segmented control.         |
 
 ## Outputs
 

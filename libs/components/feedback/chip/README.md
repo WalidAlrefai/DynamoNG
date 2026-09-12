@@ -18,21 +18,21 @@ protected onRemove(tag: Tag): void { ... }
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `severity` | `DynamoSeverity` | `'primary'` | `'primary' \| 'secondary' \| 'success' \| 'info' \| 'warning' \| 'danger'`. |
-| `variant` | `DynamoChipVariant` | `'solid'` | `'solid' \| 'outline'`. |
-| `size` | `DynamoSize` | `'md'` | `'sm' \| 'md' \| 'lg'`. |
-| `removable` | `boolean` | `false` | Shows a remove button. The chip itself is never removed from the DOM by this component — the consumer handles removal via `removed`. |
-| `removeAriaLabel` | `string` | `'Remove'` | `aria-label` for the remove button. |
+| Input             | Type                | Default     | Description                                                                                                                          |
+| ----------------- | ------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `severity`        | `DynamoSeverity`    | `'primary'` | `'primary' \| 'secondary' \| 'success' \| 'info' \| 'warning' \| 'danger'`.                                                          |
+| `variant`         | `DynamoChipVariant` | `'solid'`   | `'solid' \| 'outline'`.                                                                                                              |
+| `size`            | `DynamoSize`        | `'md'`      | `'sm' \| 'md' \| 'lg'`.                                                                                                              |
+| `removable`       | `boolean`           | `false`     | Shows a remove button. The chip itself is never removed from the DOM by this component — the consumer handles removal via `removed`. |
+| `removeAriaLabel` | `string`            | `'Remove'`  | `aria-label` for the remove button.                                                                                                  |
 
 Content is projected via plain `<ng-content>`.
 
 ## Outputs
 
-| Output | Payload | Fires when |
-|---|---|---|
-| `removed` | `void` | The remove button is clicked. |
+| Output    | Payload | Fires when                    |
+| --------- | ------- | ----------------------------- |
+| `removed` | `void`  | The remove button is clicked. |
 
 ## Accessibility
 

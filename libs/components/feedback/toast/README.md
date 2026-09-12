@@ -31,26 +31,26 @@ export class SaveButton {
 
 ## `DynamoToastOptions`
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `message` | `string` (required) | — | |
-| `title` | `string \| undefined` | `undefined` | |
-| `severity` | `DynamoSeverity` | `'info'` | |
-| `duration` | `number` | `5000` | Milliseconds before auto-dismiss. `0` disables auto-dismiss. |
-| `closable` | `boolean` | `true` | Whether the toast shows a manual close button. |
+| Option     | Type                  | Default       | Description                                                                                                                                                                                  |
+| ---------- | --------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `message`  | `string` (required)   | —             |                                                                                                                                                                                              |
+| `title`    | `string \| undefined` | `undefined`   |                                                                                                                                                                                              |
+| `severity` | `DynamoSeverity`      | `'info'`      |                                                                                                                                                                                              |
+| `duration` | `number`              | `5000`        | Milliseconds before auto-dismiss. `0` disables auto-dismiss.                                                                                                                                 |
+| `closable` | `boolean`             | `true`        | Whether the toast shows a manual close button.                                                                                                                                               |
 | `position` | `DynamoToastPosition` | `'top-right'` | One of `'top-right'`, `'top-left'`, `'bottom-right'`, `'bottom-left'`, `'top-center'`, `'bottom-center'`. Each position gets its own stacked overlay container, created lazily on first use. |
 
 ## Methods
 
-| Method | Returns | Description |
-|---|---|---|
-| `show(options)` | `string` (toast id) | Shows a toast with full control over every option. |
-| `success(message, options?)` | `string` | Shorthand for `show()` with `severity: 'success'`. |
-| `info(message, options?)` | `string` | Shorthand for `show()` with `severity: 'info'`. |
-| `warning(message, options?)` | `string` | Shorthand for `show()` with `severity: 'warning'`. |
-| `error(message, options?)` | `string` | Shorthand for `show()` with `severity: 'danger'`. |
-| `dismiss(id)` | `void` | Dismisses one toast early. |
-| `dismissAll()` | `void` | Dismisses every currently-visible toast, across all positions. |
+| Method                       | Returns             | Description                                                    |
+| ---------------------------- | ------------------- | -------------------------------------------------------------- |
+| `show(options)`              | `string` (toast id) | Shows a toast with full control over every option.             |
+| `success(message, options?)` | `string`            | Shorthand for `show()` with `severity: 'success'`.             |
+| `info(message, options?)`    | `string`            | Shorthand for `show()` with `severity: 'info'`.                |
+| `warning(message, options?)` | `string`            | Shorthand for `show()` with `severity: 'warning'`.             |
+| `error(message, options?)`   | `string`            | Shorthand for `show()` with `severity: 'danger'`.              |
+| `dismiss(id)`                | `void`              | Dismisses one toast early.                                     |
+| `dismissAll()`               | `void`              | Dismisses every currently-visible toast, across all positions. |
 
 ## Accessibility
 

@@ -11,10 +11,10 @@ past a threshold and smooth-scrolls back to the top on click.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `threshold` | `number` | `200` | Scroll offset (px) past which the button becomes visible. |
-| `ariaLabel` | `string` | `'Scroll to top'` | |
+| Input       | Type     | Default           | Description                                               |
+| ----------- | -------- | ----------------- | --------------------------------------------------------- |
+| `threshold` | `number` | `200`             | Scroll offset (px) past which the button becomes visible. |
+| `ariaLabel` | `string` | `'Scroll to top'` |                                                           |
 
 ## Outputs
 

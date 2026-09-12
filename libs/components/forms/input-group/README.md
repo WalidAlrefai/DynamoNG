@@ -19,10 +19,10 @@ group's border shows.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `size` | `DynamoSize` | `'md'` | |
-| `invalid` | `boolean` | `false` | |
+| Input     | Type         | Default | Description |
+| --------- | ------------ | ------- | ----------- |
+| `size`    | `DynamoSize` | `'md'`  |             |
+| `invalid` | `boolean`    | `false` |             |
 
 Content is projected via two named slots — `[prefix]` and `[suffix]` — plus a
 default slot for the input itself. There is deliberately no `disabled` input:

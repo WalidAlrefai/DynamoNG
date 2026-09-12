@@ -274,7 +274,10 @@ export class DynamoTreeSelect<TValue = string>
     return nodeValue(node) === this.value();
   }
 
-  protected rowClasses(entry: DynamoTreeSelectEntry<TValue>, index: number): string {
+  protected rowClasses(
+    entry: DynamoTreeSelectEntry<TValue>,
+    index: number,
+  ): string {
     return treeSelectRowStyles({
       active: index === this.activeIndex(),
       selected: this.isSelected(entry.node),

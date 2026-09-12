@@ -22,10 +22,10 @@ global CSS keyframes required).
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `dgRippleDisabled` (`disabled`) | `boolean` | `false` | Suppresses ripple spawning. |
-| `dgRippleColor` (`color`) | `string \| undefined` | `undefined` | Overrides the default `bg-current/30` tint with an explicit CSS color. |
+| Input                           | Type                  | Default     | Description                                                            |
+| ------------------------------- | --------------------- | ----------- | ---------------------------------------------------------------------- |
+| `dgRippleDisabled` (`disabled`) | `boolean`             | `false`     | Suppresses ripple spawning.                                            |
+| `dgRippleColor` (`color`)       | `string \| undefined` | `undefined` | Overrides the default `bg-current/30` tint with an explicit CSS color. |
 
 ## Outputs
 

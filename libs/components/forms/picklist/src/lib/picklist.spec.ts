@@ -1,6 +1,9 @@
 import type { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
 import { DynamoPicklist } from './picklist';
@@ -13,7 +16,9 @@ const SOURCE: DynamoSelectOption<string>[] = [
   { label: 'Python', value: 'py' },
 ];
 
-const TARGET: DynamoSelectOption<string>[] = [{ label: 'TypeScript', value: 'ts' }];
+const TARGET: DynamoSelectOption<string>[] = [
+  { label: 'TypeScript', value: 'ts' },
+];
 
 const SOURCE_WITH_DISABLED: DynamoSelectOption<string>[] = [
   { label: 'Rust', value: 'rust' },
@@ -22,17 +27,33 @@ const SOURCE_WITH_DISABLED: DynamoSelectOption<string>[] = [
 ];
 
 function dispatchKey(target: HTMLElement, key: string): void {
-  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  target.dispatchEvent(
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+  );
 }
 
-function panelListEl(container: HTMLElement, side: 'source' | 'target'): HTMLElement {
-  return container.querySelector(`[data-part="${side}Panel"] [role="listbox"]`) as HTMLElement;
+function panelListEl(
+  container: HTMLElement,
+  side: 'source' | 'target',
+): HTMLElement {
+  return container.querySelector(
+    `[data-part="${side}Panel"] [role="listbox"]`,
+  ) as HTMLElement;
 }
 
-function dropEvent(previousIndex: number, currentIndex: number, sameContainer: boolean): CdkDragDrop<unknown> {
+function dropEvent(
+  previousIndex: number,
+  currentIndex: number,
+  sameContainer: boolean,
+): CdkDragDrop<unknown> {
   const container = {};
   const previousContainer = sameContainer ? container : {};
-  return { previousContainer, container, previousIndex, currentIndex } as unknown as CdkDragDrop<unknown>;
+  return {
+    previousContainer,
+    container,
+    previousIndex,
+    currentIndex,
+  } as unknown as CdkDragDrop<unknown>;
 }
 
 describe('DynamoPicklist', () => {
@@ -42,19 +63,36 @@ describe('DynamoPicklist', () => {
         inputs: { source: SOURCE, target: TARGET },
       });
 
-      expect(within(container).getByRole('listbox', { name: 'Available' })).toBeTruthy();
-      expect(within(container).getByRole('listbox', { name: 'Selected' })).toBeTruthy();
-      expect(container.querySelectorAll('[data-part="sourcePanel"] [role="option"]')).toHaveLength(3);
-      expect(container.querySelectorAll('[data-part="targetPanel"] [role="option"]')).toHaveLength(1);
+      expect(
+        within(container).getByRole('listbox', { name: 'Available' }),
+      ).toBeTruthy();
+      expect(
+        within(container).getByRole('listbox', { name: 'Selected' }),
+      ).toBeTruthy();
+      expect(
+        container.querySelectorAll('[data-part="sourcePanel"] [role="option"]'),
+      ).toHaveLength(3);
+      expect(
+        container.querySelectorAll('[data-part="targetPanel"] [role="option"]'),
+      ).toHaveLength(1);
     });
 
     it('uses custom sourceLabel/targetLabel when provided', () => {
       const { container } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE, target: TARGET, sourceLabel: 'Candidates', targetLabel: 'Hired' },
+        inputs: {
+          source: SOURCE,
+          target: TARGET,
+          sourceLabel: 'Candidates',
+          targetLabel: 'Hired',
+        },
       });
 
-      expect(within(container).getByRole('listbox', { name: 'Candidates' })).toBeTruthy();
-      expect(within(container).getByRole('listbox', { name: 'Hired' })).toBeTruthy();
+      expect(
+        within(container).getByRole('listbox', { name: 'Candidates' }),
+      ).toBeTruthy();
+      expect(
+        within(container).getByRole('listbox', { name: 'Hired' }),
+      ).toBeTruthy();
     });
   });
 
@@ -69,9 +107,11 @@ describe('DynamoPicklist', () => {
 
       const row = within(container).getByRole('option', { name: 'Rust' });
       expect(row.getAttribute('aria-selected')).toBe('true');
-      expect(within(container).getByRole('option', { name: 'TypeScript' }).getAttribute('aria-selected')).toBe(
-        'false',
-      );
+      expect(
+        within(container)
+          .getByRole('option', { name: 'TypeScript' })
+          .getAttribute('aria-selected'),
+      ).toBe('false');
     });
 
     it('clicking a checked row unchecks it', () => {
@@ -94,7 +134,8 @@ describe('DynamoPicklist', () => {
       const { fixture, container, componentInstance } = renderDynamoComponent<
         DynamoPicklist<string>
       >(DynamoPicklist, { inputs: { source: SOURCE, target: TARGET } });
-      const emitted: { option: DynamoSelectOption<string>; side: string }[] = [];
+      const emitted: { option: DynamoSelectOption<string>; side: string }[] =
+        [];
       componentInstance.itemSelect.subscribe((event) => emitted.push(event));
 
       within(container).getByRole('option', { name: 'Rust' }).click();
@@ -115,7 +156,8 @@ describe('DynamoPicklist', () => {
       const { fixture, container, componentInstance } = renderDynamoComponent<
         DynamoPicklist<string>
       >(DynamoPicklist, { inputs: { source: SOURCE, target: TARGET } });
-      const emitted: { option: DynamoSelectOption<string>; side: string }[] = [];
+      const emitted: { option: DynamoSelectOption<string>; side: string }[] =
+        [];
       componentInstance.itemSelect.subscribe((event) => emitted.push(event));
       const sourceList = panelListEl(container, 'source');
 
@@ -130,7 +172,9 @@ describe('DynamoPicklist', () => {
     it('does not emit for a disabled option', () => {
       const { fixture, container, componentInstance } = renderDynamoComponent<
         DynamoPicklist<string>
-      >(DynamoPicklist, { inputs: { source: SOURCE_WITH_DISABLED, target: TARGET } });
+      >(DynamoPicklist, {
+        inputs: { source: SOURCE_WITH_DISABLED, target: TARGET },
+      });
       const emitted: unknown[] = [];
       componentInstance.itemSelect.subscribe((event) => emitted.push(event));
 
@@ -149,9 +193,13 @@ describe('DynamoPicklist', () => {
 
       within(container).getByRole('option', { name: 'Rust' }).click();
       fixture.detectChanges();
-      within(container).getByRole('button', { name: 'Move selected to Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move selected to Selected' })
+        .click();
       fixture.detectChanges();
-      within(container).getByRole('button', { name: 'Move all to Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move all to Selected' })
+        .click();
       fixture.detectChanges();
 
       expect(emitted).toEqual([{ option: SOURCE[0], side: 'source' }]);
@@ -160,73 +208,123 @@ describe('DynamoPicklist', () => {
 
   describe('move-selected buttons', () => {
     it('moves checked source items to target, preserving relative order, and clears selection', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE, target: TARGET },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET },
+        },
+      );
       within(container).getByRole('option', { name: 'Python' }).click();
       fixture.detectChanges();
       within(container).getByRole('option', { name: 'Rust' }).click();
       fixture.detectChanges();
 
-      within(container).getByRole('button', { name: 'Move selected to Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move selected to Selected' })
+        .click();
       fixture.detectChanges();
 
-      expect(componentInstance.target().map((o) => o.value)).toEqual(['ts', 'rust', 'py']);
+      expect(componentInstance.target().map((o) => o.value)).toEqual([
+        'ts',
+        'rust',
+        'py',
+      ]);
       expect(componentInstance.source().map((o) => o.value)).toEqual(['go']);
       expect(
-        within(container).getByRole('button', { name: 'Move selected to Selected' }).hasAttribute('disabled'),
+        within(container)
+          .getByRole('button', { name: 'Move selected to Selected' })
+          .hasAttribute('disabled'),
       ).toBe(true);
     });
 
     it('moves checked target items back to source', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE, target: TARGET },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET },
+        },
+      );
       within(container).getByRole('option', { name: 'TypeScript' }).click();
       fixture.detectChanges();
 
-      within(container).getByRole('button', { name: 'Move selected to Available' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move selected to Available' })
+        .click();
       fixture.detectChanges();
 
       expect(componentInstance.target()).toEqual([]);
-      expect(componentInstance.source().map((o) => o.value)).toEqual(['rust', 'go', 'py', 'ts']);
+      expect(componentInstance.source().map((o) => o.value)).toEqual([
+        'rust',
+        'go',
+        'py',
+        'ts',
+      ]);
     });
   });
 
   describe('move-all buttons', () => {
     it('moves every source item to target regardless of selection', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE, target: TARGET },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET },
+        },
+      );
 
-      within(container).getByRole('button', { name: 'Move all to Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move all to Selected' })
+        .click();
       fixture.detectChanges();
 
       expect(componentInstance.source()).toEqual([]);
-      expect(componentInstance.target().map((o) => o.value)).toEqual(['ts', 'rust', 'go', 'py']);
+      expect(componentInstance.target().map((o) => o.value)).toEqual([
+        'ts',
+        'rust',
+        'go',
+        'py',
+      ]);
     });
 
     it('moves every target item back to source', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE, target: TARGET },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET },
+        },
+      );
 
-      within(container).getByRole('button', { name: 'Move all to Available' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move all to Available' })
+        .click();
       fixture.detectChanges();
 
       expect(componentInstance.target()).toEqual([]);
-      expect(componentInstance.source().map((o) => o.value)).toEqual(['rust', 'go', 'py', 'ts']);
+      expect(componentInstance.source().map((o) => o.value)).toEqual([
+        'rust',
+        'go',
+        'py',
+        'ts',
+      ]);
     });
 
     it('disabled items are still swept up by move-all (disabled only blocks checkbox/drag, not bulk move)', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE_WITH_DISABLED, target: [] },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE_WITH_DISABLED, target: [] },
+        },
+      );
 
-      within(container).getByRole('button', { name: 'Move all to Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move all to Selected' })
+        .click();
       fixture.detectChanges();
 
-      expect(componentInstance.target().map((o) => o.value)).toEqual(['rust', 'go', 'py']);
+      expect(componentInstance.target().map((o) => o.value)).toEqual([
+        'rust',
+        'go',
+        'py',
+      ]);
       expect(componentInstance.source()).toEqual([]);
     });
   });
@@ -237,18 +335,26 @@ describe('DynamoPicklist', () => {
         inputs: { source: SOURCE, target: [] },
       });
 
-      expect(within(container).getByRole('button', { name: 'Move selected to Selected' }).hasAttribute('disabled')).toBe(
-        true,
-      );
-      expect(within(container).getByRole('button', { name: 'Move selected to Available' }).hasAttribute('disabled')).toBe(
-        true,
-      );
-      expect(within(container).getByRole('button', { name: 'Move all to Selected' }).hasAttribute('disabled')).toBe(
-        false,
-      );
-      expect(within(container).getByRole('button', { name: 'Move all to Available' }).hasAttribute('disabled')).toBe(
-        true,
-      );
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Move selected to Selected' })
+          .hasAttribute('disabled'),
+      ).toBe(true);
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Move selected to Available' })
+          .hasAttribute('disabled'),
+      ).toBe(true);
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Move all to Selected' })
+          .hasAttribute('disabled'),
+      ).toBe(false);
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Move all to Available' })
+          .hasAttribute('disabled'),
+      ).toBe(true);
     });
   });
 
@@ -264,7 +370,11 @@ describe('DynamoPicklist', () => {
       dispatchKey(sourceList, 'Enter');
       fixture.detectChanges();
 
-      expect(within(container).getByRole('option', { name: 'Rust' }).getAttribute('aria-selected')).toBe('true');
+      expect(
+        within(container)
+          .getByRole('option', { name: 'Rust' })
+          .getAttribute('aria-selected'),
+      ).toBe('true');
     });
 
     it('End then Home jump to the last/first enabled row and Enter toggles it', () => {
@@ -276,12 +386,20 @@ describe('DynamoPicklist', () => {
       dispatchKey(sourceList, 'End');
       dispatchKey(sourceList, 'Enter');
       fixture.detectChanges();
-      expect(within(container).getByRole('option', { name: 'Python' }).getAttribute('aria-selected')).toBe('true');
+      expect(
+        within(container)
+          .getByRole('option', { name: 'Python' })
+          .getAttribute('aria-selected'),
+      ).toBe('true');
 
       dispatchKey(sourceList, 'Home');
       dispatchKey(sourceList, ' ');
       fixture.detectChanges();
-      expect(within(container).getByRole('option', { name: 'Rust' }).getAttribute('aria-selected')).toBe('true');
+      expect(
+        within(container)
+          .getByRole('option', { name: 'Rust' })
+          .getAttribute('aria-selected'),
+      ).toBe('true');
     });
 
     it('ArrowDown skips a disabled row', () => {
@@ -295,7 +413,11 @@ describe('DynamoPicklist', () => {
       dispatchKey(sourceList, 'Enter');
       fixture.detectChanges();
 
-      expect(within(container).getByRole('option', { name: 'Python' }).getAttribute('aria-selected')).toBe('true');
+      expect(
+        within(container)
+          .getByRole('option', { name: 'Python' })
+          .getAttribute('aria-selected'),
+      ).toBe('true');
     });
 
     it('ArrowUp moves backward through the list', () => {
@@ -309,13 +431,20 @@ describe('DynamoPicklist', () => {
       dispatchKey(sourceList, 'Enter');
       fixture.detectChanges();
 
-      expect(within(container).getByRole('option', { name: 'Go' }).getAttribute('aria-selected')).toBe('true');
+      expect(
+        within(container)
+          .getByRole('option', { name: 'Go' })
+          .getAttribute('aria-selected'),
+      ).toBe('true');
     });
 
     it('an unhandled key is a no-op', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE, target: TARGET },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET },
+        },
+      );
 
       dispatchKey(panelListEl(container, 'source'), 'Tab');
       fixture.detectChanges();
@@ -348,58 +477,84 @@ describe('DynamoPicklist', () => {
       fixture.detectChanges();
 
       for (const option of SOURCE) {
-        expect(within(container).getByRole('option', { name: option.label }).getAttribute('aria-selected')).toBe(
-          'false',
-        );
+        expect(
+          within(container)
+            .getByRole('option', { name: option.label })
+            .getAttribute('aria-selected'),
+        ).toBe('false');
       }
     });
   });
 
   describe('keyboard reorder buttons', () => {
     it('move-down swaps a targeted row forward one position, move-up swaps it back', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: [], target: SOURCE },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: [], target: SOURCE },
+        },
+      );
       const targetList = panelListEl(container, 'target');
       dispatchKey(targetList, 'ArrowDown'); // active = Rust (index 0)
       fixture.detectChanges();
 
-      within(container).getByRole('button', { name: 'Move down in Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move down in Selected' })
+        .click();
       fixture.detectChanges();
-      expect(componentInstance.target().map((o) => o.value)).toEqual(['go', 'rust', 'py']);
+      expect(componentInstance.target().map((o) => o.value)).toEqual([
+        'go',
+        'rust',
+        'py',
+      ]);
 
-      within(container).getByRole('button', { name: 'Move up in Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move up in Selected' })
+        .click();
       fixture.detectChanges();
-      expect(componentInstance.target().map((o) => o.value)).toEqual(['rust', 'go', 'py']);
+      expect(componentInstance.target().map((o) => o.value)).toEqual([
+        'rust',
+        'go',
+        'py',
+      ]);
     });
 
     it('move-up is disabled at index 0 and with no active row; move-down disabled at the last index', () => {
       const { fixture, container } = renderDynamoComponent(DynamoPicklist, {
         inputs: { source: [], target: SOURCE },
       });
-      expect(within(container).getByRole('button', { name: 'Move up in Selected' }).hasAttribute('disabled')).toBe(
-        true,
-      );
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Move up in Selected' })
+          .hasAttribute('disabled'),
+      ).toBe(true);
 
       const targetList = panelListEl(container, 'target');
       dispatchKey(targetList, 'End'); // active = last row
       fixture.detectChanges();
 
-      expect(within(container).getByRole('button', { name: 'Move down in Selected' }).hasAttribute('disabled')).toBe(
-        true,
-      );
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Move down in Selected' })
+          .hasAttribute('disabled'),
+      ).toBe(true);
     });
 
     it('reordering within target never touches source', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE, target: TARGET },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET },
+        },
+      );
       const targetList = panelListEl(container, 'target');
       dispatchKey(targetList, 'ArrowDown');
       fixture.detectChanges();
 
       const sourceBefore = componentInstance.source();
-      within(container).getByRole('button', { name: 'Move down in Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move down in Selected' })
+        .click();
       fixture.detectChanges();
 
       expect(componentInstance.source()).toBe(sourceBefore);
@@ -416,10 +571,20 @@ describe('DynamoPicklist', () => {
         inputs: { source: SOURCE, target: TARGET },
       });
 
-      (componentInstance as unknown as { onDropped: (e: CdkDragDrop<unknown>, side: 'source' | 'target') => void })
-        .onDropped(dropEvent(0, 2, true), 'source');
+      (
+        componentInstance as unknown as {
+          onDropped: (
+            e: CdkDragDrop<unknown>,
+            side: 'source' | 'target',
+          ) => void;
+        }
+      ).onDropped(dropEvent(0, 2, true), 'source');
 
-      expect(componentInstance.source().map((o) => o.value)).toEqual(['go', 'py', 'rust']);
+      expect(componentInstance.source().map((o) => o.value)).toEqual([
+        'go',
+        'py',
+        'rust',
+      ]);
       expect(componentInstance.target().map((o) => o.value)).toEqual(['ts']);
     });
 
@@ -428,24 +593,43 @@ describe('DynamoPicklist', () => {
         inputs: { source: SOURCE, target: TARGET },
       });
 
-      (componentInstance as unknown as { onDropped: (e: CdkDragDrop<unknown>, side: 'source' | 'target') => void })
-        .onDropped(dropEvent(1, 0, false), 'target');
+      (
+        componentInstance as unknown as {
+          onDropped: (
+            e: CdkDragDrop<unknown>,
+            side: 'source' | 'target',
+          ) => void;
+        }
+      ).onDropped(dropEvent(1, 0, false), 'target');
 
-      expect(componentInstance.source().map((o) => o.value)).toEqual(['rust', 'py']);
-      expect(componentInstance.target().map((o) => o.value)).toEqual(['go', 'ts']);
+      expect(componentInstance.source().map((o) => o.value)).toEqual([
+        'rust',
+        'py',
+      ]);
+      expect(componentInstance.target().map((o) => o.value)).toEqual([
+        'go',
+        'ts',
+      ]);
     });
   });
 
   describe('disabled items', () => {
     it('a disabled row cannot be checked', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE_WITH_DISABLED, target: [] },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE_WITH_DISABLED, target: [] },
+        },
+      );
 
       within(container).getByRole('option', { name: 'Go' }).click();
       fixture.detectChanges();
 
-      expect(within(container).getByRole('option', { name: 'Go' }).getAttribute('aria-selected')).toBe('false');
+      expect(
+        within(container)
+          .getByRole('option', { name: 'Go' })
+          .getAttribute('aria-selected'),
+      ).toBe('false');
       expect(componentInstance.target()).toEqual([]);
     });
 
@@ -461,33 +645,49 @@ describe('DynamoPicklist', () => {
 
   describe('disabled root', () => {
     it('makes checkbox toggling, move buttons, and reordering all inert', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: SOURCE, target: TARGET, disabled: true },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET, disabled: true },
+        },
+      );
 
       within(container).getByRole('option', { name: 'Rust' }).click();
       fixture.detectChanges();
-      within(container).getByRole('button', { name: 'Move all to Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move all to Selected' })
+        .click();
       fixture.detectChanges();
 
-      expect(componentInstance.source().map((o) => o.value)).toEqual(['rust', 'go', 'py']);
+      expect(componentInstance.source().map((o) => o.value)).toEqual([
+        'rust',
+        'go',
+        'py',
+      ]);
       expect(componentInstance.target().map((o) => o.value)).toEqual(['ts']);
     });
   });
 
   describe('edge cases', () => {
     it('moving the last source item empties the panel and axe still passes', async () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {
-        inputs: { source: [{ label: 'Rust', value: 'rust' }], target: [] },
-      });
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: [{ label: 'Rust', value: 'rust' }], target: [] },
+        },
+      );
 
       within(container).getByRole('option', { name: 'Rust' }).click();
       fixture.detectChanges();
-      within(container).getByRole('button', { name: 'Move selected to Selected' }).click();
+      within(container)
+        .getByRole('button', { name: 'Move selected to Selected' })
+        .click();
       fixture.detectChanges();
 
       expect(componentInstance.source()).toEqual([]);
-      expect(container.querySelectorAll('[data-part="sourcePanel"] [role="option"]')).toHaveLength(0);
+      expect(
+        container.querySelectorAll('[data-part="sourcePanel"] [role="option"]'),
+      ).toHaveLength(0);
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
 
@@ -496,7 +696,9 @@ describe('DynamoPicklist', () => {
         inputs: { source: SOURCE, target: [] },
       });
 
-      expect(container.querySelectorAll('[data-part="targetPanel"] [role="option"]')).toHaveLength(0);
+      expect(
+        container.querySelectorAll('[data-part="targetPanel"] [role="option"]'),
+      ).toHaveLength(0);
     });
   });
 
@@ -505,9 +707,16 @@ describe('DynamoPicklist', () => {
       const { fixture } = renderDynamoComponent(DynamoPicklist, {
         inputs: { source: SOURCE, target: TARGET },
       });
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoPicklistHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoPicklistHarness,
+      );
 
-      expect(await harness.getLabels('source')).toEqual(['Rust', 'Go', 'Python']);
+      expect(await harness.getLabels('source')).toEqual([
+        'Rust',
+        'Go',
+        'Python',
+      ]);
       await harness.toggleOption('source', 'Rust');
       fixture.detectChanges();
       await harness.clickMoveButton('selected-right');

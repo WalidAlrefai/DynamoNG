@@ -686,10 +686,9 @@ describe('DynamoMultiSelect', () => {
     });
 
     it('does not open the panel while loading', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoMultiSelect,
-        { inputs: { options: THREE_OPTIONS, loading: true } },
-      );
+      const { container, fixture } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS, loading: true },
+      });
 
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
@@ -713,10 +712,11 @@ describe('DynamoMultiSelect', () => {
 
   describe('itemSelect', () => {
     it('emits the full option object on check and on uncheck', async () => {
-      const { container, fixture, componentInstance } =
-        renderDynamoComponent<DynamoMultiSelect<string>>(DynamoMultiSelect, {
-          inputs: { options: THREE_OPTIONS },
-        });
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoMultiSelect<string>
+      >(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS },
+      });
       const emitted: DynamoSelectOption<string>[] = [];
       componentInstance.itemSelect.subscribe((option) => emitted.push(option));
 
@@ -840,14 +840,10 @@ describe('DynamoMultiSelect', () => {
     it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
       vi.useFakeTimers();
       try {
-        const { container, fixture, componentInstance } =
-          renderDynamoComponent<DynamoMultiSelect<string>>(
-            DynamoMultiSelect,
-            { inputs: { options: FRUITS } },
-          );
-        const trigger = within(container).getByRole(
-          'combobox',
-        ) as HTMLElement;
+        const { container, fixture, componentInstance } = renderDynamoComponent<
+          DynamoMultiSelect<string>
+        >(DynamoMultiSelect, { inputs: { options: FRUITS } });
+        const trigger = within(container).getByRole('combobox') as HTMLElement;
 
         dispatchKey(trigger, 'a');
         fixture.detectChanges();

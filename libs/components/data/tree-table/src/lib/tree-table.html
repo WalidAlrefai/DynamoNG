@@ -1,119 +1,155 @@
 <div [class]="rootClasses()" [attr.aria-busy]="loading() ? 'true' : null">
-  <table role="treegrid" [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
+  <table
+    role="treegrid"
+    [class]="tableClasses"
+    [attr.aria-label]="ariaLabel() ?? null"
+  >
     <thead>
       <tr role="row" [class]="headerRowClasses">
         @if (selectable()) {
-          <th role="columnheader" scope="col" [class]="selectionCellClasses">
-            <dg-checkbox
-              size="sm"
-              [checked]="allCheckState() === 'checked'"
-              [indeterminate]="allCheckState() === 'indeterminate'"
-              [disabled]="items().length === 0 || loading()"
-              (checkedChange)="toggleSelectAll()"
-            >
-              <span class="sr-only">Select all rows</span>
-            </dg-checkbox>
-          </th>
-        }
-        @for (column of columns(); track column.field) {
-          <th
-            role="columnheader"
-            scope="col"
-            [class]="headerCellClasses"
-            [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+        <th role="columnheader" scope="col" [class]="selectionCellClasses">
+          <dg-checkbox
+            size="sm"
+            [checked]="allCheckState() === 'checked'"
+            [indeterminate]="allCheckState() === 'indeterminate'"
+            [disabled]="items().length === 0 || loading()"
+            (checkedChange)="toggleSelectAll()"
           >
-            @if (column.sortable) {
-              <button type="button" [class]="sortButtonClasses" [disabled]="loading()" (click)="toggleSort(column)">
-                <span>{{ column.header }}</span>
-                <svg
-                  [class]="sortIconClasses(sortDirectionFor(column.field))"
-                  [attr.aria-hidden]="true"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                >
-                  <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
-            } @else {
-              {{ column.header }}
-            }
-          </th>
+            <span class="sr-only">Select all rows</span>
+          </dg-checkbox>
+        </th>
+        } @for (column of columns(); track column.field) {
+        <th
+          role="columnheader"
+          scope="col"
+          [class]="headerCellClasses"
+          [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+        >
+          @if (column.sortable) {
+          <button
+            type="button"
+            [class]="sortButtonClasses"
+            [disabled]="loading()"
+            (click)="toggleSort(column)"
+          >
+            <span>{{ column.header }}</span>
+            <svg
+              [class]="sortIconClasses(sortDirectionFor(column.field))"
+              [attr.aria-hidden]="true"
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+            >
+              <path
+                d="M4 6l4 4 4-4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          } @else { {{ column.header }} }
+        </th>
         }
       </tr>
     </thead>
     <tbody>
-      @for (entry of visibleEntries(); track entry.node.id; let rowIndex = $index) {
-        <tr
-          #rowEl
-          role="row"
-          [class]="rowClasses(entry)"
-          [tabindex]="isActive(entry) ? 0 : -1"
-          [attr.aria-level]="entry.depth + 1"
-          [attr.aria-expanded]="hasChildren(entry.node) ? isExpanded(entry.node.id) : null"
-          [attr.aria-disabled]="entry.node.disabled ? 'true' : null"
-          (keydown)="onRowKeydown($event, entry)"
-          (focus)="onRowFocus(entry)"
-        >
-          @if (selectable()) {
-            <td role="gridcell" [class]="selectionCellClasses">
-              <dg-checkbox
-                size="sm"
-                [checked]="checkState(entry.node) === 'checked'"
-                [indeterminate]="checkState(entry.node) === 'indeterminate'"
-                [disabled]="entry.node.disabled || loading()"
-                (checkedChange)="toggleChecked(entry.node)"
+      @for (entry of visibleEntries(); track entry.node.id; let rowIndex =
+      $index) {
+      <tr
+        #rowEl
+        role="row"
+        [class]="rowClasses(entry)"
+        [tabindex]="isActive(entry) ? 0 : -1"
+        [attr.aria-level]="entry.depth + 1"
+        [attr.aria-expanded]="hasChildren(entry.node) ? isExpanded(entry.node.id) : null"
+        [attr.aria-disabled]="entry.node.disabled ? 'true' : null"
+        (keydown)="onRowKeydown($event, entry)"
+        (focus)="onRowFocus(entry)"
+      >
+        @if (selectable()) {
+        <td role="gridcell" [class]="selectionCellClasses">
+          <dg-checkbox
+            size="sm"
+            [checked]="checkState(entry.node) === 'checked'"
+            [indeterminate]="checkState(entry.node) === 'indeterminate'"
+            [disabled]="entry.node.disabled || loading()"
+            (checkedChange)="toggleChecked(entry.node)"
+          >
+            <span class="sr-only">{{ 'Select row ' + (rowIndex + 1) }}</span>
+          </dg-checkbox>
+        </td>
+        } @for (column of columns(); track column.field; let i = $index) {
+        <td role="gridcell" [class]="cellClasses">
+          @if (i === 0) {
+          <span
+            [class]="firstCellContentClasses"
+            [style.paddingLeft.rem]="indentRem(entry.depth)"
+          >
+            @if (hasChildren(entry.node)) {
+            <span
+              [class]="chevronButtonClasses"
+              data-testid="chevron"
+              [attr.aria-hidden]="true"
+              (click)="toggleExpanded(entry.node.id)"
+            >
+              <svg
+                [class]="chevronClasses(entry.node)"
+                [attr.aria-hidden]="true"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
               >
-                <span class="sr-only">{{ 'Select row ' + (rowIndex + 1) }}</span>
-              </dg-checkbox>
-            </td>
-          }
-          @for (column of columns(); track column.field; let i = $index) {
-            <td role="gridcell" [class]="cellClasses">
-              @if (i === 0) {
-                <span [class]="firstCellContentClasses" [style.paddingLeft.rem]="indentRem(entry.depth)">
-                  @if (hasChildren(entry.node)) {
-                    <span
-                      [class]="chevronButtonClasses"
-                      data-testid="chevron"
-                      [attr.aria-hidden]="true"
-                      (click)="toggleExpanded(entry.node.id)"
-                    >
-                      <svg [class]="chevronClasses(entry.node)" [attr.aria-hidden]="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </span>
-                  } @else {
-                    <span [class]="chevronPlaceholderClasses" [attr.aria-hidden]="true"></span>
-                  }
-                  @if (column.cellTemplate) {
-                    <ng-container [ngTemplateOutlet]="column.cellTemplate" [ngTemplateOutletContext]="cellContext(entry.node, entry.depth)" />
-                  } @else {
-                    {{ cellValue(entry.node.data, column) }}
-                  }
-                </span>
-              } @else if (column.cellTemplate) {
-                <ng-container [ngTemplateOutlet]="column.cellTemplate" [ngTemplateOutletContext]="cellContext(entry.node, entry.depth)" />
-              } @else {
-                {{ cellValue(entry.node.data, column) }}
-              }
-            </td>
-          }
-        </tr>
-      } @empty {
-        <tr role="row">
-          <td role="gridcell" [attr.colspan]="columns().length + (selectable() ? 1 : 0)" [class]="emptyCellClasses">
-            @if (loading()) {
-              <span [class]="loadingWrapperClasses" role="status">
-                <dg-spinner size="sm" />
-                <span>{{ loadingMessage() }}</span>
-              </span>
+                <path
+                  d="M4 6l4 4 4-4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
             } @else {
-              <span role="status">{{ emptyMessage() }}</span>
-            }
-          </td>
-        </tr>
+            <span
+              [class]="chevronPlaceholderClasses"
+              [attr.aria-hidden]="true"
+            ></span>
+            } @if (column.cellTemplate) {
+            <ng-container
+              [ngTemplateOutlet]="column.cellTemplate"
+              [ngTemplateOutletContext]="cellContext(entry.node, entry.depth)"
+            />
+            } @else { {{ cellValue(entry.node.data, column) }} }
+          </span>
+          } @else if (column.cellTemplate) {
+          <ng-container
+            [ngTemplateOutlet]="column.cellTemplate"
+            [ngTemplateOutletContext]="cellContext(entry.node, entry.depth)"
+          />
+          } @else { {{ cellValue(entry.node.data, column) }} }
+        </td>
+        }
+      </tr>
+      } @empty {
+      <tr role="row">
+        <td
+          role="gridcell"
+          [attr.colspan]="columns().length + (selectable() ? 1 : 0)"
+          [class]="emptyCellClasses"
+        >
+          @if (loading()) {
+          <span [class]="loadingWrapperClasses" role="status">
+            <dg-spinner size="sm" />
+            <span>{{ loadingMessage() }}</span>
+          </span>
+          } @else {
+          <span role="status">{{ emptyMessage() }}</span>
+          }
+        </td>
+      </tr>
       }
     </tbody>
   </table>
