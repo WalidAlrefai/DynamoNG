@@ -6,7 +6,7 @@ import {
 } from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoTree } from './tree';
 import { DynamoTreeHarness } from './tree.harness';
 import type { DynamoTreeNode } from './tree.types';
@@ -456,6 +456,136 @@ describe('DynamoTree', () => {
       row(container, 'docs').focus();
       await userEvent.keyboard('{Enter}');
       expect(componentInstance.activated).toEqual([]);
+    });
+  });
+
+  describe('itemSelect', () => {
+    it('emits the full node object on check and on uncheck', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: sampleItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(checkboxInput(container, 'notes'));
+      await userEvent.click(checkboxInput(container, 'notes'));
+
+      expect(emitted.map((n) => n.id)).toEqual(['notes', 'notes']);
+    });
+
+    it('emits once for a cascading parent check, not once per descendant', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: sampleItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      await userEvent.click(chevron(container, 'docs'));
+
+      await userEvent.click(checkboxInput(container, 'docs'));
+
+      expect(emitted.map((n) => n.id)).toEqual(['docs']);
+    });
+
+    it('does not emit for a disabled node', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: sampleItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      await userEvent.click(chevron(container, 'docs'));
+
+      await userEvent.click(checkboxInput(container, 'cover'));
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('also fires alongside nodeActivate on Enter, since Enter both checks and activates an enabled leaf', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: sampleItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      const activated: DynamoTreeNode[] = [];
+      componentInstance.nodeActivate.subscribe((node) => activated.push(node));
+
+      row(container, 'notes').focus();
+      await userEvent.keyboard('{Enter}');
+
+      expect(emitted.map((n) => n.id)).toEqual(['notes']);
+      expect(activated.map((n) => n.id)).toEqual(['notes']);
+    });
+  });
+
+  describe('typeahead', () => {
+    const TYPEAHEAD_ITEMS: DynamoTreeNode[] = [
+      { id: 'apple', label: 'Apple' },
+      { id: 'apricot', label: 'Apricot' },
+      { id: 'banana', label: 'Banana' },
+    ];
+
+    function dispatchKey(target: HTMLElement, key: string): void {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+      );
+    }
+
+    it('jumps focus to the first matching node', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: TYPEAHEAD_ITEMS },
+      });
+
+      dispatchKey(row(container, 'apple'), 'b');
+
+      expect(document.activeElement).toBe(row(container, 'banana'));
+    });
+
+    it('cycles through nodes sharing the same starting letter on repeated presses', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: TYPEAHEAD_ITEMS },
+      });
+
+      dispatchKey(row(container, 'apple'), 'a');
+      expect(document.activeElement).toBe(row(container, 'apricot'));
+
+      dispatchKey(row(container, 'apricot'), 'a');
+      expect(document.activeElement).toBe(row(container, 'apple'));
+    });
+
+    it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
+      vi.useFakeTimers();
+      try {
+        const { container } = renderDynamoComponent(DynamoTree, {
+          inputs: { items: TYPEAHEAD_ITEMS },
+        });
+
+        dispatchKey(row(container, 'apple'), 'a');
+        expect(document.activeElement).toBe(row(container, 'apricot'));
+
+        vi.advanceTimersByTime(600);
+
+        dispatchKey(row(container, 'apricot'), 'b');
+        expect(document.activeElement).toBe(row(container, 'banana'));
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('skips disabled nodes', () => {
+      const itemsWithDisabled: DynamoTreeNode[] = [
+        { id: 'apple', label: 'Apple' },
+        { id: 'apricot', label: 'Apricot', disabled: true },
+      ];
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: itemsWithDisabled },
+      });
+
+      dispatchKey(row(container, 'apple'), 'a');
+
+      expect(document.activeElement).toBe(row(container, 'apple'));
     });
   });
 

@@ -6,6 +6,7 @@ import {
   effect,
   input,
   model,
+  output,
   signal,
   viewChildren,
 } from '@angular/core';
@@ -35,6 +36,8 @@ export class DynamoSelectButton<TValue = string> extends DynamoBaseComponent<Dyn
   readonly options = input.required<DynamoSelectOption<TValue>[]>();
   /** Two-way bindable. Scalar (`TValue | null`) in single-select mode, array (`TValue[]`) once `multiple` is true. */
   readonly value = model<DynamoSelectButtonValue<TValue>>(null);
+  /** Fires once per direct user activation (click, Enter/Space, and — in single-select mode only — arrow-key navigation) with the full option object. */
+  readonly itemSelect = output<DynamoSelectOption<TValue>>();
   readonly multiple = input(false);
   readonly size = input<DynamoSelectButtonSize>('md');
   readonly disabled = input(false);
@@ -102,6 +105,7 @@ export class DynamoSelectButton<TValue = string> extends DynamoBaseComponent<Dyn
       // semantics.
       this.value.set(option.value);
     }
+    this.itemSelect.emit(option);
   }
 
   protected onSegmentKeydown(event: KeyboardEvent, index: number): void {

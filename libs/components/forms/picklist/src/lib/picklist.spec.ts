@@ -89,6 +89,75 @@ describe('DynamoPicklist', () => {
     });
   });
 
+  describe('itemSelect', () => {
+    it('emits {option, side} on check and uncheck, tagged with the correct panel', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoPicklist<string>
+      >(DynamoPicklist, { inputs: { source: SOURCE, target: TARGET } });
+      const emitted: { option: DynamoSelectOption<string>; side: string }[] = [];
+      componentInstance.itemSelect.subscribe((event) => emitted.push(event));
+
+      within(container).getByRole('option', { name: 'Rust' }).click();
+      fixture.detectChanges();
+      within(container).getByRole('option', { name: 'TypeScript' }).click();
+      fixture.detectChanges();
+      within(container).getByRole('option', { name: 'Rust' }).click();
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([
+        { option: SOURCE[0], side: 'source' },
+        { option: TARGET[0], side: 'target' },
+        { option: SOURCE[0], side: 'source' },
+      ]);
+    });
+
+    it('emits on Enter within a panel', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoPicklist<string>
+      >(DynamoPicklist, { inputs: { source: SOURCE, target: TARGET } });
+      const emitted: { option: DynamoSelectOption<string>; side: string }[] = [];
+      componentInstance.itemSelect.subscribe((event) => emitted.push(event));
+      const sourceList = panelListEl(container, 'source');
+
+      dispatchKey(sourceList, 'ArrowDown');
+      fixture.detectChanges();
+      dispatchKey(sourceList, 'Enter');
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([{ option: SOURCE[0], side: 'source' }]);
+    });
+
+    it('does not emit for a disabled option', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoPicklist<string>
+      >(DynamoPicklist, { inputs: { source: SOURCE_WITH_DISABLED, target: TARGET } });
+      const emitted: unknown[] = [];
+      componentInstance.itemSelect.subscribe((event) => emitted.push(event));
+
+      within(container).getByRole('option', { name: 'Go' }).click();
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('does not emit from moving items between panels', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoPicklist<string>
+      >(DynamoPicklist, { inputs: { source: SOURCE, target: TARGET } });
+      const emitted: unknown[] = [];
+      componentInstance.itemSelect.subscribe((event) => emitted.push(event));
+
+      within(container).getByRole('option', { name: 'Rust' }).click();
+      fixture.detectChanges();
+      within(container).getByRole('button', { name: 'Move selected to Selected' }).click();
+      fixture.detectChanges();
+      within(container).getByRole('button', { name: 'Move all to Selected' }).click();
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([{ option: SOURCE[0], side: 'source' }]);
+    });
+  });
+
   describe('move-selected buttons', () => {
     it('moves checked source items to target, preserving relative order, and clears selection', () => {
       const { fixture, container, componentInstance } = renderDynamoComponent(DynamoPicklist, {

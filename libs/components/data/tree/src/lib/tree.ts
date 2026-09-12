@@ -11,6 +11,11 @@ import {
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
+import {
+  createTypeaheadBuffer,
+  findTypeaheadMatch,
+  resolveTypeaheadQuery,
+} from '@dynamong/utils/typeahead';
 import { DynamoTreeItem } from './tree-item';
 import {
   collectCascadeIds,
@@ -52,9 +57,12 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
   readonly loadingMessage = input('Loading…');
   /** Fires on Enter/Space or a row click — independent of checkbox toggling. */
   readonly nodeActivate = output<DynamoTreeNode>();
+  /** Fires once per node a user directly checks/unchecks with the full node object — not once per cascaded descendant. */
+  readonly itemSelect = output<DynamoTreeNode>();
 
   private readonly activeIdSignal = signal<string | undefined>(undefined);
   private readonly treeState = inject(DynamoTreeState);
+  private readonly typeahead = createTypeaheadBuffer();
 
   protected readonly rootClasses = computed(() =>
     this.unstyled() ? this.styleClass() : cn(treeRootStyles, this.styleClass()),
@@ -219,8 +227,34 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
         return;
       }
       default:
+        this.handleTypeahead(event, entries, currentIndex);
         return;
     }
+  }
+
+  private handleTypeahead(
+    event: KeyboardEvent,
+    entries: DynamoTreeEntry[],
+    currentIndex: number,
+  ): void {
+    if (
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    const buffer = this.typeahead.append(event.key);
+    const query = resolveTypeaheadQuery(buffer);
+    const match = findTypeaheadMatch(
+      entries.map((entry) => entry.node),
+      currentIndex,
+      query,
+    );
+    if (match === null) return;
+    event.preventDefault();
+    this.moveActive(match);
   }
 
   private moveActive(index: number | null): void {
@@ -280,5 +314,6 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
       }
     }
     this.selected.set([...current]);
+    this.itemSelect.emit(node);
   }
 }

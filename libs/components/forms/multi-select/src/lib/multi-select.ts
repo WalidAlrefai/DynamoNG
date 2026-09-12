@@ -44,6 +44,11 @@ import type {
 } from '@dynamong/select';
 import { cn } from '@dynamong/utils/class-merge';
 import {
+  createTypeaheadBuffer,
+  findTypeaheadMatch,
+  resolveTypeaheadQuery,
+} from '@dynamong/utils/typeahead';
+import {
   multiSelectHeaderRowStyles,
   multiSelectMaxSelectedMessageStyles,
   multiSelectOptionCheckboxStyles,
@@ -91,6 +96,8 @@ export class DynamoMultiSelect<TValue = unknown>
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable array of selected values; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<TValue[]>([]);
+  /** Fires once per option a user directly toggles (check or uncheck) with the full option object — not from `selectAll()`/`clearAll()`/the header checkbox. */
+  readonly itemSelect = output<DynamoSelectOption<TValue>>();
   readonly disabled = model(false);
   /** Renders a small spinner in the trigger and makes the component fully
    *  non-interactive, like `disabled`. Never emits back — the consumer
@@ -150,6 +157,8 @@ export class DynamoMultiSelect<TValue = unknown>
   private onTouchedFn: () => void = () => {
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
+  /** Only consulted on the trigger's own keydown, and only while `!filterable()` — a filterable panel moves focus into its own filter input, which has its own keydown handler and never reaches this buffer. */
+  private readonly typeahead = createTypeaheadBuffer();
 
   protected readonly filteredOptions = computed(() =>
     filterSelectOptions(this.options(), this.filterText()),
@@ -355,6 +364,7 @@ export class DynamoMultiSelect<TValue = unknown>
   protected close(): void {
     this.isOpen.set(false);
     this.filterText.set('');
+    this.typeahead.clear();
     this.onTouchedFn();
   }
 
@@ -372,6 +382,7 @@ export class DynamoMultiSelect<TValue = unknown>
     }
     this.value.set(next);
     this.onChangeFn(next);
+    this.itemSelect.emit(option);
   }
 
   protected removeTag(value: TValue, event: Event): void {
@@ -501,7 +512,39 @@ export class DynamoMultiSelect<TValue = unknown>
           this.close();
         }
         break;
+      default:
+        this.handleTypeahead(event);
+        break;
     }
+  }
+
+  /**
+   * Typeahead only applies while `!filterable()` — a filterable panel moves
+   * focus into a separate filter `<input>` on open (its own keydown
+   * handler), so this branch never fires then. On match, only moves
+   * `activeIndex` — deliberately does NOT call `toggleOption`, since
+   * silently checking a box from incidental typing would be a surprising
+   * model mutation; unlike Select's single value, there's no natural
+   * "this is obviously what I meant" commit here.
+   */
+  private handleTypeahead(event: KeyboardEvent): void {
+    if (
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      this.filterable()
+    ) {
+      return;
+    }
+    const buffer = this.typeahead.append(event.key);
+    const query = resolveTypeaheadQuery(buffer);
+    const match = findTypeaheadMatch(this.visibleOptions(), this.activeIndex(), query);
+    if (match === null) return;
+    event.preventDefault();
+    if (!this.isOpen()) this.isOpen.set(true);
+    this.activeIndex.set(match);
+    this.scrollActiveIntoView();
   }
 
   private moveActive(delta: number): void {

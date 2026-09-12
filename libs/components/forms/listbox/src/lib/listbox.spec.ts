@@ -340,6 +340,176 @@ describe('DynamoListbox', () => {
     });
   });
 
+  describe('itemSelect', () => {
+    it('emits the full option object on click', () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoListbox<string>
+      >(DynamoListbox, { inputs: { options: OPTIONS } });
+      const emitted: (typeof OPTIONS)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      within(container).getByRole('option', { name: 'Grid' }).click();
+
+      expect(emitted).toEqual([OPTIONS[1]]);
+    });
+
+    it('emits on Enter (isolated from arrow-key auto-selection via multi-select mode)', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoListbox<string>
+      >(DynamoListbox, { inputs: { options: OPTIONS, multiple: true } });
+      const emitted: (typeof OPTIONS)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+      const root = container.querySelector('[role="listbox"]') as HTMLElement;
+
+      // ArrowDown only moves the active highlight in multi-select mode — no
+      // emission until Enter actually activates it.
+      dispatchKey(root, 'ArrowDown');
+      fixture.detectChanges();
+      expect(emitted).toHaveLength(0);
+
+      dispatchKey(root, 'Enter');
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([OPTIONS[1]]);
+    });
+
+    it('emits on arrow-key navigation in single-select mode (selection follows focus)', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoListbox<string>
+      >(DynamoListbox, { inputs: { options: OPTIONS, value: 'list' } });
+      const emitted: (typeof OPTIONS)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+      const root = container.querySelector('[role="listbox"]') as HTMLElement;
+
+      dispatchKey(root, 'ArrowDown');
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([OPTIONS[1]]);
+    });
+
+    it('does not emit on arrow-key navigation in multi-select mode, only on Space/Enter', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoListbox<string>
+      >(DynamoListbox, { inputs: { options: OPTIONS, multiple: true } });
+      const emitted: (typeof OPTIONS)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+      const root = container.querySelector('[role="listbox"]') as HTMLElement;
+
+      dispatchKey(root, 'ArrowDown');
+      fixture.detectChanges();
+      expect(emitted).toHaveLength(0);
+
+      dispatchKey(root, ' ');
+      fixture.detectChanges();
+      expect(emitted).toEqual([OPTIONS[1]]);
+    });
+
+    it('does not emit for a disabled option', () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoListbox<string>
+      >(DynamoListbox, { inputs: { options: OPTIONS_WITH_DISABLED } });
+      const emitted: (typeof OPTIONS_WITH_DISABLED)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      within(container).getByRole('option', { name: 'Grid' }).click();
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
+  describe('typeahead', () => {
+    const FRUITS = [
+      { label: 'Apple', value: 'apple' },
+      { label: 'Apricot', value: 'apricot' },
+      { label: 'Banana', value: 'banana' },
+    ];
+
+    it('jumps the active index to the first matching option', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoListbox<string>
+      >(DynamoListbox, { inputs: { options: FRUITS, multiple: true } });
+      const root = container.querySelector('[role="listbox"]') as HTMLElement;
+
+      dispatchKey(root, 'b');
+      fixture.detectChanges();
+
+      expect(componentInstance['activeIndex']()).toBe(2);
+    });
+
+    it('cycles through options sharing the same starting letter on repeated presses', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoListbox<string>
+      >(DynamoListbox, { inputs: { options: FRUITS, multiple: true } });
+      const root = container.querySelector('[role="listbox"]') as HTMLElement;
+
+      dispatchKey(root, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(1);
+
+      dispatchKey(root, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+    });
+
+    it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
+      vi.useFakeTimers();
+      try {
+        const { fixture, container, componentInstance } =
+          renderDynamoComponent<DynamoListbox<string>>(DynamoListbox, {
+            inputs: { options: FRUITS, multiple: true },
+          });
+        const root = container.querySelector(
+          '[role="listbox"]',
+        ) as HTMLElement;
+
+        dispatchKey(root, 'a');
+        fixture.detectChanges();
+        expect(componentInstance['activeIndex']()).toBe(1);
+
+        vi.advanceTimersByTime(600);
+
+        dispatchKey(root, 'b');
+        fixture.detectChanges();
+        expect(componentInstance['activeIndex']()).toBe(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('skips disabled options', () => {
+      const optionsWithDisabled = [
+        { label: 'Apple', value: 'apple' },
+        { label: 'Apricot', value: 'apricot', disabled: true },
+      ];
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoListbox<string>
+      >(DynamoListbox, {
+        inputs: { options: optionsWithDisabled, multiple: true },
+      });
+      const root = container.querySelector('[role="listbox"]') as HTMLElement;
+
+      dispatchKey(root, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+
+      dispatchKey(root, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+    });
+
+    it('also selects on match in single-select mode, since selection follows focus there', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoListbox<string>
+      >(DynamoListbox, { inputs: { options: FRUITS } });
+      const root = container.querySelector('[role="listbox"]') as HTMLElement;
+
+      dispatchKey(root, 'b');
+      fixture.detectChanges();
+
+      expect(componentInstance.value()).toBe('banana');
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations in single-select mode with a selection', async () => {
       const { container } = renderDynamoComponent(DynamoListbox, {

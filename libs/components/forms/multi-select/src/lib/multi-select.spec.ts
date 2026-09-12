@@ -711,6 +711,191 @@ describe('DynamoMultiSelect', () => {
     });
   });
 
+  describe('itemSelect', () => {
+    it('emits the full option object on check and on uncheck', async () => {
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent<DynamoMultiSelect<string>>(DynamoMultiSelect, {
+          inputs: { options: THREE_OPTIONS },
+        });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getOptionByText('Option 2'));
+      await userEvent.click(getOptionByText('Option 2'));
+
+      expect(emitted).toEqual([THREE_OPTIONS[1], THREE_OPTIONS[1]]);
+    });
+
+    it('emits the same option on keyboard Enter as on click', async () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoMultiSelect<string>
+      >(DynamoMultiSelect, { inputs: { options: THREE_OPTIONS } });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+      trigger.focus();
+
+      await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+
+      expect(emitted).toEqual([THREE_OPTIONS[1]]);
+    });
+
+    it('does not emit for a disabled option', async () => {
+      const optionsWithDisabled: DynamoSelectOption<string>[] = [
+        { label: 'First', value: 'first' },
+        { label: 'Second (disabled)', value: 'second', disabled: true },
+      ];
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoMultiSelect<string>
+      >(DynamoMultiSelect, { inputs: { options: optionsWithDisabled } });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getOptionByText('Second (disabled)'));
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('does not emit from selectAll/clearAll (the header checkbox)', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoMultiSelect<string>
+      >(DynamoMultiSelect, { inputs: { options: THREE_OPTIONS } });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const selectAll = within(getOverlayContainer()).getByRole('checkbox', {
+        name: 'Select all',
+      });
+      await userEvent.click(selectAll);
+      await userEvent.click(selectAll);
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('does not emit from removeTag', async () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoMultiSelect<string>
+      >(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS, value: ['option-1'] },
+      });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Remove Option 1' }),
+      );
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
+  describe('typeahead', () => {
+    const FRUITS: DynamoSelectOption<string>[] = [
+      { label: 'Apple', value: 'apple' },
+      { label: 'Apricot', value: 'apricot' },
+      { label: 'Banana', value: 'banana' },
+    ];
+
+    function dispatchKey(target: HTMLElement, key: string): void {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+      );
+    }
+
+    it('jumps to and opens the panel on the first matching option while closed, without toggling it', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoMultiSelect<string>
+      >(DynamoMultiSelect, { inputs: { options: FRUITS } });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'b');
+      fixture.detectChanges();
+
+      expect(getPanel()).not.toBeNull();
+      expect(componentInstance['activeIndex']()).toBe(2);
+      expect(componentInstance.value()).toEqual([]);
+    });
+
+    it('cycles through options sharing the same starting letter on repeated presses', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoMultiSelect<string>
+      >(DynamoMultiSelect, { inputs: { options: FRUITS } });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(1);
+    });
+
+    it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
+      vi.useFakeTimers();
+      try {
+        const { container, fixture, componentInstance } =
+          renderDynamoComponent<DynamoMultiSelect<string>>(
+            DynamoMultiSelect,
+            { inputs: { options: FRUITS } },
+          );
+        const trigger = within(container).getByRole(
+          'combobox',
+        ) as HTMLElement;
+
+        dispatchKey(trigger, 'a');
+        fixture.detectChanges();
+        expect(componentInstance['activeIndex']()).toBe(0);
+
+        vi.advanceTimersByTime(600);
+
+        dispatchKey(trigger, 'b');
+        fixture.detectChanges();
+        expect(componentInstance['activeIndex']()).toBe(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('skips disabled options', () => {
+      const optionsWithDisabled: DynamoSelectOption<string>[] = [
+        { label: 'Apple', value: 'apple' },
+        { label: 'Apricot', value: 'apricot', disabled: true },
+      ];
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoMultiSelect<string>
+      >(DynamoMultiSelect, { inputs: { options: optionsWithDisabled } });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+    });
+
+    it('does not activate while filterable is true', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoMultiSelect<string>
+      >(DynamoMultiSelect, { inputs: { options: FRUITS, filterable: true } });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'b');
+      fixture.detectChanges();
+
+      expect(componentInstance['activeIndex']()).toBe(-1);
+      expect(getPanel()).toBeNull();
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations when closed', async () => {
       const { container } = renderDynamoComponent(DynamoMultiSelect, {

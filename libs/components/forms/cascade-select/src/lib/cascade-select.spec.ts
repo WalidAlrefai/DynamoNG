@@ -652,6 +652,192 @@ describe('DynamoCascadeSelect', () => {
     });
   });
 
+  describe('itemSelect', () => {
+    it('emits the full leaf node object when clicked', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      const emitted: DynamoTreeNode<string>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      getRowByText(getListboxes()[0]!, 'Mexico').click();
+      await settle(fixture);
+
+      expect(emitted).toEqual([
+        { id: 'mexico', label: 'Mexico', value: 'mexico' },
+      ]);
+    });
+
+    it('emits the same leaf node on keyboard Enter as on click', async () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      const emitted: DynamoTreeNode<string>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      const trigger = within(container).getByRole('combobox');
+      trigger.focus();
+
+      await userEvent.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{Enter}');
+
+      expect(emitted).toEqual([
+        { id: 'mexico', label: 'Mexico', value: 'mexico' },
+      ]);
+    });
+
+    it('does not emit while drilling into a branch', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      const emitted: DynamoTreeNode<string>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      getRowByText(getListboxes()[0]!, 'USA').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('does not emit for a disabled leaf', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      const emitted: DynamoTreeNode<string>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      getRowByText(getListboxes()[0]!, 'USA').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+      getRowByText(getListboxes()[1]!, 'Texas').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+      getRowByText(getListboxes()[2]!, 'Dallas').click();
+      await settle(fixture);
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
+  describe('typeahead', () => {
+    const TYPEAHEAD_NODES: DynamoTreeNode<string>[] = [
+      { id: 'apple', label: 'Apple', value: 'apple' },
+      { id: 'apricot', label: 'Apricot', value: 'apricot' },
+      { id: 'banana', label: 'Banana', value: 'banana' },
+    ];
+
+    function dispatchKey(target: HTMLElement, key: string): void {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+      );
+    }
+
+    it('jumps to and opens the panel on the first matching root node while closed', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' },
+      });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'b');
+      fixture.detectChanges();
+
+      expect(getListboxes()).toHaveLength(1);
+      expect(componentInstance['levels']()[0]?.activeIndex).toBe(2);
+    });
+
+    it('cycles through nodes sharing the same starting letter on repeated presses', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['levels']()[0]?.activeIndex).toBe(1);
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['levels']()[0]?.activeIndex).toBe(0);
+    });
+
+    it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
+      vi.useFakeTimers();
+      try {
+        const { container, fixture, componentInstance } =
+          renderDynamoComponent<DynamoCascadeSelect<string>>(
+            DynamoCascadeSelect,
+            { inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' } },
+          );
+        const trigger = within(container).getByRole(
+          'combobox',
+        ) as HTMLElement;
+
+        dispatchKey(trigger, 'a');
+        fixture.detectChanges();
+        expect(componentInstance['levels']()[0]?.activeIndex).toBe(0);
+
+        vi.advanceTimersByTime(600);
+
+        dispatchKey(trigger, 'b');
+        fixture.detectChanges();
+        expect(componentInstance['levels']()[0]?.activeIndex).toBe(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('clears the buffer on a level switch (ArrowRight/ArrowLeft)', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, { inputs: { nodes: NODES, ariaLabel: 'Location' } });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'u'); // buffers "u" against root — matches USA
+      fixture.detectChanges();
+      // Drill into USA, which should clear the "u" buffer so it doesn't
+      // leak into matching against USA's own children.
+      dispatchKey(trigger, 'ArrowRight');
+      fixture.detectChanges();
+
+      dispatchKey(trigger, 't'); // matches "Texas" among USA's children
+      fixture.detectChanges();
+
+      expect(componentInstance['levels']()[1]?.activeIndex).toBe(1);
+    });
+
+    it('does not emit itemSelect while jumping between root nodes via typeahead', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' },
+      });
+      const emitted: DynamoTreeNode<string>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'b');
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations with the root panel open', async () => {
       const { container, fixture } = renderDynamoComponent(

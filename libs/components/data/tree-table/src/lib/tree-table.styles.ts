@@ -57,6 +57,11 @@ export const treeTableRowStyles = cva(
 export const treeTableCellStyles = 'px-4 py-2.5 text-text-primary';
 export const treeTableEmptyCellStyles = 'px-4 py-8 text-center text-text-muted';
 
+// Fixed-width column shared by the header `<th>` and every body `<td>` in
+// the opt-in selection column — mirrors Table's own `tableSelectionCellStyles`
+// (no `size` variant here, since TreeTable has no `size` input).
+export const treeTableSelectionCellStyles = 'w-10 px-4 py-2.5 text-center';
+
 // Wraps the spinner + "Loading…" text shown in the empty-state slot while
 // `loading` is true, in place of `treeTableEmptyCellStyles`' plain centered text.
 export const treeTableLoadingWrapperStyles = 'inline-flex items-center gap-2';

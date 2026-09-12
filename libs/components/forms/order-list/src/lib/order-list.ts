@@ -4,6 +4,7 @@ import {
   computed,
   input,
   model,
+  output,
   signal,
 } from '@angular/core';
 import {
@@ -47,6 +48,8 @@ import type {
 export class DynamoOrderList<TValue = unknown> extends DynamoBaseComponent<DynamoOrderListPart> {
   /** Two-way bindable ordered list. */
   readonly value = model<DynamoSelectOption<TValue>[]>([]);
+  /** Fires once per row a user directly toggles when `selectable` is on — not from reordering (drag, ▲/▼, top/bottom). */
+  readonly itemSelect = output<DynamoSelectOption<TValue>>();
   readonly listLabel = input('Items');
   readonly size = input<DynamoOrderListSize>('md');
   readonly disabled = input(false);
@@ -108,6 +111,7 @@ export class DynamoOrderList<TValue = unknown> extends DynamoBaseComponent<Dynam
     if (next.has(option.value)) next.delete(option.value);
     else next.add(option.value);
     this.selected.set(next);
+    this.itemSelect.emit(option);
   }
 
   // --- reordering (adapted from Picklist's `reorder`, minus the `side` param) ---

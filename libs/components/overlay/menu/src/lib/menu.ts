@@ -32,7 +32,11 @@ import {
   menuPanelStyles,
   menuTriggerStyles,
 } from './menu.styles';
-import type { DynamoMenuPart, DynamoMenuPosition } from './menu.types';
+import type {
+  DynamoMenuItemSelectEvent,
+  DynamoMenuPart,
+  DynamoMenuPosition,
+} from './menu.types';
 
 const POSITION_MAP: Record<DynamoMenuPosition, ConnectedPosition> = {
   'bottom-start': {
@@ -95,7 +99,8 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable: `<dg-menu [(open)]="isOpen">`. */
   readonly open = model(false);
-  readonly itemSelect = output<string>();
+  /** Fires with a plain snapshot of the clicked item — not the `DynamoMenuItem` component instance. */
+  readonly itemSelect = output<DynamoMenuItemSelectEvent>();
 
   protected readonly items = contentChildren(DynamoMenuItem);
   private readonly itemButtons =
@@ -248,7 +253,11 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
     if (item.disabled()) {
       return;
     }
-    this.itemSelect.emit(item.value());
+    this.itemSelect.emit({
+      value: item.value(),
+      label: item.label(),
+      disabled: item.disabled(),
+    });
     this.close();
     this.triggerEl().nativeElement.focus();
   }

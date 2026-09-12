@@ -76,7 +76,10 @@ const ITEMS: DynamoTreeTableNode<FileRow>[] = [
   },
 ];
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'selection', title: 'Selection' },
+];
 
 const API: ApiTableRow[] = [
   {
@@ -92,6 +95,8 @@ const API: ApiTableRow[] = [
   { name: 'expandedIds', type: 'string[] (model)', default: '[]' },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
   { name: 'emptyMessage', type: 'string', default: "'No data'" },
+  { name: 'selectable', type: 'boolean', default: 'false' },
+  { name: 'selected', type: 'string[] (model)', default: '[]' },
 ];
 
 @Component({
@@ -124,6 +129,35 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="selection"
+        title="Selection"
+        description="selectable renders a cascading checkbox column — checking a branch checks its enabled descendants, matching DynamoTree's own selection model. itemSelect fires the full node once per direct check/uncheck, not per cascaded descendant or from the header's select-all."
+      >
+        <div preview>
+          <dg-tree-table
+            [items]="items"
+            [columns]="columns"
+            [(expandedIds)]="expanded"
+            [selectable]="true"
+            [(selected)]="checkedIds"
+            ariaLabel="Files"
+            (itemSelect)="onItemSelect($event)"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Checked: <span class="font-mono">{{ checkedIds().length }}</span>
+            @if (lastSelected(); as node) {
+              — last toggled: <span class="font-mono">{{ node.data.name }}</span>
+            }
+          </p>
+        </div>
+        <div code>
+          &lt;dg-tree-table [items]="items" [columns]="columns"
+          [selectable]="true" [(selected)]="checkedIds"
+          (itemSelect)="onItemSelect($event)" /&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -131,8 +165,8 @@ const API: ApiTableRow[] = [
           <code class="font-mono">id</code> (required),
           <code class="font-mono">data</code> (your row shape),
           <code class="font-mono">children?</code>,
-          <code class="font-mono">disabled?</code>. No pagination, global filter,
-          or row selection in v1.
+          <code class="font-mono">disabled?</code>. No pagination or global
+          filter in v1.
         </p>
       </div>
     </docs-examples-layout>
@@ -144,4 +178,12 @@ export class TreeTableDocPage {
   protected readonly columns = COLUMNS;
   protected readonly items = ITEMS;
   protected readonly expanded = signal<string[]>(['docs']);
+  protected readonly checkedIds = signal<string[]>([]);
+  protected readonly lastSelected = signal<DynamoTreeTableNode<FileRow> | null>(
+    null,
+  );
+
+  protected onItemSelect(node: DynamoTreeTableNode<FileRow>): void {
+    this.lastSelected.set(node);
+  }
 }

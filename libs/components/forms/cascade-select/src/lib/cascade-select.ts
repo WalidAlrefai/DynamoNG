@@ -8,6 +8,7 @@ import {
   forwardRef,
   input,
   model,
+  output,
   signal,
   viewChild,
   viewChildren,
@@ -30,6 +31,11 @@ import type { DynamoTreeNode } from '@dynamong/tree';
 import type { DynamoOverlayHandle } from '@dynamong/core/overlay';
 import type { DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
+import {
+  createTypeaheadBuffer,
+  findTypeaheadMatch,
+  resolveTypeaheadQuery,
+} from '@dynamong/utils/typeahead';
 import { buildCascadePositions } from './cascade-select.positioning';
 import {
   cascadeSelectCaretStyles,
@@ -123,6 +129,8 @@ export class DynamoCascadeSelect<TValue = string>
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model<TValue | null>(null);
+  /** Fires once a leaf node is committed (click or keyboard Enter/Space) with the full node object — not while drilling into a branch. */
+  readonly itemSelect = output<DynamoTreeNode<TValue>>();
   /**
    * Opt-in — renders every open level's row list through
    * `@dynamong/virtual-scroll` instead of a plain `@for`, for levels with
@@ -156,6 +164,8 @@ export class DynamoCascadeSelect<TValue = string>
   private onTouchedFn: () => void = () => {
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
+  /** Cleared on close and on every level switch (ArrowLeft/ArrowRight) — a level change invalidates the buffer's context, since it was matching against a different `nodes` array. */
+  private readonly typeahead = createTypeaheadBuffer();
 
   /** Every currently-open level: `levels()[0]` is the root panel (base-managed overlay), `levels()[1..N]` are flyouts this component manages itself. */
   protected readonly levels = signal<DynamoCascadeLevel<TValue>[]>([]);
@@ -325,6 +335,7 @@ export class DynamoCascadeSelect<TValue = string>
     this.isOpen.set(false);
     this.levels.set([]);
     this.activeLevelIndex.set(0);
+    this.typeahead.clear();
     this.onTouchedFn();
   }
 
@@ -333,6 +344,7 @@ export class DynamoCascadeSelect<TValue = string>
     const next = nodeValue(node);
     this.value.set(next);
     this.onChangeFn(next);
+    this.itemSelect.emit(node);
     this.close();
     this.triggerEl().nativeElement.focus();
   }
@@ -362,6 +374,9 @@ export class DynamoCascadeSelect<TValue = string>
         case ' ':
           event.preventDefault();
           this.openPanel();
+          break;
+        default:
+          this.handleClosedTypeahead(event);
           break;
       }
       return;
@@ -398,6 +413,7 @@ export class DynamoCascadeSelect<TValue = string>
         this.drillInto(levelIndex, level.activeIndex);
         this.activeLevelIndex.set(levelIndex + 1);
         this.scrollActiveIntoView(levelIndex + 1);
+        this.typeahead.clear();
         break;
       }
       case 'ArrowLeft': {
@@ -406,6 +422,7 @@ export class DynamoCascadeSelect<TValue = string>
         this.levels.update((current) => current.slice(0, levelIndex));
         this.activeLevelIndex.set(levelIndex - 1);
         this.scrollActiveIntoView(levelIndex - 1);
+        this.typeahead.clear();
         break;
       }
       case 'Enter':
@@ -417,6 +434,7 @@ export class DynamoCascadeSelect<TValue = string>
           this.drillInto(levelIndex, level.activeIndex);
           this.activeLevelIndex.set(levelIndex + 1);
           this.scrollActiveIntoView(levelIndex + 1);
+          this.typeahead.clear();
         } else {
           this.selectNode(node);
         }
@@ -427,7 +445,49 @@ export class DynamoCascadeSelect<TValue = string>
         this.close();
         this.triggerEl().nativeElement.focus();
         break;
+      default:
+        this.handleOpenTypeahead(event, levelIndex, level);
+        break;
     }
+  }
+
+  private handleClosedTypeahead(event: KeyboardEvent): void {
+    if (
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    const buffer = this.typeahead.append(event.key);
+    const query = resolveTypeaheadQuery(buffer);
+    const match = findTypeaheadMatch(this.nodes(), -1, query);
+    if (match === null) return;
+    event.preventDefault();
+    this.openPanel();
+    this.moveActiveOnly(0, match);
+  }
+
+  private handleOpenTypeahead(
+    event: KeyboardEvent,
+    levelIndex: number,
+    level: DynamoCascadeLevel<TValue>,
+  ): void {
+    if (
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    const buffer = this.typeahead.append(event.key);
+    const query = resolveTypeaheadQuery(buffer);
+    const match = findTypeaheadMatch(level.nodes, level.activeIndex, query);
+    if (match === null) return;
+    event.preventDefault();
+    this.moveActiveOnly(levelIndex, match);
   }
 
   private moveActive(delta: number): void {

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoContextMenu } from '@dynamong/context-menu';
-import { DynamoMenuItem } from '@dynamong/menu';
+import { DynamoMenuItem, type DynamoMenuItemSelectEvent } from '@dynamong/menu';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
 import {
@@ -52,7 +52,7 @@ const API: ApiTableRow[] = [
           </dg-context-menu>
           @if (lastSelected(); as selected) {
             <p class="mt-2 text-sm text-text-muted">
-              Last selected: <span class="font-mono">{{ selected }}</span>
+              Last selected: <span class="font-mono">{{ selected.value }}</span>
             </p>
           }
         </div>
@@ -70,5 +70,7 @@ const API: ApiTableRow[] = [
 export class ContextMenuDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows = API;
-  protected readonly lastSelected = signal<string | null>(null);
+  protected readonly lastSelected = signal<DynamoMenuItemSelectEvent | null>(
+    null,
+  );
 }

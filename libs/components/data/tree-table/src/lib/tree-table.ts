@@ -6,12 +6,25 @@ import {
   computed,
   input,
   model,
+  output,
   signal,
   viewChildren,
 } from '@angular/core';
+import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
+import {
+  createTypeaheadBuffer,
+  findTypeaheadMatch,
+  resolveTypeaheadQuery,
+} from '@dynamong/utils/typeahead';
+import {
+  collectCascadeIds,
+  computeNodeCheckState,
+  shouldCascadeCheck,
+  type DynamoTreeTableCheckState,
+} from './tree-table-selection';
 import {
   treeTableCellStyles,
   treeTableChevronButtonStyles,
@@ -25,6 +38,7 @@ import {
   treeTableLoadingWrapperStyles,
   treeTableRootStyles,
   treeTableRowStyles,
+  treeTableSelectionCellStyles,
   treeTableSortButtonStyles,
   treeTableSortIconStyles,
   treeTableStyles,
@@ -115,16 +129,21 @@ function findEnabledEntryIndex<TRow>(
  * Column/cell rendering (`cellValue`/`cellContext`, the
  * `@if (cellTemplate) { NgTemplateOutlet } @else { cellValue }` split) is
  * independently duplicated from `@dynamong/table`'s identical-shape logic —
- * Table is `tier:3` and freely composes lower-tier `@dynamong/*` components
- * for its own optional selection/filter/pagination features, but none of
- * those are in TreeTable's v1 scope (see README), so there's nothing to
- * compose from Table here. Table's own sort/filter helpers
- * (`table.sort.ts`/`table.filter.ts`) aren't exported from its `index.ts`
- * regardless, so a small comparator is independently duplicated here too,
- * adapted to sort each tree level's siblings independently rather than
- * Table's flat global sort (which would destroy the hierarchy). TreeTable
- * is `tier:1`, not `tier:0`, though — it composes `@dynamong/spinner`
- * (`tier:0`) for its `loading` empty-state.
+ * filtering/pagination aren't in TreeTable's v1 scope (see README), so
+ * there's nothing to compose from Table for those. Table's own sort/filter
+ * helpers (`table.sort.ts`/`table.filter.ts`) aren't exported from its
+ * `index.ts` regardless, so a small comparator is independently duplicated
+ * here too, adapted to sort each tree level's siblings independently rather
+ * than Table's flat global sort (which would destroy the hierarchy).
+ * Row selection (opt-in `selectable`/`selected`/`itemSelect`) mirrors
+ * Tree's own cascading-checkbox model instead of Table's flat one — the
+ * natural fit for hierarchical data — with the cascade algorithm
+ * independently duplicated from `tree-selection.ts` in `tree-table-
+ * selection.ts` for the same reason as the sort logic: TreeTable and Tree
+ * are both `tier:1`, and same-tier dependencies are forbidden. TreeTable
+ * is `tier:1`, not `tier:0`, because it composes `@dynamong/spinner`
+ * (`tier:0`) for its `loading` empty-state and `@dynamong/checkbox`
+ * (`tier:0`) for row selection.
  *
  * ARIA: unlike PanelMenu (which had to reject both `role="tree"` and
  * `role="menu"`), ARIA has a role built for exactly this hybrid —
@@ -137,7 +156,7 @@ function findEnabledEntryIndex<TRow>(
   selector: 'dg-tree-table',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, DynamoSpinner],
+  imports: [NgTemplateOutlet, DynamoSpinner, DynamoCheckbox],
   templateUrl: './tree-table.html',
 })
 export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoTreeTablePart> {
@@ -153,6 +172,17 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   readonly loading = input(false);
   /** Shown in the empty-state slot instead of `emptyMessage` while `loading` is true. */
   readonly loadingMessage = input('Loading…');
+  /** Opt-in row selection. Unset/false renders no selection column. */
+  readonly selectable = input(false);
+  /**
+   * Two-way bindable: every node id (leaf or branch) currently fully
+   * checked — same id-keyed shape as `expandedIds`. Checking a branch
+   * cascades to its enabled descendants, mirroring `@dynamong/tree`'s own
+   * selection model.
+   */
+  readonly selected = model<string[]>([]);
+  /** Fires once per node a user directly checks/unchecks with the full node object — not from `toggleSelectAll()`, and not once per cascaded descendant. */
+  readonly itemSelect = output<DynamoTreeTableNode<TRow>>();
 
   private readonly activeIdSignal = signal<string | undefined>(undefined);
   // Matches visibleEntries()'s order 1:1 — both derive from the same
@@ -160,6 +190,7 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   // than an id-keyed Map, which Tree needs because DynamoTreeItem is a
   // separate recursive component) is enough here.
   private readonly rowRefs = viewChildren<ElementRef<HTMLElement>>('rowEl');
+  private readonly typeahead = createTypeaheadBuffer();
 
   /** Sole source of truth for the active sort — mirrors Table's own single-signal `sortState`, not two-way bindable. */
   protected readonly sortState = signal<{ field: string; direction: DynamoTreeTableSortDirection } | null>(
@@ -172,6 +203,24 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
 
   /** Plain alias, not a `disabled`-merge — TreeTable has no `disabled` input of its own to merge with. */
   protected readonly isBusy = computed(() => this.loading());
+
+  private readonly selectedSet = computed(() => new Set(this.selected()));
+
+  /**
+   * Aggregate checked state across every root node in `items()` — drives
+   * the header "select all" checkbox. Scoped to the entire tree, not just
+   * visible/expanded entries, since TreeTable has no pagination to scope
+   * by the way Table's own select-all is scoped to the current page.
+   */
+  protected readonly allCheckState = computed<DynamoTreeTableCheckState>(() => {
+    const roots = this.items();
+    if (roots.length === 0) return 'unchecked';
+    const selectedIds = this.selectedSet();
+    const states = roots.map((node) => computeNodeCheckState(node, selectedIds));
+    if (states.every((state) => state === 'checked')) return 'checked';
+    if (states.every((state) => state === 'unchecked')) return 'unchecked';
+    return 'indeterminate';
+  });
 
   // Depth-first, sorting each level's own siblings before descending —
   // skipping children of collapsed nodes. A pure data walk, not a DOM
@@ -219,6 +268,7 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   protected readonly chevronPlaceholderClasses = treeTableChevronPlaceholderStyles;
   protected readonly firstCellContentClasses = treeTableFirstCellContentStyles;
   protected readonly loadingWrapperClasses = treeTableLoadingWrapperStyles;
+  protected readonly selectionCellClasses = treeTableSelectionCellStyles;
 
   protected hasChildren(node: DynamoTreeTableNode<TRow>): boolean {
     return (node.children?.length ?? 0) > 0;
@@ -226,6 +276,10 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
 
   protected isExpanded(id: string): boolean {
     return this.expandedIds().includes(id);
+  }
+
+  protected checkState(node: DynamoTreeTableNode<TRow>): DynamoTreeTableCheckState {
+    return computeNodeCheckState(node, this.selectedSet());
   }
 
   protected isActive(entry: DynamoTreeTableEntry<TRow>): boolean {
@@ -290,6 +344,48 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
     );
   }
 
+  /** Checks/unchecks `node`'s subtree (cascading to its enabled descendants) and fires `itemSelect` once for `node` itself — never once per cascaded descendant. */
+  protected toggleChecked(node: DynamoTreeTableNode<TRow>): void {
+    if (this.isBusy() || node.disabled) return;
+    const willCheck = shouldCascadeCheck(node, this.selectedSet());
+    const ids = collectCascadeIds(node);
+    const current = new Set(this.selected());
+    for (const id of ids) {
+      if (willCheck) {
+        current.add(id);
+      } else {
+        current.delete(id);
+      }
+    }
+    this.selected.set([...current]);
+    this.itemSelect.emit(node);
+  }
+
+  /**
+   * Checks/unchecks every node in the entire tree — not just visible ones
+   * — a bulk operation, so (mirroring Table's own `toggleSelectAll` and
+   * Tree's cascade convention) it does NOT fire `itemSelect`.
+   *
+   * Deliberately decides check-vs-uncheck via `shouldCascadeCheck` (same
+   * per-root test `toggleChecked` uses), NOT `allCheckState()`: a root with
+   * any disabled-and-unchecked descendant can never read as fully
+   * `'checked'` (see `computeNodeCheckState`), which would make this
+   * comparison always decide to check, with no way to ever cascade-uncheck
+   * everything. `shouldCascadeCheck` correctly ignores disabled descendants
+   * when deciding.
+   */
+  protected toggleSelectAll(): void {
+    if (this.isBusy()) return;
+    const roots = this.items();
+    const selectedIds = this.selectedSet();
+    const shouldCheck = roots.some((node) => shouldCascadeCheck(node, selectedIds));
+    if (!shouldCheck) {
+      this.selected.set([]);
+      return;
+    }
+    this.selected.set(roots.flatMap((node) => collectCascadeIds(node)));
+  }
+
   protected onRowKeydown(event: KeyboardEvent, entry: DynamoTreeTableEntry<TRow>): void {
     if (this.isBusy()) return;
     const entries = this.visibleEntries();
@@ -346,10 +442,50 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
         if (this.hasChildren(entry.node)) {
           this.toggleExpanded(entry.node.id);
         }
+        if (this.selectable()) {
+          this.toggleChecked(entry.node);
+        }
         return;
       default:
+        this.handleTypeahead(event, entries, currentIndex);
         return;
     }
+  }
+
+  /**
+   * TreeTable nodes have no `label` field (unlike Tree's `DynamoTreeNode`)
+   * — just arbitrary `data: TRow` with `columns` mapping fields to display
+   * values. Matches against the first column's cell value instead, coerced
+   * to a string: it's the column that already shows the hierarchy/chevron/
+   * indent, so visually it already reads as the row's "name". No new
+   * column option needed.
+   */
+  private handleTypeahead(
+    event: KeyboardEvent,
+    entries: DynamoTreeTableEntry<TRow>[],
+    currentIndex: number,
+  ): void {
+    const columns = this.columns();
+    const firstColumn = columns[0];
+    if (
+      !firstColumn ||
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    const items = entries.map((entry) => ({
+      label: String(this.cellValue(entry.node.data, firstColumn)),
+      disabled: entry.node.disabled ?? false,
+    }));
+    const buffer = this.typeahead.append(event.key);
+    const query = resolveTypeaheadQuery(buffer);
+    const match = findTypeaheadMatch(items, currentIndex, query);
+    if (match === null) return;
+    event.preventDefault();
+    this.moveActive(match);
   }
 
   protected onRowFocus(entry: DynamoTreeTableEntry<TRow>): void {

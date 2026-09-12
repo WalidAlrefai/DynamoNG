@@ -2,7 +2,7 @@ import { Component, model, signal } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoTreeTable } from './tree-table';
 import { DynamoTreeTableHarness } from './tree-table.harness';
 import type { DynamoTreeTableColumn, DynamoTreeTableNode } from './tree-table.types';
@@ -80,6 +80,23 @@ function rowByName(container: HTMLElement, name: string): HTMLElement {
 
 function rowNames(container: HTMLElement): string[] {
   return rows(container).map((row) => row.querySelector('td')?.textContent?.trim() ?? '');
+}
+
+// Matches on the whole row's text content rather than assuming the first
+// `<td>` holds the name — once `selectable` is on, the first `<td>` is the
+// checkbox cell instead.
+function rowByNameSelectable(container: HTMLElement, name: string): HTMLElement {
+  const el = rows(container).find((row) => row.textContent?.includes(name));
+  if (!el) throw new Error(`row not found: ${name}`);
+  return el;
+}
+
+function checkboxIn(row: HTMLElement): HTMLInputElement {
+  return row.querySelector('input[type="checkbox"]') as HTMLInputElement;
+}
+
+function headerCheckbox(container: HTMLElement): HTMLInputElement {
+  return container.querySelector('thead input[type="checkbox"]') as HTMLInputElement;
 }
 
 @Component({
@@ -362,6 +379,225 @@ describe('DynamoTreeTable', () => {
     });
   });
 
+  describe('selection', () => {
+    it('renders no selection column when selectable is false (default)', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns() } },
+      );
+
+      expect(container.querySelector('input[type="checkbox"]')).toBeNull();
+    });
+
+    it('checks a leaf directly', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+
+      await userEvent.click(checkboxIn(rowByNameSelectable(container, 'notes.txt')));
+      fixture.detectChanges();
+
+      expect(componentInstance.selected()).toEqual(['notes']);
+    });
+
+    it('cascades a parent check to all enabled descendants, skipping disabled ones', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+      await userEvent.click(
+        rowByNameSelectable(container, 'docs').querySelector<HTMLElement>('[data-testid="chevron"]')!,
+      );
+
+      await userEvent.click(checkboxIn(rowByNameSelectable(container, 'docs')));
+      fixture.detectChanges();
+
+      expect(componentInstance.selected().sort()).toEqual(['docs', 'resume']);
+    });
+
+    it('cascades an uncheck back through all enabled descendants', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+      await userEvent.click(
+        rowByNameSelectable(container, 'docs').querySelector<HTMLElement>('[data-testid="chevron"]')!,
+      );
+      await userEvent.click(checkboxIn(rowByNameSelectable(container, 'docs')));
+
+      await userEvent.click(checkboxIn(rowByNameSelectable(container, 'docs')));
+      fixture.detectChanges();
+
+      expect(componentInstance.selected()).toEqual([]);
+    });
+
+    it('shows indeterminate on an ancestor through 2+ levels when only some descendants are checked', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true } },
+      );
+      await userEvent.click(
+        rowByNameSelectable(container, 'photos').querySelector<HTMLElement>('[data-testid="chevron"]')!,
+      );
+      await userEvent.click(
+        rowByNameSelectable(container, 'vacation').querySelector<HTMLElement>('[data-testid="chevron"]')!,
+      );
+
+      await userEvent.click(checkboxIn(rowByNameSelectable(container, 'beach.jpg')));
+      fixture.detectChanges();
+
+      expect(checkboxIn(rowByNameSelectable(container, 'vacation')).indeterminate).toBe(true);
+      expect(checkboxIn(rowByNameSelectable(container, 'photos')).indeterminate).toBe(true);
+    });
+
+    it('does not toggle a disabled node', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+      await userEvent.click(
+        rowByNameSelectable(container, 'docs').querySelector<HTMLElement>('[data-testid="chevron"]')!,
+      );
+
+      await userEvent.click(checkboxIn(rowByNameSelectable(container, 'cover.pdf')));
+      fixture.detectChanges();
+
+      expect(componentInstance.selected()).toEqual([]);
+    });
+
+    it('select-all checks every node in the tree, including collapsed ones', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+
+      await userEvent.click(headerCheckbox(container));
+      fixture.detectChanges();
+
+      // "cover" is excluded — it's disabled, so it's never part of any cascade.
+      expect(componentInstance.selected().sort()).toEqual([
+        'beach',
+        'docs',
+        'family',
+        'mountain',
+        'notes',
+        'photos',
+        'resume',
+        'vacation',
+      ]);
+    });
+
+    it('select-all clears every checked node when already fully checked', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+      await userEvent.click(headerCheckbox(container));
+      fixture.detectChanges();
+
+      await userEvent.click(headerCheckbox(container));
+      fixture.detectChanges();
+
+      expect(componentInstance.selected()).toEqual([]);
+    });
+
+    it('toggles the focused row via Enter/Space when selectable', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+      rowByNameSelectable(container, 'notes.txt').focus();
+
+      await userEvent.keyboard('{Enter}');
+      fixture.detectChanges();
+
+      expect(componentInstance.selected()).toEqual(['notes']);
+    });
+  });
+
+  describe('itemSelect', () => {
+    it('emits the full node object on check and on uncheck', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+      const emitted: DynamoTreeTableNode<FileRow>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      const checkbox = checkboxIn(rowByNameSelectable(container, 'notes.txt'));
+
+      await userEvent.click(checkbox);
+      fixture.detectChanges();
+      await userEvent.click(checkbox);
+      fixture.detectChanges();
+
+      expect(emitted.map((n) => n.id)).toEqual(['notes', 'notes']);
+    });
+
+    it('emits once for a cascading parent check, not once per descendant', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+      const emitted: DynamoTreeTableNode<FileRow>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      await userEvent.click(
+        rowByNameSelectable(container, 'docs').querySelector<HTMLElement>('[data-testid="chevron"]')!,
+      );
+      const checkbox = checkboxIn(rowByNameSelectable(container, 'docs'));
+
+      await userEvent.click(checkbox);
+      fixture.detectChanges();
+
+      expect(emitted.map((n) => n.id)).toEqual(['docs']);
+    });
+
+    it('does not emit for a disabled node', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+      const emitted: DynamoTreeTableNode<FileRow>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      await userEvent.click(
+        rowByNameSelectable(container, 'docs').querySelector<HTMLElement>('[data-testid="chevron"]')!,
+      );
+      const checkbox = checkboxIn(rowByNameSelectable(container, 'cover.pdf'));
+
+      await userEvent.click(checkbox);
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('does not emit from toggleSelectAll (the header checkbox)', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), selectable: true },
+      });
+      const emitted: DynamoTreeTableNode<FileRow>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(headerCheckbox(container));
+      fixture.detectChanges();
+      await userEvent.click(headerCheckbox(container));
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
   describe('user interactions', () => {
     it('supports interaction through the DynamoTreeTableHarness', async () => {
       const { fixture } = renderDynamoComponent(TreeTableTestHostComponent);
@@ -486,6 +722,87 @@ describe('DynamoTreeTable', () => {
 
       expect(componentInstance.expandedIds()).toEqual([]);
       expect(rowNames(container)).toEqual(['docs', 'photos', 'notes.txt']);
+    });
+  });
+
+  describe('typeahead', () => {
+    interface NameRow {
+      name: string;
+    }
+
+    const TYPEAHEAD_COLUMNS: DynamoTreeTableColumn<NameRow>[] = [
+      { field: 'name', header: 'Name' },
+    ];
+
+    const TYPEAHEAD_ITEMS: DynamoTreeTableNode<NameRow>[] = [
+      { id: 'apple', data: { name: 'Apple' } },
+      { id: 'apricot', data: { name: 'Apricot' } },
+      { id: 'banana', data: { name: 'Banana' } },
+    ];
+
+    function dispatchKey(target: HTMLElement, key: string): void {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+      );
+    }
+
+    it('jumps focus to the first matching row, matching against the first column', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<NameRow>>(
+        DynamoTreeTable,
+        { inputs: { items: TYPEAHEAD_ITEMS, columns: TYPEAHEAD_COLUMNS } },
+      );
+
+      dispatchKey(rowByName(container, 'Apple'), 'b');
+
+      expect(document.activeElement).toBe(rowByName(container, 'Banana'));
+    });
+
+    it('cycles through rows sharing the same starting letter on repeated presses', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<NameRow>>(
+        DynamoTreeTable,
+        { inputs: { items: TYPEAHEAD_ITEMS, columns: TYPEAHEAD_COLUMNS } },
+      );
+
+      dispatchKey(rowByName(container, 'Apple'), 'a');
+      expect(document.activeElement).toBe(rowByName(container, 'Apricot'));
+
+      dispatchKey(rowByName(container, 'Apricot'), 'a');
+      expect(document.activeElement).toBe(rowByName(container, 'Apple'));
+    });
+
+    it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
+      vi.useFakeTimers();
+      try {
+        const { container } = renderDynamoComponent<DynamoTreeTable<NameRow>>(
+          DynamoTreeTable,
+          { inputs: { items: TYPEAHEAD_ITEMS, columns: TYPEAHEAD_COLUMNS } },
+        );
+
+        dispatchKey(rowByName(container, 'Apple'), 'a');
+        expect(document.activeElement).toBe(rowByName(container, 'Apricot'));
+
+        vi.advanceTimersByTime(600);
+
+        dispatchKey(rowByName(container, 'Apricot'), 'b');
+        expect(document.activeElement).toBe(rowByName(container, 'Banana'));
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('skips disabled rows', () => {
+      const itemsWithDisabled: DynamoTreeTableNode<NameRow>[] = [
+        { id: 'apple', data: { name: 'Apple' } },
+        { id: 'apricot', data: { name: 'Apricot' }, disabled: true },
+      ];
+      const { container } = renderDynamoComponent<DynamoTreeTable<NameRow>>(
+        DynamoTreeTable,
+        { inputs: { items: itemsWithDisabled, columns: TYPEAHEAD_COLUMNS } },
+      );
+
+      dispatchKey(rowByName(container, 'Apple'), 'a');
+
+      expect(document.activeElement).toBe(rowByName(container, 'Apple'));
     });
   });
 

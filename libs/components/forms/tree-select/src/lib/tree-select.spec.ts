@@ -561,6 +561,170 @@ describe('DynamoTreeSelect', () => {
     });
   });
 
+  describe('itemSelect', () => {
+    it('emits the full node object when a leaf is clicked', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeSelect<string>
+      >(DynamoTreeSelect, { inputs: { nodes: NODES, ariaLabel: 'Choose' } });
+      const emitted: DynamoTreeNode<string>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Grain'));
+
+      expect(emitted).toEqual([
+        { id: 'grain', label: 'Grain', value: 'grain' },
+      ]);
+    });
+
+    it('emits the same node on keyboard Enter as on click', async () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoTreeSelect<string>
+      >(DynamoTreeSelect, { inputs: { nodes: NODES, ariaLabel: 'Choose' } });
+      const emitted: DynamoTreeNode<string>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      const trigger = within(container).getByRole('combobox');
+      trigger.focus();
+
+      // First ArrowDown only opens the panel (mirrors Select's trigger
+      // keydown pattern); two more move from Fruits -> Vegetables -> Grain.
+      await userEvent.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{Enter}');
+
+      expect(emitted).toEqual([
+        { id: 'grain', label: 'Grain', value: 'grain' },
+      ]);
+    });
+
+    it('does not emit when expanding a branch via its expand button', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeSelect<string>
+      >(DynamoTreeSelect, { inputs: { nodes: NODES, ariaLabel: 'Choose' } });
+      const emitted: DynamoTreeNode<string>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(
+        within(getRowByText('Fruits')).getByRole('button'),
+      );
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('does not emit for a disabled node', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeSelect<string>
+      >(DynamoTreeSelect, { inputs: { nodes: NODES, ariaLabel: 'Choose' } });
+      const emitted: DynamoTreeNode<string>[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(
+        within(getRowByText('Vegetables')).getByRole('button'),
+      );
+      await settle(fixture);
+      await userEvent.click(getRowByText('Carrot'));
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
+  describe('typeahead', () => {
+    const TYPEAHEAD_NODES: DynamoTreeNode<string>[] = [
+      { id: 'apple', label: 'Apple', value: 'apple' },
+      { id: 'apricot', label: 'Apricot', value: 'apricot' },
+      { id: 'banana', label: 'Banana', value: 'banana' },
+    ];
+
+    function dispatchKey(target: HTMLElement, key: string): void {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+      );
+    }
+
+    it('jumps to and opens the panel on the first matching node while closed', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeSelect<string>
+      >(DynamoTreeSelect, {
+        inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' },
+      });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'b');
+      fixture.detectChanges();
+
+      expect(getPanel()).not.toBeNull();
+      expect(componentInstance['activeIndex']()).toBe(2);
+    });
+
+    it('cycles through nodes sharing the same starting letter on repeated presses', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeSelect<string>
+      >(DynamoTreeSelect, {
+        inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(1);
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+    });
+
+    it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
+      vi.useFakeTimers();
+      try {
+        const { container, fixture, componentInstance } =
+          renderDynamoComponent<DynamoTreeSelect<string>>(DynamoTreeSelect, {
+            inputs: { nodes: TYPEAHEAD_NODES, ariaLabel: 'Fruit' },
+          });
+        const trigger = within(container).getByRole(
+          'combobox',
+        ) as HTMLElement;
+
+        dispatchKey(trigger, 'a');
+        fixture.detectChanges();
+        expect(componentInstance['activeIndex']()).toBe(0);
+
+        vi.advanceTimersByTime(600);
+
+        dispatchKey(trigger, 'b');
+        fixture.detectChanges();
+        expect(componentInstance['activeIndex']()).toBe(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('skips disabled nodes', () => {
+      const nodesWithDisabled: DynamoTreeNode<string>[] = [
+        { id: 'apple', label: 'Apple', value: 'apple' },
+        { id: 'apricot', label: 'Apricot', value: 'apricot', disabled: true },
+      ];
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeSelect<string>
+      >(DynamoTreeSelect, {
+        inputs: { nodes: nodesWithDisabled, ariaLabel: 'Fruit' },
+      });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+    });
+  });
+
   describe('accessibility', () => {
     it('sets aria-expanded on a branch row and none on a leaf row', async () => {
       const { container, fixture } = renderDynamoComponent(
