@@ -16,9 +16,9 @@ protected readonly isLoading = signal(true);
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `size` | `DynamoSize` | `'md'` | |
+| Input       | Type                  | Default     | Description                                                                                                                                                                                     |
+| ----------- | --------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `size`      | `DynamoSize`          | `'md'`      |                                                                                                                                                                                                 |
 | `ariaLabel` | `string \| undefined` | `undefined` | Accessible name for a standalone, announced loading indicator. Leave unset when the spinner is embedded inside something that already announces its own busy state (e.g. Button's `aria-busy`). |
 
 ## Outputs

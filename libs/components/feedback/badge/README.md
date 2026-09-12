@@ -11,11 +11,11 @@ purely presentational, with no interactive behavior of its own.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `severity` | `DynamoSeverity` | `'primary'` | `'primary' \| 'secondary' \| 'success' \| 'info' \| 'warning' \| 'danger'`. |
-| `variant` | `DynamoBadgeVariant` | `'solid'` | `'solid' \| 'outline'`. |
-| `size` | `DynamoSize` | `'md'` | `'sm' \| 'md' \| 'lg'`. |
+| Input      | Type                 | Default     | Description                                                                 |
+| ---------- | -------------------- | ----------- | --------------------------------------------------------------------------- |
+| `severity` | `DynamoSeverity`     | `'primary'` | `'primary' \| 'secondary' \| 'success' \| 'info' \| 'warning' \| 'danger'`. |
+| `variant`  | `DynamoBadgeVariant` | `'solid'`   | `'solid' \| 'outline'`.                                                     |
+| `size`     | `DynamoSize`         | `'md'`      | `'sm' \| 'md' \| 'lg'`.                                                     |
 
 Content is projected via plain `<ng-content>`.
 

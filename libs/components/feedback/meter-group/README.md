@@ -24,14 +24,14 @@ protected readonly usageSegments: DynamoMeterItem[] = [
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `value` | `DynamoMeterItem[]` (required) | — | Each item is `{ label, value, severity?, color? }`. `color` (a CSS color string) overrides `severity` when set. |
-| `max` | `number` | `100` | The total the full track represents. Segments size as `item.value / max`; if the segment values sum past `max`, they're scaled down proportionally so the bar never overflows. |
-| `orientation` | `DynamoMeterGroupOrientation` (`'horizontal' \| 'vertical'`) | `'horizontal'` | |
-| `showLegend` | `boolean` | `true` | |
-| `size` | `DynamoSize` | `'md'` | |
-| `ariaLabel` | `string \| undefined` | `undefined` | When unset, an accessible label is auto-built from every item's label and value (e.g. `"Meter: Used 42, Cached 18"`). |
+| Input         | Type                                                         | Default        | Description                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`       | `DynamoMeterItem[]` (required)                               | —              | Each item is `{ label, value, severity?, color? }`. `color` (a CSS color string) overrides `severity` when set.                                                                |
+| `max`         | `number`                                                     | `100`          | The total the full track represents. Segments size as `item.value / max`; if the segment values sum past `max`, they're scaled down proportionally so the bar never overflows. |
+| `orientation` | `DynamoMeterGroupOrientation` (`'horizontal' \| 'vertical'`) | `'horizontal'` |                                                                                                                                                                                |
+| `showLegend`  | `boolean`                                                    | `true`         |                                                                                                                                                                                |
+| `size`        | `DynamoSize`                                                 | `'md'`         |                                                                                                                                                                                |
+| `ariaLabel`   | `string \| undefined`                                        | `undefined`    | When unset, an accessible label is auto-built from every item's label and value (e.g. `"Meter: Used 42, Cached 18"`).                                                          |
 
 ## Outputs
 

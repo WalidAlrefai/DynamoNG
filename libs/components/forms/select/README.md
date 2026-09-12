@@ -22,32 +22,32 @@ protected onItemSelect(option: DynamoSelectOption<string>): void { ... }
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `options` | `DynamoSelectOption<TValue>[]` (required) | — | The option list. Supports an optional `group` field for grouped rendering. |
-| `placeholder` | `string` | `'Select an option'` | Shown in the trigger when nothing is selected. |
-| `size` | `DynamoSelectSize` | `'md'` | |
-| `ariaLabel` | `string \| undefined` | `undefined` | |
-| `value` | `TValue \| null` (model) | `null` | Two-way bindable; also driven by Angular forms. |
-| `disabled` | `boolean` (model) | `false` | |
-| `loading` | `boolean` | `false` | Renders a small spinner in the trigger and makes the component fully non-interactive, like `disabled`. Never emits back. |
-| `invalid` | `boolean` | `false` | |
-| `clearable` | `boolean` | `false` | Shows an "x" button in the trigger, clearing the value without opening the panel, once a value is selected. |
-| `position` | `DynamoSelectPosition` | `'bottom-start'` | |
-| `filterable` | `boolean` | `false` | Renders a filter box above the option list. Typeahead is disabled while this is on (focus moves into the filter box instead). |
-| `filterText` | `string` (model) | `''` | |
-| `filterPlaceholder` | `string` | `'Search...'` | |
-| `noResultsMessage` | `string` | `'No matching options'` | |
-| `virtualScroll` | `boolean` | `false` | Renders the option list through `@dynamong/virtual-scroll`. Ungrouped lists only. |
-| `virtualScrollItemSize` | `number` | `36` | |
-| `virtualScrollHeight` | `number` | `240` | |
+| Input                   | Type                                      | Default                 | Description                                                                                                                   |
+| ----------------------- | ----------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `options`               | `DynamoSelectOption<TValue>[]` (required) | —                       | The option list. Supports an optional `group` field for grouped rendering.                                                    |
+| `placeholder`           | `string`                                  | `'Select an option'`    | Shown in the trigger when nothing is selected.                                                                                |
+| `size`                  | `DynamoSelectSize`                        | `'md'`                  |                                                                                                                               |
+| `ariaLabel`             | `string \| undefined`                     | `undefined`             |                                                                                                                               |
+| `value`                 | `TValue \| null` (model)                  | `null`                  | Two-way bindable; also driven by Angular forms.                                                                               |
+| `disabled`              | `boolean` (model)                         | `false`                 |                                                                                                                               |
+| `loading`               | `boolean`                                 | `false`                 | Renders a small spinner in the trigger and makes the component fully non-interactive, like `disabled`. Never emits back.      |
+| `invalid`               | `boolean`                                 | `false`                 |                                                                                                                               |
+| `clearable`             | `boolean`                                 | `false`                 | Shows an "x" button in the trigger, clearing the value without opening the panel, once a value is selected.                   |
+| `position`              | `DynamoSelectPosition`                    | `'bottom-start'`        |                                                                                                                               |
+| `filterable`            | `boolean`                                 | `false`                 | Renders a filter box above the option list. Typeahead is disabled while this is on (focus moves into the filter box instead). |
+| `filterText`            | `string` (model)                          | `''`                    |                                                                                                                               |
+| `filterPlaceholder`     | `string`                                  | `'Search...'`           |                                                                                                                               |
+| `noResultsMessage`      | `string`                                  | `'No matching options'` |                                                                                                                               |
+| `virtualScroll`         | `boolean`                                 | `false`                 | Renders the option list through `@dynamong/virtual-scroll`. Ungrouped lists only.                                             |
+| `virtualScrollItemSize` | `number`                                  | `36`                    |                                                                                                                               |
+| `virtualScrollHeight`   | `number`                                  | `240`                   |                                                                                                                               |
 
 ## Outputs
 
-| Output | Payload | Fires when |
-|---|---|---|
-| `valueChange` | `TValue \| null` | `value` changes (auto-generated by `model()`). |
-| `itemSelect` | `DynamoSelectOption<TValue>` | A user directly selects an option (click or keyboard Enter/Space) — not from programmatic `value` changes. |
+| Output        | Payload                      | Fires when                                                                                                 |
+| ------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `valueChange` | `TValue \| null`             | `value` changes (auto-generated by `model()`).                                                             |
+| `itemSelect`  | `DynamoSelectOption<TValue>` | A user directly selects an option (click or keyboard Enter/Space) — not from programmatic `value` changes. |
 
 ## Accessibility
 

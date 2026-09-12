@@ -845,8 +845,7 @@ describe('DynamoSelect', () => {
       });
 
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(true);
     });
 
@@ -867,15 +866,13 @@ describe('DynamoSelect', () => {
         inputs: { options: THREE_OPTIONS, loading: true },
       });
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(true);
 
       setInputs({ loading: false });
 
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(false);
     });
   });
@@ -982,13 +979,12 @@ describe('DynamoSelect', () => {
     it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
       vi.useFakeTimers();
       try {
-        const { container, fixture, componentInstance } =
-          renderDynamoComponent<DynamoSelect<string>>(DynamoSelect, {
-            inputs: { options: FRUITS },
-          });
-        const trigger = within(container).getByRole(
-          'combobox',
-        ) as HTMLElement;
+        const { container, fixture, componentInstance } = renderDynamoComponent<
+          DynamoSelect<string>
+        >(DynamoSelect, {
+          inputs: { options: FRUITS },
+        });
+        const trigger = within(container).getByRole('combobox') as HTMLElement;
 
         dispatchKey(trigger, 'a');
         fixture.detectChanges();

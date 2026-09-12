@@ -32,7 +32,9 @@ import type {
   imports: [DynamoButton],
   templateUrl: './select-button.html',
 })
-export class DynamoSelectButton<TValue = string> extends DynamoBaseComponent<DynamoSelectButtonPart> {
+export class DynamoSelectButton<
+  TValue = string,
+> extends DynamoBaseComponent<DynamoSelectButtonPart> {
   readonly options = input.required<DynamoSelectOption<TValue>[]>();
   /** Two-way bindable. Scalar (`TValue | null`) in single-select mode, array (`TValue[]`) once `multiple` is true. */
   readonly value = model<DynamoSelectButtonValue<TValue>>(null);
@@ -43,12 +45,17 @@ export class DynamoSelectButton<TValue = string> extends DynamoBaseComponent<Dyn
   readonly disabled = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
 
-  private readonly segmentHosts = viewChildren<DynamoButton, ElementRef<HTMLElement>>('segment', { read: ElementRef });
+  private readonly segmentHosts = viewChildren<
+    DynamoButton,
+    ElementRef<HTMLElement>
+  >('segment', { read: ElementRef });
   protected readonly focusedIndex = signal(0);
   private hasSeededFocus = false;
 
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(selectButtonRootStyles, this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(selectButtonRootStyles, this.styleClass()),
   );
 
   constructor() {
@@ -110,7 +117,8 @@ export class DynamoSelectButton<TValue = string> extends DynamoBaseComponent<Dyn
 
   protected onSegmentKeydown(event: KeyboardEvent, index: number): void {
     const options = this.options();
-    const enabled = (i: number) => !this.isDisabled(options[i] as DynamoSelectOption<TValue>);
+    const enabled = (i: number) =>
+      !this.isDisabled(options[i] as DynamoSelectOption<TValue>);
     const move = (from: number, delta: number): number => {
       let i = from;
       for (let n = 0; n < options.length; n++) {

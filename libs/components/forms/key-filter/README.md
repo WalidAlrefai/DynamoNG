@@ -8,8 +8,7 @@ keystrokes as they happen rather than validating after the fact.
 ## Usage
 
 ```html
-<input dgKeyFilter="int" />
-<input [dgKeyFilter]="customPattern" />
+<input dgKeyFilter="int" /> <input [dgKeyFilter]="customPattern" />
 ```
 
 ```ts
@@ -18,9 +17,9 @@ protected readonly customPattern = /^[A-Z]{0,3}$/;
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `pattern` (alias `dgKeyFilter`) | `DynamoKeyFilterPattern` (required) | — | A preset name (`'int'`, `'pint'`, `'num'`, `'pnum'`, `'money'`, `'hex'`, `'alpha'`, `'alphanum'`, `'email'`) or a custom `RegExp`. Each preset matches against the *candidate full field value*, not just the new character, and allows the empty string and partial input (a lone `-` or `.`) so the field can be typed into progressively. |
+| Input                           | Type                                | Default | Description                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------- | ----------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pattern` (alias `dgKeyFilter`) | `DynamoKeyFilterPattern` (required) | —       | A preset name (`'int'`, `'pint'`, `'num'`, `'pnum'`, `'money'`, `'hex'`, `'alpha'`, `'alphanum'`, `'email'`) or a custom `RegExp`. Each preset matches against the _candidate full field value_, not just the new character, and allows the empty string and partial input (a lone `-` or `.`) so the field can be typed into progressively. |
 
 ## Outputs
 

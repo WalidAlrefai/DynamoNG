@@ -6,7 +6,7 @@ control a floating or permanently-visible label: `dg-float-label`
 "In-Form-That-Always" `dg-ifta-label` (`DynamoIftaLabel`) instead pins the
 label to the top-inside of the field, always visible, for dense forms.
 Association with the wrapped control is implicit — the control lives
-*inside* the `<label>` element, so no `for`/`id` wiring is needed. The
+_inside_ the `<label>` element, so no `for`/`id` wiring is needed. The
 projected control must carry a `placeholder` attribute (a single space is
 fine) so the filled state can be detected via `:placeholder-shown`.
 
@@ -26,16 +26,16 @@ fine) so the filled state can be detected via `:placeholder-shown`.
 
 `dg-float-label` (`DynamoFloatLabel`):
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `label` | `string` (required) | — | |
+| Input     | Type                      | Default  | Description                                                                                                                                                                                                                                                                          |
+| --------- | ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `label`   | `string` (required)       | —        |                                                                                                                                                                                                                                                                                      |
 | `variant` | `DynamoFloatLabelVariant` | `'over'` | `'over'` — the label sits over the field at rest and floats up to overlap the top border when focused or filled (classic Material style). `'in'` — floats to a small size inside the field's top padding. `'on'` — floats onto the border with a background chip cutting through it. |
 
 `dg-ifta-label` (`DynamoIftaLabel`):
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `label` | `string` (required) | — | |
+| Input   | Type                | Default | Description |
+| ------- | ------------------- | ------- | ----------- |
+| `label` | `string` (required) | —       |             |
 
 ## Outputs
 

@@ -26,9 +26,9 @@ center, and end — for grouping buttons and other controls.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `ariaLabel` | `string \| undefined` | `undefined` | |
+| Input       | Type                  | Default     | Description |
+| ----------- | --------------------- | ----------- | ----------- |
+| `ariaLabel` | `string \| undefined` | `undefined` |             |
 
 Content is projected via three selectors: `[start]`, `[center]`, `[end]`.
 

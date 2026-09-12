@@ -7,7 +7,12 @@ button, etc.
 ## Usage
 
 ```html
-<dg-overlay-badge [value]="unreadCount()" [max]="99" severity="danger" position="top-right">
+<dg-overlay-badge
+  [value]="unreadCount()"
+  [max]="99"
+  severity="danger"
+  position="top-right"
+>
   <dg-button variant="text" ariaLabel="Notifications">
     <dg-icon-bell />
   </dg-button>
@@ -20,13 +25,13 @@ protected readonly unreadCount = signal(3);
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `value` | `string \| number \| undefined` | `undefined` | |
-| `dot` | `boolean` | `false` | Forces the bare-dot style. Also the default when `value` is empty/unset. |
-| `max` | `number \| undefined` | `undefined` | A numeric `value` above `max` renders as `` `${max}+` ``. |
-| `severity` | `DynamoSeverity` | `'danger'` | |
-| `position` | `DynamoOverlayBadgePosition` (`'top-right' \| 'top-left' \| 'bottom-right' \| 'bottom-left'`) | `'top-right'` | |
+| Input      | Type                                                                                          | Default       | Description                                                              |
+| ---------- | --------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------ |
+| `value`    | `string \| number \| undefined`                                                               | `undefined`   |                                                                          |
+| `dot`      | `boolean`                                                                                     | `false`       | Forces the bare-dot style. Also the default when `value` is empty/unset. |
+| `max`      | `number \| undefined`                                                                         | `undefined`   | A numeric `value` above `max` renders as `` `${max}+` ``.                |
+| `severity` | `DynamoSeverity`                                                                              | `'danger'`    |                                                                          |
+| `position` | `DynamoOverlayBadgePosition` (`'top-right' \| 'top-left' \| 'bottom-right' \| 'bottom-left'`) | `'top-right'` |                                                                          |
 
 ## Outputs
 

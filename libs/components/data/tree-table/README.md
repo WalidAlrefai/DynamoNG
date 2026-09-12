@@ -29,25 +29,25 @@ protected onItemSelect(node: DynamoTreeTableNode<FileEntry>): void { ... }
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `items` | `DynamoTreeTableNode<TRow>[]` (required) | — | Each node wraps the row's `data` plus recursive `children`. |
-| `columns` | `DynamoTreeTableColumn<TRow>[]` (required) | — | |
-| `expandedIds` | `string[]` (model) | `[]` | |
-| `ariaLabel` | `string \| undefined` | `undefined` | |
-| `emptyMessage` | `string` | `'No data'` | |
-| `loading` | `boolean` | `false` | Renders a spinner + message in the empty-state slot and makes sorting, expand/collapse, selection, and row navigation non-interactive. |
-| `loadingMessage` | `string` | `'Loading…'` | Shown in the empty-state slot instead of `emptyMessage` while `loading` is true. |
-| `selectable` | `boolean` | `false` | Opt-in row selection. Unset renders no selection column. |
-| `selected` | `string[]` (model) | `[]` | Every node id (leaf or branch) currently fully checked — same id-keyed shape as `expandedIds`. Checking a branch cascades to its enabled descendants, mirroring `@dynamong/tree`'s own selection model (not Table's flat one — the natural fit for hierarchical data). |
+| Input            | Type                                       | Default      | Description                                                                                                                                                                                                                                                            |
+| ---------------- | ------------------------------------------ | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`          | `DynamoTreeTableNode<TRow>[]` (required)   | —            | Each node wraps the row's `data` plus recursive `children`.                                                                                                                                                                                                            |
+| `columns`        | `DynamoTreeTableColumn<TRow>[]` (required) | —            |                                                                                                                                                                                                                                                                        |
+| `expandedIds`    | `string[]` (model)                         | `[]`         |                                                                                                                                                                                                                                                                        |
+| `ariaLabel`      | `string \| undefined`                      | `undefined`  |                                                                                                                                                                                                                                                                        |
+| `emptyMessage`   | `string`                                   | `'No data'`  |                                                                                                                                                                                                                                                                        |
+| `loading`        | `boolean`                                  | `false`      | Renders a spinner + message in the empty-state slot and makes sorting, expand/collapse, selection, and row navigation non-interactive.                                                                                                                                 |
+| `loadingMessage` | `string`                                   | `'Loading…'` | Shown in the empty-state slot instead of `emptyMessage` while `loading` is true.                                                                                                                                                                                       |
+| `selectable`     | `boolean`                                  | `false`      | Opt-in row selection. Unset renders no selection column.                                                                                                                                                                                                               |
+| `selected`       | `string[]` (model)                         | `[]`         | Every node id (leaf or branch) currently fully checked — same id-keyed shape as `expandedIds`. Checking a branch cascades to its enabled descendants, mirroring `@dynamong/tree`'s own selection model (not Table's flat one — the natural fit for hierarchical data). |
 
 ## Outputs
 
-| Output | Payload | Fires when |
-|---|---|---|
-| `expandedIdsChange` | `string[]` | `expandedIds` changes (auto-generated by `model()`). |
-| `selectedChange` | `string[]` | `selected` changes. |
-| `itemSelect` | `DynamoTreeTableNode<TRow>` | A user directly checks/unchecks a single node — not from the header "select all" checkbox, and not once per cascaded descendant. |
+| Output              | Payload                     | Fires when                                                                                                                       |
+| ------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `expandedIdsChange` | `string[]`                  | `expandedIds` changes (auto-generated by `model()`).                                                                             |
+| `selectedChange`    | `string[]`                  | `selected` changes.                                                                                                              |
+| `itemSelect`        | `DynamoTreeTableNode<TRow>` | A user directly checks/unchecks a single node — not from the header "select all" checkbox, and not once per cascaded descendant. |
 
 ## Accessibility
 

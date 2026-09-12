@@ -539,7 +539,11 @@ export class DynamoMultiSelect<TValue = unknown>
     }
     const buffer = this.typeahead.append(event.key);
     const query = resolveTypeaheadQuery(buffer);
-    const match = findTypeaheadMatch(this.visibleOptions(), this.activeIndex(), query);
+    const match = findTypeaheadMatch(
+      this.visibleOptions(),
+      this.activeIndex(),
+      query,
+    );
     if (match === null) return;
     event.preventDefault();
     if (!this.isOpen()) this.isOpen.set(true);

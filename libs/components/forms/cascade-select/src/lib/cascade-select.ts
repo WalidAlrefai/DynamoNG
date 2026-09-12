@@ -75,7 +75,10 @@ function findNodeByValue<TValue>(
   return undefined;
 }
 
-function containsValue<TValue>(node: DynamoTreeNode<TValue>, value: TValue): boolean {
+function containsValue<TValue>(
+  node: DynamoTreeNode<TValue>,
+  value: TValue,
+): boolean {
   if (nodeValue(node) === value) return true;
   return node.children?.some((child) => containsValue(child, value)) ?? false;
 }
@@ -144,8 +147,10 @@ export class DynamoCascadeSelect<TValue = string>
   /** Viewport height in px when virtualized — matches `selectPanelWrapperStyles`' own `max-h-60` (240px). */
   readonly virtualScrollHeight = input(240);
 
-  private readonly triggerEl = viewChild.required<ElementRef<HTMLElement>>('triggerEl');
-  private readonly panelTemplate = viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  private readonly triggerEl =
+    viewChild.required<ElementRef<HTMLElement>>('triggerEl');
+  private readonly panelTemplate =
+    viewChild.required<TemplateRef<unknown>>('panelTemplate');
   // One `<dg-virtual-scroll>` per open level (the shared `#panelTemplate` is
   // instantiated once per level, all via this component's own
   // `viewContainerRef`, so this query captures them all). Indexed by level
@@ -172,9 +177,13 @@ export class DynamoCascadeSelect<TValue = string>
   /** Which level currently owns Up/Down/Enter/Escape. */
   protected readonly activeLevelIndex = signal(0);
   /** `flyoutHandles[k]` backs `levels()[k + 1]` — a plain stack, push/pop only, so index bookkeeping never needs a placeholder for the base-managed root level. */
-  private readonly flyoutHandles: (DynamoOverlayHandle & { anchorEl: HTMLElement })[] = [];
+  private readonly flyoutHandles: (DynamoOverlayHandle & {
+    anchorEl: HTMLElement;
+  })[] = [];
 
-  protected readonly selectedNode = computed(() => findNodeByValue(this.nodes(), this.value()));
+  protected readonly selectedNode = computed(() =>
+    findNodeByValue(this.nodes(), this.value()),
+  );
   protected readonly selectedLabel = computed(
     () => this.selectedNode()?.label ?? this.placeholder(),
   );
@@ -258,7 +267,9 @@ export class DynamoCascadeSelect<TValue = string>
           { hasBackdrop: false }, // only the root panel gets the backdrop that closes everything
         );
         handle.overlayRef.attach(
-          new TemplatePortal(this.panelTemplate(), this.viewContainerRef, { levelIndex }),
+          new TemplatePortal(this.panelTemplate(), this.viewContainerRef, {
+            levelIndex,
+          }),
         );
         this.flyoutHandles.push({ ...handle, anchorEl: anchor });
       }
@@ -305,7 +316,11 @@ export class DynamoCascadeSelect<TValue = string>
     return nodeValue(node) === this.value();
   }
 
-  protected rowClasses(node: DynamoTreeNode<TValue>, levelIndex: number, index: number): string {
+  protected rowClasses(
+    node: DynamoTreeNode<TValue>,
+    levelIndex: number,
+    index: number,
+  ): string {
     const level = this.levels()[levelIndex];
     return cascadeSelectRowStyles({
       active: level?.activeIndex === index,
@@ -397,7 +412,10 @@ export class DynamoCascadeSelect<TValue = string>
         break;
       case 'Home':
         event.preventDefault();
-        this.moveActiveOnly(levelIndex, findEnabledNodeIndex(level.nodes, -1, 1) ?? -1);
+        this.moveActiveOnly(
+          levelIndex,
+          findEnabledNodeIndex(level.nodes, -1, 1) ?? -1,
+        );
         break;
       case 'End':
         event.preventDefault();
@@ -549,7 +567,11 @@ export class DynamoCascadeSelect<TValue = string>
         // active row to act on, since keyboard nav (unlike a fresh
         // openPanel()) has no other point where this gets seeded.
         const seededActive = findEnabledNodeIndex(childNodes, -1, 1) ?? -1;
-        next.push({ nodes: childNodes, activeIndex: seededActive, anchorEl: anchor });
+        next.push({
+          nodes: childNodes,
+          activeIndex: seededActive,
+          anchorEl: anchor,
+        });
       }
       return next;
     });
@@ -572,7 +594,10 @@ export class DynamoCascadeSelect<TValue = string>
   private buildInitialLevels(): DynamoCascadeLevel<TValue>[] {
     const rootNodes = this.nodes();
     const value = this.value();
-    let activeIndex = value == null ? -1 : rootNodes.findIndex((node) => containsValue(node, value));
+    let activeIndex =
+      value == null
+        ? -1
+        : rootNodes.findIndex((node) => containsValue(node, value));
     if (activeIndex < 0) {
       activeIndex = findEnabledNodeIndex(rootNodes, -1, 1) ?? -1;
     }

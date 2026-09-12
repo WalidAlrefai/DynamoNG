@@ -21,13 +21,18 @@ const TREE: DynamoTreeTableNode<Row> = {
 
 describe('computeNodeCheckState', () => {
   it('returns checked/unchecked for a leaf based on membership', () => {
-    const leaf: DynamoTreeTableNode<Row> = { id: 'resume', data: { name: 'Resume' } };
+    const leaf: DynamoTreeTableNode<Row> = {
+      id: 'resume',
+      data: { name: 'Resume' },
+    };
     expect(computeNodeCheckState(leaf, new Set(['resume']))).toBe('checked');
     expect(computeNodeCheckState(leaf, new Set())).toBe('unchecked');
   });
 
   it('returns checked when every child is checked', () => {
-    expect(computeNodeCheckState(TREE, new Set(['resume', 'cover']))).toBe('checked');
+    expect(computeNodeCheckState(TREE, new Set(['resume', 'cover']))).toBe(
+      'checked',
+    );
   });
 
   it('returns unchecked when no child is checked', () => {
@@ -35,7 +40,9 @@ describe('computeNodeCheckState', () => {
   });
 
   it('returns indeterminate when only some children are checked', () => {
-    expect(computeNodeCheckState(TREE, new Set(['resume']))).toBe('indeterminate');
+    expect(computeNodeCheckState(TREE, new Set(['resume']))).toBe(
+      'indeterminate',
+    );
   });
 });
 
@@ -66,7 +73,10 @@ describe('collectCascadeIds', () => {
   });
 
   it('collects just the node itself for a leaf', () => {
-    const leaf: DynamoTreeTableNode<Row> = { id: 'resume', data: { name: 'Resume' } };
+    const leaf: DynamoTreeTableNode<Row> = {
+      id: 'resume',
+      data: { name: 'Resume' },
+    };
     expect(collectCascadeIds(leaf)).toEqual(['resume']);
   });
 

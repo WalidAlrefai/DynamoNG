@@ -53,7 +53,9 @@ type DynamoListboxRenderItem<TValue> =
   imports: [DynamoCheckIcon, DynamoVirtualScroll],
   templateUrl: './listbox.html',
 })
-export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoListboxPart> {
+export class DynamoListbox<
+  TValue = unknown,
+> extends DynamoBaseComponent<DynamoListboxPart> {
   readonly options = input.required<DynamoSelectOption<TValue>[]>();
   readonly multiple = input(false);
   readonly size = input<DynamoListboxSize>('md');
@@ -88,23 +90,27 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
   private hasSeededActive = false;
   private readonly typeahead = createTypeaheadBuffer();
 
-  protected readonly groupedOptions = computed(() => groupListboxOptions(this.options()));
+  protected readonly groupedOptions = computed(() =>
+    groupListboxOptions(this.options()),
+  );
   protected readonly visibleOptions = computed(() =>
     flattenGroupedListboxOptions(this.groupedOptions()),
   );
-  protected readonly renderItems = computed<DynamoListboxRenderItem<TValue>[]>(() => {
-    const items: DynamoListboxRenderItem<TValue>[] = [];
-    let index = 0;
-    for (const group of this.groupedOptions()) {
-      if (group.group !== null) {
-        items.push({ kind: 'heading', label: group.group });
+  protected readonly renderItems = computed<DynamoListboxRenderItem<TValue>[]>(
+    () => {
+      const items: DynamoListboxRenderItem<TValue>[] = [];
+      let index = 0;
+      for (const group of this.groupedOptions()) {
+        if (group.group !== null) {
+          items.push({ kind: 'heading', label: group.group });
+        }
+        for (const option of group.options) {
+          items.push({ kind: 'option', option, index: index++ });
+        }
       }
-      for (const option of group.options) {
-        items.push({ kind: 'option', option, index: index++ });
-      }
-    }
-    return items;
-  });
+      return items;
+    },
+  );
   /** True only for the ungrouped case — see `virtualScroll`'s own doc comment for why grouped lists can't be virtualized in v1. `groupedOptions()` always yields at least one bucket (a single `group: null` one for ungrouped input), so "ungrouped" is exactly "at most one group". */
   protected readonly isVirtualized = computed(
     () => this.virtualScroll() && this.groupedOptions().length <= 1,
@@ -134,7 +140,9 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
       this.hasSeededActive = true;
       const selectedIndex = opts.findIndex((o) => this.isSelected(o));
       this.activeIndex.set(
-        selectedIndex >= 0 ? selectedIndex : (findEnabledListboxIndex(opts, -1, 1) ?? -1),
+        selectedIndex >= 0
+          ? selectedIndex
+          : (findEnabledListboxIndex(opts, -1, 1) ?? -1),
       );
     });
   }
@@ -162,7 +170,10 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
     return this.disabled() || !!option.disabled;
   }
 
-  protected optionClasses(option: DynamoSelectOption<TValue>, index: number): string {
+  protected optionClasses(
+    option: DynamoSelectOption<TValue>,
+    index: number,
+  ): string {
     return listboxOptionStyles({
       active: index === this.activeIndex(),
       selected: this.isSelected(option),
@@ -246,7 +257,11 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
   }
 
   private moveActive(delta: number): void {
-    const next = findEnabledListboxIndex(this.visibleOptions(), this.activeIndex(), delta);
+    const next = findEnabledListboxIndex(
+      this.visibleOptions(),
+      this.activeIndex(),
+      delta,
+    );
     if (next !== null) this.setActiveIndex(next);
   }
 

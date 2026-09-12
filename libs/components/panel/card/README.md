@@ -16,11 +16,11 @@ content-projection slot, in three visual variants.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `header` | `string` | `''` | Title text. The header block only renders when `header` or `subheader` is set. |
-| `subheader` | `string` | `''` | Subtitle text shown below the header. |
-| `variant` | `DynamoCardVariant` | `'elevated'` | `'elevated' \| 'outlined' \| 'filled'`. |
+| Input       | Type                | Default      | Description                                                                    |
+| ----------- | ------------------- | ------------ | ------------------------------------------------------------------------------ |
+| `header`    | `string`            | `''`         | Title text. The header block only renders when `header` or `subheader` is set. |
+| `subheader` | `string`            | `''`         | Subtitle text shown below the header.                                          |
+| `variant`   | `DynamoCardVariant` | `'elevated'` | `'elevated' \| 'outlined' \| 'filled'`.                                        |
 
 Body content is projected via the default slot; footer content via `<div footer>` (an element with a `footer` attribute), projected into a dedicated footer region.
 

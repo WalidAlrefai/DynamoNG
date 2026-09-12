@@ -27,13 +27,13 @@ simple panels) without any overlay/portal machinery.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `dgStyleClass` (selector alias for `target`) | `string` (required) | — | A CSS selector, or one of the relative keywords `'@next'`, `'@prev'`, `'@parent'`, `'@grandparent'`, identifying the element whose classes get mutated. |
-| `toggleClass` | `string \| undefined` | `undefined` | A single class simply toggled on the target on each click. When set, takes priority over `enterClass`/`leaveClass`. |
-| `enterClass` | `string \| undefined` | `undefined` | Added to the target (and `leaveClass` removed) when transitioning to shown. Only used when `toggleClass` is unset. |
-| `leaveClass` | `string \| undefined` | `undefined` | Added to the target (and `enterClass` removed) when transitioning to hidden. Only used when `toggleClass` is unset. |
-| `hideOnOutsideClick` | `boolean` | `false` | While shown, a document click outside both the host and the target hides the target again. |
+| Input                                        | Type                  | Default     | Description                                                                                                                                             |
+| -------------------------------------------- | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dgStyleClass` (selector alias for `target`) | `string` (required)   | —           | A CSS selector, or one of the relative keywords `'@next'`, `'@prev'`, `'@parent'`, `'@grandparent'`, identifying the element whose classes get mutated. |
+| `toggleClass`                                | `string \| undefined` | `undefined` | A single class simply toggled on the target on each click. When set, takes priority over `enterClass`/`leaveClass`.                                     |
+| `enterClass`                                 | `string \| undefined` | `undefined` | Added to the target (and `leaveClass` removed) when transitioning to shown. Only used when `toggleClass` is unset.                                      |
+| `leaveClass`                                 | `string \| undefined` | `undefined` | Added to the target (and `enterClass` removed) when transitioning to hidden. Only used when `toggleClass` is unset.                                     |
+| `hideOnOutsideClick`                         | `boolean`             | `false`     | While shown, a document click outside both the host and the target hides the target again.                                                              |
 
 ## Outputs
 

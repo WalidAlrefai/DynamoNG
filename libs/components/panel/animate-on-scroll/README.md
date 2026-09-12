@@ -26,13 +26,13 @@ without writing any observer code yourself.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `enterClass` | `string` (required) | — | Class added to the host when it scrolls into view (or immediately, see below). |
-| `leaveClass` | `string \| undefined` | `undefined` | Class swapped back in when the host scrolls out of view. Only relevant when `once` is `false`; ignored (never removed) otherwise. |
-| `threshold` | `number` | `0.1` | Forwarded directly to `IntersectionObserver`'s `threshold` option. |
-| `once` | `boolean` | `true` | When `true`, the observer disconnects after the first entry — `enterClass` is added once and never removed. When `false`, `enterClass`/`leaveClass` toggle every time the host crosses the viewport boundary. |
-| `disabled` (alias `dgAnimateOnScrollDisabled`) | `boolean` | `false` | When `true`, `enterClass` is applied immediately and no observer is created — same fallback path as reduced motion. |
+| Input                                          | Type                  | Default     | Description                                                                                                                                                                                                   |
+| ---------------------------------------------- | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enterClass`                                   | `string` (required)   | —           | Class added to the host when it scrolls into view (or immediately, see below).                                                                                                                                |
+| `leaveClass`                                   | `string \| undefined` | `undefined` | Class swapped back in when the host scrolls out of view. Only relevant when `once` is `false`; ignored (never removed) otherwise.                                                                             |
+| `threshold`                                    | `number`              | `0.1`       | Forwarded directly to `IntersectionObserver`'s `threshold` option.                                                                                                                                            |
+| `once`                                         | `boolean`             | `true`      | When `true`, the observer disconnects after the first entry — `enterClass` is added once and never removed. When `false`, `enterClass`/`leaveClass` toggle every time the host crosses the viewport boundary. |
+| `disabled` (alias `dgAnimateOnScrollDisabled`) | `boolean`             | `false`     | When `true`, `enterClass` is applied immediately and no observer is created — same fallback path as reduced motion.                                                                                           |
 
 ## Outputs
 

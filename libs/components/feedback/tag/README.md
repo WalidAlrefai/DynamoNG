@@ -15,11 +15,11 @@ protected readonly status = signal<DynamoSeverity>('success');
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `severity` | `DynamoSeverity` | `'primary'` | |
-| `variant` | `DynamoTagVariant` (`'solid' \| 'outline'`) | `'solid'` | |
-| `size` | `DynamoSize` | `'md'` | |
+| Input      | Type                                        | Default     | Description |
+| ---------- | ------------------------------------------- | ----------- | ----------- |
+| `severity` | `DynamoSeverity`                            | `'primary'` |             |
+| `variant`  | `DynamoTagVariant` (`'solid' \| 'outline'`) | `'solid'`   |             |
+| `size`     | `DynamoSize`                                | `'md'`      |             |
 
 ## Outputs
 

@@ -50,7 +50,9 @@ export interface DynamoTypeaheadBuffer {
 }
 
 /** Default 500ms reset window matches the WAI-ARIA APG combobox/listbox reference pattern. */
-export function createTypeaheadBuffer(resetDelayMs = 500): DynamoTypeaheadBuffer {
+export function createTypeaheadBuffer(
+  resetDelayMs = 500,
+): DynamoTypeaheadBuffer {
   let buffer = '';
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 

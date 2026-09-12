@@ -24,14 +24,14 @@ connecting line to the next event, and projected content.
 
 ### `dg-timeline`
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `ariaLabel` | `string \| undefined` | `undefined` | |
+| Input       | Type                  | Default     | Description |
+| ----------- | --------------------- | ----------- | ----------- |
+| `ariaLabel` | `string \| undefined` | `undefined` |             |
 
 ### `dg-timeline-item`
 
-| Input | Type | Default | Description |
-|---|---|---|---|
+| Input      | Type             | Default     | Description            |
+| ---------- | ---------------- | ----------- | ---------------------- |
 | `severity` | `DynamoSeverity` | `'primary'` | Colors the marker dot. |
 
 ## Outputs

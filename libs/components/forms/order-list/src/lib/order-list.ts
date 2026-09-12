@@ -45,7 +45,9 @@ import type {
   imports: [CdkDropList, CdkDrag, DynamoCheckIcon],
   templateUrl: './order-list.html',
 })
-export class DynamoOrderList<TValue = unknown> extends DynamoBaseComponent<DynamoOrderListPart> {
+export class DynamoOrderList<
+  TValue = unknown,
+> extends DynamoBaseComponent<DynamoOrderListPart> {
   /** Two-way bindable ordered list. */
   readonly value = model<DynamoSelectOption<TValue>[]>([]);
   /** Fires once per row a user directly toggles when `selectable` is on — not from reordering (drag, ▲/▼, top/bottom). */

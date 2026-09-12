@@ -16,12 +16,12 @@ icon — for profile pictures, comment authors, and member lists.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `src` | `string \| undefined` | `undefined` | Image URL. Falling back is automatic: unset, or the `<img>` firing an `error` event, both drop to the next tier. |
+| Input  | Type                  | Default     | Description                                                                                                                                             |
+| ------ | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src`  | `string \| undefined` | `undefined` | Image URL. Falling back is automatic: unset, or the `<img>` firing an `error` event, both drop to the next tier.                                        |
 | `name` | `string \| undefined` | `undefined` | Drives derived initials (first + last token's first character for multi-word names, first two characters for a single word) and the default `alt` text. |
-| `alt` | `string \| undefined` | `undefined` | Overrides the derived alt text (`name`, or `'Avatar'` if neither is set). |
-| `size` | `DynamoSize` | `'md'` | |
+| `alt`  | `string \| undefined` | `undefined` | Overrides the derived alt text (`name`, or `'Avatar'` if neither is set).                                                                               |
+| `size` | `DynamoSize`          | `'md'`      |                                                                                                                                                         |
 
 ## Outputs
 
