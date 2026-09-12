@@ -2,7 +2,7 @@ import { Component, model, signal } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoTreeTable } from './tree-table';
 import { DynamoTreeTableHarness } from './tree-table.harness';
 import type { DynamoTreeTableColumn, DynamoTreeTableNode } from './tree-table.types';
@@ -722,6 +722,87 @@ describe('DynamoTreeTable', () => {
 
       expect(componentInstance.expandedIds()).toEqual([]);
       expect(rowNames(container)).toEqual(['docs', 'photos', 'notes.txt']);
+    });
+  });
+
+  describe('typeahead', () => {
+    interface NameRow {
+      name: string;
+    }
+
+    const TYPEAHEAD_COLUMNS: DynamoTreeTableColumn<NameRow>[] = [
+      { field: 'name', header: 'Name' },
+    ];
+
+    const TYPEAHEAD_ITEMS: DynamoTreeTableNode<NameRow>[] = [
+      { id: 'apple', data: { name: 'Apple' } },
+      { id: 'apricot', data: { name: 'Apricot' } },
+      { id: 'banana', data: { name: 'Banana' } },
+    ];
+
+    function dispatchKey(target: HTMLElement, key: string): void {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+      );
+    }
+
+    it('jumps focus to the first matching row, matching against the first column', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<NameRow>>(
+        DynamoTreeTable,
+        { inputs: { items: TYPEAHEAD_ITEMS, columns: TYPEAHEAD_COLUMNS } },
+      );
+
+      dispatchKey(rowByName(container, 'Apple'), 'b');
+
+      expect(document.activeElement).toBe(rowByName(container, 'Banana'));
+    });
+
+    it('cycles through rows sharing the same starting letter on repeated presses', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<NameRow>>(
+        DynamoTreeTable,
+        { inputs: { items: TYPEAHEAD_ITEMS, columns: TYPEAHEAD_COLUMNS } },
+      );
+
+      dispatchKey(rowByName(container, 'Apple'), 'a');
+      expect(document.activeElement).toBe(rowByName(container, 'Apricot'));
+
+      dispatchKey(rowByName(container, 'Apricot'), 'a');
+      expect(document.activeElement).toBe(rowByName(container, 'Apple'));
+    });
+
+    it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
+      vi.useFakeTimers();
+      try {
+        const { container } = renderDynamoComponent<DynamoTreeTable<NameRow>>(
+          DynamoTreeTable,
+          { inputs: { items: TYPEAHEAD_ITEMS, columns: TYPEAHEAD_COLUMNS } },
+        );
+
+        dispatchKey(rowByName(container, 'Apple'), 'a');
+        expect(document.activeElement).toBe(rowByName(container, 'Apricot'));
+
+        vi.advanceTimersByTime(600);
+
+        dispatchKey(rowByName(container, 'Apricot'), 'b');
+        expect(document.activeElement).toBe(rowByName(container, 'Banana'));
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('skips disabled rows', () => {
+      const itemsWithDisabled: DynamoTreeTableNode<NameRow>[] = [
+        { id: 'apple', data: { name: 'Apple' } },
+        { id: 'apricot', data: { name: 'Apricot' }, disabled: true },
+      ];
+      const { container } = renderDynamoComponent<DynamoTreeTable<NameRow>>(
+        DynamoTreeTable,
+        { inputs: { items: itemsWithDisabled, columns: TYPEAHEAD_COLUMNS } },
+      );
+
+      dispatchKey(rowByName(container, 'Apple'), 'a');
+
+      expect(document.activeElement).toBe(rowByName(container, 'Apple'));
     });
   });
 

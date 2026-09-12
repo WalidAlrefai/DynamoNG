@@ -15,6 +15,11 @@ import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
 import {
+  createTypeaheadBuffer,
+  findTypeaheadMatch,
+  resolveTypeaheadQuery,
+} from '@dynamong/utils/typeahead';
+import {
   collectCascadeIds,
   computeNodeCheckState,
   shouldCascadeCheck,
@@ -185,6 +190,7 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   // than an id-keyed Map, which Tree needs because DynamoTreeItem is a
   // separate recursive component) is enough here.
   private readonly rowRefs = viewChildren<ElementRef<HTMLElement>>('rowEl');
+  private readonly typeahead = createTypeaheadBuffer();
 
   /** Sole source of truth for the active sort — mirrors Table's own single-signal `sortState`, not two-way bindable. */
   protected readonly sortState = signal<{ field: string; direction: DynamoTreeTableSortDirection } | null>(
@@ -441,8 +447,45 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
         }
         return;
       default:
+        this.handleTypeahead(event, entries, currentIndex);
         return;
     }
+  }
+
+  /**
+   * TreeTable nodes have no `label` field (unlike Tree's `DynamoTreeNode`)
+   * — just arbitrary `data: TRow` with `columns` mapping fields to display
+   * values. Matches against the first column's cell value instead, coerced
+   * to a string: it's the column that already shows the hierarchy/chevron/
+   * indent, so visually it already reads as the row's "name". No new
+   * column option needed.
+   */
+  private handleTypeahead(
+    event: KeyboardEvent,
+    entries: DynamoTreeTableEntry<TRow>[],
+    currentIndex: number,
+  ): void {
+    const columns = this.columns();
+    const firstColumn = columns[0];
+    if (
+      !firstColumn ||
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    const items = entries.map((entry) => ({
+      label: String(this.cellValue(entry.node.data, firstColumn)),
+      disabled: entry.node.disabled ?? false,
+    }));
+    const buffer = this.typeahead.append(event.key);
+    const query = resolveTypeaheadQuery(buffer);
+    const match = findTypeaheadMatch(items, currentIndex, query);
+    if (match === null) return;
+    event.preventDefault();
+    this.moveActive(match);
   }
 
   protected onRowFocus(entry: DynamoTreeTableEntry<TRow>): void {
