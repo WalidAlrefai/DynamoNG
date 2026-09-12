@@ -2,6 +2,19 @@
   <table role="treegrid" [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
     <thead>
       <tr role="row" [class]="headerRowClasses">
+        @if (selectable()) {
+          <th role="columnheader" scope="col" [class]="selectionCellClasses">
+            <dg-checkbox
+              size="sm"
+              [checked]="allCheckState() === 'checked'"
+              [indeterminate]="allCheckState() === 'indeterminate'"
+              [disabled]="items().length === 0 || loading()"
+              (checkedChange)="toggleSelectAll()"
+            >
+              <span class="sr-only">Select all rows</span>
+            </dg-checkbox>
+          </th>
+        }
         @for (column of columns(); track column.field) {
           <th
             role="columnheader"
@@ -31,7 +44,7 @@
       </tr>
     </thead>
     <tbody>
-      @for (entry of visibleEntries(); track entry.node.id) {
+      @for (entry of visibleEntries(); track entry.node.id; let rowIndex = $index) {
         <tr
           #rowEl
           role="row"
@@ -43,6 +56,19 @@
           (keydown)="onRowKeydown($event, entry)"
           (focus)="onRowFocus(entry)"
         >
+          @if (selectable()) {
+            <td role="gridcell" [class]="selectionCellClasses">
+              <dg-checkbox
+                size="sm"
+                [checked]="checkState(entry.node) === 'checked'"
+                [indeterminate]="checkState(entry.node) === 'indeterminate'"
+                [disabled]="entry.node.disabled || loading()"
+                (checkedChange)="toggleChecked(entry.node)"
+              >
+                <span class="sr-only">{{ 'Select row ' + (rowIndex + 1) }}</span>
+              </dg-checkbox>
+            </td>
+          }
           @for (column of columns(); track column.field; let i = $index) {
             <td role="gridcell" [class]="cellClasses">
               @if (i === 0) {
@@ -77,7 +103,7 @@
         </tr>
       } @empty {
         <tr role="row">
-          <td role="gridcell" [attr.colspan]="columns().length" [class]="emptyCellClasses">
+          <td role="gridcell" [attr.colspan]="columns().length + (selectable() ? 1 : 0)" [class]="emptyCellClasses">
             @if (loading()) {
               <span [class]="loadingWrapperClasses" role="status">
                 <dg-spinner size="sm" />
