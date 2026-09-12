@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { DynamoMenu, DynamoMenuItem } from '@dynamong/menu';
+import {
+  DynamoMenu,
+  DynamoMenuItem,
+  type DynamoMenuItemSelectEvent,
+} from '@dynamong/menu';
 import { DocExample } from '../components/example-block';
 import {
   DocExamplesLayout,
@@ -22,7 +26,7 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Project <dg-menu-item> children with a value and label; (itemSelect) fires the chosen value."
+        description="Project <dg-menu-item> children with a value and label; (itemSelect) fires the full clicked item ({ value, label, disabled })."
       >
         <div preview>
           <dg-menu label="Actions" (itemSelect)="lastSelected.set($event)">
@@ -33,7 +37,7 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
           </dg-menu>
           @if (lastSelected(); as selected) {
             <p class="mt-2 text-sm text-text-muted">
-              Last selected: <span class="font-mono">{{ selected }}</span>
+              Last selected: <span class="font-mono">{{ selected.value }}</span>
             </p>
           }
         </div>
@@ -94,5 +98,7 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
 })
 export class MenuDocPage {
   protected readonly examples = EXAMPLES;
-  protected readonly lastSelected = signal<string | null>(null);
+  protected readonly lastSelected = signal<DynamoMenuItemSelectEvent | null>(
+    null,
+  );
 }

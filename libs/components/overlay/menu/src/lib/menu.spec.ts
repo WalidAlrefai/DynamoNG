@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { DynamoMenu } from './menu';
 import { DynamoMenuItem } from './menu-item';
 import { DynamoMenuHarness } from './menu.harness';
+import type { DynamoMenuItemSelectEvent } from './menu.types';
 
 // The CDK overlay portals `role="menu"` content into a `.cdk-overlay-container`
 // appended near document.body — outside the fixture's own `container` element —
@@ -56,9 +57,11 @@ class MenuTestHostComponent {
   readonly isOpen = model(false);
   readonly deleteDisabled = signal(false);
   readonly selected = signal<string | null>(null);
+  readonly lastEvent = signal<DynamoMenuItemSelectEvent | null>(null);
 
-  onSelect(value: string): void {
-    this.selected.set(value);
+  onSelect(event: DynamoMenuItemSelectEvent): void {
+    this.selected.set(event.value);
+    this.lastEvent.set(event);
   }
 }
 
@@ -164,6 +167,11 @@ describe('DynamoMenu', () => {
       await settle(fixture);
 
       expect(componentInstance.selected()).toBe('edit');
+      expect(componentInstance.lastEvent()).toEqual({
+        value: 'edit',
+        label: 'Edit',
+        disabled: false,
+      });
       expect(getPanel()).toBeNull();
       expect(document.activeElement).toBe(trigger);
     });

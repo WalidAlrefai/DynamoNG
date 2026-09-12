@@ -12,6 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoContextMenu } from './context-menu';
 import { DynamoContextMenuHarness } from './context-menu.harness';
+import type { DynamoMenuItemSelectEvent } from '@dynamong/menu';
 
 // The CDK overlay portals `role="menu"` content into a `.cdk-overlay-container`
 // appended near document.body — outside the fixture's own `container` element —
@@ -64,9 +65,11 @@ class ContextMenuTestHostComponent {
   readonly disabled = signal(false);
   readonly deleteDisabled = signal(false);
   readonly selected = signal<string | null>(null);
+  readonly lastEvent = signal<DynamoMenuItemSelectEvent | null>(null);
 
-  onSelect(value: string): void {
-    this.selected.set(value);
+  onSelect(event: DynamoMenuItemSelectEvent): void {
+    this.selected.set(event.value);
+    this.lastEvent.set(event);
   }
 }
 
@@ -216,6 +219,11 @@ describe('DynamoContextMenu', () => {
       await settle(fixture);
 
       expect(componentInstance.selected()).toBe('edit');
+      expect(componentInstance.lastEvent()).toEqual({
+        value: 'edit',
+        label: 'Edit',
+        disabled: false,
+      });
       expect(getPanel()).toBeNull();
     });
 

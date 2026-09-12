@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DynamoSplitButton } from './split-button';
 import { DynamoSplitButtonHarness } from './split-button.harness';
+import type { DynamoMenuItemSelectEvent } from '@dynamong/menu';
 
 // The CDK overlay portals `role="menu"` content into a `.cdk-overlay-container`
 // appended near document.body — outside the fixture's own `container` element —
@@ -64,12 +65,14 @@ class SplitButtonTestHostComponent {
   readonly deleteDisabled = signal(false);
   readonly actioned = signal(false);
   readonly selected = signal<string | null>(null);
+  readonly lastEvent = signal<DynamoMenuItemSelectEvent | null>(null);
 
   onAction(): void {
     this.actioned.set(true);
   }
-  onSelect(value: string): void {
-    this.selected.set(value);
+  onSelect(event: DynamoMenuItemSelectEvent): void {
+    this.selected.set(event.value);
+    this.lastEvent.set(event);
   }
 }
 
@@ -179,6 +182,11 @@ describe('DynamoSplitButton', () => {
       await settle(fixture);
 
       expect(componentInstance.selected()).toBe('save-as');
+      expect(componentInstance.lastEvent()).toEqual({
+        value: 'save-as',
+        label: 'Save as...',
+        disabled: false,
+      });
       expect(getPanel()).toBeNull();
       expect(document.activeElement).toBe(trigger(container));
     });

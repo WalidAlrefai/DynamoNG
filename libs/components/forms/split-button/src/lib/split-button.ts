@@ -30,7 +30,7 @@ import type {
   DynamoButtonSize,
   DynamoButtonVariant,
 } from '@dynamong/button';
-import { DynamoMenuItem } from '@dynamong/menu';
+import { DynamoMenuItem, type DynamoMenuItemSelectEvent } from '@dynamong/menu';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   splitButtonItemStyles,
@@ -120,7 +120,8 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
   /** Two-way bindable: `<dg-split-button [(open)]="isOpen">`. */
   readonly open = model(false);
   readonly action = output<void>();
-  readonly itemSelect = output<string>();
+  /** Fires with a plain snapshot of the clicked item — not the `DynamoMenuItem` component instance. */
+  readonly itemSelect = output<DynamoMenuItemSelectEvent>();
 
   protected readonly items = contentChildren(DynamoMenuItem);
   private readonly triggerEl =
@@ -284,7 +285,11 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
     if (item.disabled()) {
       return;
     }
-    this.itemSelect.emit(item.value());
+    this.itemSelect.emit({
+      value: item.value(),
+      label: item.label(),
+      disabled: item.disabled(),
+    });
     this.close();
     this.triggerEl().nativeElement.focus();
   }

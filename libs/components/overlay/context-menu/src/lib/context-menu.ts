@@ -24,7 +24,7 @@ import {
   type DynamoOverlayHandle,
 } from '@dynamong/core/overlay';
 import { isBrowser } from '@dynamong/utils/dom';
-import { DynamoMenuItem } from '@dynamong/menu';
+import { DynamoMenuItem, type DynamoMenuItemSelectEvent } from '@dynamong/menu';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   contextMenuItemStyles,
@@ -71,7 +71,8 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable: `<dg-context-menu [(open)]="isOpen">`. */
   readonly open = model(false);
-  readonly itemSelect = output<string>();
+  /** Fires with a plain snapshot of the clicked item — not the `DynamoMenuItem` component instance. */
+  readonly itemSelect = output<DynamoMenuItemSelectEvent>();
 
   protected readonly items = contentChildren(DynamoMenuItem);
   private readonly triggerEl =
@@ -248,7 +249,11 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
     if (item.disabled()) {
       return;
     }
-    this.itemSelect.emit(item.value());
+    this.itemSelect.emit({
+      value: item.value(),
+      label: item.label(),
+      disabled: item.disabled(),
+    });
     this.close();
   }
 

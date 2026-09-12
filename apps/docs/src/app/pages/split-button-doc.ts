@@ -47,13 +47,13 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="(action) fires for the primary button; (itemSelect) fires with the chosen menu item's value."
+        description="(action) fires for the primary button; (itemSelect) fires with the full chosen menu item ({ value, label, disabled })."
       >
         <div preview>
           <dg-split-button
             label="Save"
             (action)="lastAction.set('save')"
-            (itemSelect)="lastAction.set($event)"
+            (itemSelect)="lastAction.set($event.value)"
           >
             <dg-menu-item value="save-as" label="Save as..." />
             <dg-menu-item value="duplicate" label="Duplicate" />
