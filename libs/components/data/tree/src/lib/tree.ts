@@ -52,6 +52,8 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
   readonly loadingMessage = input('Loading…');
   /** Fires on Enter/Space or a row click — independent of checkbox toggling. */
   readonly nodeActivate = output<DynamoTreeNode>();
+  /** Fires once per node a user directly checks/unchecks with the full node object — not once per cascaded descendant. */
+  readonly itemSelect = output<DynamoTreeNode>();
 
   private readonly activeIdSignal = signal<string | undefined>(undefined);
   private readonly treeState = inject(DynamoTreeState);
@@ -280,5 +282,6 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
       }
     }
     this.selected.set([...current]);
+    this.itemSelect.emit(node);
   }
 }

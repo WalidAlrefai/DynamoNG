@@ -459,6 +459,67 @@ describe('DynamoTree', () => {
     });
   });
 
+  describe('itemSelect', () => {
+    it('emits the full node object on check and on uncheck', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: sampleItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(checkboxInput(container, 'notes'));
+      await userEvent.click(checkboxInput(container, 'notes'));
+
+      expect(emitted.map((n) => n.id)).toEqual(['notes', 'notes']);
+    });
+
+    it('emits once for a cascading parent check, not once per descendant', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: sampleItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      await userEvent.click(chevron(container, 'docs'));
+
+      await userEvent.click(checkboxInput(container, 'docs'));
+
+      expect(emitted.map((n) => n.id)).toEqual(['docs']);
+    });
+
+    it('does not emit for a disabled node', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: sampleItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      await userEvent.click(chevron(container, 'docs'));
+
+      await userEvent.click(checkboxInput(container, 'cover'));
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('also fires alongside nodeActivate on Enter, since Enter both checks and activates an enabled leaf', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: sampleItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.itemSelect.subscribe((node) => emitted.push(node));
+      const activated: DynamoTreeNode[] = [];
+      componentInstance.nodeActivate.subscribe((node) => activated.push(node));
+
+      row(container, 'notes').focus();
+      await userEvent.keyboard('{Enter}');
+
+      expect(emitted.map((n) => n.id)).toEqual(['notes']);
+      expect(activated.map((n) => n.id)).toEqual(['notes']);
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations with a multi-level expanded tree', async () => {
       const { container, fixture } = renderDynamoComponent(

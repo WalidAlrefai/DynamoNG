@@ -5,6 +5,7 @@ import {
   effect,
   input,
   model,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -13,6 +14,11 @@ import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoCheckIcon } from '@dynamong/icons';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { cn } from '@dynamong/utils/class-merge';
+import {
+  createTypeaheadBuffer,
+  findTypeaheadMatch,
+  resolveTypeaheadQuery,
+} from '@dynamong/utils/typeahead';
 import {
   findEnabledListboxIndex,
   flattenGroupedListboxOptions,
@@ -56,6 +62,12 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
   /** Two-way bindable. Scalar (`TValue | null`) in single-select mode, array (`TValue[]`) once `multiple` is true. */
   readonly value = model<DynamoListboxValue<TValue>>(null);
   /**
+   * Fires once per direct user activation (click, Enter/Space, and — in
+   * single-select mode only — arrow-key navigation, since selection follows
+   * focus there) with the full option object.
+   */
+  readonly itemSelect = output<DynamoSelectOption<TValue>>();
+  /**
    * Opt-in — renders the option list through `@dynamong/virtual-scroll`
    * instead of a plain `@for`, for large option lists. Only takes effect
    * for the ungrouped case (see `isVirtualized`): `@dynamong/virtual-scroll`
@@ -74,6 +86,7 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
   protected readonly listboxId = this.idGenerator.next('dg-listbox');
   protected readonly activeIndex = signal(-1);
   private hasSeededActive = false;
+  private readonly typeahead = createTypeaheadBuffer();
 
   protected readonly groupedOptions = computed(() => groupListboxOptions(this.options()));
   protected readonly visibleOptions = computed(() =>
@@ -175,6 +188,7 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
       // listbox never toggles off, matching "always exactly one" semantics.
       this.value.set(option.value);
     }
+    this.itemSelect.emit(option);
   }
 
   protected onKeydown(event: KeyboardEvent): void {
@@ -205,7 +219,30 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
         if (active) this.activate(active);
         break;
       }
+      default:
+        this.handleTypeahead(event, options);
+        break;
     }
+  }
+
+  private handleTypeahead(
+    event: KeyboardEvent,
+    options: readonly DynamoSelectOption<TValue>[],
+  ): void {
+    if (
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    const buffer = this.typeahead.append(event.key);
+    const query = resolveTypeaheadQuery(buffer);
+    const match = findTypeaheadMatch(options, this.activeIndex(), query);
+    if (match === null) return;
+    event.preventDefault();
+    this.setActiveIndex(match);
   }
 
   private moveActive(delta: number): void {

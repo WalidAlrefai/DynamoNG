@@ -7,6 +7,7 @@ import {
   input,
   isDevMode,
   model,
+  output,
   signal,
 } from '@angular/core';
 import { DynamoCheckbox } from '@dynamong/checkbox';
@@ -117,11 +118,14 @@ export class DynamoTable<TRow = unknown>
   readonly selectable = input(false);
   /**
    * Two-way bindable array of the actual selected row objects (not
-   * indices): `<dg-table [(selected)]="selectedRows">`. This model is the
-   * entire event surface — no separate `selectionChange` output, mirroring
-   * DynamoAlert/DynamoDialog's own model()-only pattern.
+   * indices): `<dg-table [(selected)]="selectedRows">`. `itemSelect` fires
+   * alongside this for row-level selection events; bulk operations
+   * (select-all) only update this model, they don't fire `itemSelect` per
+   * row.
    */
   readonly selected = model<TRow[]>([]);
+  /** Fires once per row a user directly checks/unchecks — not from `toggleSelectAll()`. */
+  readonly itemSelect = output<TRow>();
 
   /**
    * Opt-in global filter. `false` (default) renders no search UI at all —
@@ -451,6 +455,7 @@ export class DynamoTable<TRow = unknown>
         ? rows.filter((r) => this.selectionKey(r) !== key)
         : [...rows, row],
     );
+    this.itemSelect.emit(row);
   }
 
   /**

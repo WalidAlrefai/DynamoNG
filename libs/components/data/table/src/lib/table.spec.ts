@@ -916,6 +916,42 @@ describe('DynamoTable', () => {
     });
   });
 
+  describe('itemSelect', () => {
+    it('emits the full row object on check and on uncheck', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTable<Person>
+      >(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE, selectable: true },
+      });
+      const emitted: Person[] = [];
+      componentInstance.itemSelect.subscribe((row) => emitted.push(row));
+
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+      getRowCheckboxes(container)[0]?.click();
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([PEOPLE[0], PEOPLE[0]]);
+    });
+
+    it('does not emit from toggleSelectAll (the header checkbox)', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTable<Person>
+      >(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE, selectable: true },
+      });
+      const emitted: Person[] = [];
+      componentInstance.itemSelect.subscribe((row) => emitted.push(row));
+
+      getSelectAllCheckbox(container)?.click();
+      fixture.detectChanges();
+      getSelectAllCheckbox(container)?.click();
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
   describe('pagination + selection together', () => {
     it('keeps independently-made selections across both pages after navigating', () => {
       const { container, fixture, componentInstance } = renderDynamoComponent(

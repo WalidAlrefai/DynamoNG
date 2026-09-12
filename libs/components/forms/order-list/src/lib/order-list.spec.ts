@@ -288,6 +288,89 @@ describe('DynamoOrderList', () => {
     });
   });
 
+  describe('itemSelect', () => {
+    it('emits the full option object on check and uncheck when selectable', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoOrderList<string>
+      >(DynamoOrderList, { inputs: { value: ITEMS, selectable: true } });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      within(container).getAllByRole('option')[1]?.click();
+      fixture.detectChanges();
+      within(container).getAllByRole('option')[1]?.click();
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([ITEMS[1], ITEMS[1]]);
+    });
+
+    it('emits on Enter when selectable', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoOrderList<string>
+      >(DynamoOrderList, { inputs: { value: ITEMS, selectable: true } });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      dispatchKey(getList(container), 'ArrowDown');
+      fixture.detectChanges();
+      dispatchKey(getList(container), 'Enter');
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([ITEMS[0]]);
+    });
+
+    it('does not emit when not selectable', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoOrderList<string>
+      >(DynamoOrderList, { inputs: { value: ITEMS } });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      within(container).getAllByRole('option')[1]?.click();
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('does not emit for a disabled option', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoOrderList<string>
+      >(DynamoOrderList, {
+        inputs: { value: ITEMS_WITH_DISABLED, selectable: true },
+      });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      within(container).getAllByRole('option')[1]?.click();
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('does not emit from reordering (▲/▼, top/bottom, drag)', () => {
+      const { fixture, componentInstance } = renderDynamoComponent<
+        DynamoOrderList<string>
+      >(DynamoOrderList, { inputs: { value: ITEMS, selectable: true } });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      componentInstance['activeIndex'].set(0);
+      (
+        componentInstance as unknown as {
+          reorder: (direction: -1 | 1) => void;
+        }
+      ).reorder(1);
+      (
+        componentInstance as unknown as {
+          onDropped: (e: CdkDragDrop<unknown>) => void;
+        }
+      ).onDropped(dropEvent(0, 2));
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
   describe('disabled', () => {
     it('freezes reordering, keyboard, and drag', () => {
       const { container, fixture, componentInstance } = renderDynamoComponent(

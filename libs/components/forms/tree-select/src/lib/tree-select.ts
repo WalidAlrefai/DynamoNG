@@ -8,6 +8,7 @@ import {
   forwardRef,
   input,
   model,
+  output,
   viewChild,
 } from '@angular/core';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
@@ -26,6 +27,11 @@ import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoTreeNode } from '@dynamong/tree';
 import type { DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
+import {
+  createTypeaheadBuffer,
+  findTypeaheadMatch,
+  resolveTypeaheadQuery,
+} from '@dynamong/utils/typeahead';
 import {
   treeSelectExpandButtonStyles,
   treeSelectExpandIconStyles,
@@ -141,6 +147,8 @@ export class DynamoTreeSelect<TValue = string>
   readonly expandedIds = model<string[]>([]);
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model<TValue | null>(null);
+  /** Fires once a node is committed (click or keyboard Enter/Space) with the full node object. */
+  readonly itemSelect = output<DynamoTreeNode<TValue>>();
   /**
    * Opt-in — renders the visible-entry list through `@dynamong/virtual-scroll`
    * instead of a plain `@for`, for large trees. `visibleEntries()` is already
@@ -168,6 +176,7 @@ export class DynamoTreeSelect<TValue = string>
   private onTouchedFn: () => void = () => {
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
+  private readonly typeahead = createTypeaheadBuffer();
 
   protected readonly visibleEntries = computed(() =>
     flattenVisibleNodes(this.nodes(), this.expandedIds()),
@@ -307,6 +316,7 @@ export class DynamoTreeSelect<TValue = string>
 
   protected close(): void {
     this.isOpen.set(false);
+    this.typeahead.clear();
     this.onTouchedFn();
   }
 
@@ -324,6 +334,7 @@ export class DynamoTreeSelect<TValue = string>
     const next = nodeValue(node);
     this.value.set(next);
     this.onChangeFn(next);
+    this.itemSelect.emit(node);
     this.close();
     this.triggerEl().nativeElement.focus();
   }
@@ -344,6 +355,9 @@ export class DynamoTreeSelect<TValue = string>
         case ' ':
           event.preventDefault();
           this.openPanel();
+          break;
+        default:
+          this.handleTypeahead(event);
           break;
       }
       return;
@@ -421,7 +435,34 @@ export class DynamoTreeSelect<TValue = string>
         event.preventDefault();
         this.close();
         break;
+      default:
+        this.handleTypeahead(event);
+        break;
     }
+  }
+
+  private handleTypeahead(event: KeyboardEvent): void {
+    if (
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    const buffer = this.typeahead.append(event.key);
+    const query = resolveTypeaheadQuery(buffer);
+    const entries = this.visibleEntries();
+    const match = findTypeaheadMatch(
+      entries.map((entry) => entry.node),
+      this.activeIndex(),
+      query,
+    );
+    if (match === null) return;
+    event.preventDefault();
+    if (!this.isOpen()) this.isOpen.set(true);
+    this.activeIndex.set(match);
+    this.scrollActiveIntoView();
   }
 
   private moveActive(delta: number): void {

@@ -280,6 +280,77 @@ describe('DynamoSelectButton', () => {
     });
   });
 
+  describe('itemSelect', () => {
+    it('emits the full option object on click', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoSelectButton<string>
+      >(DynamoSelectButton, { inputs: { options: OPTIONS } });
+      const emitted: (typeof OPTIONS)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      within(container).getByRole('radio', { name: 'Grid' }).click();
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([OPTIONS[1]]);
+    });
+
+    it('emits on arrow-key navigation in single-select mode', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoSelectButton<string>
+      >(DynamoSelectButton, { inputs: { options: OPTIONS, value: 'card' } });
+      const emitted: (typeof OPTIONS)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+      const last = within(container).getByRole('radio', { name: 'Card' });
+
+      last.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([OPTIONS[0]]);
+    });
+
+    it('does not emit on arrow-key navigation in multi-select mode, only on Enter/Space', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoSelectButton<string>
+      >(DynamoSelectButton, { inputs: { options: OPTIONS, multiple: true } });
+      const emitted: (typeof OPTIONS)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+      const first = within(container).getByRole('button', { name: 'List' });
+
+      first.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+      );
+      fixture.detectChanges();
+      expect(emitted).toHaveLength(0);
+
+      const grid = within(container).getByRole('button', { name: 'Grid' });
+      grid.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([OPTIONS[1]]);
+    });
+
+    it('does not emit for a disabled option', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoSelectButton<string>
+      >(DynamoSelectButton, { inputs: { options: OPTIONS_WITH_DISABLED } });
+      const emitted: (typeof OPTIONS_WITH_DISABLED)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      (
+        within(container).getByRole('radio', {
+          name: 'Grid',
+        }) as HTMLButtonElement
+      ).click();
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
   describe('user interactions', () => {
     it('supports interaction through the DynamoSelectButtonHarness', async () => {
       const { fixture } = renderDynamoComponent(DynamoSelectButton, {

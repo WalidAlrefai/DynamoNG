@@ -1,4 +1,4 @@
-import { Component, model } from '@angular/core';
+import { Component, model, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
@@ -75,6 +75,21 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
 class SelectTestHostComponent {
   readonly options = THREE_OPTIONS;
   readonly value = model<string | null>(null);
+}
+
+@Component({
+  selector: 'dg-select-item-select-host',
+  standalone: true,
+  imports: [DynamoSelect],
+  template: `<dg-select
+    [options]="options"
+    (itemSelect)="selected.set($event)"
+    aria-label="Choose an option"
+  />`,
+})
+class SelectItemSelectHostComponent {
+  readonly options = THREE_OPTIONS;
+  readonly selected = signal<DynamoSelectOption<string> | null>(null);
 }
 
 @Component({
@@ -862,6 +877,163 @@ describe('DynamoSelect', () => {
         (within(container).getByRole('combobox') as HTMLButtonElement)
           .disabled,
       ).toBe(false);
+    });
+  });
+
+  describe('itemSelect', () => {
+    it('emits the full option object when an option is clicked', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        SelectItemSelectHostComponent,
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getOptionByText('Option 2'));
+
+      expect(componentInstance.selected()).toEqual(THREE_OPTIONS[1]);
+    });
+
+    it('emits the same option on keyboard Enter as on click', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        SelectItemSelectHostComponent,
+      );
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+      trigger.focus();
+
+      await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+
+      expect(componentInstance.selected()).toEqual(THREE_OPTIONS[1]);
+    });
+
+    it('does not emit for a disabled option', async () => {
+      const optionsWithDisabled: DynamoSelectOption<string>[] = [
+        { label: 'First', value: 'first' },
+        { label: 'Second (disabled)', value: 'second', disabled: true },
+      ];
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoSelect<string>
+      >(DynamoSelect, { inputs: { options: optionsWithDisabled } });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getOptionByText('Second (disabled)'));
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('does not emit from programmatic value changes', () => {
+      const { componentInstance, setInputs } = renderDynamoComponent<
+        DynamoSelect<string>
+      >(DynamoSelect, { inputs: { options: THREE_OPTIONS } });
+      const emitted: DynamoSelectOption<string>[] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      setInputs({ value: 'option-2' });
+
+      expect(emitted).toHaveLength(0);
+    });
+  });
+
+  describe('typeahead', () => {
+    const FRUITS: DynamoSelectOption<string>[] = [
+      { label: 'Apple', value: 'apple' },
+      { label: 'Apricot', value: 'apricot' },
+      { label: 'Banana', value: 'banana' },
+    ];
+
+    function dispatchKey(target: HTMLElement, key: string): void {
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+      );
+    }
+
+    it('jumps to and opens the panel on the first matching option while closed', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoSelect<string>
+      >(DynamoSelect, { inputs: { options: FRUITS } });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'b');
+      fixture.detectChanges();
+
+      expect(getPanel()).not.toBeNull();
+      expect(componentInstance['activeIndex']()).toBe(2);
+    });
+
+    it('cycles through options sharing the same starting letter on repeated presses', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoSelect<string>
+      >(DynamoSelect, { inputs: { options: FRUITS } });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(1);
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+    });
+
+    it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
+      vi.useFakeTimers();
+      try {
+        const { container, fixture, componentInstance } =
+          renderDynamoComponent<DynamoSelect<string>>(DynamoSelect, {
+            inputs: { options: FRUITS },
+          });
+        const trigger = within(container).getByRole(
+          'combobox',
+        ) as HTMLElement;
+
+        dispatchKey(trigger, 'a');
+        fixture.detectChanges();
+        expect(componentInstance['activeIndex']()).toBe(0);
+
+        vi.advanceTimersByTime(600);
+
+        dispatchKey(trigger, 'b');
+        fixture.detectChanges();
+        expect(componentInstance['activeIndex']()).toBe(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('skips disabled options, wrapping back to a still-matching enabled one', () => {
+      const optionsWithDisabled: DynamoSelectOption<string>[] = [
+        { label: 'Apple', value: 'apple' },
+        { label: 'Apricot', value: 'apricot', disabled: true },
+      ];
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoSelect<string>
+      >(DynamoSelect, { inputs: { options: optionsWithDisabled } });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+
+      dispatchKey(trigger, 'a');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+    });
+
+    it('does not activate while filterable is true', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoSelect<string>
+      >(DynamoSelect, { inputs: { options: FRUITS, filterable: true } });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      dispatchKey(trigger, 'b');
+      fixture.detectChanges();
+
+      expect(componentInstance['activeIndex']()).toBe(-1);
+      expect(getPanel()).toBeNull();
     });
   });
 

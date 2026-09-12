@@ -8,6 +8,7 @@ import {
   forwardRef,
   input,
   model,
+  output,
   viewChild,
 } from '@angular/core';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
@@ -18,6 +19,11 @@ import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoSelectOption } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
+import {
+  createTypeaheadBuffer,
+  findTypeaheadMatch,
+  resolveTypeaheadQuery,
+} from '@dynamong/utils/typeahead';
 import { DynamoListboxBase } from './listbox-base.component';
 import { buildListboxPositions } from './listbox-positioning';
 import {
@@ -77,6 +83,8 @@ export class DynamoSelect<TValue = unknown>
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<TValue | null>(null);
+  /** Fires once per direct user selection (click or keyboard Enter/Space on an option) with the full option object — not from `writeValue`/programmatic `value` changes. */
+  readonly itemSelect = output<DynamoSelectOption<TValue>>();
   readonly disabled = model(false);
   /** Renders a small spinner in the trigger and makes the component fully
    *  non-interactive, like `disabled`. Never emits back — the consumer
@@ -124,6 +132,8 @@ export class DynamoSelect<TValue = unknown>
   private onTouchedFn: () => void = () => {
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
+  /** Only consulted on the trigger's own keydown, and only while `!filterable()` — a filterable panel moves focus into its own filter input, which has its own keydown handler and never reaches this buffer. */
+  private readonly typeahead = createTypeaheadBuffer();
 
   protected readonly filteredOptions = computed(() =>
     filterSelectOptions(this.options(), this.filterText()),
@@ -287,6 +297,7 @@ export class DynamoSelect<TValue = unknown>
   protected close(): void {
     this.isOpen.set(false);
     this.filterText.set('');
+    this.typeahead.clear();
     this.onTouchedFn();
   }
 
@@ -294,6 +305,7 @@ export class DynamoSelect<TValue = unknown>
     if (option.disabled) return;
     this.value.set(option.value);
     this.onChangeFn(option.value);
+    this.itemSelect.emit(option);
     this.close();
   }
 
@@ -385,7 +397,36 @@ export class DynamoSelect<TValue = unknown>
           this.close();
         }
         break;
+      default:
+        this.handleTypeahead(event);
+        break;
     }
+  }
+
+  /**
+   * Typeahead only applies to the closed-trigger/non-filterable path — once
+   * `filterable()` is true, opening the panel moves focus into the separate
+   * filter `<input>` (its own `onFilterKeydown` handler), so this branch
+   * simply never fires for a filterable Select while a filter box exists.
+   */
+  private handleTypeahead(event: KeyboardEvent): void {
+    if (
+      event.key.length !== 1 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      this.filterable()
+    ) {
+      return;
+    }
+    const buffer = this.typeahead.append(event.key);
+    const query = resolveTypeaheadQuery(buffer);
+    const match = findTypeaheadMatch(this.visibleOptions(), this.activeIndex(), query);
+    if (match === null) return;
+    event.preventDefault();
+    if (!this.isOpen()) this.isOpen.set(true);
+    this.activeIndex.set(match);
+    this.scrollActiveIntoView();
   }
 
   private moveActive(delta: number): void {

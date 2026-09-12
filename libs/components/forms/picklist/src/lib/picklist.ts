@@ -4,6 +4,7 @@ import {
   computed,
   input,
   model,
+  output,
   signal,
 } from '@angular/core';
 import {
@@ -30,6 +31,7 @@ import {
   picklistRootStyles,
 } from './picklist.styles';
 import type {
+  DynamoPicklistItemSelectEvent,
   DynamoPicklistPart,
   DynamoPicklistSide,
   DynamoPicklistSize,
@@ -48,6 +50,8 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
   readonly source = model<DynamoSelectOption<TValue>[]>([]);
   /** Two-way bindable. */
   readonly target = model<DynamoSelectOption<TValue>[]>([]);
+  /** Fires once per option a user directly toggles (check or uncheck), tagged with which panel it lives in — not from moving items between panels. */
+  readonly itemSelect = output<DynamoPicklistItemSelectEvent<TValue>>();
   readonly size = input<DynamoPicklistSize>('md');
   readonly disabled = input(false);
   readonly sourceLabel = input('Available');
@@ -92,6 +96,7 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
       next.add(option.value);
     }
     sig.set(next);
+    this.itemSelect.emit({ option, side });
   }
 
   // --- move buttons ---
