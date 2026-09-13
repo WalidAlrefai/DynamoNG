@@ -12,8 +12,8 @@ optional inline label (horizontal orientation only).
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
+| Input         | Type                       | Default        | Description                                                                                      |
+| ------------- | -------------------------- | -------------- | ------------------------------------------------------------------------------------------------ |
 | `orientation` | `DynamoDividerOrientation` | `'horizontal'` | `'horizontal' \| 'vertical'`. Projected content (a label) only renders in the horizontal layout. |
 
 ## Outputs

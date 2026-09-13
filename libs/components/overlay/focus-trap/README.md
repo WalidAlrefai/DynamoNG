@@ -22,9 +22,9 @@ A bare `<div dgFocusTrap>` (no binding) traps unconditionally, since the input d
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `dgFocusTrap` (aliases `enabled`) | `boolean` | `true` | Whether the trap is active. Toggling it from `true` to `false` releases the trap; toggling back re-creates it. |
+| Input                             | Type      | Default | Description                                                                                                    |
+| --------------------------------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------- |
+| `dgFocusTrap` (aliases `enabled`) | `boolean` | `true`  | Whether the trap is active. Toggling it from `true` to `false` releases the trap; toggling back re-creates it. |
 
 ## Outputs
 

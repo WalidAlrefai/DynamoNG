@@ -18,10 +18,10 @@ ending in a non-interactive "current page" label.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `items` | `DynamoBreadcrumbItem[]` (required) | — | Each item has `label` and optional `href`. The last item always renders as the current page (`aria-current="page"`), even if it has an `href` — it's never a link. Earlier items render as a link when `href` is set, otherwise as plain text. |
-| `ariaLabel` | `string \| undefined` | `undefined` | Falls back to `'Breadcrumb'` on the `<nav>` when unset. |
+| Input       | Type                                | Default     | Description                                                                                                                                                                                                                                    |
+| ----------- | ----------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`     | `DynamoBreadcrumbItem[]` (required) | —           | Each item has `label` and optional `href`. The last item always renders as the current page (`aria-current="page"`), even if it has an `href` — it's never a link. Earlier items render as a link when `href` is set, otherwise as plain text. |
+| `ariaLabel` | `string \| undefined`               | `undefined` | Falls back to `'Breadcrumb'` on the `<nav>` when unset.                                                                                                                                                                                        |
 
 ## Outputs
 

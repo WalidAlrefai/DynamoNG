@@ -183,17 +183,21 @@ describe('DynamoToastService', () => {
     });
 
     it('resumes for only the remaining time, not the full duration', async () => {
-      const id = service.show({ message: 'Hover me', duration: 40 });
+      // Generous margins throughout — real setTimeout/event-loop jitter of a
+      // few ms (more under load) previously made this flake at tight (15ms)
+      // windows; ~30ms of slack on both sides of the expected boundary is
+      // enough to absorb that without weakening what's actually asserted.
+      const id = service.show({ message: 'Hover me', duration: 100 });
 
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 40));
       service.pause(id);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 80));
       expect(getCards()).toHaveLength(1);
 
       service.resume(id);
-      await new Promise((resolve) => setTimeout(resolve, 15));
+      await new Promise((resolve) => setTimeout(resolve, 30));
       expect(getCards()).toHaveLength(1);
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       expect(getCards()).toHaveLength(0);
     });
 

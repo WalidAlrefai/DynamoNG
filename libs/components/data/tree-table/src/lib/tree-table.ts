@@ -65,8 +65,12 @@ interface DynamoTreeTableEntry<TRow> {
 function compareValues(a: unknown, b: unknown): number {
   if (a instanceof Date && b instanceof Date) return a.getTime() - b.getTime();
   if (typeof a === 'number' && typeof b === 'number') return a - b;
-  if (typeof a === 'boolean' && typeof b === 'boolean') return Number(a) - Number(b);
-  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+  if (typeof a === 'boolean' && typeof b === 'boolean')
+    return Number(a) - Number(b);
+  return String(a).localeCompare(String(b), undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
 }
 
 // Sorts one level's siblings only — never flattens across levels. Called
@@ -159,7 +163,9 @@ function findEnabledEntryIndex<TRow>(
   imports: [NgTemplateOutlet, DynamoSpinner, DynamoCheckbox],
   templateUrl: './tree-table.html',
 })
-export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoTreeTablePart> {
+export class DynamoTreeTable<
+  TRow = unknown,
+> extends DynamoBaseComponent<DynamoTreeTablePart> {
   readonly items = input.required<DynamoTreeTableNode<TRow>[]>();
   readonly columns = input.required<DynamoTreeTableColumn<TRow>[]>();
   /** Two-way bindable: which node ids are currently expanded. */
@@ -193,12 +199,15 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   private readonly typeahead = createTypeaheadBuffer();
 
   /** Sole source of truth for the active sort — mirrors Table's own single-signal `sortState`, not two-way bindable. */
-  protected readonly sortState = signal<{ field: string; direction: DynamoTreeTableSortDirection } | null>(
-    null,
-  );
+  protected readonly sortState = signal<{
+    field: string;
+    direction: DynamoTreeTableSortDirection;
+  } | null>(null);
 
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(treeTableRootStyles, this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(treeTableRootStyles, this.styleClass()),
   );
 
   /** Plain alias, not a `disabled`-merge — TreeTable has no `disabled` input of its own to merge with. */
@@ -216,7 +225,9 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
     const roots = this.items();
     if (roots.length === 0) return 'unchecked';
     const selectedIds = this.selectedSet();
-    const states = roots.map((node) => computeNodeCheckState(node, selectedIds));
+    const states = roots.map((node) =>
+      computeNodeCheckState(node, selectedIds),
+    );
     if (states.every((state) => state === 'checked')) return 'checked';
     if (states.every((state) => state === 'unchecked')) return 'unchecked';
     return 'indeterminate';
@@ -225,24 +236,32 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   // Depth-first, sorting each level's own siblings before descending —
   // skipping children of collapsed nodes. A pure data walk, not a DOM
   // query, mirroring Tree's own visibleEntries exactly (id-keyed).
-  protected readonly visibleEntries = computed<DynamoTreeTableEntry<TRow>[]>(() => {
-    const result: DynamoTreeTableEntry<TRow>[] = [];
-    const expanded = new Set(this.expandedIds());
-    const state = this.sortState();
-    const column = state ? this.columns().find((c) => c.field === state.field) : undefined;
-    const direction = state?.direction ?? null;
+  protected readonly visibleEntries = computed<DynamoTreeTableEntry<TRow>[]>(
+    () => {
+      const result: DynamoTreeTableEntry<TRow>[] = [];
+      const expanded = new Set(this.expandedIds());
+      const state = this.sortState();
+      const column = state
+        ? this.columns().find((c) => c.field === state.field)
+        : undefined;
+      const direction = state?.direction ?? null;
 
-    const walk = (nodes: DynamoTreeTableNode<TRow>[], depth: number, parentId: string | undefined) => {
-      for (const node of sortNodes(nodes, column, direction)) {
-        result.push({ node, depth, parentId });
-        if (node.children?.length && expanded.has(node.id)) {
-          walk(node.children, depth + 1, node.id);
+      const walk = (
+        nodes: DynamoTreeTableNode<TRow>[],
+        depth: number,
+        parentId: string | undefined,
+      ) => {
+        for (const node of sortNodes(nodes, column, direction)) {
+          result.push({ node, depth, parentId });
+          if (node.children?.length && expanded.has(node.id)) {
+            walk(node.children, depth + 1, node.id);
+          }
         }
-      }
-    };
-    walk(this.items(), 0, undefined);
-    return result;
-  });
+      };
+      walk(this.items(), 0, undefined);
+      return result;
+    },
+  );
 
   // The roving tab stop: an explicitly-set id if it's still visible and
   // enabled, otherwise the first enabled visible entry — same shape as
@@ -251,7 +270,12 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
     const entries = this.visibleEntries();
     if (entries.length === 0) return undefined;
     const explicit = this.activeIdSignal();
-    if (explicit !== undefined && entries.some((entry) => entry.node.id === explicit && !entry.node.disabled)) {
+    if (
+      explicit !== undefined &&
+      entries.some(
+        (entry) => entry.node.id === explicit && !entry.node.disabled,
+      )
+    ) {
       return explicit;
     }
     const index = entries.findIndex((entry) => !entry.node.disabled);
@@ -265,7 +289,8 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   protected readonly cellClasses = treeTableCellStyles;
   protected readonly emptyCellClasses = treeTableEmptyCellStyles;
   protected readonly chevronButtonClasses = treeTableChevronButtonStyles;
-  protected readonly chevronPlaceholderClasses = treeTableChevronPlaceholderStyles;
+  protected readonly chevronPlaceholderClasses =
+    treeTableChevronPlaceholderStyles;
   protected readonly firstCellContentClasses = treeTableFirstCellContentStyles;
   protected readonly loadingWrapperClasses = treeTableLoadingWrapperStyles;
   protected readonly selectionCellClasses = treeTableSelectionCellStyles;
@@ -278,7 +303,9 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
     return this.expandedIds().includes(id);
   }
 
-  protected checkState(node: DynamoTreeTableNode<TRow>): DynamoTreeTableCheckState {
+  protected checkState(
+    node: DynamoTreeTableNode<TRow>,
+  ): DynamoTreeTableCheckState {
     return computeNodeCheckState(node, this.selectedSet());
   }
 
@@ -287,7 +314,10 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   }
 
   protected rowClasses(entry: DynamoTreeTableEntry<TRow>) {
-    return treeTableRowStyles({ active: this.isActive(entry), disabled: entry.node.disabled ?? false });
+    return treeTableRowStyles({
+      active: this.isActive(entry),
+      disabled: entry.node.disabled ?? false,
+    });
   }
 
   protected chevronClasses(node: DynamoTreeTableNode<TRow>) {
@@ -298,7 +328,9 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
     return treeTableIndentRem(depth);
   }
 
-  protected sortDirectionFor(field: string): DynamoTreeTableSortDirection | 'none' {
+  protected sortDirectionFor(
+    field: string,
+  ): DynamoTreeTableSortDirection | 'none' {
     const state = this.sortState();
     return state?.field === field ? state.direction : 'none';
   }
@@ -314,10 +346,15 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   }
 
   protected cellValue(row: TRow, column: DynamoTreeTableColumn<TRow>): unknown {
-    return column.cell ? column.cell(row) : (row as Record<string, unknown>)[column.field];
+    return column.cell
+      ? column.cell(row)
+      : (row as Record<string, unknown>)[column.field];
   }
 
-  protected cellContext(node: DynamoTreeTableNode<TRow>, depth: number): DynamoTreeTableCellContext<TRow> {
+  protected cellContext(
+    node: DynamoTreeTableNode<TRow>,
+    depth: number,
+  ): DynamoTreeTableCellContext<TRow> {
     return { $implicit: node.data, row: node.data, node, depth };
   }
 
@@ -330,8 +367,10 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
   protected toggleSort(column: DynamoTreeTableColumn<TRow>): void {
     if (this.isBusy() || !column.sortable) return;
     this.sortState.update((state) => {
-      if (state?.field !== column.field) return { field: column.field, direction: 'asc' };
-      if (state.direction === 'asc') return { field: column.field, direction: 'desc' };
+      if (state?.field !== column.field)
+        return { field: column.field, direction: 'asc' };
+      if (state.direction === 'asc')
+        return { field: column.field, direction: 'desc' };
       return null;
     });
   }
@@ -340,7 +379,9 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
     if (this.isBusy()) return;
     const current = this.expandedIds();
     this.expandedIds.set(
-      current.includes(id) ? current.filter((existing) => existing !== id) : [...current, id],
+      current.includes(id)
+        ? current.filter((existing) => existing !== id)
+        : [...current, id],
     );
   }
 
@@ -378,7 +419,9 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
     if (this.isBusy()) return;
     const roots = this.items();
     const selectedIds = this.selectedSet();
-    const shouldCheck = roots.some((node) => shouldCascadeCheck(node, selectedIds));
+    const shouldCheck = roots.some((node) =>
+      shouldCascadeCheck(node, selectedIds),
+    );
     if (!shouldCheck) {
       this.selected.set([]);
       return;
@@ -386,10 +429,15 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
     this.selected.set(roots.flatMap((node) => collectCascadeIds(node)));
   }
 
-  protected onRowKeydown(event: KeyboardEvent, entry: DynamoTreeTableEntry<TRow>): void {
+  protected onRowKeydown(
+    event: KeyboardEvent,
+    entry: DynamoTreeTableEntry<TRow>,
+  ): void {
     if (this.isBusy()) return;
     const entries = this.visibleEntries();
-    const currentIndex = entries.findIndex((candidate) => candidate.node.id === entry.node.id);
+    const currentIndex = entries.findIndex(
+      (candidate) => candidate.node.id === entry.node.id,
+    );
     if (currentIndex === -1) return;
 
     switch (event.key) {
@@ -430,7 +478,9 @@ export class DynamoTreeTable<TRow = unknown> extends DynamoBaseComponent<DynamoT
         if (hasChildren && isExpanded) {
           this.toggleExpanded(entry.node.id);
         } else if (entry.parentId !== undefined) {
-          const parentIndex = entries.findIndex((candidate) => candidate.node.id === entry.parentId);
+          const parentIndex = entries.findIndex(
+            (candidate) => candidate.node.id === entry.parentId,
+          );
           this.moveActive(parentIndex === -1 ? null : parentIndex);
         }
         return;

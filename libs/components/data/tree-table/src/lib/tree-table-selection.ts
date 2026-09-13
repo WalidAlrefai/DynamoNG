@@ -7,7 +7,8 @@ import type { DynamoTreeTableNode } from './tree-table.types';
 // DynamoTreeNode. See tree-table.ts's own class doc comment for the
 // identical reasoning already applied to its sort logic.
 
-export type DynamoTreeTableCheckState = 'checked' | 'unchecked' | 'indeterminate';
+export type DynamoTreeTableCheckState =
+  'checked' | 'unchecked' | 'indeterminate';
 
 /**
  * A node's displayed checked state is always derived from its descendants
@@ -70,7 +71,9 @@ export function shouldCascadeCheck<TRow>(
  * excluded so a cascading check/uncheck never silently flips a disabled
  * node's own state.
  */
-export function collectCascadeIds<TRow>(node: DynamoTreeTableNode<TRow>): string[] {
+export function collectCascadeIds<TRow>(
+  node: DynamoTreeTableNode<TRow>,
+): string[] {
   const ids: string[] = [];
   const walk = (current: DynamoTreeTableNode<TRow>) => {
     if (current.disabled) {
