@@ -1,3 +1,4 @@
+@if (shouldRender()) {
 <nav [class]="classes()" [attr.aria-label]="ariaLabel()">
   <span [class]="summaryClasses" aria-live="polite">{{ summaryText() }}</span>
 
@@ -12,6 +13,33 @@
       [styleClass]="pageSizeSelectClasses"
       ariaLabel="Rows per page"
     />
+    } @if (showFirstLastButtons()) {
+    <dg-button
+      type="button"
+      variant="text"
+      severity="secondary"
+      size="sm"
+      ariaLabel="First page"
+      [disabled]="disabled() || currentPage() === 1"
+      [styleClass]="navButtonExtraClasses()"
+      (click)="goToFirstPage()"
+    >
+      <svg
+        [attr.aria-hidden]="true"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+      >
+        <path
+          d="M8 3l-5 5 5 5M13 3l-5 5 5 5"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </dg-button>
     }
 
     <dg-button
@@ -86,5 +114,35 @@
         />
       </svg>
     </dg-button>
+
+    @if (showFirstLastButtons()) {
+    <dg-button
+      type="button"
+      variant="text"
+      severity="secondary"
+      size="sm"
+      ariaLabel="Last page"
+      [disabled]="disabled() || currentPage() === pageCount()"
+      [styleClass]="navButtonExtraClasses()"
+      (click)="goToLastPage()"
+    >
+      <svg
+        [attr.aria-hidden]="true"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+      >
+        <path
+          d="M8 3l5 5-5 5M3 3l5 5-5 5"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </dg-button>
+    }
   </div>
 </nav>
+}

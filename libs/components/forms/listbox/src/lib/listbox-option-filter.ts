@@ -1,5 +1,23 @@
 import type { DynamoSelectOption } from '@dynamong/core/api';
 
+/**
+ * Case-insensitive substring match against each option's label. Same-
+ * reference passthrough on a blank query. Adapted from DynamoSelect's
+ * `filterSelectOptions` — reimplemented locally rather than imported from
+ * `@dynamong/select`, matching this file's existing precedent for the other
+ * option-list helpers below.
+ */
+export function filterListboxOptions<T>(
+  options: readonly DynamoSelectOption<T>[],
+  query: string,
+): readonly DynamoSelectOption<T>[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return options;
+  return options.filter((option) =>
+    option.label.toLowerCase().includes(trimmed),
+  );
+}
+
 export interface DynamoListboxOptionGroup<T> {
   readonly group: string | null;
   readonly options: readonly DynamoSelectOption<T>[];

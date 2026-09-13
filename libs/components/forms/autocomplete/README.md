@@ -20,29 +20,33 @@ protected onOptionSelect(option: DynamoSelectOption<string>): void { ... }
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `options` | `DynamoSelectOption<TValue>[]` (required) | — | |
-| `placeholder` | `string` | `''` | |
-| `size` | `DynamoSelectSize` | `'md'` | |
-| `ariaLabel` | `string \| undefined` | `undefined` | |
-| `invalid` | `boolean` | `false` | |
-| `disabled` | `boolean` (model) | `false` | Also driven by Angular forms. |
-| `readOnly` | `boolean` | `false` | HTML `readonly` semantics — the current text stays visible and focusable, but typing and the suggestion panel are blocked. |
-| `loading` | `boolean` | `false` | Renders a small spinner over the field and makes the component fully non-interactive, like `disabled`. |
-| `position` | `DynamoSelectPosition` | `'bottom-start'` | |
-| `noResultsMessage` | `string` | `'No matching options'` | |
-| `virtualScroll` | `boolean` | `false` | Ungrouped lists only. |
-| `virtualScrollItemSize` | `number` | `36` | |
-| `virtualScrollHeight` | `number` | `240` | |
-| `value` | `string` (model) | `''` | The free-typed text — never constrained to an option's value. Also driven by Angular forms. |
+| Input                   | Type                                      | Default                 | Description                                                                                                                                                                                                                          |
+| ----------------------- | ----------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `options`               | `DynamoSelectOption<TValue>[]` (required) | —                       |                                                                                                                                                                                                                                      |
+| `placeholder`           | `string`                                  | `''`                    |                                                                                                                                                                                                                                      |
+| `size`                  | `DynamoSelectSize`                        | `'md'`                  |                                                                                                                                                                                                                                      |
+| `ariaLabel`             | `string \| undefined`                     | `undefined`             |                                                                                                                                                                                                                                      |
+| `invalid`               | `boolean`                                 | `false`                 |                                                                                                                                                                                                                                      |
+| `disabled`              | `boolean` (model)                         | `false`                 | Also driven by Angular forms.                                                                                                                                                                                                        |
+| `readOnly`              | `boolean`                                 | `false`                 | HTML `readonly` semantics — the current text stays visible and focusable, but typing and the suggestion panel are blocked.                                                                                                           |
+| `loading`               | `boolean`                                 | `false`                 | Renders a small spinner over the field and makes the component fully non-interactive, like `disabled`.                                                                                                                               |
+| `position`              | `DynamoSelectPosition`                    | `'bottom-start'`        |                                                                                                                                                                                                                                      |
+| `noResultsMessage`      | `string`                                  | `'No matching options'` |                                                                                                                                                                                                                                      |
+| `virtualScroll`         | `boolean`                                 | `false`                 | Ungrouped lists only.                                                                                                                                                                                                                |
+| `virtualScrollItemSize` | `number`                                  | `36`                    |                                                                                                                                                                                                                                      |
+| `virtualScrollHeight`   | `number`                                  | `240`                   |                                                                                                                                                                                                                                      |
+| `value`                 | `string` (model)                          | `''`                    | The free-typed text — never constrained to an option's value. Also driven by Angular forms.                                                                                                                                          |
+| `lazy`                  | `boolean`                                 | `false`                 | Opt-in server-side/async mode: `options()` is trusted to already be the current suggestion set — this component stops filtering it locally by the typed text. Pair with `(searchQuery)` to fetch matching options as the user types. |
+| `debounceTime`          | `number`                                  | `300`                   | Milliseconds to wait after the last keystroke before emitting `searchQuery` — mirrors PrimeNG's own `delay`.                                                                                                                         |
+| `minLength`             | `number`                                  | `1`                     | Minimum typed length before `searchQuery` fires. Below this, no request is made and no event is emitted.                                                                                                                             |
 
 ## Outputs
 
-| Output | Payload | Fires when |
-|---|---|---|
-| `valueChange` | `string` | `value` changes (auto-generated by `model()`), including every keystroke. |
+| Output         | Payload                      | Fires when                                                                                                                                                                                                                                                                                    |
+| -------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `valueChange`  | `string`                     | `value` changes (auto-generated by `model()`), including every keystroke.                                                                                                                                                                                                                     |
 | `optionSelect` | `DynamoSelectOption<TValue>` | A suggestion is picked (click or Enter). Kept as its own name rather than the `itemSelect` convention used elsewhere — it already carries the full option object and shipped before that convention existed, so renaming it would be a gratuitous breaking change with no behavioral benefit. |
+| `searchQuery`  | `string`                     | Only in `lazy` mode: the typed text, debounced by `debounceTime`, once it reaches `minLength`. Named `searchQuery` rather than `search` to avoid colliding with the native DOM `search` event.                                                                                                |
 
 ## Accessibility
 

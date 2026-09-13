@@ -5,12 +5,17 @@ import {
   forwardRef,
   input,
   model,
+  output,
+  signal,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { inputMaskStyles } from './input-mask.styles';
-import type { DynamoInputMaskPart, DynamoInputMaskSize } from './input-mask.types';
+import type {
+  DynamoInputMaskPart,
+  DynamoInputMaskSize,
+} from './input-mask.types';
 
 type MaskSlotType = 'digit' | 'letter' | 'alphanumeric' | 'literal';
 
@@ -32,7 +37,10 @@ interface MaskSlot {
     },
   ],
 })
-export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> implements ControlValueAccessor {
+export class DynamoInputMask
+  extends DynamoBaseComponent<DynamoInputMaskPart>
+  implements ControlValueAccessor
+{
   /** e.g. `"(999) 999-9999"` — `9`=digit, `a`=letter, `*`=alphanumeric, anything else is a literal. */
   readonly mask = input.required<string>();
   readonly size = input<DynamoInputMaskSize>('md');
@@ -46,10 +54,21 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
    *  stays focusable/tabbable, but the user cannot change it. Unlike `disabled`,
    *  does not remove the control from the tab order or dim its appearance. */
   readonly readOnly = input(false);
+  /** Placeholder character shown for each not-yet-filled slot while the
+   *  field is focused (e.g. `"(555) ___-____"`), matching PrimeNG's default. */
+  readonly slotChar = input('_');
+  /** Reverts an incomplete value back to empty on blur, so a half-filled
+   *  mask never gets submitted as if it were meaningful data. */
+  readonly autoClear = input(true);
+  /** Fires once, on the transition into a fully-filled mask — not on every
+   *  keystroke while it stays complete. */
+  readonly complete = output<string>();
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model('');
   protected readonly tokens = computed(() => this.tokenize(this.mask()));
+  private readonly focused = signal(false);
+  private wasComplete = false;
 
   private onChangeFn: (value: string) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
@@ -61,8 +80,34 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
   protected readonly inputClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
-      : cn(inputMaskStyles({ size: this.size(), invalid: this.invalid() }), this.styleClass()),
+      : cn(
+          inputMaskStyles({ size: this.size(), invalid: this.invalid() }),
+          this.styleClass(),
+        ),
   );
+
+  // The buffer is only shown while focused — every existing caller that
+  // reads `.value` without focusing first (writeValue, programmatic sets)
+  // keeps seeing the plain matched string, not slot-char noise.
+  protected readonly displayValue = computed(() =>
+    this.focused() ? this.bufferedDisplay(this.value(), this.tokens()) : this.value(),
+  );
+
+  // `value[i]` and `slots[i]` are always index-aligned (see applyMask), so
+  // padding the remainder of the mask onto an already-matched prefix is a
+  // direct slot-by-slot walk — no re-parsing needed.
+  private bufferedDisplay(masked: string, slots: MaskSlot[]): string {
+    if (masked.length >= slots.length) {
+      return masked;
+    }
+    const slotChar = this.slotChar();
+    let buffer = masked;
+    for (let i = masked.length; i < slots.length; i++) {
+      const slot = slots[i] as MaskSlot;
+      buffer += slot.type === 'literal' ? slot.char : slotChar;
+    }
+    return buffer;
+  }
 
   writeValue(value: string | null): void {
     // Run the incoming value through the mask too — an externally-set
@@ -100,7 +145,10 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
     // count toward it and literals after it don't. A rejected keystroke
     // (e.g. a letter into a digit slot) yields the same prefix length as
     // before, so the caret snaps back to exactly where it was.
-    const targetCaret = this.applyMask(rawValue.slice(0, caretBefore), slots).length;
+    const targetCaret = this.applyMask(
+      rawValue.slice(0, caretBefore),
+      slots,
+    ).length;
 
     this.commit(input, masked, targetCaret);
   }
@@ -138,7 +186,11 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
         return;
       }
       event.preventDefault();
-      const { masked, caret: nextCaret } = this.deleteAt(current, deleteIndex, slots);
+      const { masked, caret: nextCaret } = this.deleteAt(
+        current,
+        deleteIndex,
+        slots,
+      );
       this.commit(input, masked, nextCaret);
       return;
     }
@@ -150,7 +202,10 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
       return;
     }
     let deleteIndex = caret;
-    while (deleteIndex < slots.length && slots[deleteIndex]?.type === 'literal') {
+    while (
+      deleteIndex < slots.length &&
+      slots[deleteIndex]?.type === 'literal'
+    ) {
       deleteIndex++;
     }
     if (deleteIndex >= current.length) {
@@ -173,7 +228,33 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
     this.commit(input, masked, masked.length);
   }
 
-  protected onBlur(): void {
+  // The buffer's own [value] binding is signal-driven (via `displayValue`),
+  // but zoneless change detection doesn't guarantee that binding has
+  // flushed to the DOM by the time a synchronous caller (or test) next
+  // reads `input.value` — so, matching `commit()`'s own approach, the new
+  // display string is also written to the element directly, immediately.
+  protected onFocus(event: FocusEvent): void {
+    this.focused.set(true);
+    (event.target as HTMLInputElement).value = this.bufferedDisplay(
+      this.value(),
+      this.tokens(),
+    );
+  }
+
+  protected onBlur(event: FocusEvent): void {
+    this.focused.set(false);
+    if (
+      this.autoClear() &&
+      !this.disabled() &&
+      !this.readOnly() &&
+      this.value().length > 0 &&
+      this.value().length < this.tokens().length
+    ) {
+      this.value.set('');
+      this.wasComplete = false;
+      this.onChangeFn('');
+    }
+    (event.target as HTMLInputElement).value = this.value();
     this.onTouchedFn();
   }
 
@@ -183,10 +264,19 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
   // within the same event handler — setSelectionRange only behaves
   // correctly once the input's actual displayed text already matches.
   private commit(input: HTMLInputElement, masked: string, caret: number): void {
-    input.value = masked;
+    input.value = this.focused()
+      ? this.bufferedDisplay(masked, this.tokens())
+      : masked;
     input.setSelectionRange(caret, caret);
     this.value.set(masked);
     this.onChangeFn(masked);
+
+    const isComplete =
+      masked.length > 0 && masked.length === this.tokens().length;
+    if (isComplete && !this.wasComplete) {
+      this.complete.emit(masked);
+    }
+    this.wasComplete = isComplete;
   }
 
   private tokenize(mask: string): MaskSlot[] {
@@ -278,7 +368,11 @@ export class DynamoInputMask extends DynamoBaseComponent<DynamoInputMaskPart> im
   // string, then remask everything from scratch" — reusing applyMask and
   // the prefix-caret trick entirely, since a digit shifted left by a
   // deletion is still valid for whatever slot it lands in.
-  private deleteAt(current: string, index: number, slots: MaskSlot[]): { masked: string; caret: number } {
+  private deleteAt(
+    current: string,
+    index: number,
+    slots: MaskSlot[],
+  ): { masked: string; caret: number } {
     const withoutChar = current.slice(0, index) + current.slice(index + 1);
     const masked = this.applyMask(withoutChar, slots);
     const caret = this.applyMask(withoutChar.slice(0, index), slots).length;

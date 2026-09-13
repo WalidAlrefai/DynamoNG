@@ -36,6 +36,8 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'single', title: 'Single Select' },
   { id: 'multiple', title: 'Multiple Select' },
   { id: 'grouped', title: 'Grouped Options' },
+  { id: 'filterable', title: 'Filterable' },
+  { id: 'readonly', title: 'Read-only' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
 ];
 
@@ -45,6 +47,15 @@ const API: ApiTableRow[] = [
   { name: 'multiple', type: 'boolean', default: 'false' },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'disabled', type: 'boolean', default: 'false' },
+  { name: 'readOnly', type: 'boolean', default: 'false' },
+  { name: 'filterable', type: 'boolean', default: 'false' },
+  { name: 'filterText', type: 'string (model)', default: "''" },
+  { name: 'filterPlaceholder', type: 'string', default: "'Search...'" },
+  {
+    name: 'noResultsMessage',
+    type: 'string',
+    default: "'No matching options'",
+  },
   { name: 'virtualScroll', type: 'boolean', default: 'false' },
   { name: 'virtualScrollItemSize', type: 'number', default: '36' },
   { name: 'virtualScrollHeight', type: 'number', default: '288' },
@@ -112,7 +123,48 @@ const API: ApiTableRow[] = [
             ariaLabel="Produce"
           />
         </div>
-        <div code>&lt;dg-listbox [options]="produceOptions" [(value)]="produce" /&gt;</div>
+        <div code>
+          &lt;dg-listbox [options]="produceOptions" [(value)]="produce" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="filterable"
+        title="Filterable"
+        description="filterable renders a search box above the list that narrows options by label substring match."
+      >
+        <div preview>
+          <dg-listbox
+            class="w-48"
+            [options]="produceOptions"
+            [(value)]="filterableProduce"
+            [filterable]="true"
+            ariaLabel="Produce (filterable)"
+          />
+        </div>
+        <div code>
+          &lt;dg-listbox [options]="produceOptions" [(value)]="produce"
+          [filterable]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="readonly"
+        title="Read-only"
+        description="readOnly keeps options visible, focusable, and navigable, but blocks (de)selection — unlike disabled, it doesn't dim the list or remove it from the tab order."
+      >
+        <div preview>
+          <dg-listbox
+            class="w-48"
+            [options]="viewOptions"
+            [(value)]="readonlyView"
+            [readOnly]="true"
+            ariaLabel="View (read-only)"
+          />
+        </div>
+        <div code>
+          &lt;dg-listbox [options]="viewOptions" [readOnly]="true" /&gt;
+        </div>
       </docs-example>
 
       <docs-example
@@ -142,8 +194,8 @@ const API: ApiTableRow[] = [
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
           <code class="font-mono">virtualScroll</code> only takes effect for the
-          ungrouped case (fixed-row-height only). A grouped Listbox falls back to
-          the full, non-virtualized render.
+          ungrouped case (fixed-row-height only). A grouped Listbox falls back
+          to the full, non-virtualized render.
         </p>
       </div>
     </docs-examples-layout>
@@ -160,4 +212,6 @@ export class ListboxDocPage {
   protected readonly tags = signal<string[]>(['bug']);
   protected readonly produce = signal<string | null>(null);
   protected readonly manyValue = signal<string | null>(null);
+  protected readonly filterableProduce = signal<string | null>(null);
+  protected readonly readonlyView = signal<string | null>('grid');
 }

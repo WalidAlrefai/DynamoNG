@@ -1,4 +1,5 @@
 import { Component, model, signal } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -45,6 +46,26 @@ class RadioTwoWayHostComponent {
 })
 class RadioGroupHostComponent {
   readonly fruit = signal<'apple' | 'banana'>('apple');
+}
+
+// Proves the new ControlValueAccessor support keeps a native radio group in
+// sync when every radio is bound to the *same* FormControl — the scenario
+// Angular's own RadioControlRegistry exists to solve, since plain CVA
+// propagation between sibling directives on one control doesn't happen
+// automatically.
+@Component({
+  selector: 'dg-radio-reactive-form-group-host',
+  standalone: true,
+  imports: [DynamoRadio, ReactiveFormsModule],
+  template: `
+    <dg-radio name="fruit" value="apple" [formControl]="fruit">Apple</dg-radio>
+    <dg-radio name="fruit" value="banana" [formControl]="fruit"
+      >Banana</dg-radio
+    >
+  `,
+})
+class ReactiveFormGroupHostComponent {
+  readonly fruit = new FormControl('apple', { nonNullable: true });
 }
 
 describe('DynamoRadio', () => {
@@ -368,6 +389,82 @@ describe('DynamoRadio', () => {
       expect(componentInstance.fruit()).toBe('banana');
       expect(radios[0]?.checked).toBe(false);
       expect(radios[1]?.checked).toBe(true);
+    });
+  });
+
+  describe('ControlValueAccessor / forms integration', () => {
+    it('writeValue checks the radio whose value matches, and none other', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoRadio,
+        { inputs: { name: 'test', value: 'apple' } },
+      );
+
+      componentInstance.writeValue('apple');
+      fixture.detectChanges();
+      expect(
+        (within(container).getByRole('radio') as HTMLInputElement).checked,
+      ).toBe(true);
+
+      componentInstance.writeValue('banana');
+      fixture.detectChanges();
+      expect(
+        (within(container).getByRole('radio') as HTMLInputElement).checked,
+      ).toBe(false);
+    });
+
+    it('reflects the initial FormControl value across a group sharing one control, and clicking one deselects the sibling', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveFormGroupHostComponent,
+      );
+      const radios = within(container).getAllByRole(
+        'radio',
+      ) as HTMLInputElement[];
+      expect(radios[0]?.checked).toBe(true);
+      expect(radios[1]?.checked).toBe(false);
+
+      await userEvent.click(radios[1] as HTMLInputElement);
+
+      expect(componentInstance.fruit.value).toBe('banana');
+      expect(radios[0]?.checked).toBe(false);
+      expect(radios[1]?.checked).toBe(true);
+    });
+
+    it('setDisabledState reflects onto the disabled model', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
+
+      componentInstance.setDisabledState(true);
+
+      expect(componentInstance.disabled()).toBe(true);
+    });
+
+    it("registerOnChange is called with this radio's value on selection", async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRadio,
+        { inputs: { name: 'test', value: 'apple' } },
+      );
+      const changes: string[] = [];
+      componentInstance.registerOnChange((value) => changes.push(value));
+
+      await userEvent.click(within(container).getByRole('radio'));
+
+      expect(changes).toEqual(['apple']);
+    });
+
+    it('registerOnTouched is called on selection', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRadio,
+        { inputs: { name: 'test' } },
+      );
+      let touched = false;
+      componentInstance.registerOnTouched(() => {
+        touched = true;
+      });
+
+      await userEvent.click(within(container).getByRole('radio'));
+
+      expect(touched).toBe(true);
     });
   });
 

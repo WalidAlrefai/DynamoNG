@@ -101,6 +101,52 @@ describe('DynamoBadge', () => {
     );
   });
 
+  describe('dot mode', () => {
+    it('defaults to false, rendering projected content', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoBadge);
+      expect(componentInstance.dot()).toBe(false);
+    });
+
+    it('renders no text and a square h-*/w-* pair for each size when dot is true', () => {
+      @Component({
+        selector: 'dg-badge-dot-host',
+        standalone: true,
+        imports: [DynamoBadge],
+        template: `<dg-badge [size]="size()" [dot]="true">Ignored</dg-badge>`,
+      })
+      class DotHostComponent {
+        readonly size = input<DynamoSize>('md');
+      }
+
+      const { container } = renderDynamoComponent(DotHostComponent);
+      const span = container.querySelector('span');
+
+      expect(span?.textContent?.trim()).toBe('');
+      expect(span?.className).toContain('h-2.5');
+      expect(span?.className).toContain('w-2.5');
+    });
+
+    it.each(['sm', 'md', 'lg'] as const)(
+      'sizes the dot for size "%s"',
+      (size) => {
+        @Component({
+          selector: 'dg-badge-dot-size-host',
+          standalone: true,
+          imports: [DynamoBadge],
+          template: `<dg-badge [size]="size" [dot]="true" />`,
+        })
+        class DotSizeHostComponent {
+          readonly size = size;
+        }
+
+        const { container } = renderDynamoComponent(DotSizeHostComponent);
+        const span = container.querySelector('span');
+        const expected = { sm: 'h-2', md: 'h-2.5', lg: 'h-3' }[size];
+        expect(span?.className).toContain(expected);
+      },
+    );
+  });
+
   describe('accessibility', () => {
     it('has no axe violations', async () => {
       const { fixture } = renderDynamoComponent(BadgeTestHostComponent);

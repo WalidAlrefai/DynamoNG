@@ -1,4 +1,5 @@
 import { Component, model } from '@angular/core';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -18,6 +19,26 @@ import { DynamoCheckboxHarness } from './checkbox.harness';
 })
 class CheckboxTwoWayHostComponent {
   readonly value = model(false);
+}
+
+@Component({
+  selector: 'dg-checkbox-reactive-form-host',
+  standalone: true,
+  imports: [DynamoCheckbox, ReactiveFormsModule],
+  template: `<dg-checkbox [formControl]="control">Accept terms</dg-checkbox>`,
+})
+class CheckboxReactiveFormHostComponent {
+  readonly control = new FormControl(false, { nonNullable: true });
+}
+
+@Component({
+  selector: 'dg-checkbox-ng-model-host',
+  standalone: true,
+  imports: [DynamoCheckbox, FormsModule],
+  template: `<dg-checkbox [(ngModel)]="value">Accept terms</dg-checkbox>`,
+})
+class CheckboxNgModelHostComponent {
+  value = false;
 }
 
 describe('DynamoCheckbox', () => {
@@ -209,6 +230,113 @@ describe('DynamoCheckbox', () => {
       const lgClasses = container.querySelector('span.bg-current')?.className;
 
       expect(smClasses).not.toBe(lgClasses);
+    });
+  });
+
+  describe('readOnly', () => {
+    it('defaults to false', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoCheckbox);
+      expect(componentInstance.readOnly()).toBe(false);
+    });
+
+    it('blocks toggling via click while keeping the input focusable', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoCheckbox,
+        { inputs: { readOnly: true } },
+      );
+      const input = within(container).getByRole('checkbox') as HTMLInputElement;
+
+      await userEvent.click(input);
+
+      expect(componentInstance.checked()).toBe(false);
+      expect(input.disabled).toBe(false);
+    });
+
+    it('reflects aria-readonly on the native input', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: { readOnly: true },
+      });
+
+      expect(
+        within(container).getByRole('checkbox').getAttribute('aria-readonly'),
+      ).toBe('true');
+    });
+  });
+
+  describe('ariaLabelledBy', () => {
+    it('forwards ariaLabelledBy to the native input as aria-labelledby', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: { ariaLabelledBy: 'external-label' },
+      });
+
+      expect(
+        within(container).getByRole('checkbox').getAttribute('aria-labelledby'),
+      ).toBe('external-label');
+    });
+
+    it('omits aria-labelledby entirely when unset', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox);
+
+      expect(
+        within(container).getByRole('checkbox').hasAttribute('aria-labelledby'),
+      ).toBe(false);
+    });
+  });
+
+  describe('Angular forms integration', () => {
+    it('reflects the initial FormControl value (writeValue)', () => {
+      const { container } = renderDynamoComponent(
+        CheckboxReactiveFormHostComponent,
+      );
+
+      expect(
+        (within(container).getByRole('checkbox') as HTMLInputElement).checked,
+      ).toBe(false);
+    });
+
+    it('propagates a click back to the FormControl (registerOnChange)', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        CheckboxReactiveFormHostComponent,
+      );
+
+      await userEvent.click(within(container).getByRole('checkbox'));
+
+      expect(fixture.componentInstance.control.value).toBe(true);
+    });
+
+    it('marks the FormControl as touched on blur (registerOnTouched)', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        CheckboxReactiveFormHostComponent,
+      );
+      const input = within(container).getByRole('checkbox');
+
+      expect(fixture.componentInstance.control.touched).toBe(false);
+      await userEvent.click(input);
+
+      expect(fixture.componentInstance.control.touched).toBe(true);
+    });
+
+    it('disables the input when the FormControl is disabled (setDisabledState)', () => {
+      const { container, fixture } = renderDynamoComponent(
+        CheckboxReactiveFormHostComponent,
+      );
+      fixture.componentInstance.control.disable();
+      fixture.detectChanges();
+
+      expect(
+        (within(container).getByRole('checkbox') as HTMLInputElement).disabled,
+      ).toBe(true);
+    });
+
+    it('works with [(ngModel)]', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        CheckboxNgModelHostComponent,
+      );
+
+      await userEvent.click(within(container).getByRole('checkbox'));
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.value).toBe(true);
     });
   });
 

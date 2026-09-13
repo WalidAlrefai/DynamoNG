@@ -28,6 +28,8 @@ export class DynamoSpinner extends DynamoBaseComponent<DynamoSpinnerPart> {
    * input (was `label` — renamed pre-1.0, no external consumers).
    */
   readonly ariaLabel = input<string>();
+  /** Overrides `animate-spin`'s default 1s rotation duration — a raw CSS duration (e.g. `'1.5s'`, `'500ms'`). Unset keeps Tailwind's default. */
+  readonly speed = input<string | undefined>(undefined);
 
   protected readonly classes = computed(() =>
     this.unstyled()

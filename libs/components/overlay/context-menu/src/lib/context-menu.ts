@@ -69,6 +69,10 @@ interface Point {
 export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart> {
   readonly disabled = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** When true, right-clicking anywhere in the document opens the menu at
+   *  the cursor — not just the projected trigger content. Use for a
+   *  page-wide context menu with no single bounded trigger region. */
+  readonly global = input(false);
   /** Two-way bindable: `<dg-context-menu [(open)]="isOpen">`. */
   readonly open = model(false);
   /** Fires with a plain snapshot of the clicked item — not the `DynamoMenuItem` component instance. */
@@ -143,6 +147,16 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
         document.removeEventListener('contextmenu', this.onOutsideDismiss);
       }
     });
+
+    effect((onCleanup) => {
+      if (!isBrowser() || !this.global()) {
+        return;
+      }
+      document.addEventListener('contextmenu', this.onGlobalContextMenu);
+      onCleanup(() =>
+        document.removeEventListener('contextmenu', this.onGlobalContextMenu),
+      );
+    });
   }
 
   // Closes on any click/contextmenu that lands outside the panel — matching
@@ -162,7 +176,7 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
     }
     if (
       event.type === 'contextmenu' &&
-      this.triggerEl().nativeElement.contains(target)
+      (this.global() || this.triggerEl().nativeElement.contains(target))
     ) {
       return;
     }
@@ -173,10 +187,25 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
     return contextMenuItemStyles({ disabled: item.disabled() });
   }
 
+  // The trigger div's own binding — a no-op while `global()` is on, since
+  // the document-level `onGlobalContextMenu` listener (added by the
+  // constructor's effect) already covers right-clicks landing here too, and
+  // would otherwise double-fire alongside it for the same event.
   protected onContextMenu(event: MouseEvent): void {
+    if (this.disabled() || this.global()) {
+      return;
+    }
+    this.handleContextMenu(event);
+  }
+
+  private readonly onGlobalContextMenu = (event: MouseEvent): void => {
     if (this.disabled()) {
       return;
     }
+    this.handleContextMenu(event);
+  };
+
+  private handleContextMenu(event: MouseEvent): void {
     event.preventDefault();
     this.pendingOrigin = { x: event.clientX, y: event.clientY };
     this.pendingFocus.set('first');

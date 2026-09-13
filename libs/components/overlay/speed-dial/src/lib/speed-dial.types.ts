@@ -7,12 +7,17 @@ export interface DynamoSpeedDialAction {
   command?: () => void;
 }
 
-export type DynamoSpeedDialDirection = 'up' | 'down' | 'left' | 'right';
+export type DynamoSpeedDialDirection =
+  | 'up'
+  | 'down'
+  | 'left'
+  | 'right'
+  | 'up-left'
+  | 'up-right'
+  | 'down-left'
+  | 'down-right';
 
 export type DynamoSpeedDialType =
-  | 'linear'
-  | 'circle'
-  | 'semi-circle'
-  | 'quarter-circle';
+  'linear' | 'circle' | 'semi-circle' | 'quarter-circle';
 
 export type DynamoSpeedDialPart = 'root' | 'trigger' | 'list' | 'action';

@@ -172,10 +172,9 @@ describe('DynamoKnob', () => {
     });
 
     it('supports interaction through the DynamoKnobHarness', async () => {
-      const { fixture, componentInstance } = renderDynamoComponent(
-        DynamoKnob,
-        { inputs: { value: 50 } },
-      );
+      const { fixture, componentInstance } = renderDynamoComponent(DynamoKnob, {
+        inputs: { value: 50 },
+      });
       const harness = await TestbedHarnessEnvironment.harnessForFixture(
         fixture,
         DynamoKnobHarness,
@@ -194,7 +193,7 @@ describe('DynamoKnob', () => {
     // The dial is a 200x200 square at (0,0), so its center is (100,100).
     // Clock positions are exact multiples of 90deg, so the angle math lands
     // on clean fractions of the range with no floating-point surprises.
-    it('jumps to the value at 12 o\'clock (angle 0, ratio 0)', () => {
+    it("jumps to the value at 12 o'clock (angle 0, ratio 0)", () => {
       const { container, componentInstance } = renderDynamoComponent(
         DynamoKnob,
         { inputs: { value: 50 } },
@@ -207,7 +206,7 @@ describe('DynamoKnob', () => {
       expect(componentInstance.value()).toBe(0);
     });
 
-    it('jumps to the value at 3 o\'clock (ratio 0.25)', () => {
+    it("jumps to the value at 3 o'clock (ratio 0.25)", () => {
       const { container, componentInstance } = renderDynamoComponent(
         DynamoKnob,
         { inputs: { value: 0 } },
@@ -220,7 +219,7 @@ describe('DynamoKnob', () => {
       expect(componentInstance.value()).toBe(25);
     });
 
-    it('jumps to the value at 6 o\'clock (ratio 0.5)', () => {
+    it("jumps to the value at 6 o'clock (ratio 0.5)", () => {
       const { container, componentInstance } = renderDynamoComponent(
         DynamoKnob,
         { inputs: { value: 0 } },
@@ -233,7 +232,7 @@ describe('DynamoKnob', () => {
       expect(componentInstance.value()).toBe(50);
     });
 
-    it('jumps to the value at 9 o\'clock (ratio 0.75)', () => {
+    it("jumps to the value at 9 o'clock (ratio 0.75)", () => {
       const { container, componentInstance } = renderDynamoComponent(
         DynamoKnob,
         { inputs: { value: 0 } },
@@ -251,7 +250,7 @@ describe('DynamoKnob', () => {
     // screen positions a few pixels apart, both nearly straight up from
     // center, resolve to opposite ends of the range depending on which
     // side of dead-center they fall.
-    it('resolves a pointer just clockwise of 12 o\'clock to near min', () => {
+    it("resolves a pointer just clockwise of 12 o'clock to near min", () => {
       const { container, componentInstance } = renderDynamoComponent(
         DynamoKnob,
         { inputs: { value: 50 } },
@@ -270,7 +269,7 @@ describe('DynamoKnob', () => {
     // and the one above fire on two screen positions a few pixels apart,
     // both nearly straight up from center, and resolve to opposite ends of
     // the range depending on which side of dead-center they fall.
-    it('resolves a pointer just counter-clockwise of 12 o\'clock to near max', () => {
+    it("resolves a pointer just counter-clockwise of 12 o'clock to near max", () => {
       const { container, componentInstance } = renderDynamoComponent(
         DynamoKnob,
         { inputs: { value: 50 } },
@@ -485,6 +484,109 @@ describe('DynamoKnob', () => {
         inputs: { value: 42, showValue: false },
       });
       expect(container.textContent).not.toContain('42');
+    });
+  });
+
+  describe('ControlValueAccessor', () => {
+    it('writeValue sets the value (and null falls back to 0)', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoKnob);
+
+      componentInstance.writeValue(42);
+      expect(componentInstance.value()).toBe(42);
+
+      componentInstance.writeValue(null);
+      expect(componentInstance.value()).toBe(0);
+    });
+
+    it('registerOnChange is called with the clamped value on keyboard/pointer/wheel commits', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoKnob,
+        { inputs: { value: 50 } },
+      );
+      const changes: number[] = [];
+      componentInstance.registerOnChange((value) => changes.push(value));
+      within(container).getByRole('slider').focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+
+      expect(changes).toEqual([51]);
+    });
+
+    it('registerOnTouched is called on blur', () => {
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoKnob);
+      let touched = false;
+      componentInstance.registerOnTouched(() => {
+        touched = true;
+      });
+      const dial = within(container).getByRole('slider');
+
+      fireEvent.blur(dial);
+
+      expect(touched).toBe(true);
+    });
+
+    it('registerOnTouched is called after a pointer drag ends', () => {
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoKnob);
+      let touched = false;
+      componentInstance.registerOnTouched(() => {
+        touched = true;
+      });
+      mockDialRect(container, 0, 0, 200);
+      const dial = within(container).getByRole('slider');
+
+      fireEvent.pointerDown(dial, { clientX: 100, clientY: 0 });
+      expect(touched).toBe(false);
+      fireEvent.pointerUp(dial);
+
+      expect(touched).toBe(true);
+    });
+
+    it('setDisabledState reflects onto the disabled model', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoKnob);
+
+      componentInstance.setDisabledState(true);
+
+      expect(componentInstance.disabled()).toBe(true);
+    });
+  });
+
+  describe('readOnly', () => {
+    it('blocks keyboard, pointer, and wheel interaction, but keeps the dial focusable', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoKnob,
+        { inputs: { value: 50, readOnly: true } },
+      );
+      mockDialRect(container, 0, 0, 200);
+      const dial = within(container).getByRole('slider') as HTMLElement;
+      dial.focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+      fireEvent.pointerDown(dial, { clientX: 200, clientY: 100 });
+      fireEvent.wheel(dial, { deltaY: -100 });
+
+      expect(componentInstance.value()).toBe(50);
+      expect(dial.tabIndex).toBe(0);
+      expect(dial.getAttribute('aria-readonly')).toBe('true');
+    });
+  });
+
+  describe('valueTemplate', () => {
+    it('formats the centered label, replacing the {value} token', () => {
+      const { container } = renderDynamoComponent(DynamoKnob, {
+        inputs: { value: 42, valueTemplate: '{value}%' },
+      });
+
+      expect(container.textContent).toContain('42%');
+    });
+
+    it('defaults to the bare value', () => {
+      const { container } = renderDynamoComponent(DynamoKnob, {
+        inputs: { value: 42 },
+      });
+
+      expect(container.textContent).toContain('42');
     });
   });
 

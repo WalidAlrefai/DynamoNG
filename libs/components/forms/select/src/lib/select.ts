@@ -91,6 +91,10 @@ export class DynamoSelect<TValue = unknown>
    *  drives it. */
   readonly loading = input(false);
   readonly invalid = input(false);
+  /** HTML `readonly` semantics: the trigger/panel stay browsable but the
+   *  value can't be changed or cleared. Unlike `disabled`, doesn't dim the
+   *  trigger or remove it from the tab order. */
+  readonly readOnly = input(false);
   /** Shows an "x" button in the trigger, clearing the value without opening the panel, once a value is selected. */
   readonly clearable = input(false);
   readonly position = input<DynamoSelectPosition>('bottom-start');
@@ -209,7 +213,9 @@ export class DynamoSelect<TValue = unknown>
   protected readonly clearButtonClasses = selectClearButtonStyles;
   /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
   protected readonly panelWrapperClasses = computed(() =>
-    this.isVirtualized() ? selectPanelWrapperVirtualStyles : selectPanelWrapperStyles,
+    this.isVirtualized()
+      ? selectPanelWrapperVirtualStyles
+      : selectPanelWrapperStyles,
   );
   protected readonly listboxClasses = selectListboxStyles;
   protected readonly filterWrapperClasses = selectFilterWrapperStyles;
@@ -302,7 +308,7 @@ export class DynamoSelect<TValue = unknown>
   }
 
   protected selectOption(option: DynamoSelectOption<TValue>): void {
-    if (option.disabled) return;
+    if (option.disabled || this.readOnly()) return;
     this.value.set(option.value);
     this.onChangeFn(option.value);
     this.itemSelect.emit(option);
@@ -311,7 +317,7 @@ export class DynamoSelect<TValue = unknown>
 
   protected clearValue(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.isDisabled()) return;
+    if (this.isDisabled() || this.readOnly()) return;
     this.value.set(null);
     this.onChangeFn(null);
   }
@@ -421,7 +427,11 @@ export class DynamoSelect<TValue = unknown>
     }
     const buffer = this.typeahead.append(event.key);
     const query = resolveTypeaheadQuery(buffer);
-    const match = findTypeaheadMatch(this.visibleOptions(), this.activeIndex(), query);
+    const match = findTypeaheadMatch(
+      this.visibleOptions(),
+      this.activeIndex(),
+      query,
+    );
     if (match === null) return;
     event.preventDefault();
     if (!this.isOpen()) this.isOpen.set(true);

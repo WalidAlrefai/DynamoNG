@@ -37,7 +37,12 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   standalone: true,
   imports: [DynamoPopover, DynamoPopoverContent],
   template: `
-    <dg-popover [(open)]="isOpen" [closeOnBackdropClick]="closeOnBackdropClick()">
+    <dg-popover
+      [(open)]="isOpen"
+      [closeOnBackdropClick]="closeOnBackdropClick()"
+      [closeOnEscape]="closeOnEscape()"
+      [focusOnShow]="focusOnShow()"
+    >
       <button type="button">Open filters</button>
       <dg-popover-content>
         <label>
@@ -52,6 +57,8 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
 class PopoverTestHostComponent {
   readonly isOpen = model(false);
   readonly closeOnBackdropClick = signal(true);
+  readonly closeOnEscape = signal(true);
+  readonly focusOnShow = signal(true);
 }
 
 describe('DynamoPopover', () => {
@@ -289,6 +296,46 @@ describe('DynamoPopover', () => {
       await settle(fixture);
 
       expect(getPanel()).not.toBeNull();
+    });
+  });
+
+  describe('closeOnEscape', () => {
+    it('does not close on Escape when closeOnEscape is false', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        PopoverTestHostComponent,
+      );
+      fixture.componentInstance.closeOnEscape.set(false);
+      fixture.detectChanges();
+      const trigger = within(container).getByRole('button', {
+        name: 'Open filters',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.keyboard('{Escape}');
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+    });
+  });
+
+  describe('focusOnShow', () => {
+    it('leaves focus on the trigger when focusOnShow is false', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        PopoverTestHostComponent,
+      );
+      fixture.componentInstance.focusOnShow.set(false);
+      fixture.detectChanges();
+      const trigger = within(container).getByRole('button', {
+        name: 'Open filters',
+      });
+      trigger.focus();
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+      expect(document.activeElement).toBe(trigger);
     });
   });
 

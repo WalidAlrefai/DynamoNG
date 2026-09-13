@@ -7,8 +7,13 @@
     aria-label="Decrement"
     (click)="decrement()"
   >
-    &minus;
+    <ng-content select="[decrementIcon]">&minus;</ng-content>
   </button>
+  @if (prefix(); as prefixText) {
+  <span [class]="affixClasses" data-testid="dg-input-number-prefix"
+    >{{ prefixText }}</span
+  >
+  }
   <input
     type="text"
     inputmode="decimal"
@@ -29,6 +34,11 @@
     (blur)="onBlur()"
     (keydown)="onKeydown($event)"
   />
+  @if (suffix(); as suffixText) {
+  <span [class]="affixClasses" data-testid="dg-input-number-suffix"
+    >{{ suffixText }}</span
+  >
+  }
   <button
     type="button"
     tabindex="-1"
@@ -37,6 +47,6 @@
     aria-label="Increment"
     (click)="increment()"
   >
-    +
+    <ng-content select="[incrementIcon]">+</ng-content>
   </button>
 </div>

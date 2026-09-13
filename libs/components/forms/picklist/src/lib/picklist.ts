@@ -45,7 +45,9 @@ import type {
   imports: [CdkDropList, CdkDropListGroup, CdkDrag, DynamoCheckIcon],
   templateUrl: './picklist.html',
 })
-export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<DynamoPicklistPart> {
+export class DynamoPicklist<
+  TValue = unknown,
+> extends DynamoBaseComponent<DynamoPicklistPart> {
   /** Two-way bindable. */
   readonly source = model<DynamoSelectOption<TValue>[]>([]);
   /** Two-way bindable. */
@@ -54,6 +56,11 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
   readonly itemSelect = output<DynamoPicklistItemSelectEvent<TValue>>();
   readonly size = input<DynamoPicklistSize>('md');
   readonly disabled = input(false);
+  /** HTML `readonly` semantics: rows stay visible/focusable/navigable, but
+   *  moving items (drag, arrows, buttons) and selection are all blocked.
+   *  Unlike `disabled`, doesn't dim either panel or remove it from the tab
+   *  order. */
+  readonly readOnly = input(false);
   readonly sourceLabel = input('Available');
   readonly targetLabel = input('Selected');
 
@@ -62,13 +69,19 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
   protected readonly sourceActiveIndex = signal(-1);
   protected readonly targetActiveIndex = signal(-1);
 
-  protected readonly canMoveSelectedRight = computed(() => this.sourceSelected().size > 0);
-  protected readonly canMoveSelectedLeft = computed(() => this.targetSelected().size > 0);
+  protected readonly canMoveSelectedRight = computed(
+    () => this.sourceSelected().size > 0,
+  );
+  protected readonly canMoveSelectedLeft = computed(
+    () => this.targetSelected().size > 0,
+  );
   protected readonly canMoveAllRight = computed(() => this.source().length > 0);
   protected readonly canMoveAllLeft = computed(() => this.target().length > 0);
 
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(picklistRootStyles, this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(picklistRootStyles, this.styleClass()),
   );
   protected readonly buttonClasses = picklistButtonStyles;
   protected readonly panelClasses = picklistPanelStyles;
@@ -80,12 +93,20 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
 
   // --- selection ---
 
-  protected isSelected(side: DynamoPicklistSide, option: DynamoSelectOption<TValue>): boolean {
-    return (side === 'source' ? this.sourceSelected() : this.targetSelected()).has(option.value);
+  protected isSelected(
+    side: DynamoPicklistSide,
+    option: DynamoSelectOption<TValue>,
+  ): boolean {
+    return (
+      side === 'source' ? this.sourceSelected() : this.targetSelected()
+    ).has(option.value);
   }
 
-  protected toggleSelected(side: DynamoPicklistSide, option: DynamoSelectOption<TValue>): void {
-    if (this.disabled() || option.disabled) {
+  protected toggleSelected(
+    side: DynamoPicklistSide,
+    option: DynamoSelectOption<TValue>,
+  ): void {
+    if (this.disabled() || this.readOnly() || option.disabled) {
       return;
     }
     const sig = side === 'source' ? this.sourceSelected : this.targetSelected;
@@ -102,12 +123,20 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
   // --- move buttons ---
 
   protected moveSelectedRight(): void {
-    this.moveMatching((o) => this.sourceSelected().has(o.value), 'source', 'target');
+    this.moveMatching(
+      (o) => this.sourceSelected().has(o.value),
+      'source',
+      'target',
+    );
     this.sourceSelected.set(new Set());
   }
 
   protected moveSelectedLeft(): void {
-    this.moveMatching((o) => this.targetSelected().has(o.value), 'target', 'source');
+    this.moveMatching(
+      (o) => this.targetSelected().has(o.value),
+      'target',
+      'source',
+    );
     this.targetSelected.set(new Set());
   }
 
@@ -133,7 +162,7 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
     from: DynamoPicklistSide,
     to: DynamoPicklistSide,
   ): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const fromModel = from === 'source' ? this.source : this.target;
@@ -144,7 +173,9 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
     }
     fromModel.set(fromModel().filter((o) => !predicate(o)));
     toModel.set([...toModel(), ...moving]);
-    (from === 'source' ? this.sourceActiveIndex : this.targetActiveIndex).set(-1);
+    (from === 'source' ? this.sourceActiveIndex : this.targetActiveIndex).set(
+      -1,
+    );
   }
 
   // --- drag & drop ---
@@ -157,8 +188,11 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
   // event.previousIndex/currentIndex/container identity are read from the
   // event; the arrays themselves are cloned, spliced, then explicitly
   // .set() onto the model()s.
-  protected onDropped(event: CdkDragDrop<DynamoSelectOption<TValue>[]>, side: DynamoPicklistSide): void {
-    if (this.disabled()) {
+  protected onDropped(
+    event: CdkDragDrop<DynamoSelectOption<TValue>[]>,
+    side: DynamoPicklistSide,
+  ): void {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const ownModel = side === 'source' ? this.source : this.target;
@@ -183,7 +217,8 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
     ownModel.set(ownNext);
 
     // Discard stale selection state for the moved item on the side it left.
-    const otherSelected = side === 'source' ? this.targetSelected : this.sourceSelected;
+    const otherSelected =
+      side === 'source' ? this.targetSelected : this.sourceSelected;
     if (otherSelected().has(moved.value)) {
       const next = new Set(otherSelected());
       next.delete(moved.value);
@@ -194,21 +229,26 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
   // --- keyboard reorder (activeIndex-driven, always-visible buttons) ---
 
   protected canMoveUp(side: DynamoPicklistSide): boolean {
-    const idx = side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex();
+    if (this.readOnly()) return false;
+    const idx =
+      side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex();
     return idx > 0;
   }
 
   protected canMoveDown(side: DynamoPicklistSide): boolean {
-    const idx = side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex();
+    if (this.readOnly()) return false;
+    const idx =
+      side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex();
     const len = (side === 'source' ? this.source() : this.target()).length;
     return idx >= 0 && idx < len - 1;
   }
 
   protected reorder(side: DynamoPicklistSide, direction: -1 | 1): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
-    const activeSig = side === 'source' ? this.sourceActiveIndex : this.targetActiveIndex;
+    const activeSig =
+      side === 'source' ? this.sourceActiveIndex : this.targetActiveIndex;
     const listModel = side === 'source' ? this.source : this.target;
     const idx = activeSig();
     const target = idx + direction;
@@ -223,12 +263,16 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
 
   // --- keyboard nav within a panel, mirrors Listbox's onKeydown shape ---
 
-  protected onPanelKeydown(event: KeyboardEvent, side: DynamoPicklistSide): void {
+  protected onPanelKeydown(
+    event: KeyboardEvent,
+    side: DynamoPicklistSide,
+  ): void {
     if (this.disabled()) {
       return;
     }
     const options = side === 'source' ? this.source() : this.target();
-    const activeSig = side === 'source' ? this.sourceActiveIndex : this.targetActiveIndex;
+    const activeSig =
+      side === 'source' ? this.sourceActiveIndex : this.targetActiveIndex;
 
     switch (event.key) {
       case 'ArrowDown': {
@@ -271,15 +315,28 @@ export class DynamoPicklist<TValue = unknown> extends DynamoBaseComponent<Dynamo
 
   // --- styling helpers ---
 
-  protected optionClasses(side: DynamoPicklistSide, option: DynamoSelectOption<TValue>, index: number): string {
+  protected optionClasses(
+    side: DynamoPicklistSide,
+    option: DynamoSelectOption<TValue>,
+    index: number,
+  ): string {
     return picklistOptionStyles({
-      active: index === (side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex()),
+      active:
+        index ===
+        (side === 'source'
+          ? this.sourceActiveIndex()
+          : this.targetActiveIndex()),
       selected: this.isSelected(side, option),
       disabled: !!option.disabled,
     });
   }
 
-  protected checkboxClasses(side: DynamoPicklistSide, option: DynamoSelectOption<TValue>): string {
-    return picklistOptionCheckboxStyles({ checked: this.isSelected(side, option) });
+  protected checkboxClasses(
+    side: DynamoPicklistSide,
+    option: DynamoSelectOption<TValue>,
+  ): string {
+    return picklistOptionCheckboxStyles({
+      checked: this.isSelected(side, option),
+    });
   }
 }

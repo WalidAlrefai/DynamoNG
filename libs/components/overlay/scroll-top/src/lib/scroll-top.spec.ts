@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -13,8 +14,29 @@ function setScrollY(value: number): void {
   Object.defineProperty(window, 'scrollY', { value, configurable: true });
 }
 
+// jsdom has no real scrollTop layout/`scrollTo` on plain elements — same gap
+// tree-select's own spec works around for `Element.prototype.scrollTo`.
+function setParentScrollTop(el: HTMLElement, value: number): void {
+  Object.defineProperty(el, 'scrollTop', {
+    value,
+    configurable: true,
+    writable: true,
+  });
+}
+
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (): void {
+    /* jsdom gap — see comment above */
+  };
+}
+
 afterEach(() => {
   setScrollY(0);
+  // `container.parentElement` is `document.body` for every test in this
+  // file (renderDynamoComponent appends directly to it) — reset the
+  // `scrollTop` override a `target: 'parent'` test may have defined on it,
+  // or it leaks into unrelated tests that share the same `document.body`.
+  setParentScrollTop(document.body, 0);
 });
 
 describe('DynamoScrollTop', () => {
@@ -74,16 +96,15 @@ describe('DynamoScrollTop', () => {
 
       fixture.destroy();
 
-      expect(removeSpy).toHaveBeenCalledWith(
-        'scroll',
-        expect.any(Function),
-      );
+      expect(removeSpy).toHaveBeenCalledWith('scroll', expect.any(Function));
     });
   });
 
   describe('user interactions', () => {
     it('smooth-scrolls to the top when clicked', async () => {
-      const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+      const scrollToSpy = vi
+        .spyOn(window, 'scrollTo')
+        .mockImplementation(() => undefined);
       const { fixture, container } = renderDynamoComponent(DynamoScrollTop);
       setScrollY(300);
       window.dispatchEvent(new Event('scroll'));
@@ -95,7 +116,9 @@ describe('DynamoScrollTop', () => {
     });
 
     it('supports interaction through the DynamoScrollTopHarness', async () => {
-      const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+      const scrollToSpy = vi
+        .spyOn(window, 'scrollTo')
+        .mockImplementation(() => undefined);
       const { fixture } = renderDynamoComponent(DynamoScrollTop);
       const harness = await TestbedHarnessEnvironment.harnessForFixture(
         fixture,
@@ -122,6 +145,107 @@ describe('DynamoScrollTop', () => {
       await expect(harness.click()).rejects.toThrow(
         'DynamoScrollTop is not currently visible',
       );
+    });
+  });
+
+  describe('target: parent', () => {
+    it('uses absolute positioning instead of fixed', () => {
+      const { fixture, container } = renderDynamoComponent(DynamoScrollTop, {
+        inputs: { target: 'parent', threshold: 0 },
+      });
+      setScrollY(300);
+      window.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+      const parent = container.parentElement as HTMLElement;
+      setParentScrollTop(parent, 300);
+      parent.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+
+      const button = container.querySelector('button') as HTMLElement;
+      expect(button.className).toContain('absolute');
+      expect(button.className).not.toContain('fixed');
+    });
+
+    it('watches the parent element scrollTop instead of window.scrollY', () => {
+      const { fixture, container } = renderDynamoComponent(DynamoScrollTop, {
+        inputs: { target: 'parent', threshold: 200 },
+      });
+      const parent = container.parentElement as HTMLElement;
+
+      setScrollY(300); // should be ignored while target is 'parent'
+      window.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+      expect(container.querySelector('button')).toBeNull();
+
+      setParentScrollTop(parent, 300);
+      parent.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+
+      expect(container.querySelector('button')).toBeTruthy();
+    });
+
+    it('scrolls the parent element, not window, when clicked', async () => {
+      const { fixture, container } = renderDynamoComponent(DynamoScrollTop, {
+        inputs: { target: 'parent' },
+      });
+      const parent = container.parentElement as HTMLElement;
+      const parentScrollToSpy = vi
+        .spyOn(parent, 'scrollTo')
+        .mockImplementation(() => undefined);
+      setParentScrollTop(parent, 300);
+      parent.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+
+      await userEvent.click(within(container).getByRole('button'));
+
+      expect(parentScrollToSpy).toHaveBeenCalledWith({
+        top: 0,
+        behavior: 'smooth',
+      });
+    });
+  });
+
+  describe('behavior', () => {
+    it('forwards a custom behavior to scrollTo', async () => {
+      const scrollToSpy = vi
+        .spyOn(window, 'scrollTo')
+        .mockImplementation(() => undefined);
+      const { fixture, container } = renderDynamoComponent(DynamoScrollTop, {
+        inputs: { behavior: 'auto' },
+      });
+      setScrollY(300);
+      window.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+
+      await userEvent.click(within(container).getByRole('button'));
+
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+    });
+  });
+
+  describe('custom icon', () => {
+    it('projects custom [icon] content in place of the default svg', () => {
+      @Component({
+        selector: 'dg-scroll-top-custom-icon-host',
+        standalone: true,
+        imports: [DynamoScrollTop],
+        template: `
+          <dg-scroll-top [threshold]="0">
+            <span icon data-testid="custom-icon">^</span>
+          </dg-scroll-top>
+        `,
+      })
+      class CustomIconHostComponent {}
+
+      const { fixture, container } = renderDynamoComponent(
+        CustomIconHostComponent,
+      );
+      setScrollY(300);
+      window.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+
+      expect(within(container).getByTestId('custom-icon')).toBeTruthy();
+      expect(container.querySelector('svg')).toBeNull();
     });
   });
 

@@ -12,7 +12,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'ok-only', title: 'OK-only' },
+];
 
 @Component({
   selector: 'docs-confirm-dialog-page',
@@ -31,7 +34,9 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
         description="Inject DynamoConfirmService and await open(); it resolves true on confirm, false on cancel / backdrop / Escape."
       >
         <div preview class="flex flex-wrap items-center gap-2">
-          <dg-button severity="danger" (click)="onDelete()">Delete item</dg-button>
+          <dg-button severity="danger" (click)="onDelete()"
+            >Delete item</dg-button
+          >
           @if (lastResult() !== null) {
             <span class="text-sm text-text-muted">
               Result: <code class="font-mono">{{ lastResult() }}</code>
@@ -43,6 +48,20 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
           this.confirm.open(&#123; title: 'Delete item', message: 'Are you sure?
           This cannot be undone.', severity: 'danger', confirmLabel: 'Delete',
           &#125;);
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="ok-only"
+        title="OK-only"
+        description="showCancel: false hides the cancel button for an informational prompt with no real decision — and defaultFocus moves initial focus onto a specific button."
+      >
+        <div preview class="flex flex-wrap items-center gap-2">
+          <dg-button (click)="onNotify()">Show info</dg-button>
+        </div>
+        <div code>
+          this.confirm.open(&#123; message: 'Saved successfully.', showCancel:
+          false, defaultFocus: 'confirm' &#125;);
         </div>
       </docs-example>
 
@@ -92,7 +111,12 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
           <code class="font-mono">'primary'</code>),
           <code class="font-mono">closeOnBackdropClick?</code> /
           <code class="font-mono">closeOnEscape?</code> (default
-          <code class="font-mono">true</code>).
+          <code class="font-mono">true</code>),
+          <code class="font-mono">showCancel?</code> (default
+          <code class="font-mono">true</code>),
+          <code class="font-mono">defaultFocus?</code>
+          (<code class="font-mono">'confirm' | 'cancel' | 'none'</code>, default
+          <code class="font-mono">'none'</code>).
         </p>
       </div>
     </docs-examples-layout>
@@ -112,5 +136,13 @@ export class ConfirmDialogDocPage {
         confirmLabel: 'Delete',
       })
       .then((result) => this.lastResult.set(result));
+  }
+
+  protected onNotify(): void {
+    this.confirm.open({
+      message: 'Saved successfully.',
+      showCancel: false,
+      defaultFocus: 'confirm',
+    });
   }
 }

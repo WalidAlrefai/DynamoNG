@@ -13,6 +13,10 @@ export interface DynamoConfirmOptions {
   closeOnBackdropClick?: boolean;
   /** Defaults to `true`. */
   closeOnEscape?: boolean;
+  /** Hides the cancel button, for an "OK"-only informational prompt with no real decision to make. Defaults to `true`. */
+  showCancel?: boolean;
+  /** Which button receives focus once the dialog opens. Defaults to `'none'` (the panel itself is focused, matching a plain alert dialog — neither button is pre-armed for Enter/Space). */
+  defaultFocus?: 'confirm' | 'cancel' | 'none';
 }
 
 /** Fully-resolved options for a request that's been queued/presented. */
@@ -24,4 +28,6 @@ export interface DynamoConfirmEntry {
   severity: DynamoSeverity;
   closeOnBackdropClick: boolean;
   closeOnEscape: boolean;
+  showCancel: boolean;
+  defaultFocus: 'confirm' | 'cancel' | 'none';
 }

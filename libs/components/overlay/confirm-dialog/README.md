@@ -28,15 +28,17 @@ There is no `<dg-confirm-dialog>` element to place in a template — `DynamoConf
 
 `DynamoConfirmService.open()` takes a `DynamoConfirmOptions` object:
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `message` | `string` (required) | — | The prompt body. |
-| `title` | `string \| undefined` | `undefined` | Optional heading. |
-| `confirmLabel` | `string` | `'Confirm'` | |
-| `cancelLabel` | `string` | `'Cancel'` | |
-| `severity` | `DynamoSeverity` | `'primary'` | Forwarded to the confirm button's `severity`; use `'danger'` for destructive actions. |
-| `closeOnBackdropClick` | `boolean` | `true` | |
-| `closeOnEscape` | `boolean` | `true` | |
+| Option                 | Type                              | Default     | Description                                                                                                                                                        |
+| ---------------------- | --------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `message`              | `string` (required)               | —           | The prompt body.                                                                                                                                                   |
+| `title`                | `string \| undefined`             | `undefined` | Optional heading.                                                                                                                                                  |
+| `confirmLabel`         | `string`                          | `'Confirm'` |                                                                                                                                                                    |
+| `cancelLabel`          | `string`                          | `'Cancel'`  |                                                                                                                                                                    |
+| `severity`             | `DynamoSeverity`                  | `'primary'` | Forwarded to the confirm button's `severity`; use `'danger'` for destructive actions.                                                                              |
+| `closeOnBackdropClick` | `boolean`                         | `true`      |                                                                                                                                                                    |
+| `closeOnEscape`        | `boolean`                         | `true`      |                                                                                                                                                                    |
+| `showCancel`           | `boolean`                         | `true`      | Hides the cancel button, for an "OK"-only informational prompt with no real decision to make.                                                                      |
+| `defaultFocus`         | `'confirm' \| 'cancel' \| 'none'` | `'none'`    | Which button receives focus once the dialog opens. `'none'` focuses the panel itself, matching a plain alert dialog — neither button is pre-armed for Enter/Space. |
 
 ## Outputs
 

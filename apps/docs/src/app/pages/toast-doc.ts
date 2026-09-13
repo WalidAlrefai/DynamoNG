@@ -7,7 +7,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'pause-on-hover', title: 'Pause on Hover' },
+];
 
 @Component({
   selector: 'docs-toast-page',
@@ -57,6 +60,29 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="pause-on-hover"
+        title="Pause on Hover"
+        description="Hovering a toast card pauses its auto-dismiss countdown so it doesn't disappear while you're reading it; moving the pointer away resumes the countdown for the remaining time."
+      >
+        <div preview class="flex flex-wrap gap-2">
+          <dg-button
+            (click)="
+              toast.show({
+                message: 'Hover over me before I disappear!',
+                duration: 6000,
+              })
+            "
+          >
+            Show a 6s toast
+          </dg-button>
+        </div>
+        <div code>
+          this.toast.show(&#123; message: '...', duration: 6000 &#125;); //
+          hovering the card pauses the 6s countdown
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <table class="w-full border-collapse text-sm">
           <thead>
@@ -94,10 +120,19 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
               <td class="py-2 pr-4 font-mono">(id: string) =&gt; void</td>
               <td class="py-2">Dismisses one toast by its id.</td>
             </tr>
-            <tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">dismissAll</td>
               <td class="py-2 pr-4 font-mono">() =&gt; void</td>
               <td class="py-2">Dismisses every visible toast.</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">pause / resume</td>
+              <td class="py-2 pr-4 font-mono">(id: string) =&gt; void</td>
+              <td class="py-2">
+                Pauses/resumes a toast's auto-dismiss countdown. Called
+                automatically on pointer hover/leave; a no-op for a sticky
+                (<code class="font-mono">duration: 0</code>) toast.
+              </td>
             </tr>
           </tbody>
         </table>

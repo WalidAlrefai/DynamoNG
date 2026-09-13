@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoSelectButton } from '@dynamong/select-button';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
@@ -23,6 +24,8 @@ const TAG_OPTIONS = [
 const EXAMPLES: DocExampleRef[] = [
   { id: 'single', title: 'Single Select' },
   { id: 'multiple', title: 'Multiple Select' },
+  { id: 'allow-empty', title: 'Allow Empty' },
+  { id: 'reactive-forms', title: 'Reactive Forms' },
 ];
 
 const API: ApiTableRow[] = [
@@ -30,14 +33,21 @@ const API: ApiTableRow[] = [
   { name: 'value', type: 'TValue | TValue[] | null (model)', default: 'null' },
   { name: 'multiple', type: 'boolean', default: 'false' },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
-  { name: 'disabled', type: 'boolean', default: 'false' },
+  { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  { name: 'allowEmpty', type: 'boolean', default: 'false' },
 ];
 
 @Component({
   selector: 'docs-select-button-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSelectButton, DocExamplesLayout, DocExample, DocApiTable],
+  imports: [
+    DynamoSelectButton,
+    ReactiveFormsModule,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
     <docs-examples-layout
       name="Select Button"
@@ -80,6 +90,47 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="allow-empty"
+        title="Allow Empty"
+        description="allowEmpty lets clicking the active segment deselect it back to null, matching PrimeNG's own default."
+      >
+        <div preview>
+          <dg-select-button
+            [options]="viewOptions"
+            [(value)]="allowEmptyView"
+            [allowEmpty]="true"
+            ariaLabel="View (deselectable)"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Value:
+            <span class="font-mono">{{ allowEmptyView() ?? '(none)' }}</span>
+          </p>
+        </div>
+        <div code>
+          &lt;dg-select-button [options]="viewOptions" [(value)]="view"
+          [allowEmpty]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="reactive-forms"
+        title="Reactive Forms"
+        description="Implements ControlValueAccessor, so it plugs directly into formControl/ngModel."
+      >
+        <div preview>
+          <dg-select-button
+            [options]="viewOptions"
+            [formControl]="reactiveView"
+            ariaLabel="Reactive view"
+          />
+        </div>
+        <div code>
+          &lt;dg-select-button [options]="viewOptions" [formControl]="view"
+          /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -91,4 +142,6 @@ export class SelectButtonDocPage {
   protected readonly tagOptions = TAG_OPTIONS;
   protected readonly view = signal<string | null>('list');
   protected readonly tags = signal<string[]>(['bug']);
+  protected readonly allowEmptyView = signal<string | null>('list');
+  protected readonly reactiveView = new FormControl<string | null>('grid');
 }

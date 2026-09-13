@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -6,6 +7,18 @@ import {
 import { describe, expect, it } from 'vitest';
 import { DynamoAvatar } from './avatar';
 import { DynamoAvatarHarness } from './avatar.harness';
+
+@Component({
+  selector: 'dg-avatar-projected-icon-host',
+  standalone: true,
+  imports: [DynamoAvatar],
+  template: `
+    <dg-avatar>
+      <svg icon viewBox="0 0 24 24" data-testid="custom-icon"></svg>
+    </dg-avatar>
+  `,
+})
+class AvatarProjectedIconHostComponent {}
 
 describe('DynamoAvatar', () => {
   describe('creation', () => {
@@ -155,6 +168,97 @@ describe('DynamoAvatar', () => {
       expect(await harness.getAltText()).toBe('Ada Lovelace');
       expect(await harness.isShowingInitials()).toBe(true);
       expect(await harness.isShowingImage()).toBe(false);
+    });
+  });
+
+  describe('shape', () => {
+    it('defaults to circle', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoAvatar);
+
+      expect(componentInstance.shape()).toBe('circle');
+    });
+
+    it('accepts square without throwing', () => {
+      const { componentInstance, setInputs } =
+        renderDynamoComponent(DynamoAvatar);
+
+      setInputs({ shape: 'square' });
+
+      expect(componentInstance.shape()).toBe('square');
+    });
+  });
+
+  describe('label override', () => {
+    it('renders label instead of derived initials when both are set', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: { name: 'Ada Lovelace', label: '+3' },
+      });
+
+      expect(
+        container.querySelector('span[role="img"]')?.textContent?.trim(),
+      ).toBe('+3');
+    });
+
+    it('still yields to a successfully-loaded image over label', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: { src: 'https://example.com/avatar.png', label: '+3' },
+      });
+
+      expect(container.querySelector('img')).not.toBeNull();
+    });
+  });
+
+  describe('projected custom icon', () => {
+    it('renders the projected icon instead of the default SVG when neither image, label, nor name is set', () => {
+      const { container } = renderDynamoComponent(
+        AvatarProjectedIconHostComponent,
+      );
+
+      expect(
+        container.querySelector('[data-testid="custom-icon"]'),
+      ).not.toBeNull();
+    });
+  });
+
+  describe('imageError output', () => {
+    it('emits the underlying error event when the image fails to load', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoAvatar,
+        { inputs: { src: 'https://example.com/broken.png' } },
+      );
+      const emitted: Event[] = [];
+      componentInstance.imageError.subscribe((event) => emitted.push(event));
+
+      const img = container.querySelector('img') as HTMLImageElement;
+      const errorEvent = new Event('error');
+      img.dispatchEvent(errorEvent);
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([errorEvent]);
+    });
+  });
+
+  describe('ariaLabelledBy', () => {
+    it('sets aria-labelledby when provided', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: { ariaLabelledBy: 'external-label' },
+      });
+
+      expect(
+        container
+          .querySelector('span[role="img"]')
+          ?.getAttribute('aria-labelledby'),
+      ).toBe('external-label');
+    });
+
+    it('omits aria-labelledby by default', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar);
+
+      expect(
+        container
+          .querySelector('span[role="img"]')
+          ?.hasAttribute('aria-labelledby'),
+      ).toBe(false);
     });
   });
 

@@ -7,11 +7,7 @@ Wired up as an Angular `ControlValueAccessor`.
 ## Usage
 
 ```html
-<dg-chips-input
-  [(value)]="tags"
-  [max]="10"
-  placeholder="Add a tag..."
-/>
+<dg-chips-input [(value)]="tags" [max]="10" placeholder="Add a tag..." />
 ```
 
 ```ts
@@ -20,29 +16,31 @@ protected tags = signal<string[]>([]);
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `value` | `string[]` (model) | `[]` | Two-way bindable; also driven by Angular forms via `writeValue`. |
-| `placeholder` | `string` | `''` | Shown only while `value` is empty. |
-| `invalid` | `boolean` | `false` | |
-| `size` | `DynamoSize` | `'md'` | |
-| `max` | `number \| undefined` | `undefined` | Once reached, no further chip can be committed; typing/pasting is otherwise unrestricted. |
-| `allowDuplicates` | `boolean` | `false` | |
-| `ariaLabel` | `string \| undefined` | `undefined` | |
-| `disabled` | `boolean` (model) | `false` | Two-way bindable; also driven by Angular forms via `setDisabledState`. |
-| `readOnly` | `boolean` | `false` | HTML `readonly` semantics: the current chips stay visible and the field stays focusable/tabbable, but adding or removing chips is blocked. Unlike `disabled`, does not remove it from the tab order or dim its appearance. |
+| Input             | Type                  | Default     | Description                                                                                                                                                                                                                |
+| ----------------- | --------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`           | `string[]` (model)    | `[]`        | Two-way bindable; also driven by Angular forms via `writeValue`.                                                                                                                                                           |
+| `placeholder`     | `string`              | `''`        | Shown only while `value` is empty.                                                                                                                                                                                         |
+| `invalid`         | `boolean`             | `false`     |                                                                                                                                                                                                                            |
+| `size`            | `DynamoSize`          | `'md'`      |                                                                                                                                                                                                                            |
+| `max`             | `number \| undefined` | `undefined` | Once reached, no further chip can be committed; typing/pasting is otherwise unrestricted.                                                                                                                                  |
+| `allowDuplicates` | `boolean`             | `false`     |                                                                                                                                                                                                                            |
+| `ariaLabel`       | `string \| undefined` | `undefined` |                                                                                                                                                                                                                            |
+| `ariaLabelledBy`  | `string \| undefined` | `undefined` | Accessible name via reference to an external label element.                                                                                                                                                                |
+| `separator`       | `string`              | `','`       | The character that commits the draft text as a chip — on keypress and when splitting a multi-value paste.                                                                                                                  |
+| `disabled`        | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                                                     |
+| `readOnly`        | `boolean`             | `false`     | HTML `readonly` semantics: the current chips stay visible and the field stays focusable/tabbable, but adding or removing chips is blocked. Unlike `disabled`, does not remove it from the tab order or dim its appearance. |
 
 ## Outputs
 
-| Output | Payload | Fires when |
-|---|---|---|
-| `valueChange` | `string[]` | `value` changes (auto-generated by `model()`) — on commit (Enter, comma, blur, or a multi-value paste) or chip removal. |
-| `disabledChange` | `boolean` | `disabled` changes (auto-generated by `model()`). |
+| Output           | Payload    | Fires when                                                                                                                    |
+| ---------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `valueChange`    | `string[]` | `value` changes (auto-generated by `model()`) — on commit (Enter, `separator`, blur, or a multi-value paste) or chip removal. |
+| `disabledChange` | `boolean`  | `disabled` changes (auto-generated by `model()`).                                                                             |
 
 ## Accessibility
 
-- Each committed chip renders a `"Remove {chip}"`-labelled `<button>`. The draft text field carries `aria-invalid`/`aria-readonly` synced with `invalid`/`readOnly`, and `aria-label` when provided.
-- Keyboard: `Enter` or `,` commits the current draft as a chip; `Backspace` on an empty draft removes the last chip. Pasting text containing commas splits it and commits each token as its own chip.
+- Each committed chip renders a `"Remove {chip}"`-labelled `<button>`. The draft text field carries `aria-invalid`/`aria-readonly` synced with `invalid`/`readOnly`, and `aria-label`/`aria-labelledby` when provided.
+- Keyboard: `Enter` or `separator` commits the current draft as a chip; `Backspace` on an empty draft removes the last chip. Pasting text containing `separator` splits it and commits each token as its own chip.
 
 ## Tier / dependencies
 

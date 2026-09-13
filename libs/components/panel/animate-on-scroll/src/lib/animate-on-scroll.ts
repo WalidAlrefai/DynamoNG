@@ -23,6 +23,10 @@ export class DynamoAnimateOnScroll implements OnInit, OnDestroy {
   readonly threshold = input(0.1);
   readonly once = input(true);
   readonly disabled = input(false, { alias: 'dgAnimateOnScrollDisabled' });
+  /** IntersectionObserver `rootMargin` — e.g. `'-100px'` to trigger the animation only once the element is 100px past the viewport edge, or a positive value to trigger it slightly early. */
+  readonly rootMargin = input<string | undefined>(undefined);
+  /** IntersectionObserver `root` — the scrollable ancestor to intersect against instead of the browser viewport. */
+  readonly root = input<Element | null>(null);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private observer: IntersectionObserver | null = null;
@@ -34,11 +38,16 @@ export class DynamoAnimateOnScroll implements OnInit, OnDestroy {
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-    if (this.disabled() || reducedMotion || typeof IntersectionObserver === 'undefined') {
+    if (
+      this.disabled() ||
+      reducedMotion ||
+      typeof IntersectionObserver === 'undefined'
+    ) {
       el.classList.add(this.enterClass());
       return;
     }
 
+    const rootMargin = this.rootMargin();
     this.observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -54,7 +63,11 @@ export class DynamoAnimateOnScroll implements OnInit, OnDestroy {
           }
         }
       },
-      { threshold: this.threshold() },
+      {
+        threshold: this.threshold(),
+        root: this.root(),
+        ...(rootMargin !== undefined ? { rootMargin } : {}),
+      },
     );
     this.observer.observe(el);
   }

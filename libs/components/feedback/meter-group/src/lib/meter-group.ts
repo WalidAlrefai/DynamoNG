@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,6 +17,7 @@ import {
   meterGroupTrackStyles,
 } from './meter-group.styles';
 import type {
+  DynamoMeterGroupLabelPosition,
   DynamoMeterGroupOrientation,
   DynamoMeterGroupPart,
   DynamoMeterGroupSize,
@@ -32,6 +34,7 @@ import type {
   selector: 'dg-meter-group',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [NgTemplateOutlet],
   templateUrl: './meter-group.html',
 })
 export class DynamoMeterGroup extends DynamoBaseComponent<DynamoMeterGroupPart> {
@@ -40,6 +43,8 @@ export class DynamoMeterGroup extends DynamoBaseComponent<DynamoMeterGroupPart> 
   readonly max = input(100);
   readonly orientation = input<DynamoMeterGroupOrientation>('horizontal');
   readonly showLegend = input(true);
+  /** Where the legend renders relative to the track. */
+  readonly labelPosition = input<DynamoMeterGroupLabelPosition>('end');
   readonly size = input<DynamoMeterGroupSize>('md');
   readonly ariaLabel = input<string | undefined>(undefined);
 
@@ -85,13 +90,13 @@ export class DynamoMeterGroup extends DynamoBaseComponent<DynamoMeterGroupPart> 
 
   protected segmentClasses(item: DynamoMeterItem): string {
     return meterGroupSegmentStyles({
-      severity: item.color ? 'none' : item.severity ?? 'primary',
+      severity: item.color ? 'none' : (item.severity ?? 'primary'),
     });
   }
 
   protected markerClasses(item: DynamoMeterItem): string {
     return meterGroupLegendMarkerStyles({
-      severity: item.color ? 'none' : item.severity ?? 'primary',
+      severity: item.color ? 'none' : (item.severity ?? 'primary'),
     });
   }
 

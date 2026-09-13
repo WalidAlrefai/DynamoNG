@@ -169,6 +169,71 @@ describe('DynamoToastService', () => {
     });
   });
 
+  describe('pause() / resume()', () => {
+    it('pausing stops the auto-dismiss countdown until resumed', async () => {
+      const id = service.show({ message: 'Hover me', duration: 30 });
+
+      service.pause(id);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(getCards()).toHaveLength(1);
+
+      service.resume(id);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(getCards()).toHaveLength(0);
+    });
+
+    it('resumes for only the remaining time, not the full duration', async () => {
+      const id = service.show({ message: 'Hover me', duration: 40 });
+
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      service.pause(id);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(getCards()).toHaveLength(1);
+
+      service.resume(id);
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      expect(getCards()).toHaveLength(1);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(getCards()).toHaveLength(0);
+    });
+
+    it('is a no-op for a sticky (duration: 0) toast', async () => {
+      const id = service.show({ message: 'Sticky', duration: 0 });
+
+      expect(() => service.pause(id)).not.toThrow();
+      expect(() => service.resume(id)).not.toThrow();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(getCards()).toHaveLength(1);
+    });
+
+    it('does not throw for an unknown id', () => {
+      expect(() => service.pause('not-a-real-id')).not.toThrow();
+      expect(() => service.resume('not-a-real-id')).not.toThrow();
+    });
+
+    it('pausing an already-paused toast is a no-op', async () => {
+      const id = service.show({ message: 'Hover me', duration: 30 });
+
+      service.pause(id);
+      expect(() => service.pause(id)).not.toThrow();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(getCards()).toHaveLength(1);
+    });
+
+    it('the card pauses on mouseenter and resumes on mouseleave', async () => {
+      service.show({ message: 'Hover me', duration: 30 });
+      const card = getCards()[0] as HTMLElement;
+
+      card.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(getCards()).toHaveLength(1);
+
+      card.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(getCards()).toHaveLength(0);
+    });
+  });
+
   describe('accessibility', () => {
     it('renders the container as a polite live region', () => {
       service.show({ message: 'Hello' });

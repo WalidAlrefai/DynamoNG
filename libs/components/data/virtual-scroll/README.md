@@ -29,12 +29,15 @@ protected trackByRowId = (item: Row, index: number): unknown => item.id;
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `items` | `readonly T[]` (required) | — | |
-| `itemSize` | `number` (required) | — | Fixed row height in px. Every rendered item, and the viewport's own scroll-position math, assumes this exact height. |
-| `height` | `number` (required) | — | The viewport's own height in px — CDK's viewport needs an explicit CSS size and does not auto-size to its content or parent. |
-| `trackBy` | `((item: T, index: number) => unknown) \| undefined` | `undefined` | `@for`-style track escape hatch, mirroring `DynamoTable`'s `trackBy`. Falls back to item reference identity when omitted. |
+| Input         | Type                                                 | Default      | Description                                                                                                                                                                                                                     |
+| ------------- | ---------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`       | `readonly T[]` (required)                            | —            |                                                                                                                                                                                                                                 |
+| `itemSize`    | `number` (required)                                  | —            | Fixed row height in px. Every rendered item, and the viewport's own scroll-position math, assumes this exact height.                                                                                                            |
+| `height`      | `number` (required)                                  | —            | The viewport's own height in px — CDK's viewport needs an explicit CSS size and does not auto-size to its content or parent.                                                                                                    |
+| `width`       | `number \| undefined`                                | `undefined`  | The viewport's own width in px. Only meaningful for `orientation: 'horizontal'`; left unset otherwise so the viewport keeps sizing to its container's width.                                                                    |
+| `trackBy`     | `((item: T, index: number) => unknown) \| undefined` | `undefined`  | `@for`-style track escape hatch, mirroring `DynamoTable`'s `trackBy`. Falls back to item reference identity when omitted.                                                                                                       |
+| `orientation` | `'vertical' \| 'horizontal'`                         | `'vertical'` | Scroll axis, passed straight through to CDK's own viewport input.                                                                                                                                                               |
+| `appendOnly`  | `boolean`                                            | `false`      | Passed straight through to CDK's own viewport input: once rendered, an item is never removed from the DOM even after scrolling out of view — only appended to. Useful for chat logs/activity feeds that only ever grow forward. |
 
 A required projected `<ng-template let-item let-i="index">` supplies each
 row's markup, receiving `{ $implicit: item, item, index }`.
@@ -49,7 +52,9 @@ with this component; render it unvirtualized instead.
 
 ## Outputs
 
-None.
+| Output                | Payload  | Fires when                                                                                                                                                                                                                                |
+| --------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scrolledIndexChange` | `number` | Passed straight through from CDK's own `scrolledIndexChange` — the index of the first item considered "in view" after each scroll. Drive a consumer's own infinite-scroll/lazy-load fetch off this when the index nears `items().length`. |
 
 ## Accessibility
 

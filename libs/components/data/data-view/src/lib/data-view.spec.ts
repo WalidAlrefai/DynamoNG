@@ -1,6 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, viewChild } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -32,6 +35,7 @@ const PRODUCTS: Product[] = Array.from({ length: 23 }, (_, i) => ({
       [sortField]="sortField()"
       [sortOrder]="sortOrder()"
       [paginator]="paginator()"
+      [paginatorPosition]="paginatorPosition()"
       dataKey="id"
     >
       <ng-template let-product let-i="index">
@@ -50,6 +54,7 @@ class DataViewTestHostComponent {
   readonly sortField = signal<keyof Product | null>(null);
   readonly sortOrder = signal<1 | -1>(1);
   readonly paginator = signal(true);
+  readonly paginatorPosition = signal<'top' | 'bottom' | 'both'>('bottom');
 }
 
 function getRenderedItems(container: HTMLElement): HTMLElement[] {
@@ -115,9 +120,7 @@ describe('DynamoDataView', () => {
       fixture.detectChanges();
 
       expect(getRenderedItems(container)).toHaveLength(23);
-      expect(
-        container.querySelector('dg-pagination'),
-      ).toBeNull();
+      expect(container.querySelector('dg-pagination')).toBeNull();
     });
   });
 
@@ -213,6 +216,181 @@ describe('DynamoDataView', () => {
       expect(await harness.isEmpty()).toBe(true);
       expect(await harness.getRenderedItemCount()).toBe(0);
       expect(await harness.getLayout()).toBeNull();
+    });
+  });
+
+  describe('paginatorPosition', () => {
+    it('renders the paginator only at the bottom by default', () => {
+      const { container } = renderDynamoComponent(DataViewTestHostComponent);
+      const content = container.querySelector(
+        '[data-testid="DynamoDataView-content"]',
+      );
+      const paginators = container.querySelectorAll('dg-pagination');
+
+      expect(paginators).toHaveLength(1);
+      expect(
+        content!.compareDocumentPosition(paginators[0]!) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('renders the paginator only at the top when set to top', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DataViewTestHostComponent,
+      );
+      componentInstance.paginatorPosition.set('top');
+      fixture.detectChanges();
+      const content = container.querySelector(
+        '[data-testid="DynamoDataView-content"]',
+      );
+      const paginators = container.querySelectorAll('dg-pagination');
+
+      expect(paginators).toHaveLength(1);
+      expect(
+        content!.compareDocumentPosition(paginators[0]!) &
+          Node.DOCUMENT_POSITION_PRECEDING,
+      ).toBeTruthy();
+    });
+
+    it('renders the paginator at both top and bottom when set to both', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DataViewTestHostComponent,
+      );
+      componentInstance.paginatorPosition.set('both');
+      fixture.detectChanges();
+
+      expect(container.querySelectorAll('dg-pagination')).toHaveLength(2);
+    });
+  });
+
+  describe('trackBy', () => {
+    @Component({
+      selector: 'dg-data-view-trackby-test-host',
+      standalone: true,
+      imports: [DynamoDataView],
+      template: `
+        <dg-data-view
+          #dataView
+          [value]="products"
+          dataKey="id"
+          [trackBy]="trackBy()"
+        >
+          <ng-template let-product let-i="index">
+            <div>{{ i }} — {{ product.name }}</div>
+          </ng-template>
+        </dg-data-view>
+      `,
+    })
+    class TrackByTestHostComponent {
+      readonly products = PRODUCTS;
+      readonly trackBy = signal<
+        ((item: Product, index: number) => unknown) | undefined
+      >(undefined);
+      readonly dataView = viewChild.required(DynamoDataView);
+    }
+
+    it('takes priority over dataKey when both are set', () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        TrackByTestHostComponent,
+      );
+      componentInstance.trackBy.set(() => 'custom-key');
+      fixture.detectChanges();
+
+      expect(componentInstance.dataView()['trackItem'](PRODUCTS[0]!, 0)).toBe(
+        'custom-key',
+      );
+    });
+
+    it('falls back to dataKey when trackBy is unset', () => {
+      const { componentInstance } = renderDynamoComponent(
+        TrackByTestHostComponent,
+      );
+
+      expect(componentInstance.dataView()['trackItem'](PRODUCTS[0]!, 0)).toBe(
+        PRODUCTS[0]!.id,
+      );
+    });
+  });
+
+  describe('lazy mode', () => {
+    @Component({
+      selector: 'dg-data-view-lazy-test-host',
+      standalone: true,
+      imports: [DynamoDataView],
+      template: `
+        <dg-data-view
+          [value]="pageItems()"
+          [(page)]="page"
+          [(rows)]="rows"
+          [(sortField)]="sortField"
+          [(sortOrder)]="sortOrder"
+          [lazy]="true"
+          [totalRecords]="23"
+          (lazyLoad)="onLazyLoad($event)"
+        >
+          <ng-template let-product let-i="index">
+            <div [attr.data-testid]="'row-' + product.id">
+              {{ i }} — {{ product.name }}
+            </div>
+          </ng-template>
+        </dg-data-view>
+      `,
+    })
+    class LazyTestHostComponent {
+      readonly pageItems = signal<Product[]>(PRODUCTS.slice(0, 10));
+      readonly page = signal(1);
+      readonly rows = signal(10);
+      readonly sortField = signal<keyof Product | null>(null);
+      readonly sortOrder = signal<1 | -1>(1);
+      readonly events: unknown[] = [];
+
+      onLazyLoad(event: unknown): void {
+        this.events.push(event);
+      }
+    }
+
+    it('renders value as-is without re-sorting or re-slicing', () => {
+      const { container } = renderDynamoComponent(LazyTestHostComponent);
+
+      expect(getRenderedItems(container)).toHaveLength(10);
+      expect(container.textContent).toContain('Product 01');
+    });
+
+    it('uses totalRecords, not value.length, for the paginator', () => {
+      const { fixture } = renderDynamoComponent(LazyTestHostComponent);
+
+      const summary = fixture.nativeElement.querySelector(
+        '[aria-live="polite"]',
+      ) as HTMLElement | null;
+      expect(summary?.textContent).toContain('23');
+    });
+
+    it('emits lazyLoad on page change, but not on the initial render', () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        LazyTestHostComponent,
+      );
+      expect(componentInstance.events).toHaveLength(0);
+
+      componentInstance.page.set(2);
+      fixture.detectChanges();
+
+      expect(componentInstance.events).toEqual([
+        { first: 10, rows: 10, sortField: null, sortOrder: 1 },
+      ]);
+    });
+
+    it('emits lazyLoad on sort change', () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        LazyTestHostComponent,
+      );
+
+      componentInstance.sortField.set('price');
+      componentInstance.sortOrder.set(-1);
+      fixture.detectChanges();
+
+      expect(componentInstance.events).toEqual([
+        { first: 0, rows: 10, sortField: 'price', sortOrder: -1 },
+      ]);
     });
   });
 

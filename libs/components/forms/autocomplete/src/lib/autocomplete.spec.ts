@@ -345,9 +345,7 @@ describe('DynamoAutocomplete', () => {
       expect(componentInstance.value()).toBe('Option 3');
 
       await harness.type('Option');
-      await expect(
-        harness.selectOptionByText('Nonexistent'),
-      ).rejects.toThrow();
+      await expect(harness.selectOptionByText('Nonexistent')).rejects.toThrow();
     });
   });
 
@@ -370,17 +368,14 @@ describe('DynamoAutocomplete', () => {
 
   describe('readOnly', () => {
     it('blocks typing, does not open the panel, and reflects aria-readonly', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoAutocomplete,
-        {
-          inputs: {
-            options: THREE_OPTIONS,
-            value: 'Option 1',
-            readOnly: true,
-            ariaLabel: 'Fruit',
-          },
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: {
+          options: THREE_OPTIONS,
+          value: 'Option 1',
+          readOnly: true,
+          ariaLabel: 'Fruit',
         },
-      );
+      });
       const field = within(container).getByRole('combobox') as HTMLInputElement;
 
       await userEvent.type(field, '2');
@@ -392,10 +387,9 @@ describe('DynamoAutocomplete', () => {
     });
 
     it('does not open the panel on ArrowDown', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoAutocomplete,
-        { inputs: { options: THREE_OPTIONS, readOnly: true, ariaLabel: 'Fruit' } },
-      );
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, readOnly: true, ariaLabel: 'Fruit' },
+      });
       const field = within(container).getByRole('combobox');
       field.focus();
 
@@ -437,7 +431,13 @@ describe('DynamoAutocomplete', () => {
     it('renders a spinner over the field only while loading', () => {
       const { container, setInputs } = renderDynamoComponent(
         DynamoAutocomplete,
-        { inputs: { options: THREE_OPTIONS, loading: false, ariaLabel: 'Fruit' } },
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            loading: false,
+            ariaLabel: 'Fruit',
+          },
+        },
       );
       expect(container.querySelector('dg-spinner')).toBeNull();
 
@@ -466,10 +466,9 @@ describe('DynamoAutocomplete', () => {
     });
 
     it('does not open the panel on ArrowDown while loading', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoAutocomplete,
-        { inputs: { options: THREE_OPTIONS, loading: true, ariaLabel: 'Fruit' } },
-      );
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, loading: true, ariaLabel: 'Fruit' },
+      });
       const field = within(container).getByRole('combobox');
       field.focus();
 
@@ -482,7 +481,9 @@ describe('DynamoAutocomplete', () => {
     it('re-enables the field when loading transitions back to false', () => {
       const { container, setInputs } = renderDynamoComponent(
         DynamoAutocomplete,
-        { inputs: { options: THREE_OPTIONS, loading: true, ariaLabel: 'Fruit' } },
+        {
+          inputs: { options: THREE_OPTIONS, loading: true, ariaLabel: 'Fruit' },
+        },
       );
       const field = within(container).getByRole('combobox') as HTMLInputElement;
       expect(field.disabled).toBe(true);
@@ -493,11 +494,193 @@ describe('DynamoAutocomplete', () => {
     });
   });
 
+  describe('lazy mode / search', () => {
+    // Fake timers + userEvent's async internals don't mix (same reasoning
+    // as DynamoSelect's typeahead-timeout spec) — a raw `input` dispatch
+    // exercises the same `onInput()` handler DynamoAutocomplete's template
+    // binds to, without going through userEvent's own scheduling.
+    function typeInto(field: HTMLElement, value: string): void {
+      (field as HTMLInputElement).value = value;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    it('never emits search when lazy is false, even after typing', () => {
+      vi.useFakeTimers();
+      try {
+        const onSearch = vi.fn();
+        @Component({
+          selector: 'dg-autocomplete-nonlazy-host',
+          standalone: true,
+          imports: [DynamoAutocomplete],
+          template: `<dg-autocomplete
+            [options]="options"
+            (searchQuery)="onSearch($event)"
+            ariaLabel="Fruit"
+          />`,
+        })
+        class NonLazyHostComponent {
+          readonly options = THREE_OPTIONS;
+          onSearch = onSearch;
+        }
+
+        const { container } = renderDynamoComponent(NonLazyHostComponent);
+        const field = within(container).getByRole('combobox');
+
+        typeInto(field, 'Option');
+        vi.advanceTimersByTime(1000);
+
+        expect(onSearch).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('emits search with the typed text after debounceTime elapses', () => {
+      vi.useFakeTimers();
+      try {
+        const onSearch = vi.fn();
+        @Component({
+          selector: 'dg-autocomplete-lazy-host',
+          standalone: true,
+          imports: [DynamoAutocomplete],
+          template: `<dg-autocomplete
+            [options]="options"
+            [lazy]="true"
+            [debounceTime]="300"
+            (searchQuery)="onSearch($event)"
+            ariaLabel="Fruit"
+          />`,
+        })
+        class LazyHostComponent {
+          readonly options: DynamoSelectOption<string>[] = [];
+          onSearch = onSearch;
+        }
+
+        const { container } = renderDynamoComponent(LazyHostComponent);
+        const field = within(container).getByRole('combobox');
+
+        typeInto(field, 'app');
+        expect(onSearch).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(300);
+        expect(onSearch).toHaveBeenCalledTimes(1);
+        expect(onSearch).toHaveBeenCalledWith('app');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('resets the debounce timer on every keystroke, emitting once for the final value', () => {
+      vi.useFakeTimers();
+      try {
+        const onSearch = vi.fn();
+        @Component({
+          selector: 'dg-autocomplete-lazy-debounce-host',
+          standalone: true,
+          imports: [DynamoAutocomplete],
+          template: `<dg-autocomplete
+            [options]="options"
+            [lazy]="true"
+            [debounceTime]="300"
+            (searchQuery)="onSearch($event)"
+            ariaLabel="Fruit"
+          />`,
+        })
+        class LazyDebounceHostComponent {
+          readonly options: DynamoSelectOption<string>[] = [];
+          onSearch = onSearch;
+        }
+
+        const { container } = renderDynamoComponent(LazyDebounceHostComponent);
+        const field = within(container).getByRole('combobox');
+
+        typeInto(field, 'a');
+        vi.advanceTimersByTime(200);
+        typeInto(field, 'ab');
+        vi.advanceTimersByTime(200);
+        expect(onSearch).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(100);
+        expect(onSearch).toHaveBeenCalledTimes(1);
+        expect(onSearch).toHaveBeenCalledWith('ab');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does not emit search below minLength', () => {
+      vi.useFakeTimers();
+      try {
+        const onSearch = vi.fn();
+        @Component({
+          selector: 'dg-autocomplete-lazy-minlength-host',
+          standalone: true,
+          imports: [DynamoAutocomplete],
+          template: `<dg-autocomplete
+            [options]="options"
+            [lazy]="true"
+            [minLength]="3"
+            [debounceTime]="10"
+            (searchQuery)="onSearch($event)"
+            ariaLabel="Fruit"
+          />`,
+        })
+        class LazyMinLengthHostComponent {
+          readonly options: DynamoSelectOption<string>[] = [];
+          onSearch = onSearch;
+        }
+
+        const { container } = renderDynamoComponent(LazyMinLengthHostComponent);
+        const field = within(container).getByRole('combobox');
+
+        typeInto(field, 'ab');
+        vi.advanceTimersByTime(50);
+        expect(onSearch).not.toHaveBeenCalled();
+
+        typeInto(field, 'abc');
+        vi.advanceTimersByTime(50);
+        expect(onSearch).toHaveBeenCalledWith('abc');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('renders options() as-is without local filtering when lazy is true', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, lazy: true },
+      });
+      const field = within(container).getByRole('combobox');
+      await userEvent.type(field, 'zzz-does-not-match-any-label');
+      await settle(fixture);
+
+      expect(getOptions()).toHaveLength(THREE_OPTIONS.length);
+    });
+
+    it('shows the no-results message when lazy options() is empty, even though options-overall is empty too', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: [], lazy: true, noResultsMessage: 'Nothing' },
+      });
+      const field = within(container).getByRole('combobox');
+      await userEvent.type(field, 'a');
+      await settle(fixture);
+
+      expect(getPanel()?.textContent).toContain('Nothing');
+    });
+  });
+
   describe('grouped options', () => {
     it('renders a heading row per group', async () => {
       const groupedOptions: DynamoSelectOption<string>[] = [
-        createMockSelectOption({ label: 'Apple', value: 'apple', group: 'Fruit' }),
-        createMockSelectOption({ label: 'Carrot', value: 'carrot', group: 'Vegetable' }),
+        createMockSelectOption({
+          label: 'Apple',
+          value: 'apple',
+          group: 'Fruit',
+        }),
+        createMockSelectOption({
+          label: 'Carrot',
+          value: 'carrot',
+          group: 'Vegetable',
+        }),
       ];
       const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
         inputs: { options: groupedOptions },
@@ -533,9 +716,7 @@ describe('DynamoAutocomplete', () => {
       const { container } = renderDynamoComponent(
         AutocompleteReactiveFormHostComponent,
       );
-      const field = within(container).getByRole(
-        'combobox',
-      ) as HTMLInputElement;
+      const field = within(container).getByRole('combobox') as HTMLInputElement;
 
       expect(field.value).toBe('Option 1');
     });
@@ -560,9 +741,7 @@ describe('DynamoAutocomplete', () => {
       fixture.componentInstance.control.disable();
       fixture.detectChanges();
 
-      const field = within(container).getByRole(
-        'combobox',
-      ) as HTMLInputElement;
+      const field = within(container).getByRole('combobox') as HTMLInputElement;
       expect(field.disabled).toBe(true);
     });
   });
@@ -577,11 +756,19 @@ describe('DynamoAutocomplete', () => {
       const { container, fixture } = renderDynamoComponent(
         AutocompleteTestHostComponent,
       );
-      const field = within(container).getByRole(
-        'combobox',
-      ) as HTMLInputElement;
+      const field = within(container).getByRole('combobox') as HTMLInputElement;
       field.getBoundingClientRect = () =>
-        ({ width: 321, height: 0, top: 0, left: 0, right: 0, bottom: 0, x: 0, y: 0, toJSON: () => '' }) as DOMRect;
+        ({
+          width: 321,
+          height: 0,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => '',
+        }) as DOMRect;
 
       await userEvent.type(field, 'Option');
       await settle(fixture);
@@ -609,10 +796,9 @@ describe('DynamoAutocomplete', () => {
     });
 
     it('does not throw with an empty options array', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoAutocomplete,
-        { inputs: { options: [] } },
-      );
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: [] },
+      });
       const field = within(container).getByRole('combobox');
 
       await expect(userEvent.type(field, 'anything')).resolves.not.toThrow();

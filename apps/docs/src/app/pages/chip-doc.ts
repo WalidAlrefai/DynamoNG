@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { DynamoChip } from '@dynamong/chip';
+import { DynamoCheckIcon } from '@dynamong/icons';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
 import {
@@ -10,6 +11,8 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'removable', title: 'Removable' },
+  { id: 'icon', title: 'Icon' },
+  { id: 'disabled', title: 'Disabled' },
 ];
 
 const API: ApiTableRow[] = [
@@ -22,13 +25,20 @@ const API: ApiTableRow[] = [
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'removable', type: 'boolean', default: 'false' },
   { name: 'removeAriaLabel', type: 'string', default: "'Remove'" },
+  { name: 'disabled', type: 'boolean', default: 'false' },
 ];
 
 @Component({
   selector: 'docs-chip-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoChip, DocExamplesLayout, DocExample, DocApiTable],
+  imports: [
+    DynamoChip,
+    DynamoCheckIcon,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
     <docs-examples-layout
       name="Chip"
@@ -44,7 +54,9 @@ const API: ApiTableRow[] = [
           <dg-chip severity="primary">Primary</dg-chip>
           <dg-chip severity="success" variant="outline">Outline</dg-chip>
         </div>
-        <div code>&lt;dg-chip severity="primary"&gt;Frontend&lt;/dg-chip&gt;</div>
+        <div code>
+          &lt;dg-chip severity="primary"&gt;Frontend&lt;/dg-chip&gt;
+        </div>
       </docs-example>
 
       <docs-example
@@ -58,6 +70,38 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-chip severity="secondary" [removable]="true"
           (removed)="onRemove()"&gt;Frontend&lt;/dg-chip&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="icon"
+        title="Icon"
+        description="Projecting an [icon]-attributed element renders it ahead of the label."
+      >
+        <div preview class="flex flex-wrap items-center gap-2">
+          <dg-chip severity="success">
+            <dg-icon-check icon />
+            Verified
+          </dg-chip>
+        </div>
+        <div code>
+          &lt;dg-chip&gt;&lt;dg-icon-check icon /&gt;Verified&lt;/dg-chip&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="disabled"
+        title="Disabled"
+        description="disabled dims the chip and disables the remove button."
+      >
+        <div preview>
+          <dg-chip severity="secondary" [removable]="true" [disabled]="true">
+            Disabled
+          </dg-chip>
+        </div>
+        <div code>
+          &lt;dg-chip [removable]="true"
+          [disabled]="true"&gt;Disabled&lt;/dg-chip&gt;
         </div>
       </docs-example>
 

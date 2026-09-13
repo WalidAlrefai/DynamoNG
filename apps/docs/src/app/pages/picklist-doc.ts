@@ -13,7 +13,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'readonly', title: 'Read-only' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'source', type: 'DynamoSelectOption[] (model)', default: '[]' },
@@ -25,6 +28,7 @@ const API: ApiTableRow[] = [
   },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'disabled', type: 'boolean', default: 'false' },
+  { name: 'readOnly', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -60,6 +64,26 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="readonly"
+        title="Read-only"
+        description="readOnly keeps both panels visible/focusable/navigable, but blocks moving items and selection — unlike disabled, it doesn't dim either panel or remove it from the tab order."
+      >
+        <div preview class="flex flex-col gap-3">
+          <dg-picklist
+            [source]="readonlySource()"
+            [target]="readonlyTarget()"
+            sourceLabel="Available"
+            targetLabel="Selected"
+            [readOnly]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-picklist [source]="available" [target]="selected"
+          [readOnly]="true" /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -82,4 +106,12 @@ export class PicklistDocPage {
       .map((o) => o.label)
       .join(', '),
   );
+
+  protected readonly readonlySource = signal<DynamoSelectOption<string>[]>([
+    { label: 'Rust', value: 'rust' },
+    { label: 'Go', value: 'go' },
+  ]);
+  protected readonly readonlyTarget = signal<DynamoSelectOption<string>[]>([
+    { label: 'TypeScript', value: 'ts' },
+  ]);
 }

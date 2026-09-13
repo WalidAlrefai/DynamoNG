@@ -118,6 +118,10 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
   readonly disabled = input(false);
   /** Which interaction(s) show the tooltip. Defaults to `'both'` so keyboard-only users can reach it too (WCAG 1.4.13). */
   readonly trigger = input<DynamoTooltipTrigger>('both');
+  /** Auto-hides the tooltip this many ms after it appears, regardless of continued hover/focus. Left unset (the default), it only hides on mouse-leave/blur/Escape as usual. */
+  readonly life = input<number | undefined>(undefined);
+  /** Only shows the tooltip when the trigger's own text is actually truncated (`scrollWidth > offsetWidth`) — e.g. an ellipsis-overflowed table cell. */
+  readonly showOnEllipsis = input(false);
 
   protected readonly contentId = this.idGenerator.next('dg-tooltip');
   protected readonly isVisible = signal(false);
@@ -135,6 +139,7 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
   private portal: TemplatePortal | null = null;
   private showTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private hideTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private lifeTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
@@ -209,10 +214,18 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
     if (this.disabled() || !this.content().trim() || this.isVisible()) {
       return;
     }
+    if (this.showOnEllipsis() && !this.isTriggerTruncated()) {
+      return;
+    }
     this.showTimeoutId = setTimeout(
       () => this.attachOverlay(),
       this.showDelay(),
     );
+  }
+
+  private isTriggerTruncated(): boolean {
+    const el = this.triggerEl().nativeElement;
+    return el.scrollWidth > el.offsetWidth;
   }
 
   private hide(immediate = false): void {
@@ -234,6 +247,10 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
     if (this.hideTimeoutId !== null) {
       clearTimeout(this.hideTimeoutId);
       this.hideTimeoutId = null;
+    }
+    if (this.lifeTimeoutId !== null) {
+      clearTimeout(this.lifeTimeoutId);
+      this.lifeTimeoutId = null;
     }
   }
 
@@ -267,6 +284,11 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
       this.overlayHandle.overlayRef.attach(this.portal);
     }
     this.isVisible.set(true);
+
+    const life = this.life();
+    if (life !== undefined) {
+      this.lifeTimeoutId = setTimeout(() => this.hide(true), life);
+    }
   }
 
   private detachOverlay(): void {

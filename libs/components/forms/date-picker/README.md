@@ -22,27 +22,31 @@ protected readonly selectedDate = signal<Date | null>(null);
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `placeholder` | `string` | `'Select a date'` | Shown in the trigger when no date is selected. |
-| `size` | `DynamoSize` | `'md'` | |
-| `ariaLabel` | `string \| undefined` | `undefined` | |
-| `min` | `Date \| undefined` | `undefined` | |
-| `max` | `Date \| undefined` | `undefined` | |
-| `weekStartsOn` | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | `0` | First weekday column of the calendar grid (`0` = Sunday). |
-| `invalid` | `boolean` | `false` | |
-| `readOnly` | `boolean` | `false` | The trigger and calendar stay fully browsable (open, navigate months, roving focus), but selecting a day is blocked. Unlike `disabled`, doesn't remove the control from the tab order or dim its appearance. |
-| `value` | `Date \| null` (model) | `null` | Two-way bindable; also driven by Angular forms via `writeValue`. |
-| `disabled` | `boolean` (model) | `false` | Also driven by Angular forms via `setDisabledState`. |
-| `open` | `boolean` (model) | `false` | Two-way bindable: `<dg-date-picker [(open)]="isOpen">`. |
+| Input           | Type                              | Default           | Description                                                                                                                                                                                                                                                                   |
+| --------------- | --------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `placeholder`   | `string`                          | `'Select a date'` | Shown in the trigger when no date is selected.                                                                                                                                                                                                                                |
+| `size`          | `DynamoSize`                      | `'md'`            |                                                                                                                                                                                                                                                                               |
+| `ariaLabel`     | `string \| undefined`             | `undefined`       |                                                                                                                                                                                                                                                                               |
+| `min`           | `Date \| undefined`               | `undefined`       |                                                                                                                                                                                                                                                                               |
+| `max`           | `Date \| undefined`               | `undefined`       |                                                                                                                                                                                                                                                                               |
+| `weekStartsOn`  | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | `0`               | First weekday column of the calendar grid (`0` = Sunday).                                                                                                                                                                                                                     |
+| `invalid`       | `boolean`                         | `false`           |                                                                                                                                                                                                                                                                               |
+| `readOnly`      | `boolean`                         | `false`           | The trigger and calendar stay fully browsable (open, navigate months, roving focus), but selecting a day is blocked. Unlike `disabled`, doesn't remove the control from the tab order or dim its appearance.                                                                  |
+| `disabledDates` | `Date[]`                          | `[]`              | Individual dates disabled beyond the `min`/`max` range — e.g. holidays. Only blocks selection, not keyboard navigation onto them (same posture as `min`/`max`).                                                                                                               |
+| `disabledDays`  | `number[]`                        | `[]`              | Weekdays disabled beyond the `min`/`max` range — e.g. `[0, 6]` for weekends. `0` is Sunday, matching `date-fns`.                                                                                                                                                              |
+| `clearable`     | `boolean`                         | `false`           | Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoSelect`'s own `clearable`. Ignored when `inline`, which has no trigger to attach it to.                                                                                                |
+| `inline`        | `boolean`                         | `false`           | Renders the calendar directly in the page, with no trigger button or overlay — for embedding the picker permanently rather than behind a popup. Exactly one day (the currently focused one) is a native tab stop, and mounting never steals focus from elsewhere on the page. |
+| `value`         | `Date \| null` (model)            | `null`            | Two-way bindable; also driven by Angular forms via `writeValue`.                                                                                                                                                                                                              |
+| `disabled`      | `boolean` (model)                 | `false`           | Also driven by Angular forms via `setDisabledState`.                                                                                                                                                                                                                          |
+| `open`          | `boolean` (model)                 | `false`           | Two-way bindable: `<dg-date-picker [(open)]="isOpen">`.                                                                                                                                                                                                                       |
 
 ## Outputs
 
-| Output | Payload | Fires when |
-|---|---|---|
-| `valueChange` | `Date \| null` | `value` changes (auto-generated by `model()`). |
-| `disabledChange` | `boolean` | `disabled` changes. |
-| `openChange` | `boolean` | `open` changes — either the panel opening/closing via user interaction, or a programmatic write to `open`. |
+| Output           | Payload        | Fires when                                                                                                 |
+| ---------------- | -------------- | ---------------------------------------------------------------------------------------------------------- |
+| `valueChange`    | `Date \| null` | `value` changes (auto-generated by `model()`).                                                             |
+| `disabledChange` | `boolean`      | `disabled` changes.                                                                                        |
+| `openChange`     | `boolean`      | `open` changes — either the panel opening/closing via user interaction, or a programmatic write to `open`. |
 
 ## Accessibility
 

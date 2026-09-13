@@ -11,10 +11,14 @@ past a threshold and smooth-scrolls back to the top on click.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `threshold` | `number` | `200` | Scroll offset (px) past which the button becomes visible. |
-| `ariaLabel` | `string` | `'Scroll to top'` | |
+| Input       | Type                                    | Default           | Description                                                                                                                                                                                                                                                        |
+| ----------- | --------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `threshold` | `number`                                | `200`             | Scroll offset (px) past which the button becomes visible.                                                                                                                                                                                                          |
+| `ariaLabel` | `string`                                | `'Scroll to top'` |                                                                                                                                                                                                                                                                    |
+| `target`    | `'window' \| 'parent'`                  | `'window'`        | `'parent'` watches and scrolls the component's own DOM parent instead of the page, and switches the button from `fixed` (viewport-relative) to `absolute` — the parent needs its own `position: relative` for the button to anchor inside it rather than the page. |
+| `behavior`  | `ScrollBehavior` (`'auto' \| 'smooth'`) | `'smooth'`        | Forwarded to the underlying `scrollTo()` call.                                                                                                                                                                                                                     |
+
+Project custom content into the `[icon]` slot to replace the default up-arrow SVG, e.g. `<dg-scroll-top><dg-icon-arrow-up icon /></dg-scroll-top>`.
 
 ## Outputs
 

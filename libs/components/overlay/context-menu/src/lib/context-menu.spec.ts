@@ -85,6 +85,22 @@ class ContextMenuTestHostComponent {
 })
 class ContextMenuEmptyHostComponent {}
 
+@Component({
+  selector: 'dg-context-menu-global-host',
+  standalone: true,
+  imports: [DynamoContextMenu, DynamoMenuItem],
+  template: `
+    <dg-context-menu [(open)]="isOpen" [global]="true">
+      <div data-testid="trigger-card">Right-click me</div>
+      <dg-menu-item value="edit" label="Edit" />
+    </dg-context-menu>
+    <div data-testid="outside">Elsewhere on the page</div>
+  `,
+})
+class ContextMenuGlobalHostComponent {
+  readonly isOpen = model(false);
+}
+
 function trigger(container: HTMLElement): HTMLElement {
   return within(container).getByTestId('trigger-card');
 }
@@ -405,6 +421,66 @@ describe('DynamoContextMenu', () => {
       await expect(
         expectNoA11yViolations(getOverlayContainer()),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('global mode', () => {
+    it('opens when right-clicking anywhere in the document, not just the projected trigger', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ContextMenuGlobalHostComponent,
+      );
+
+      const event = fireEvent.contextMenu(
+        within(container).getByTestId('outside'),
+        { clientX: 30, clientY: 40 },
+      );
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+      expect(event).toBe(false); // prevented
+    });
+
+    it('still opens when right-clicking the projected trigger itself, without double-handling', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ContextMenuGlobalHostComponent,
+      );
+
+      fireEvent.contextMenu(trigger(container), { clientX: 10, clientY: 10 });
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+      expect(getItems()).toHaveLength(1);
+    });
+
+    it('repositions instead of closing when right-clicking elsewhere while already open', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ContextMenuGlobalHostComponent,
+      );
+      fireEvent.contextMenu(trigger(container), { clientX: 10, clientY: 10 });
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+
+      fireEvent.contextMenu(within(container).getByTestId('outside'), {
+        clientX: 200,
+        clientY: 200,
+      });
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+    });
+
+    it('still closes on a left-click outside', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ContextMenuGlobalHostComponent,
+      );
+      fireEvent.contextMenu(trigger(container), { clientX: 10, clientY: 10 });
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+
+      fireEvent.click(within(container).getByTestId('outside'));
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
     });
   });
 

@@ -41,18 +41,14 @@ describe('DynamoConfirmService', () => {
   describe('open()', () => {
     it('returns a promise resolving true when confirmed', async () => {
       const result = service.open({ message: 'Are you sure?' });
-      (
-        getPanel()?.querySelectorAll('button')[1] as HTMLElement
-      ).click();
+      (getPanel()?.querySelectorAll('button')[1] as HTMLElement).click();
 
       await expect(result).resolves.toBe(true);
     });
 
     it('returns a promise resolving false when cancelled', async () => {
       const result = service.open({ message: 'Are you sure?' });
-      (
-        getPanel()?.querySelectorAll('button')[0] as HTMLElement
-      ).click();
+      (getPanel()?.querySelectorAll('button')[0] as HTMLElement).click();
 
       await expect(result).resolves.toBe(false);
     });
@@ -145,13 +141,17 @@ describe('DynamoConfirmService', () => {
       const first = service.open({ message: 'First' });
       service.open({ message: 'Second' });
 
-      expect(document.body.querySelectorAll('[role="alertdialog"]')).toHaveLength(1);
+      expect(
+        document.body.querySelectorAll('[role="alertdialog"]'),
+      ).toHaveLength(1);
       expect(getPanel()?.textContent).toContain('First');
 
       service.confirm();
       await first;
 
-      expect(document.body.querySelectorAll('[role="alertdialog"]')).toHaveLength(1);
+      expect(
+        document.body.querySelectorAll('[role="alertdialog"]'),
+      ).toHaveLength(1);
       expect(getPanel()?.textContent).toContain('Second');
 
       service.confirm();
@@ -188,6 +188,47 @@ describe('DynamoConfirmService', () => {
 
       expect(document.activeElement).toBe(trigger);
       trigger.remove();
+    });
+  });
+
+  describe('showCancel', () => {
+    it('renders both buttons by default', () => {
+      service.open({ message: 'Are you sure?' });
+
+      expect(getPanel()?.querySelectorAll('button')).toHaveLength(2);
+    });
+
+    it('hides the cancel button when showCancel is false', () => {
+      service.open({ message: 'Heads up', showCancel: false });
+
+      const buttons = getPanel()?.querySelectorAll('button');
+      expect(buttons).toHaveLength(1);
+      expect(buttons?.[0]?.textContent).toContain('Confirm');
+    });
+  });
+
+  describe('defaultFocus', () => {
+    it('focuses the panel itself by default (defaultFocus: none)', async () => {
+      service.open({ message: 'Are you sure?' });
+      await flushFocusTrap();
+
+      expect(document.activeElement).toBe(getPanel());
+    });
+
+    it('focuses the confirm button when defaultFocus is confirm', async () => {
+      service.open({ message: 'Are you sure?', defaultFocus: 'confirm' });
+      await flushFocusTrap();
+
+      const buttons = getPanel()?.querySelectorAll('button');
+      expect(document.activeElement).toBe(buttons?.[1]);
+    });
+
+    it('focuses the cancel button when defaultFocus is cancel', async () => {
+      service.open({ message: 'Are you sure?', defaultFocus: 'cancel' });
+      await flushFocusTrap();
+
+      const buttons = getPanel()?.querySelectorAll('button');
+      expect(document.activeElement).toBe(buttons?.[0]);
     });
   });
 

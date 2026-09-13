@@ -42,6 +42,11 @@ export const inputNumberWrapperStyles = cva(
 export const inputNumberInputStyles =
   'min-w-0 flex-1 bg-transparent text-center outline-none disabled:cursor-not-allowed';
 
+// Matches inputGroupPrefixStyles/inputGroupSuffixStyles — no border of their
+// own, they sit flush inside this wrapper's shared border.
+export const inputNumberAffixStyles =
+  'inline-flex shrink-0 items-center text-text-muted';
+
 // Same reasoning as SplitButton's chevron/ColorPicker's trigger: Button has
 // no attribute/ElementRef passthrough, so the step buttons are hand-rolled
 // plain <button>s rather than nested <dg-button>s.

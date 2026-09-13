@@ -1,3 +1,5 @@
+import { Component } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -7,6 +9,25 @@ import { within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
 import { DynamoSelectButton } from './select-button';
 import { DynamoSelectButtonHarness } from './select-button.harness';
+
+@Component({
+  selector: 'dg-select-button-reactive-form-host',
+  standalone: true,
+  imports: [DynamoSelectButton, ReactiveFormsModule],
+  template: `<dg-select-button
+    [options]="options"
+    [formControl]="control"
+    ariaLabel="View"
+  />`,
+})
+class ReactiveFormHostComponent {
+  readonly options = [
+    { label: 'List', value: 'list' },
+    { label: 'Grid', value: 'grid' },
+    { label: 'Card', value: 'card' },
+  ];
+  readonly control = new FormControl<string | null>(null);
+}
 
 const OPTIONS = [
   { label: 'List', value: 'list' },
@@ -126,7 +147,9 @@ describe('DynamoSelectButton', () => {
     it('clicking an already-selected segment removes it', () => {
       const { fixture, container, componentInstance } = renderDynamoComponent(
         DynamoSelectButton,
-        { inputs: { options: OPTIONS, multiple: true, value: ['list', 'grid'] } },
+        {
+          inputs: { options: OPTIONS, multiple: true, value: ['list', 'grid'] },
+        },
       );
 
       within(container).getByRole('button', { name: 'List' }).click();
@@ -251,7 +274,11 @@ describe('DynamoSelectButton', () => {
         { inputs: { options: OPTIONS_WITH_DISABLED } },
       );
 
-      (within(container).getByRole('radio', { name: 'Grid' }) as HTMLButtonElement).click();
+      (
+        within(container).getByRole('radio', {
+          name: 'Grid',
+        }) as HTMLButtonElement
+      ).click();
       fixture.detectChanges();
 
       expect(componentInstance.value()).toBeNull();
@@ -263,7 +290,11 @@ describe('DynamoSelectButton', () => {
       });
 
       expect(
-        (within(container).getByRole('radio', { name: 'Grid' }) as HTMLButtonElement).disabled,
+        (
+          within(container).getByRole('radio', {
+            name: 'Grid',
+          }) as HTMLButtonElement
+        ).disabled,
       ).toBe(true);
     });
 
@@ -274,7 +305,11 @@ describe('DynamoSelectButton', () => {
 
       for (const label of ['List', 'Grid', 'Card']) {
         expect(
-          (within(container).getByRole('radio', { name: label }) as HTMLButtonElement).disabled,
+          (
+            within(container).getByRole('radio', {
+              name: label,
+            }) as HTMLButtonElement
+          ).disabled,
         ).toBe(true);
       }
     });
@@ -378,6 +413,101 @@ describe('DynamoSelectButton', () => {
 
       expect(await harness.isSegmentDisabled('Grid')).toBe(true);
       expect(await harness.isSegmentDisabled('List')).toBe(false);
+    });
+  });
+
+  describe('allowEmpty', () => {
+    it('clicking the active segment is a no-op by default', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoSelectButton,
+        { inputs: { options: OPTIONS, value: 'list' } },
+      );
+
+      within(container).getByRole('radio', { name: 'List' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.value()).toBe('list');
+    });
+
+    it('clicking the active segment deselects it to null when allowEmpty is set', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoSelectButton,
+        { inputs: { options: OPTIONS, value: 'list', allowEmpty: true } },
+      );
+
+      within(container).getByRole('radio', { name: 'List' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    it('does not affect multi-select mode (toggling always works regardless)', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoSelectButton,
+        {
+          inputs: {
+            options: OPTIONS,
+            multiple: true,
+            value: ['list'],
+            allowEmpty: false,
+          },
+        },
+      );
+
+      within(container).getByRole('button', { name: 'List' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.value()).toEqual([]);
+    });
+  });
+
+  describe('ControlValueAccessor / forms integration', () => {
+    it('propagates a click selection to a bound reactive FormControl', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      within(container).getByRole('radio', { name: 'Grid' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.control.value).toBe('grid');
+    });
+
+    it('reflects an externally-set FormControl value (writeValue)', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      componentInstance.control.setValue('card');
+      fixture.detectChanges();
+
+      expect(
+        within(container)
+          .getByRole('radio', { name: 'Card' })
+          .getAttribute('aria-checked'),
+      ).toBe('true');
+    });
+
+    it('setDisabledState reflects onto the disabled model', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: { options: OPTIONS },
+      });
+
+      componentInstance.setDisabledState(true);
+
+      expect(componentInstance.disabled()).toBe(true);
+    });
+
+    it('marks the FormControl as touched on selection', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+      expect(componentInstance.control.touched).toBe(false);
+
+      within(container).getByRole('radio', { name: 'Grid' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.control.touched).toBe(true);
     });
   });
 

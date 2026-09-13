@@ -9,6 +9,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'disabled', title: 'Disabled' },
+  { id: 'inline', title: 'Inline' },
 ];
 
 @Component({
@@ -48,7 +49,26 @@ const EXAMPLES: DocExampleRef[] = [
             ariaLabel="Disabled"
           />
         </div>
-        <div code>&lt;dg-color-picker [value]="'#3b82f6'" [disabled]="true" /&gt;</div>
+        <div code>
+          &lt;dg-color-picker [value]="'#3b82f6'" [disabled]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="inline"
+        title="Inline"
+        description="inline renders the swatch grid and native color input directly in the page, with no trigger button or overlay."
+      >
+        <div preview class="max-w-xs">
+          <dg-color-picker
+            [(value)]="inlineColor"
+            [inline]="true"
+            ariaLabel="Brand color"
+          />
+        </div>
+        <div code>
+          &lt;dg-color-picker [(value)]="color" [inline]="true" /&gt;
+        </div>
       </docs-example>
 
       <table api class="w-full border-collapse text-sm">
@@ -71,6 +91,11 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 font-mono">10 preset colors</td>
           </tr>
           <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">inline</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">size</td>
             <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
             <td class="py-2 font-mono">'md'</td>
@@ -88,4 +113,5 @@ const EXAMPLES: DocExampleRef[] = [
 export class ColorPickerDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly color = signal('#3b82f6');
+  protected readonly inlineColor = signal('#22c55e');
 }

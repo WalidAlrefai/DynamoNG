@@ -12,10 +12,17 @@ interface Person {
   title: string;
 }
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'disabled', title: 'Disabled Node' },
+];
 
 const API: ApiTableRow[] = [
-  { name: 'value', type: 'DynamoOrgChartNode[]', default: 'required' },
+  {
+    name: 'value',
+    type: 'DynamoOrgChartNode[]',
+    default: 'required',
+  },
   { name: 'collapsible', type: 'boolean', default: 'true' },
   { name: 'collapsedIds', type: 'string[] (model)', default: '[]' },
   { name: 'selectable', type: 'boolean', default: 'false' },
@@ -71,8 +78,38 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-org-chart [value]="nodes" [selectable]="true"
           [(selection)]="selection"&gt; &lt;ng-template let-node&gt;
-          &lt;span&gt;name/title from node.value&lt;/span&gt; &lt;/ng-template&gt;
-          &lt;/dg-org-chart&gt;
+          &lt;span&gt;name/title from node.value&lt;/span&gt;
+          &lt;/ng-template&gt; &lt;/dg-org-chart&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="disabled"
+        title="Disabled Node"
+        description="A node's disabled flag excludes it from selection and click activation — its subtree can still be expanded/collapsed via the toggler."
+      >
+        <div preview class="overflow-x-auto py-4">
+          <dg-org-chart
+            [value]="disabledValue"
+            [selectable]="true"
+            [(selection)]="disabledSelection"
+            ariaLabel="Acme org chart with a disabled node"
+          >
+            <ng-template let-node>
+              <span class="font-medium text-text-primary">
+                {{ node.value.name }}
+              </span>
+              <span class="text-xs text-text-muted">
+                {{ node.value.title }}
+              </span>
+            </ng-template>
+          </dg-org-chart>
+        </div>
+        <div code>
+          &lt;dg-org-chart [value]="nodesWithOneDisabled"
+          [selectable]="true"&gt; ... &lt;/dg-org-chart&gt;
+          <br />
+          // node: &#123; id: 'cto', ..., disabled: true &#125;
         </div>
       </docs-example>
 
@@ -137,6 +174,30 @@ export class OrgChartDocPage {
 
   readonly collapsedIds = signal<string[]>([]);
   readonly selection = signal<string[]>([]);
+
+  readonly disabledValue: DynamoOrgChartNode<Person>[] = [
+    {
+      id: 'ceo',
+      label: 'Ada Powell',
+      value: { name: 'Ada Powell', title: 'CEO' },
+      children: [
+        {
+          id: 'cto',
+          label: 'Bhavana Rao',
+          value: { name: 'Bhavana Rao', title: 'CTO' },
+          disabled: true,
+          children: [
+            {
+              id: 'eng-1',
+              label: 'Dana Kim',
+              value: { name: 'Dana Kim', title: 'Engineer' },
+            },
+          ],
+        },
+      ],
+    },
+  ];
+  readonly disabledSelection = signal<string[]>([]);
 
   selected(): Person | null {
     const id = this.selection()[0];

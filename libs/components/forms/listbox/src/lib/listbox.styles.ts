@@ -15,6 +15,16 @@ export const listboxRootVirtualStyles =
 
 export const listboxGroupHeadingStyles = sectionHeadingClass;
 
+// Mirrors DynamoSelect's own filter-box styles (selectFilterWrapperStyles et
+// al.) — reimplemented locally rather than imported, matching this
+// component's existing precedent for the option-list helper functions.
+export const listboxFilterWrapperStyles = 'border-b border-border p-2';
+export const listboxFilterFieldWrapperStyles = 'relative min-w-0 flex-1';
+export const listboxFilterIconStyles =
+  'pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted';
+export const listboxFilterInputExtraClasses = 'pe-8';
+export const listboxNoResultsStyles = 'px-4 py-2 text-sm text-text-muted';
+
 export const listboxOptionStyles = cva(
   'flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-text-primary',
   {

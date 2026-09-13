@@ -1,12 +1,17 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
+  forwardRef,
+  inject,
   input,
   model,
 } from '@angular/core';
+import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
+import { DynamoRadioControlRegistry } from './radio-registry';
 import {
   radioCircleStyles,
   radioDotStyles,
@@ -19,8 +24,18 @@ import type { DynamoRadioPart, DynamoRadioSize } from './radio.types';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './radio.html',
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => DynamoRadio),
+      multi: true,
+    },
+  ],
 })
-export class DynamoRadio extends DynamoBaseComponent<DynamoRadioPart> {
+export class DynamoRadio
+  extends DynamoBaseComponent<DynamoRadioPart>
+  implements ControlValueAccessor
+{
   /**
    * Two-way bindable, like `DynamoCheckbox`'s `checked` — `model()` generates
    * both a `checked` input and a `checkedChange` output.
@@ -43,12 +58,36 @@ export class DynamoRadio extends DynamoBaseComponent<DynamoRadioPart> {
   readonly checked = model(false);
   readonly name = input.required<string>();
   readonly value = input<string>('');
-  readonly disabled = input(false);
+  /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
+  readonly disabled = model(false);
   readonly size = input<DynamoRadioSize>('md');
   /** Accessible name for the native radio when no visible label content is projected. */
   readonly ariaLabel = input<string | undefined>(undefined);
 
   protected readonly inputId = this.idGenerator.next('dg-radio');
+
+  private readonly registry = inject(DynamoRadioControlRegistry);
+  // Only true once Angular Forms actually wires this instance up
+  // (registerOnChange is only ever called by formControl/formControlName/
+  // ngModel) — the plain split-binding group pattern never touches CVA at
+  // all, and self-syncs siblings via its own one-way `[checked]` input, so
+  // the registry must never mutate a non-forms-controlled sibling's
+  // `checked` (doing so would fire a spurious `checkedChange` that a naive
+  // "any change means select me" handler, as shown in this class's own
+  // documented split-binding pattern, would misinterpret).
+  private formsControlled = false;
+  private onChangeFn: (value: string) => void = () => {
+    /* replaced by registerOnChange once bound to a FormControl/ngModel */
+  };
+  private onTouchedFn: () => void = () => {
+    /* replaced by registerOnTouched once bound to a FormControl/ngModel */
+  };
+
+  constructor() {
+    super();
+    this.registry.add(this);
+    inject(DestroyRef).onDestroy(() => this.registry.remove(this));
+  }
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
@@ -72,6 +111,39 @@ export class DynamoRadio extends DynamoBaseComponent<DynamoRadioPart> {
     // deselected by a sibling — so this only ever sets `true`, matching that.
     if (target.checked) {
       this.checked.set(true);
+      this.onChangeFn(this.value());
+      this.onTouchedFn();
+      if (this.formsControlled) {
+        this.registry.select(this);
+      }
     }
+  }
+
+  /** @internal used by `DynamoRadioControlRegistry` to skip siblings using the plain split-binding pattern, which must never be mutated here. */
+  isFormsControlled(): boolean {
+    return this.formsControlled;
+  }
+
+  /**
+   * `value` is `unknown` (not `string`) to satisfy `ControlValueAccessor`'s
+   * contract, matching whatever type the bound `FormControl`/`ngModel`
+   * actually holds — compared against this radio's own `value()` with `===`
+   * to decide `checked`, the same technique `RadioControlValueAccessor` uses.
+   */
+  writeValue(value: unknown): void {
+    this.checked.set(value === this.value());
+  }
+
+  registerOnChange(fn: (value: string) => void): void {
+    this.formsControlled = true;
+    this.onChangeFn = fn;
+  }
+
+  registerOnTouched(fn: () => void): void {
+    this.onTouchedFn = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.disabled.set(isDisabled);
   }
 }

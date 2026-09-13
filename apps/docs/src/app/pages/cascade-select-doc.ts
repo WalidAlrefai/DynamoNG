@@ -62,6 +62,7 @@ const MANY_NODES: DynamoTreeNode<string>[] = Array.from(
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
+  { id: 'clearable', title: 'Clearable' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
 ];
 
@@ -71,6 +72,7 @@ const API: ApiTableRow[] = [
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'invalid', type: 'boolean', default: 'false' },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  { name: 'clearable', type: 'boolean', default: 'false' },
   { name: 'virtualScroll', type: 'boolean', default: 'false' },
   { name: 'virtualScrollItemSize', type: 'number', default: '36' },
   { name: 'virtualScrollHeight', type: 'number', default: '240' },
@@ -115,6 +117,25 @@ const API: ApiTableRow[] = [
       </docs-example>
 
       <docs-example
+        exampleId="clearable"
+        title="Clearable"
+        description="clearable shows a × button next to the trigger once a value is selected."
+      >
+        <div preview class="max-w-xs">
+          <dg-cascade-select
+            [nodes]="nodes"
+            [(value)]="clearableValue"
+            [clearable]="true"
+            ariaLabel="Location"
+          />
+        </div>
+        <div code>
+          &lt;dg-cascade-select [nodes]="nodes" [(value)]="value"
+          [clearable]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="virtual-scroll"
         title="Virtual Scroll"
         description="virtualScroll renders every open level's row list virtualized — no grouping caveat, since each level is a flat same-height list."
@@ -145,4 +166,5 @@ export class CascadeSelectDocPage {
   protected readonly manyNodes = MANY_NODES;
   protected readonly location = new FormControl<string | null>(null);
   protected readonly manyValue = signal<string | null>(null);
+  protected readonly clearableValue = signal<string | null>('mexico');
 }

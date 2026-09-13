@@ -9,9 +9,13 @@
 <cdk-virtual-scroll-viewport
   role="presentation"
   [itemSize]="itemSize()"
+  [orientation]="orientation()"
+  [appendOnly]="appendOnly()"
   [style.height.px]="height()"
+  [style.width.px]="width() ?? null"
   [class]="viewportClasses()"
   [attr.data-testid]="'DynamoVirtualScroll'"
+  (scrolledIndexChange)="scrolledIndexChange.emit($event)"
 >
   <div
     role="presentation"

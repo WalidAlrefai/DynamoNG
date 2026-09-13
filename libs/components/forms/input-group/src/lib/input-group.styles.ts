@@ -30,7 +30,10 @@ export const inputGroupWrapperStyles = cva(
 
 // No border of their own — they sit inside the wrapper's shared border,
 // same reasoning as Select's filter-icon docking (selectFilterIconStyles).
+// `gap-1` matches Toolbar's slot styles, since content projection via
+// `select="[prefix]"`/`[suffix]"` already accepts more than one element
+// (e.g. an icon *and* a unit label) side by side in a single slot.
 export const inputGroupPrefixStyles =
-  'inline-flex shrink-0 items-center text-text-muted';
+  'inline-flex shrink-0 items-center gap-1 text-text-muted';
 export const inputGroupSuffixStyles =
-  'inline-flex shrink-0 items-center text-text-muted';
+  'inline-flex shrink-0 items-center gap-1 text-text-muted';

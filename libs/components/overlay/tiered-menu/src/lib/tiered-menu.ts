@@ -18,7 +18,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { DynamoBaseComponent } from '@dynamong/core/base';
-import { DynamoOverlayService, type DynamoOverlayHandle } from '@dynamong/core/overlay';
+import {
+  DynamoOverlayService,
+  type DynamoOverlayHandle,
+} from '@dynamong/core/overlay';
 import { cn } from '@dynamong/utils/class-merge';
 import { buildFlyoutPositions } from './tiered-menu.positioning';
 import {
@@ -47,10 +50,34 @@ interface DynamoTieredMenuLevel {
 // their own bottom/top-corner map; Context Menu/Cascade Select each have
 // their own side-corner map).
 const ROOT_POSITION_MAP: Record<DynamoTieredMenuPosition, ConnectedPosition> = {
-  'bottom-start': { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
-  'bottom-end': { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
-  'top-start': { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
-  'top-end': { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
+  'bottom-start': {
+    originX: 'start',
+    originY: 'bottom',
+    overlayX: 'start',
+    overlayY: 'top',
+    offsetY: 4,
+  },
+  'bottom-end': {
+    originX: 'end',
+    originY: 'bottom',
+    overlayX: 'end',
+    overlayY: 'top',
+    offsetY: 4,
+  },
+  'top-start': {
+    originX: 'start',
+    originY: 'top',
+    overlayX: 'start',
+    overlayY: 'bottom',
+    offsetY: -4,
+  },
+  'top-end': {
+    originX: 'end',
+    originY: 'top',
+    overlayX: 'end',
+    overlayY: 'bottom',
+    offsetY: -4,
+  },
 };
 const ALL_ROOT_POSITIONS: DynamoTieredMenuPosition[] = [
   'bottom-start',
@@ -58,7 +85,9 @@ const ALL_ROOT_POSITIONS: DynamoTieredMenuPosition[] = [
   'top-start',
   'top-end',
 ];
-function buildRootPositions(preferred: DynamoTieredMenuPosition): ConnectedPosition[] {
+function buildRootPositions(
+  preferred: DynamoTieredMenuPosition,
+): ConnectedPosition[] {
   return [
     ROOT_POSITION_MAP[preferred],
     ...ALL_ROOT_POSITIONS.filter((candidate) => candidate !== preferred).map(
@@ -122,10 +151,14 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable: `<dg-tiered-menu [(open)]="isOpen">`. */
   readonly open = model(false);
+  /** Whether hovering a branch row opens its flyout automatically. When `false`, hover only moves the active-row highlight — the flyout opens via click, or Enter/Space/ArrowRight from the keyboard. */
+  readonly autoDisplay = input(true);
   readonly itemSelect = output<DynamoTieredMenuItem>();
 
-  private readonly triggerEl = viewChild.required<ElementRef<HTMLElement>>('triggerEl');
-  private readonly panelTemplate = viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  private readonly triggerEl =
+    viewChild.required<ElementRef<HTMLElement>>('triggerEl');
+  private readonly panelTemplate =
+    viewChild.required<TemplateRef<unknown>>('panelTemplate');
   private readonly overlayService = inject(DynamoOverlayService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -141,7 +174,9 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
   /** Which level currently owns Up/Down/Enter/Escape. */
   protected readonly activeLevelIndex = signal(0);
   /** `flyoutHandles[k]` backs `levels()[k + 1]` — a plain stack, push/pop only. */
-  private readonly flyoutHandles: (DynamoOverlayHandle & { anchorEl: HTMLElement })[] = [];
+  private readonly flyoutHandles: (DynamoOverlayHandle & {
+    anchorEl: HTMLElement;
+  })[] = [];
 
   // `aria-activedescendant` is only an allowed attribute on a handful of
   // ARIA roles (menu/menubar/combobox/listbox/tree/grid/...) — a plain
@@ -160,9 +195,13 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
   });
 
   protected readonly triggerClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(tieredMenuTriggerStyles(), this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(tieredMenuTriggerStyles(), this.styleClass()),
   );
-  protected readonly chevronClasses = computed(() => tieredMenuChevronStyles({ open: this.open() }));
+  protected readonly chevronClasses = computed(() =>
+    tieredMenuChevronStyles({ open: this.open() }),
+  );
   protected readonly panelClasses = tieredMenuPanelStyles;
   protected readonly caretClasses = tieredMenuCaretStyles;
 
@@ -211,11 +250,17 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
         const levelIndex = k + 1;
         const anchor = current[levelIndex]?.anchorEl;
         if (!anchor) break; // shouldn't happen — stay defensive rather than throw
-        const handle = this.overlayService.createConnectedOverlay(anchor, buildFlyoutPositions(), {
-          hasBackdrop: false, // only the root panel gets the backdrop that closes everything
-        });
+        const handle = this.overlayService.createConnectedOverlay(
+          anchor,
+          buildFlyoutPositions(),
+          {
+            hasBackdrop: false, // only the root panel gets the backdrop that closes everything
+          },
+        );
         handle.overlayRef.attach(
-          new TemplatePortal(this.panelTemplate(), this.viewContainerRef, { levelIndex }),
+          new TemplatePortal(this.panelTemplate(), this.viewContainerRef, {
+            levelIndex,
+          }),
         );
         this.flyoutHandles.push({ ...handle, anchorEl: anchor });
       }
@@ -237,7 +282,11 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
     return `${this.panelIdForLevel(levelIndex)}-row-${index}`;
   }
 
-  protected itemClasses(item: DynamoTieredMenuItem, levelIndex: number, index: number) {
+  protected itemClasses(
+    item: DynamoTieredMenuItem,
+    levelIndex: number,
+    index: number,
+  ) {
     const level = this.levels()[levelIndex];
     return tieredMenuItemStyles({
       active: level?.activeIndex === index,
@@ -276,7 +325,11 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
 
   protected onItemHover(levelIndex: number, index: number): void {
     this.activeLevelIndex.set(levelIndex);
-    this.drillInto(levelIndex, index);
+    if (this.autoDisplay()) {
+      this.drillInto(levelIndex, index);
+    } else {
+      this.moveActiveOnly(levelIndex, index);
+    }
   }
 
   protected onItemClick(levelIndex: number, index: number): void {
@@ -284,7 +337,10 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
     const item = level?.items[index];
     if (!item || item.disabled) return;
     if (item.children?.length) {
-      this.onItemHover(levelIndex, index);
+      // Always drills in on click regardless of `autoDisplay` — that input
+      // only gates hover-driven opening, matching PrimeNG's own semantics.
+      this.activeLevelIndex.set(levelIndex);
+      this.drillInto(levelIndex, index);
     } else {
       this.commitItem(item);
     }
@@ -319,7 +375,10 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
         break;
       case 'Home':
         event.preventDefault();
-        this.moveActiveOnly(levelIndex, findEnabledItemIndex(level.items, -1, 1) ?? -1);
+        this.moveActiveOnly(
+          levelIndex,
+          findEnabledItemIndex(level.items, -1, 1) ?? -1,
+        );
         break;
       case 'End':
         event.preventDefault();
@@ -403,7 +462,11 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
       if (item && !item.disabled && item.children?.length) {
         const childItems = item.children;
         const seededActive = findEnabledItemIndex(childItems, -1, 1) ?? -1;
-        next.push({ items: childItems, activeIndex: seededActive, anchorEl: anchor });
+        next.push({
+          items: childItems,
+          activeIndex: seededActive,
+          anchorEl: anchor,
+        });
       }
       return next;
     });
@@ -419,7 +482,10 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
       const handle = this.overlayService.createConnectedOverlay(
         this.triggerEl().nativeElement,
         buildRootPositions(this.position()),
-        { hasBackdrop: true, backdropClass: 'cdk-overlay-transparent-backdrop' },
+        {
+          hasBackdrop: true,
+          backdropClass: 'cdk-overlay-transparent-backdrop',
+        },
       );
       handle.overlayRef
         .backdropClick()
@@ -429,7 +495,10 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
     }
 
     if (!this.portal) {
-      this.portal = new TemplatePortal(this.panelTemplate(), this.viewContainerRef);
+      this.portal = new TemplatePortal(
+        this.panelTemplate(),
+        this.viewContainerRef,
+      );
     }
 
     if (!this.overlayHandle.overlayRef.hasAttached()) {

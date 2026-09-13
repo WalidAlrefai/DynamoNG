@@ -115,6 +115,10 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
   readonly variant = input<DynamoButtonVariant>('solid');
   readonly size = input<DynamoButtonSize>('md');
   readonly disabled = input(false);
+  /** Disables only the primary action button, leaving the dropdown toggle usable. */
+  readonly buttonDisabled = input(false);
+  /** Disables only the dropdown-toggle button, leaving the primary action usable. */
+  readonly menuButtonDisabled = input(false);
   readonly position = input<DynamoSplitButtonPosition>('bottom-start');
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Two-way bindable: `<dg-split-button [(open)]="isOpen">`. */
@@ -146,6 +150,12 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
     this.unstyled()
       ? this.styleClass()
       : cn(splitButtonRootStyles, this.styleClass()),
+  );
+  protected readonly isPrimaryDisabled = computed(
+    () => this.disabled() || this.buttonDisabled(),
+  );
+  protected readonly isMenuDisabled = computed(
+    () => this.disabled() || this.menuButtonDisabled(),
   );
   protected readonly primaryClasses = splitButtonPrimaryStyles;
   protected readonly triggerClasses = computed(() =>
@@ -198,14 +208,14 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
   }
 
   protected onPrimaryClick(): void {
-    if (this.disabled()) {
+    if (this.isPrimaryDisabled()) {
       return;
     }
     this.action.emit();
   }
 
   protected toggle(): void {
-    if (this.disabled()) {
+    if (this.isMenuDisabled()) {
       return;
     }
     if (this.open()) {
@@ -221,7 +231,7 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
   }
 
   protected onTriggerKeydown(event: KeyboardEvent): void {
-    if (this.disabled()) {
+    if (this.isMenuDisabled()) {
       return;
     }
     switch (event.key) {

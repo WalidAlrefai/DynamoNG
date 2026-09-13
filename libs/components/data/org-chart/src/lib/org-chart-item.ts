@@ -52,15 +52,19 @@ export class DynamoOrgChartItem {
     () => this.hasChildren() && !this.collapsed(),
   );
   // Focusable when it has a keyboard action: selection, or Arrow-key
-  // expand/collapse of its subtree.
+  // expand/collapse of its subtree. A disabled node is never focusable —
+  // it can't be selected, and its subtree is still toggled via the
+  // separate mouse-only toggler span, never the box itself.
   protected readonly focusable = computed(
-    () => this.state.selectable() || this.showToggler(),
+    () =>
+      !this.node().disabled && (this.state.selectable() || this.showToggler()),
   );
 
   protected readonly boxClasses = computed(() =>
     orgChartBoxStyles({
       selectable: this.state.selectable(),
       selected: this.selected(),
+      disabled: this.node().disabled ?? false,
     }),
   );
   protected readonly togglerClasses = computed(() =>
@@ -70,10 +74,16 @@ export class DynamoOrgChartItem {
   protected readonly groupClasses = orgChartGroupStyles;
 
   protected onBoxClick(): void {
+    if (this.node().disabled) {
+      return;
+    }
     this.state.select(this.node());
   }
 
   protected onBoxKeydown(event: KeyboardEvent): void {
+    if (this.node().disabled) {
+      return;
+    }
     switch (event.key) {
       case 'Enter':
       case ' ':

@@ -61,9 +61,16 @@ export const editorButtonStyles = cva(
 // correct semantic <ul>/<li> markup that renders with no visible bullet at
 // all, discovered live rather than caught by any unit test (jsdom doesn't
 // apply CSS).
+// `empty:before:content-[attr(data-placeholder)]` is the standard
+// contenteditable-placeholder trick — a native <textarea>'s `placeholder`
+// attribute has no contenteditable equivalent, so this renders the
+// `data-placeholder` attribute's value as generated content only while the
+// div has zero child nodes, exactly like a real placeholder disappearing on
+// the first keystroke.
 export const editorContentStyles = cva(
   'min-h-32 overflow-y-auto p-3 text-sm outline-none ' +
-    '[&_a]:text-primary [&_a]:underline [&_ol]:list-decimal [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6',
+    '[&_a]:text-primary [&_a]:underline [&_ol]:list-decimal [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6 ' +
+    'empty:before:pointer-events-none empty:before:text-text-muted empty:before:content-[attr(data-placeholder)]',
   {
     variants: {
       disabled: {

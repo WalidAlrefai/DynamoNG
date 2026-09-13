@@ -1,3 +1,5 @@
+import { Component } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -9,7 +11,21 @@ import { describe, expect, it } from 'vitest';
 import { DynamoSlider } from './slider';
 import { DynamoSliderHarness } from './slider.harness';
 
-function mockTrackRect(container: HTMLElement, left: number, width: number): void {
+@Component({
+  selector: 'dg-slider-reactive-form-host',
+  standalone: true,
+  imports: [DynamoSlider, ReactiveFormsModule],
+  template: `<dg-slider [formControl]="control" ariaLabel="Volume" />`,
+})
+class ReactiveFormHostComponent {
+  readonly control = new FormControl(0, { nonNullable: true });
+}
+
+function mockTrackRect(
+  container: HTMLElement,
+  left: number,
+  width: number,
+): void {
   const track = container.querySelector('[role="slider"]')
     ?.parentElement as HTMLElement;
   track.getBoundingClientRect = () =>
@@ -228,6 +244,78 @@ describe('DynamoSlider', () => {
       fireEvent.pointerDown(track, { clientX: 150 });
 
       expect(componentInstance.value()).toBe(0);
+    });
+  });
+
+  describe('readOnly', () => {
+    it('blocks keyboard and pointer interaction, but keeps the thumb focusable', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 50, readOnly: true } },
+      );
+      mockTrackRect(container, 0, 200);
+      const thumb = within(container).getByRole('slider') as HTMLElement;
+      thumb.focus();
+
+      fireEvent.keyDown(thumb, { key: 'ArrowRight' });
+      fireEvent.pointerDown(thumb.parentElement as HTMLElement, {
+        clientX: 190,
+      });
+
+      expect(componentInstance.value()).toBe(50);
+      expect(thumb.tabIndex).toBe(0);
+      expect(thumb.getAttribute('aria-readonly')).toBe('true');
+    });
+  });
+
+  describe('ControlValueAccessor / forms integration', () => {
+    it('propagates a keyboard change to a bound reactive FormControl', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+      const thumb = within(container).getByRole('slider') as HTMLElement;
+      thumb.focus();
+
+      fireEvent.keyDown(thumb, { key: 'ArrowRight' });
+
+      expect(componentInstance.control.value).toBe(1);
+    });
+
+    it('reflects an externally-set FormControl value (writeValue)', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      componentInstance.control.setValue(42);
+      fixture.detectChanges();
+
+      expect(
+        within(container).getByRole('slider').getAttribute('aria-valuenow'),
+      ).toBe('42');
+    });
+
+    it('setDisabledState reflects onto the disabled model', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoSlider);
+
+      componentInstance.setDisabledState(true);
+
+      expect(componentInstance.disabled()).toBe(true);
+    });
+
+    it('marks the FormControl as touched after a drag ends', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+      mockTrackRect(container, 0, 200);
+      const thumb = within(container).getByRole('slider') as HTMLElement;
+      expect(componentInstance.control.touched).toBe(false);
+
+      fireEvent.pointerDown(thumb.parentElement as HTMLElement, {
+        clientX: 100,
+      });
+      fireEvent.pointerUp(thumb.parentElement as HTMLElement);
+
+      expect(componentInstance.control.touched).toBe(true);
     });
   });
 

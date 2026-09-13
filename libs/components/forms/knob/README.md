@@ -2,7 +2,8 @@
 
 A circular dial input — drag, wheel-scroll (while focused), or arrow keys to
 adjust a numeric value within a range. A compact alternative to `@dynamong/slider`
-for dashboards and control panels.
+for dashboards and control panels. Implements `ControlValueAccessor`, so it
+works with `formControl`/`ngModel` in addition to `[(value)]`.
 
 ## Usage
 
@@ -19,25 +20,28 @@ for dashboards and control panels.
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `value` | `number` (model) | `0` | Two-way bindable. Always read back through the internal min/max/step clamp — see `Accessibility`. |
-| `min` | `number` | `0` | |
-| `max` | `number` | `100` | |
-| `step` | `number` | `1` | Used by arrow keys, wheel, and to snap dragged/typed values to a `min`-relative grid. |
-| `disabled` | `boolean` | `false` | |
-| `size` | `DynamoSize` | `'md'` | Controls the center label's font size only — the dial's own size is `diameter`. |
-| `severity` | `DynamoSeverity` | `'primary'` | Colors the filled arc. |
-| `ariaLabel` | `string \| undefined` | `undefined` | Falls back to `'Knob'` if unset. |
-| `diameter` | `number` | `100` | Dial size in px. There's no ResizeObserver-based auto-sizing — set this explicitly. |
-| `strokeWidth` | `number` | `8` | Track/fill arc thickness in px. |
-| `showValue` | `boolean` | `true` | Whether the center numeric label renders. |
+| Input           | Type                  | Default     | Description                                                                                                                                                               |
+| --------------- | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`         | `number` (model)      | `0`         | Two-way bindable; also driven by Angular forms via `writeValue`. Always read back through the internal min/max/step clamp — see `Accessibility`.                          |
+| `min`           | `number`              | `0`         |                                                                                                                                                                           |
+| `max`           | `number`              | `100`       |                                                                                                                                                                           |
+| `step`          | `number`              | `1`         | Used by arrow keys, wheel, and to snap dragged/typed values to a `min`-relative grid.                                                                                     |
+| `disabled`      | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                    |
+| `readOnly`      | `boolean`             | `false`     | HTML `readonly` semantics: the dial stays visible/focusable but can't be dragged, wheeled, or stepped. Unlike `disabled`, doesn't dim it or remove it from the tab order. |
+| `size`          | `DynamoSize`          | `'md'`      | Controls the center label's font size only — the dial's own size is `diameter`.                                                                                           |
+| `severity`      | `DynamoSeverity`      | `'primary'` | Colors the filled arc.                                                                                                                                                    |
+| `ariaLabel`     | `string \| undefined` | `undefined` | Falls back to `'Knob'` if unset.                                                                                                                                          |
+| `diameter`      | `number`              | `100`       | Dial size in px. There's no ResizeObserver-based auto-sizing — set this explicitly.                                                                                       |
+| `strokeWidth`   | `number`              | `8`         | Track/fill arc thickness in px.                                                                                                                                           |
+| `showValue`     | `boolean`             | `true`      | Whether the center numeric label renders.                                                                                                                                 |
+| `valueTemplate` | `string`              | `'{value}'` | Formats the centered label, replacing the literal `{value}` token — e.g. `'{value}%'`.                                                                                    |
 
 ## Outputs
 
-| Output | Payload | Fires when |
-|---|---|---|
-| `valueChange` | `number` | `value` changes (auto-generated by `model()`) — dragging, wheel, arrow/Page/Home/End keys, or programmatic changes. |
+| Output           | Payload   | Fires when                                                                                                          |
+| ---------------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `valueChange`    | `number`  | `value` changes (auto-generated by `model()`) — dragging, wheel, arrow/Page/Home/End keys, or programmatic changes. |
+| `disabledChange` | `boolean` | `disabled` changes (auto-generated by `model()`).                                                                   |
 
 ## Accessibility
 
@@ -53,7 +57,7 @@ for dashboards and control panels.
 
 ## Tier / dependencies
 
-- `tier:0`. Peer dependencies: none beyond Angular core/CDK.
+- `tier:0`. Peer dependencies: `@angular/forms` (`ControlValueAccessor`).
 
 ## Running unit tests
 

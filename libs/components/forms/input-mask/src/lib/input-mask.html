@@ -2,7 +2,7 @@
   type="text"
   inputmode="text"
   [class]="inputClasses()"
-  [value]="value()"
+  [value]="displayValue()"
   [placeholder]="placeholder()"
   [disabled]="disabled()"
   [readOnly]="readOnly()"
@@ -12,5 +12,6 @@
   (input)="onInput($event)"
   (keydown)="onKeydown($event)"
   (paste)="onPaste($event)"
-  (blur)="onBlur()"
+  (focus)="onFocus($event)"
+  (blur)="onBlur($event)"
 />

@@ -3,13 +3,14 @@ import {
   Component,
   computed,
   input,
+  output,
   signal,
 } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import type { DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
 import { avatarRootStyles } from './avatar.styles';
-import type { DynamoAvatarPart } from './avatar.types';
+import type { DynamoAvatarPart, DynamoAvatarShape } from './avatar.types';
 
 /**
  * Derives initials from a display name: first + last token's first
@@ -42,9 +43,22 @@ export class DynamoAvatar extends DynamoBaseComponent<DynamoAvatarPart> {
   readonly src = input<string | undefined>(undefined);
   /** Drives derived initials and the default alt text when `alt` is unset. */
   readonly name = input<string | undefined>(undefined);
+  /**
+   * A literal override rendered instead of `name`-derived initials — for
+   * content the initials heuristic can't produce (a status glyph, an
+   * emoji, "+3", ...). Still ranks below `src`: an image, once loaded,
+   * always wins. Mirrors PrimeNG Avatar's `label`, adapted to sit
+   * alongside `name` rather than replace it.
+   */
+  readonly label = input<string | undefined>(undefined);
   /** Overrides the derived alt text (`name`, or `'Avatar'` if neither is set). */
   readonly alt = input<string | undefined>(undefined);
+  readonly ariaLabelledBy = input<string | undefined>(undefined);
   readonly size = input<DynamoSize>('md');
+  /** `'circle'` (default, today's only look) or `'square'`. */
+  readonly shape = input<DynamoAvatarShape>('circle');
+  /** Fires when `src` fails to load — the component already falls back to `label`/initials/icon on its own; this is for a consumer that also wants to react (e.g. logging, retrying with a different URL). */
+  readonly imageError = output<Event>();
 
   private readonly imageFailed = signal(false);
 
@@ -55,6 +69,10 @@ export class DynamoAvatar extends DynamoBaseComponent<DynamoAvatarPart> {
   protected readonly showImage = computed(
     () => !!this.src() && !this.imageFailed(),
   );
+  /** Fallback priority once there's no showable image: a literal `label` override, then `name`-derived initials, then the projected/default icon. */
+  protected readonly displayLabel = computed(
+    () => this.label() ?? this.initials(),
+  );
   protected readonly altText = computed(
     () => this.alt() ?? this.name() ?? 'Avatar',
   );
@@ -62,10 +80,14 @@ export class DynamoAvatar extends DynamoBaseComponent<DynamoAvatarPart> {
   protected readonly rootClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
-      : cn(avatarRootStyles({ size: this.size() }), this.styleClass()),
+      : cn(
+          avatarRootStyles({ size: this.size(), shape: this.shape() }),
+          this.styleClass(),
+        ),
   );
 
-  protected onImageError(): void {
+  protected onImageError(event: Event): void {
     this.imageFailed.set(true);
+    this.imageError.emit(event);
   }
 }

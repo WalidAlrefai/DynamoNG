@@ -20,6 +20,7 @@ import type { DynamoChipVariant } from './chip.types';
     [size]="size()"
     [removable]="removable()"
     [removeAriaLabel]="removeAriaLabel()"
+    [disabled]="disabled()"
     (removed)="onRemoved()"
     >{{ label() }}</dg-chip
   >`,
@@ -31,6 +32,7 @@ class ChipTestHostComponent {
   readonly size = input<DynamoSize>('md');
   readonly removable = input(false);
   readonly removeAriaLabel = input('Remove');
+  readonly disabled = input(false);
   removedCount = 0;
 
   onRemoved(): void {
@@ -237,6 +239,66 @@ describe('DynamoChip', () => {
           fixture.detectChanges();
         }
       }).not.toThrow();
+    });
+  });
+
+  describe('disabled', () => {
+    it('defaults to false', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoChip);
+      expect(componentInstance.disabled()).toBe(false);
+    });
+
+    it('dims the chip and disables the remove button', () => {
+      const { container } = renderDynamoComponent(ChipTestHostComponent, {
+        inputs: { removable: true, disabled: true },
+      });
+
+      const chip = container.querySelector('span');
+      expect(chip?.className).toContain('opacity-60');
+      expect(container.querySelector('button')?.hasAttribute('disabled')).toBe(
+        true,
+      );
+    });
+
+    it('does not emit removed when the remove button is clicked while disabled', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        ChipTestHostComponent,
+        { inputs: { removable: true, disabled: true } },
+      );
+      const removeButton = container.querySelector(
+        'button',
+      ) as HTMLButtonElement;
+
+      removeButton.click();
+      fixture.detectChanges();
+
+      expect(componentInstance.removedCount).toBe(0);
+    });
+  });
+
+  describe('projected icon', () => {
+    it('renders a projected [icon] element ahead of the label', () => {
+      @Component({
+        selector: 'dg-chip-icon-host',
+        standalone: true,
+        imports: [DynamoChip],
+        template: `<dg-chip
+          ><span icon data-testid="chip-icon">*</span>Frontend</dg-chip
+        >`,
+      })
+      class ChipIconHostComponent {}
+
+      const { container } = renderDynamoComponent(ChipIconHostComponent);
+
+      expect(
+        container.querySelector('[data-testid="chip-icon"]'),
+      ).not.toBeNull();
+      expect(container.textContent).toContain('Frontend');
+    });
+
+    it('renders nothing extra when no [icon] content is projected', () => {
+      const { container } = renderDynamoComponent(ChipTestHostComponent);
+      expect(container.querySelector('[icon]')).toBeNull();
     });
   });
 

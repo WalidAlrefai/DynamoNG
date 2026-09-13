@@ -76,6 +76,22 @@ describe('DynamoSpinner', () => {
     });
   });
 
+  describe('speed', () => {
+    it('leaves animation-duration unset by default', () => {
+      const { container } = renderDynamoComponent(DynamoSpinner);
+      const span = container.querySelector('span') as HTMLElement;
+      expect(span.style.animationDuration).toBe('');
+    });
+
+    it('applies an explicit speed as animation-duration', () => {
+      const { container } = renderDynamoComponent(DynamoSpinner, {
+        inputs: { speed: '1.5s' },
+      });
+      const span = container.querySelector('span') as HTMLElement;
+      expect(span.style.animationDuration).toBe('1.5s');
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations while decorative (default)', async () => {
       const { container } = renderDynamoComponent(DynamoSpinner);

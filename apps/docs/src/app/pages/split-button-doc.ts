@@ -8,7 +8,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'split-disabled', title: 'Split Disabled' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'label', type: 'string (required)', default: '—' },
@@ -18,6 +21,8 @@ const API: ApiTableRow[] = [
     default: "'primary' / 'solid' / 'md'",
   },
   { name: 'disabled', type: 'boolean', default: 'false' },
+  { name: 'buttonDisabled', type: 'boolean', default: 'false' },
+  { name: 'menuButtonDisabled', type: 'boolean', default: 'false' },
   {
     name: 'position',
     type: "'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'",
@@ -69,6 +74,31 @@ const API: ApiTableRow[] = [
           &lt;dg-split-button label="Save" (action)="onSave()"
           (itemSelect)="onSelect($event)"&gt; &lt;dg-menu-item value="save-as"
           label="Save as..." /&gt; &lt;/dg-split-button&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="split-disabled"
+        title="Split Disabled"
+        description="buttonDisabled and menuButtonDisabled disable each half independently — unlike disabled, which disables both."
+      >
+        <div preview class="flex flex-col gap-3">
+          <dg-split-button
+            label="Save (menu disabled)"
+            [menuButtonDisabled]="true"
+          >
+            <dg-menu-item value="save-as" label="Save as..." />
+          </dg-split-button>
+          <dg-split-button
+            label="Save (button disabled)"
+            [buttonDisabled]="true"
+          >
+            <dg-menu-item value="save-as" label="Save as..." />
+          </dg-split-button>
+        </div>
+        <div code>
+          &lt;dg-split-button label="Save"
+          [menuButtonDisabled]="true"&gt;...&lt;/dg-split-button&gt;
         </div>
       </docs-example>
 

@@ -21,13 +21,15 @@ const ACTIONS: DynamoSpeedDialAction[] = [
 const EXAMPLES: DocExampleRef[] = [
   { id: 'linear', title: 'Linear' },
   { id: 'arc', title: 'Arc' },
+  { id: 'corner', title: 'Corner' },
+  { id: 'mask', title: 'Mask' },
 ];
 
 const API: ApiTableRow[] = [
   { name: 'actions', type: 'DynamoSpeedDialAction[] (required)', default: '—' },
   {
     name: 'direction',
-    type: "'up' | 'down' | 'left' | 'right'",
+    type: "'up' | 'down' | 'left' | 'right' | 'up-left' | 'up-right' | 'down-left' | 'down-right'",
     default: "'up'",
   },
   {
@@ -38,6 +40,7 @@ const API: ApiTableRow[] = [
   { name: 'open', type: 'boolean (model)', default: 'false' },
   { name: 'openOnHover', type: 'boolean', default: 'false' },
   { name: 'radius', type: 'number', default: '90' },
+  { name: 'mask', type: 'boolean', default: 'false' },
   {
     name: 'actionSelect',
     type: 'output<DynamoSpeedDialAction>',
@@ -59,13 +62,14 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="linear"
         title="Linear"
-        description="type=&quot;linear&quot; fans the actions out in a straight line along direction."
+        description='type="linear" fans the actions out in a straight line along direction.'
       >
         <div preview class="flex min-h-[14rem] items-end p-8">
           <dg-speed-dial [actions]="actions" type="linear" direction="up" />
         </div>
         <div code>
-          &lt;dg-speed-dial [actions]="actions" type="linear" direction="up" /&gt;
+          &lt;dg-speed-dial [actions]="actions" type="linear" direction="up"
+          /&gt;
         </div>
       </docs-example>
 
@@ -85,6 +89,43 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-speed-dial [actions]="actions" type="quarter-circle"
           [radius]="100" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="corner"
+        title="Corner"
+        description="A corner direction (up-left, up-right, down-left, down-right) sits exactly between its two adjacent cardinals — pair it with quarter-circle for the classic 'fan out of a corner' shape, e.g. a bottom-right-anchored FAB."
+      >
+        <div preview class="flex min-h-[16rem] items-end justify-end p-8">
+          <dg-speed-dial
+            [actions]="actions"
+            type="quarter-circle"
+            direction="up-left"
+            [radius]="100"
+          />
+        </div>
+        <div code>
+          &lt;dg-speed-dial [actions]="actions" type="quarter-circle"
+          direction="up-left" [radius]="100" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="mask"
+        title="Mask"
+        description="mask renders a dimming backdrop behind the fanned-out actions while open — clicking it closes the dial, same as clicking anywhere else outside the widget."
+      >
+        <div preview class="flex min-h-[14rem] items-end p-8">
+          <dg-speed-dial
+            [actions]="actions"
+            type="linear"
+            direction="up"
+            [mask]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-speed-dial [actions]="actions" [mask]="true" /&gt;
         </div>
       </docs-example>
 

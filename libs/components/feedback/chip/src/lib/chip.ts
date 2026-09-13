@@ -23,6 +23,8 @@ export class DynamoChip extends DynamoBaseComponent<DynamoChipPart> {
   readonly size = input<DynamoSize>('md');
   readonly removable = input(false);
   readonly removeAriaLabel = input('Remove');
+  /** Dims the chip and disables the remove button; the click/keyboard remove path becomes a no-op. */
+  readonly disabled = input(false);
   readonly removed = output<void>();
 
   protected readonly classes = computed(() =>
@@ -33,6 +35,7 @@ export class DynamoChip extends DynamoBaseComponent<DynamoChipPart> {
             severity: this.severity(),
             variant: this.variant(),
             size: this.size(),
+            disabled: this.disabled(),
           }),
           this.styleClass(),
         ),
@@ -40,6 +43,9 @@ export class DynamoChip extends DynamoBaseComponent<DynamoChipPart> {
   protected readonly removeButtonClasses = chipRemoveButtonStyles;
 
   protected remove(): void {
+    if (this.disabled()) {
+      return;
+    }
     this.removed.emit();
   }
 }

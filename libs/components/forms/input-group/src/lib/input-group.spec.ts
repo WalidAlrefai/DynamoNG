@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
 import { DynamoInputGroup } from './input-group';
@@ -35,6 +38,20 @@ class InputGroupTestHostComponent {
 })
 class InputGroupEmptyHostComponent {}
 
+@Component({
+  selector: 'dg-input-group-multi-prefix-host',
+  standalone: true,
+  imports: [DynamoInputGroup],
+  template: `
+    <dg-input-group>
+      <span prefix>$</span>
+      <span prefix>USD</span>
+      <input type="text" placeholder="Amount" />
+    </dg-input-group>
+  `,
+})
+class InputGroupMultiPrefixHostComponent {}
+
 describe('DynamoInputGroup', () => {
   describe('creation', () => {
     it('projects prefix, default, and suffix content into their own slots', () => {
@@ -42,12 +59,33 @@ describe('DynamoInputGroup', () => {
       const container = fixture.nativeElement as HTMLElement;
 
       expect(
-        container.querySelector('[data-testid="dg-input-group-prefix"]')?.textContent?.trim(),
+        container
+          .querySelector('[data-testid="dg-input-group-prefix"]')
+          ?.textContent?.trim(),
       ).toBe('$');
-      expect(container.querySelector('input[placeholder="Amount"]')).not.toBeNull();
       expect(
-        container.querySelector('[data-testid="dg-input-group-suffix"]')?.textContent?.trim(),
+        container.querySelector('input[placeholder="Amount"]'),
+      ).not.toBeNull();
+      expect(
+        container
+          .querySelector('[data-testid="dg-input-group-suffix"]')
+          ?.textContent?.trim(),
       ).toBe('.00');
+    });
+  });
+
+  describe('multiple addons in one slot', () => {
+    it('projects more than one element into the same [prefix] slot, gapped', () => {
+      const { fixture } = renderDynamoComponent(
+        InputGroupMultiPrefixHostComponent,
+      );
+      const container = fixture.nativeElement as HTMLElement;
+      const prefix = container.querySelector(
+        '[data-testid="dg-input-group-prefix"]',
+      ) as HTMLElement;
+
+      expect(prefix.textContent?.trim()).toBe('$USD');
+      expect(prefix.className).toContain('gap-1');
     });
   });
 
@@ -56,19 +94,28 @@ describe('DynamoInputGroup', () => {
       const { fixture } = renderDynamoComponent(InputGroupEmptyHostComponent);
       const container = fixture.nativeElement as HTMLElement;
 
-      expect(container.querySelector('[data-testid="dg-input-group-prefix"]')?.textContent?.trim()).toBe(
-        '',
-      );
-      expect(container.querySelector('[data-testid="dg-input-group-suffix"]')?.textContent?.trim()).toBe(
-        '',
-      );
-      expect(container.querySelector('input[placeholder="No addons"]')).not.toBeNull();
+      expect(
+        container
+          .querySelector('[data-testid="dg-input-group-prefix"]')
+          ?.textContent?.trim(),
+      ).toBe('');
+      expect(
+        container
+          .querySelector('[data-testid="dg-input-group-suffix"]')
+          ?.textContent?.trim(),
+      ).toBe('');
+      expect(
+        container.querySelector('input[placeholder="No addons"]'),
+      ).not.toBeNull();
     });
   });
 
   describe('input properties', () => {
     it('accepts every documented size without throwing', () => {
-      const { componentInstance, setInputs } = renderDynamoComponent(DynamoInputGroup, { inputs: {} });
+      const { componentInstance, setInputs } = renderDynamoComponent(
+        DynamoInputGroup,
+        { inputs: {} },
+      );
 
       for (const size of ['sm', 'md', 'lg'] as const) {
         setInputs({ size });
@@ -77,7 +124,9 @@ describe('DynamoInputGroup', () => {
     });
 
     it('defaults invalid to false', () => {
-      const { componentInstance } = renderDynamoComponent(DynamoInputGroup, { inputs: {} });
+      const { componentInstance } = renderDynamoComponent(DynamoInputGroup, {
+        inputs: {},
+      });
 
       expect(componentInstance.invalid()).toBe(false);
     });
@@ -97,7 +146,10 @@ describe('DynamoInputGroup', () => {
 
     it('supports interaction through the DynamoInputGroupHarness', async () => {
       const { fixture } = renderDynamoComponent(InputGroupTestHostComponent);
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoInputGroupHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoInputGroupHarness,
+      );
 
       expect(await harness.getPrefixText()).toBe('$');
       expect(await harness.getSuffixText()).toBe('.00');
@@ -108,7 +160,9 @@ describe('DynamoInputGroup', () => {
     it('has no axe violations with prefix/suffix content and a labeled input', () => {
       const { fixture } = renderDynamoComponent(InputGroupTestHostComponent);
       const container = fixture.nativeElement as HTMLElement;
-      within(container).getByPlaceholderText('Amount').setAttribute('aria-label', 'Amount');
+      within(container)
+        .getByPlaceholderText('Amount')
+        .setAttribute('aria-label', 'Amount');
       return expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });

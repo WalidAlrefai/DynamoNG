@@ -20,6 +20,7 @@ const API: ApiTableRow[] = [
   { name: 'magnification', type: 'boolean', default: 'true' },
   { name: 'magnificationScale', type: 'number', default: '1.6' },
   { name: 'magnificationRange', type: 'number (px)', default: '140' },
+  { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
 ];
 
 @Component({
@@ -36,7 +37,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Pass items of { label, icon, command?, disabled? }; icons magnify as the pointer nears them."
+        description="Pass items of { label, icon, command?, disabled?, badge? }; icons magnify as the pointer nears them, and badge renders a small corner count folded into the tile's aria-label."
       >
         <div preview class="flex flex-col items-center gap-8 py-6">
           <dg-dock [items]="items" ariaLabel="Apps" />
@@ -59,7 +60,12 @@ export class DockDocPage {
   protected readonly last = signal<string | null>(null);
   protected readonly items: DynamoDockItem[] = [
     { label: 'Finder', icon: '🔍', command: () => this.last.set('Finder') },
-    { label: 'Mail', icon: '✉', command: () => this.last.set('Mail') },
+    {
+      label: 'Mail',
+      icon: '✉',
+      badge: 3,
+      command: () => this.last.set('Mail'),
+    },
     { label: 'Calendar', icon: '📅', command: () => this.last.set('Calendar') },
     { label: 'Photos', icon: '🖼', command: () => this.last.set('Photos') },
     { label: 'Music', icon: '♫', command: () => this.last.set('Music') },

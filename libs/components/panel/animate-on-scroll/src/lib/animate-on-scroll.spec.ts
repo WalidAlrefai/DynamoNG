@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -10,12 +13,20 @@ import { DynamoAnimateOnScroll } from './animate-on-scroll';
 let observed: {
   callback: IntersectionObserverCallback;
   disconnected: boolean;
+  options: IntersectionObserverInit | undefined;
 } | null = null;
 
 class FakeIntersectionObserver {
-  constructor(private readonly cb: IntersectionObserverCallback) {}
+  constructor(
+    private readonly cb: IntersectionObserverCallback,
+    private readonly options?: IntersectionObserverInit,
+  ) {}
   observe(): void {
-    observed = { callback: this.cb, disconnected: false };
+    observed = {
+      callback: this.cb,
+      disconnected: false,
+      options: this.options,
+    };
   }
   disconnect(): void {
     if (observed) observed.disconnected = true;
@@ -39,7 +50,11 @@ function fireIntersect(isIntersecting: boolean): void {
   selector: 'dg-aos-once-host',
   standalone: true,
   imports: [DynamoAnimateOnScroll],
-  template: `<div dgAnimateOnScroll enterClass="fade-in" data-testid="el"></div>`,
+  template: `<div
+    dgAnimateOnScroll
+    enterClass="fade-in"
+    data-testid="el"
+  ></div>`,
 })
 class OnceHost {}
 
@@ -69,6 +84,19 @@ class RepeatHost {}
   ></div>`,
 })
 class DisabledHost {}
+
+@Component({
+  selector: 'dg-aos-root-margin-host',
+  standalone: true,
+  imports: [DynamoAnimateOnScroll],
+  template: `<div
+    dgAnimateOnScroll
+    enterClass="fade-in"
+    rootMargin="-100px"
+    data-testid="el"
+  ></div>`,
+})
+class RootMarginHost {}
 
 describe('DynamoAnimateOnScroll', () => {
   beforeEach(() => {
@@ -134,6 +162,18 @@ describe('DynamoAnimateOnScroll', () => {
     } finally {
       window.matchMedia = original;
     }
+  });
+
+  it('passes rootMargin through to the IntersectionObserver options', () => {
+    renderDynamoComponent(RootMarginHost);
+
+    expect(observed?.options?.rootMargin).toBe('-100px');
+  });
+
+  it('defaults root to null (the viewport) when unset', () => {
+    renderDynamoComponent(OnceHost);
+
+    expect(observed?.options?.root).toBeNull();
   });
 
   it('disconnects the observer on destroy', () => {

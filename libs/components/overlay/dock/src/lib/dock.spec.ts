@@ -1,5 +1,8 @@
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -29,13 +32,12 @@ describe('DynamoDock', () => {
         inputs: { items: items(), ariaLabel: 'Apps' },
       });
 
-      expect(within(container).getByRole('menu', { name: 'Apps' })).toBeTruthy();
-      expect(tiles(container).map((t) => t.getAttribute('aria-label'))).toEqual([
-        'Finder',
-        'Mail',
-        'Trash',
-        'Settings',
-      ]);
+      expect(
+        within(container).getByRole('menu', { name: 'Apps' }),
+      ).toBeTruthy();
+      expect(tiles(container).map((t) => t.getAttribute('aria-label'))).toEqual(
+        ['Finder', 'Mail', 'Trash', 'Settings'],
+      );
     });
   });
 
@@ -150,6 +152,32 @@ describe('DynamoDock', () => {
       expect(
         tiles(container).every((t) => t.style.transform === 'scale(1)'),
       ).toBe(true);
+    });
+  });
+
+  describe('badge', () => {
+    it('renders the badge value inside the tile', () => {
+      const { container } = renderDynamoComponent(DynamoDock, {
+        inputs: { items: [{ label: 'Mail', badge: 3 }] },
+      });
+
+      expect(tiles(container)[0]?.textContent).toContain('3');
+    });
+
+    it('folds the badge into the tile aria-label', () => {
+      const { container } = renderDynamoComponent(DynamoDock, {
+        inputs: { items: [{ label: 'Mail', badge: 3 }] },
+      });
+
+      expect(tiles(container)[0]?.getAttribute('aria-label')).toBe('Mail (3)');
+    });
+
+    it('renders no badge markup when unset', () => {
+      const { container } = renderDynamoComponent(DynamoDock, {
+        inputs: { items: [{ label: 'Mail' }] },
+      });
+
+      expect(tiles(container)[0]?.getAttribute('aria-label')).toBe('Mail');
     });
   });
 

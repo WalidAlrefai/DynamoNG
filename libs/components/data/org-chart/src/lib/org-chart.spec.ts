@@ -1,6 +1,9 @@
 import { Component, signal } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DynamoOrgChart } from './org-chart';
@@ -339,6 +342,51 @@ describe('DynamoOrgChart', () => {
     });
   });
 
+  describe('disabled nodes', () => {
+    it('is not focusable and ignores box clicks', async () => {
+      const user = userEvent.setup();
+      const { container, componentInstance, fixture } = renderDynamoComponent(
+        OrgChartTestHostComponent,
+      );
+      componentInstance.selectable.set(true);
+      componentInstance.value.set([
+        { id: 'ceo', label: 'Ada — CEO', disabled: true },
+      ]);
+      fixture.detectChanges();
+
+      expect(box(container, 'ceo').getAttribute('tabindex')).toBe('-1');
+      expect(box(container, 'ceo').getAttribute('aria-disabled')).toBe('true');
+
+      await user.click(box(container, 'ceo'));
+      expect(componentInstance.selection()).toEqual([]);
+      expect(componentInstance.selectEvents).toHaveLength(0);
+    });
+
+    it('still lets its subtree be toggled via the mouse-only toggler', async () => {
+      const user = userEvent.setup();
+      const { container, componentInstance, fixture } = renderDynamoComponent(
+        OrgChartTestHostComponent,
+      );
+      componentInstance.value.set([
+        {
+          id: 'cto',
+          label: 'Bhav — CTO',
+          disabled: true,
+          children: [{ id: 'eng1', label: 'Chris — Eng' }],
+        },
+      ]);
+      fixture.detectChanges();
+
+      await user.click(toggler(container, 'cto'));
+      expect(container.querySelector('[data-node-id="eng1"]')).toBeFalsy();
+    });
+
+    it('leaves aria-disabled off enabled nodes', () => {
+      const { container } = renderDynamoComponent(OrgChartTestHostComponent);
+      expect(box(container, 'ceo').hasAttribute('aria-disabled')).toBe(false);
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations in its default state', async () => {
       const { container } = renderDynamoComponent(OrgChartTestHostComponent);
@@ -417,7 +465,9 @@ describe('DynamoOrgChart', () => {
       const { container, componentInstance, fixture } = renderDynamoComponent(
         OrgChartTestHostComponent,
       );
-      componentInstance.value.set([{ id: 'root', label: 'Root', children: [] }]);
+      componentInstance.value.set([
+        { id: 'root', label: 'Root', children: [] },
+      ]);
       fixture.detectChanges();
 
       expect(box(container, 'root').hasAttribute('aria-expanded')).toBe(false);

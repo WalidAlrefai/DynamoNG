@@ -14,16 +14,31 @@ function generateItems(count: number): { index: number; label: string }[] {
   }));
 }
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'horizontal', title: 'Horizontal' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'items', type: 'readonly T[] (required)', default: '—' },
   { name: 'itemSize', type: 'number (required)', default: '—' },
   { name: 'height', type: 'number (required)', default: '—' },
+  { name: 'width', type: 'number | undefined', default: 'undefined' },
   {
     name: 'trackBy',
     type: '((item: T, index: number) => unknown) | undefined',
     default: 'undefined',
+  },
+  {
+    name: 'orientation',
+    type: "'vertical' | 'horizontal'",
+    default: "'vertical'",
+  },
+  { name: 'appendOnly', type: 'boolean', default: 'false' },
+  {
+    name: 'scrolledIndexChange (output)',
+    type: 'number',
+    default: '—',
   },
 ];
 
@@ -41,7 +56,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Pass items, a fixed itemSize, and a viewport height; one projected <ng-template let-item let-i=&quot;index&quot;> renders each visible row."
+        description='Pass items, a fixed itemSize, and a viewport height; one projected <ng-template let-item let-i="index"> renders each visible row.'
       >
         <div preview class="rounded-md border border-border p-2">
           <dg-virtual-scroll [items]="items" [itemSize]="32" [height]="320">
@@ -59,8 +74,38 @@ const API: ApiTableRow[] = [
           </p>
         </div>
         <div code>
-          &lt;dg-virtual-scroll [items]="items" [itemSize]="32" [height]="320"&gt;
-          &lt;ng-template let-item let-i="index"&gt;...&lt;/ng-template&gt;
+          &lt;dg-virtual-scroll [items]="items" [itemSize]="32"
+          [height]="320"&gt; &lt;ng-template let-item
+          let-i="index"&gt;...&lt;/ng-template&gt; &lt;/dg-virtual-scroll&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="horizontal"
+        title="Horizontal"
+        description='orientation="horizontal" plus a width scrolls sideways instead — itemSize now means column width, not row height.'
+      >
+        <div preview class="rounded-md border border-border p-2">
+          <dg-virtual-scroll
+            [items]="items"
+            [itemSize]="120"
+            [height]="80"
+            [width]="320"
+            orientation="horizontal"
+          >
+            <ng-template let-item let-i="index">
+              <div
+                class="flex h-full w-[120px] flex-col items-center justify-center border-e border-border text-sm text-text-primary"
+              >
+                <span class="font-mono text-text-muted">{{ i }}</span>
+                <span>{{ item.label }}</span>
+              </div>
+            </ng-template>
+          </dg-virtual-scroll>
+        </div>
+        <div code>
+          &lt;dg-virtual-scroll [items]="items" [itemSize]="120" [height]="80"
+          [width]="320" orientation="horizontal"&gt; ...
           &lt;/dg-virtual-scroll&gt;
         </div>
       </docs-example>

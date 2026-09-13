@@ -2,4 +2,6 @@ export type DynamoInputNumberPart =
   | 'root'
   | 'input'
   | 'decrementButton'
-  | 'incrementButton';
+  | 'incrementButton'
+  | 'prefix'
+  | 'suffix';

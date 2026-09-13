@@ -9,6 +9,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'single', title: 'Single' },
   { id: 'multiple', title: 'Multiple' },
+  { id: 'custom-header', title: 'Custom Header' },
 ];
 
 @Component({
@@ -83,6 +84,38 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="custom-header"
+        title="Custom Header"
+        description="Project content into the [header] slot to render something richer than plain text — it replaces header, which stays as the fallback when nothing is projected there."
+      >
+        <div preview>
+          <dg-accordion>
+            <dg-accordion-panel value="account" header="Account">
+              <span
+                header
+                class="flex w-full items-center justify-between pe-2"
+              >
+                <span>Account</span>
+                <span
+                  class="rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger"
+                  >2 issues</span
+                >
+              </span>
+              <p class="text-text-primary">Account settings content.</p>
+            </dg-accordion-panel>
+            <dg-accordion-panel value="billing" header="Billing">
+              <p class="text-text-primary">Billing content — plain header.</p>
+            </dg-accordion-panel>
+          </dg-accordion>
+        </div>
+        <div code>
+          &lt;dg-accordion-panel value="account" header="Account"&gt; &lt;span
+          header&gt;Account &lt;dg-badge value="2" /&gt;&lt;/span&gt; Panel body
+          content. &lt;/dg-accordion-panel&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <table class="w-full border-collapse text-sm">
           <thead>
@@ -120,11 +153,17 @@ const EXAMPLES: DocExampleRef[] = [
               <td class="py-2 pr-4 font-mono">string (required)</td>
               <td class="py-2 font-mono">—</td>
             </tr>
-            <tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">dg-accordion-panel</td>
               <td class="py-2 pr-4 font-mono">disabled</td>
               <td class="py-2 pr-4 font-mono">boolean</td>
               <td class="py-2 font-mono">false</td>
+            </tr>
+            <tr>
+              <td class="py-2 pr-4 font-mono">dg-accordion-panel</td>
+              <td class="py-2 pr-4 font-mono">[header] slot</td>
+              <td class="py-2 pr-4 font-mono">projected content</td>
+              <td class="py-2 font-mono">falls back to header text</td>
             </tr>
           </tbody>
         </table>

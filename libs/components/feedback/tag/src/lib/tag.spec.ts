@@ -101,6 +101,32 @@ describe('DynamoTag', () => {
     );
   });
 
+  describe('projected icon', () => {
+    it('renders a projected [icon] element ahead of the label', () => {
+      @Component({
+        selector: 'dg-tag-icon-host',
+        standalone: true,
+        imports: [DynamoTag],
+        template: `<dg-tag
+          ><span icon data-testid="tag-icon">*</span>React</dg-tag
+        >`,
+      })
+      class TagIconHostComponent {}
+
+      const { container } = renderDynamoComponent(TagIconHostComponent);
+
+      expect(
+        container.querySelector('[data-testid="tag-icon"]'),
+      ).not.toBeNull();
+      expect(container.textContent).toContain('React');
+    });
+
+    it('renders nothing extra when no [icon] content is projected', () => {
+      const { container } = renderDynamoComponent(TagTestHostComponent);
+      expect(container.querySelector('[icon]')).toBeNull();
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations', async () => {
       const { fixture } = renderDynamoComponent(TagTestHostComponent);

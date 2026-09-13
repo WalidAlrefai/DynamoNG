@@ -13,7 +13,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'readonly', title: 'Read-only' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'value', type: 'DynamoSelectOption[] (model)', default: '[]' },
@@ -23,6 +26,7 @@ const API: ApiTableRow[] = [
   { name: 'moveTopBottom', type: 'boolean', default: 'true' },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'disabled', type: 'boolean', default: 'false' },
+  { name: 'readOnly', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -47,7 +51,26 @@ const API: ApiTableRow[] = [
             Order: <span class="font-mono">{{ order() }}</span>
           </p>
         </div>
-        <div code>&lt;dg-order-list [(value)]="tasks" listLabel="Tasks" /&gt;</div>
+        <div code>
+          &lt;dg-order-list [(value)]="tasks" listLabel="Tasks" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="readonly"
+        title="Read-only"
+        description="readOnly keeps rows visible/focusable/navigable, but blocks reordering and selection — unlike disabled, it doesn't dim the list or remove it from the tab order."
+      >
+        <div preview class="flex flex-col gap-3">
+          <dg-order-list
+            [value]="readonlyTasks()"
+            listLabel="Tasks (read-only)"
+            [readOnly]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-order-list [value]="tasks" [readOnly]="true" /&gt;
+        </div>
       </docs-example>
 
       <div api class="space-y-3">
@@ -76,4 +99,10 @@ export class OrderListDocPage {
       .map((t) => t.label)
       .join(' → '),
   );
+
+  protected readonly readonlyTasks = signal<DynamoSelectOption<string>[]>([
+    { label: 'Draft the proposal', value: '1' },
+    { label: 'Review with the team', value: '2' },
+    { label: 'Incorporate feedback', value: '3' },
+  ]);
 }

@@ -44,6 +44,12 @@ export class DynamoDrawer extends DynamoBaseComponent<DynamoDrawerPart> {
   readonly title = input<string | undefined>(undefined);
   /** Required when no `title` is set, so the drawer has an accessible name. */
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Renders the dimming backdrop and blocks interaction with the rest of the page. Set `false` for a non-modal panel that leaves the page behind it interactive — `closeOnBackdropClick` has no effect then, since there's no backdrop to click. Only consulted the first time the drawer opens. */
+  readonly modal = input(true);
+  /** Prevents the page behind the drawer from scrolling while it's open. */
+  readonly blockScroll = input(false);
+  /** Shows the header close button. Only relevant when `title` is set — with no title there's no header to put it in regardless. */
+  readonly closable = input(true);
 
   protected readonly titleId = this.idGenerator.next('dg-drawer-title');
 
@@ -105,6 +111,17 @@ export class DynamoDrawer extends DynamoBaseComponent<DynamoDrawerPart> {
     this.destroyRef.onDestroy(() => {
       this.clearCloseTimeout();
       this.destroyOverlay();
+    });
+
+    effect((onCleanup) => {
+      if (!isBrowser() || !this.open() || !this.blockScroll()) {
+        return;
+      }
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      onCleanup(() => {
+        document.body.style.overflow = previousOverflow;
+      });
     });
   }
 
@@ -177,7 +194,7 @@ export class DynamoDrawer extends DynamoBaseComponent<DynamoDrawerPart> {
     if (!this.overlayRef) {
       const ref = this.overlayService.createGlobalOverlay(
         (strategy) => this.configureGlobalPosition(strategy, this.position()),
-        { hasBackdrop: true },
+        { hasBackdrop: this.modal() },
       );
       ref
         .backdropClick()

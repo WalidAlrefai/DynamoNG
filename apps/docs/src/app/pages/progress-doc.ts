@@ -10,6 +10,8 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'severity-size', title: 'Severity & Size' },
+  { id: 'indeterminate', title: 'Indeterminate' },
+  { id: 'color', title: 'Custom Color' },
 ];
 
 const API: ApiTableRow[] = [
@@ -21,6 +23,8 @@ const API: ApiTableRow[] = [
   },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'ariaLabel', type: 'string | undefined', default: "'Progress'" },
+  { name: 'indeterminate', type: 'boolean', default: 'false' },
+  { name: 'color', type: 'string | undefined', default: 'undefined' },
 ];
 
 @Component({
@@ -42,7 +46,9 @@ const API: ApiTableRow[] = [
         <div preview>
           <dg-progress [value]="30" ariaLabel="Upload progress" />
         </div>
-        <div code>&lt;dg-progress [value]="30" ariaLabel="Upload progress" /&gt;</div>
+        <div code>
+          &lt;dg-progress [value]="30" ariaLabel="Upload progress" /&gt;
+        </div>
       </docs-example>
 
       <docs-example
@@ -63,6 +69,28 @@ const API: ApiTableRow[] = [
           &lt;dg-progress [value]="60" severity="success" /&gt; &lt;dg-progress
           [value]="90" severity="warning" size="lg" /&gt;
         </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="indeterminate"
+        title="Indeterminate"
+        description="indeterminate renders an animated, unmeasured loading bar — value is ignored."
+      >
+        <div preview>
+          <dg-progress [indeterminate]="true" ariaLabel="Loading" />
+        </div>
+        <div code>&lt;dg-progress [indeterminate]="true" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="color"
+        title="Custom Color"
+        description="color sets an explicit CSS color on the fill, overriding severity."
+      >
+        <div preview>
+          <dg-progress [value]="45" color="#a855f7" ariaLabel="Progress" />
+        </div>
+        <div code>&lt;dg-progress [value]="45" color="#a855f7" /&gt;</div>
       </docs-example>
 
       <docs-api-table api [rows]="apiRows" />

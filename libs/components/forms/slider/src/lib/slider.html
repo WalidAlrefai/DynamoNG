@@ -18,6 +18,7 @@
       [attr.aria-valuemin]="min()"
       [attr.aria-valuemax]="max()"
       [attr.aria-disabled]="disabled() ? 'true' : null"
+      [attr.aria-readonly]="readOnly() ? 'true' : null"
       [attr.aria-label]="ariaLabel() ?? 'Slider'"
       (keydown)="onThumbKeydown($event)"
     ></div>

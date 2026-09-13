@@ -30,6 +30,13 @@ export const buttonStyles = cva(
         outline: 'bg-transparent border',
         text: 'bg-transparent',
       },
+      // `w-full` alone (not `flex`) — the base `inline-flex` already lets an
+      // explicit width stretch the button; switching display modes risks a
+      // Tailwind utility-ordering conflict with that same base class.
+      fullWidth: {
+        true: 'w-full',
+        false: '',
+      },
     },
     compoundVariants: [
       { size: 'lg', class: 'px-6' },
@@ -134,6 +141,7 @@ export const buttonStyles = cva(
       severity: 'primary',
       size: 'md',
       variant: 'solid',
+      fullWidth: false,
     },
   },
 );

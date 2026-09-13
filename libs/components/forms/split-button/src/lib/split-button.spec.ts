@@ -349,6 +349,49 @@ describe('DynamoSplitButton', () => {
     });
   });
 
+  describe('buttonDisabled / menuButtonDisabled', () => {
+    it('buttonDisabled disables only the primary action, leaving the dropdown toggle usable', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSplitButton,
+        { inputs: { label: 'Save', buttonDisabled: true } },
+      );
+
+      expect((primary(container) as HTMLButtonElement).disabled).toBe(true);
+      expect((trigger(container) as HTMLButtonElement).disabled).toBe(false);
+
+      await userEvent.click(trigger(container));
+
+      expect(componentInstance.open()).toBe(true);
+    });
+
+    it('menuButtonDisabled disables only the dropdown toggle, leaving the primary action usable', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSplitButton,
+        { inputs: { label: 'Save', menuButtonDisabled: true } },
+      );
+      let actioned = false;
+      componentInstance.action.subscribe(() => {
+        actioned = true;
+      });
+
+      expect((trigger(container) as HTMLButtonElement).disabled).toBe(true);
+      expect((primary(container) as HTMLButtonElement).disabled).toBe(false);
+
+      await userEvent.click(primary(container));
+
+      expect(actioned).toBe(true);
+    });
+
+    it('disabled overrides both regardless of buttonDisabled/menuButtonDisabled', () => {
+      const { container } = renderDynamoComponent(DynamoSplitButton, {
+        inputs: { label: 'Save', disabled: true },
+      });
+
+      expect((primary(container) as HTMLButtonElement).disabled).toBe(true);
+      expect((trigger(container) as HTMLButtonElement).disabled).toBe(true);
+    });
+  });
+
   describe('accessibility', () => {
     it('sets aria-haspopup and reflects aria-expanded on the trigger', async () => {
       const { container, fixture } = renderDynamoComponent(

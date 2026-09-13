@@ -51,6 +51,8 @@ export class DynamoSpeedDial extends DynamoBaseComponent<DynamoSpeedDialPart> {
   /** Two-way bindable open state. */
   readonly open = model(false);
   readonly openOnHover = input(false);
+  /** Renders a dimming backdrop behind the fanned-out actions while open, and blocks interaction with the rest of the page until it's dismissed. */
+  readonly mask = input(false);
   /** Arc radius in px for the non-`linear` types. */
   readonly radius = input(90);
   /** Spacing in px between successive actions for the `linear` type. */
@@ -230,13 +232,14 @@ export class DynamoSpeedDial extends DynamoBaseComponent<DynamoSpeedDialPart> {
     // Query the live DOM rather than a `viewChildren` signal — the action
     // buttons are always rendered, and this avoids the query not having
     // settled yet when called synchronously from a keydown handler.
-    const buttons = this.host.nativeElement.querySelectorAll<HTMLButtonElement>(
-      '[role="menuitem"]',
-    );
+    const buttons =
+      this.host.nativeElement.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitem"]',
+      );
     buttons[index]?.focus();
   }
 
-  private close(): void {
+  protected close(): void {
     this.open.set(false);
     this.trigger().nativeElement.focus();
   }

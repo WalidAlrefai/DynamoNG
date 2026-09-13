@@ -12,7 +12,7 @@
       (click)="onHeaderClick(panel, i)"
       (keydown)="onHeaderKeydown($event)"
     >
-      <span>{{ panel.header() }}</span>
+      <ng-container [ngTemplateOutlet]="panel.headerTemplate()" />
       <svg
         [class]="chevronClasses(panel)"
         [attr.aria-hidden]="true"

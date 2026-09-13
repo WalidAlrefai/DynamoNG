@@ -10,6 +10,8 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'strength-meter', title: 'Strength Meter' },
+  { id: 'custom-labels', title: 'Custom Labels' },
+  { id: 'no-toggle', title: 'No Toggle' },
   { id: 'invalid', title: 'Invalid' },
   { id: 'disabled', title: 'Disabled' },
 ];
@@ -37,7 +39,9 @@ const EXAMPLES: DocExampleRef[] = [
             ariaLabel="Password"
           />
         </div>
-        <div code>&lt;dg-password [(ngModel)]="password" ariaLabel="Password" /&gt;</div>
+        <div code>
+          &lt;dg-password [(ngModel)]="password" ariaLabel="Password" /&gt;
+        </div>
       </docs-example>
 
       <docs-example
@@ -54,8 +58,46 @@ const EXAMPLES: DocExampleRef[] = [
           />
         </div>
         <div code>
-          &lt;dg-password [(ngModel)]="password" [showStrengthMeter]="true" /&gt;
+          &lt;dg-password [(ngModel)]="password" [showStrengthMeter]="true"
+          /&gt;
         </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="custom-labels"
+        title="Custom Labels"
+        description="weakLabel/mediumLabel/strongLabel override the strength meter's text, e.g. for i18n."
+      >
+        <div preview class="max-w-sm">
+          <dg-password
+            [(ngModel)]="frenchPassword"
+            placeholder="Entrez un mot de passe"
+            [showStrengthMeter]="true"
+            weakLabel="Faible"
+            mediumLabel="Moyen"
+            strongLabel="Fort"
+            ariaLabel="Mot de passe"
+          />
+        </div>
+        <div code>
+          &lt;dg-password [showStrengthMeter]="true" weakLabel="Faible"
+          mediumLabel="Moyen" strongLabel="Fort" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="no-toggle"
+        title="No Toggle"
+        description="showToggle hides the show/hide eye button entirely."
+      >
+        <div preview class="max-w-sm">
+          <dg-password
+            placeholder="Enter a password"
+            [showToggle]="false"
+            ariaLabel="Password without toggle"
+          />
+        </div>
+        <div code>&lt;dg-password [showToggle]="false" /&gt;</div>
       </docs-example>
 
       <docs-example
@@ -103,6 +145,18 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 font-mono">false</td>
           </tr>
           <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">
+              weakLabel / mediumLabel / strongLabel
+            </td>
+            <td class="py-2 pr-4 font-mono">string</td>
+            <td class="py-2 font-mono">'Weak' / 'Medium' / 'Strong'</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">showToggle</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">true</td>
+          </tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">size</td>
             <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
             <td class="py-2 font-mono">'md'</td>
@@ -125,4 +179,5 @@ const EXAMPLES: DocExampleRef[] = [
 export class PasswordDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly password = signal('');
+  protected readonly frenchPassword = signal('');
 }

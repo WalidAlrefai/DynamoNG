@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -113,9 +116,30 @@ describe('DynamoStyleClass', () => {
         <div data-testid="grandparent">
           <div data-testid="parent">
             <span data-testid="prev">prev</span>
-            <button type="button" dgStyleClass="@prev" toggleClass="a" data-testid="p">p</button>
-            <button type="button" dgStyleClass="@parent" toggleClass="b" data-testid="par">par</button>
-            <button type="button" dgStyleClass="@grandparent" toggleClass="c" data-testid="gp">gp</button>
+            <button
+              type="button"
+              dgStyleClass="@prev"
+              toggleClass="a"
+              data-testid="p"
+            >
+              p
+            </button>
+            <button
+              type="button"
+              dgStyleClass="@parent"
+              toggleClass="b"
+              data-testid="par"
+            >
+              par
+            </button>
+            <button
+              type="button"
+              dgStyleClass="@grandparent"
+              toggleClass="c"
+              data-testid="gp"
+            >
+              gp
+            </button>
           </div>
         </div>
       `,
@@ -124,9 +148,13 @@ describe('DynamoStyleClass', () => {
 
     const { container } = renderDynamoComponent(KwHost);
     await userEvent.click(within(container).getByTestId('p'));
-    expect(within(container).getByTestId('prev').classList.contains('a')).toBe(true);
+    expect(within(container).getByTestId('prev').classList.contains('a')).toBe(
+      true,
+    );
     await userEvent.click(within(container).getByTestId('par'));
-    expect(within(container).getByTestId('parent').classList.contains('b')).toBe(true);
+    expect(
+      within(container).getByTestId('parent').classList.contains('b'),
+    ).toBe(true);
     await userEvent.click(within(container).getByTestId('gp'));
     expect(
       within(container).getByTestId('grandparent').classList.contains('c'),
@@ -138,7 +166,14 @@ describe('DynamoStyleClass', () => {
       selector: 'dg-sc-miss-host',
       standalone: true,
       imports: [DynamoStyleClass],
-      template: `<button type="button" dgStyleClass="#nope" toggleClass="x" data-testid="b">b</button>`,
+      template: `<button
+        type="button"
+        dgStyleClass="#nope"
+        toggleClass="x"
+        data-testid="b"
+      >
+        b
+      </button>`,
     })
     class MissHost {}
 
@@ -161,7 +196,9 @@ describe('DynamoStyleClass', () => {
           leaveClass="gone"
           [hideOnOutsideClick]="true"
           data-testid="b"
-        >b</button>
+        >
+          b
+        </button>
         <div id="p3" data-testid="p3">panel</div>
         <div data-testid="away">away</div>
       `,
@@ -178,6 +215,60 @@ describe('DynamoStyleClass', () => {
     await userEvent.click(within(container).getByTestId('away'));
     expect(panel.classList.contains('shown')).toBe(false);
     expect(panel.classList.contains('gone')).toBe(true);
+  });
+
+  it('hideOnEscape: pressing Escape while shown hides it', async () => {
+    @Component({
+      selector: 'dg-sc-escape-host',
+      standalone: true,
+      imports: [DynamoStyleClass],
+      template: `
+        <button
+          type="button"
+          dgStyleClass="#p4"
+          toggleClass="open"
+          [hideOnEscape]="true"
+          data-testid="b"
+        >
+          b
+        </button>
+        <div id="p4" data-testid="p4">panel</div>
+      `,
+    })
+    class EscapeHost {}
+
+    const { container } = renderDynamoComponent(EscapeHost);
+    const panel = within(container).getByTestId('p4');
+
+    await userEvent.click(within(container).getByTestId('b'));
+    expect(panel.classList.contains('open')).toBe(true);
+
+    await userEvent.keyboard('{Escape}');
+    expect(panel.classList.contains('open')).toBe(false);
+  });
+
+  it('hideOnEscape: does nothing while hidden (Escape before any click)', async () => {
+    @Component({
+      selector: 'dg-sc-escape-idle-host',
+      standalone: true,
+      imports: [DynamoStyleClass],
+      template: `
+        <button
+          type="button"
+          dgStyleClass="#p5"
+          toggleClass="open"
+          [hideOnEscape]="true"
+          data-testid="b"
+        >
+          b
+        </button>
+        <div id="p5" data-testid="p5">panel</div>
+      `,
+    })
+    class EscapeIdleHost {}
+
+    renderDynamoComponent(EscapeIdleHost);
+    await expect(userEvent.keyboard('{Escape}')).resolves.not.toThrow();
   });
 
   it('has no axe violations', async () => {

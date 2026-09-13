@@ -10,6 +10,8 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'length', title: 'Custom Length' },
+  { id: 'mask', title: 'Masked' },
+  { id: 'readonly', title: 'Read-only' },
 ];
 
 @Component({
@@ -56,6 +58,38 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="mask"
+        title="Masked"
+        description="mask renders each box as a native password field (masked dots) instead of the plain character."
+      >
+        <div preview>
+          <dg-otp-input
+            [formControl]="maskedCode"
+            [mask]="true"
+            ariaLabel="Masked verification code"
+          />
+        </div>
+        <div code>
+          &lt;dg-otp-input [formControl]="code" [mask]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="readonly"
+        title="Read-only"
+        description="readOnly keeps boxes visible/focusable, but blocks typing, backspace, and paste — unlike disabled, it doesn't dim them or remove them from the tab order."
+      >
+        <div preview>
+          <dg-otp-input
+            [value]="'246810'"
+            [readOnly]="true"
+            ariaLabel="Read-only verification code"
+          />
+        </div>
+        <div code>&lt;dg-otp-input [value]="code" [readOnly]="true" /&gt;</div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -80,9 +114,19 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
             <td class="py-2 font-mono">'md'</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">disabled</td>
             <td class="py-2 pr-4 font-mono">boolean (model)</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">readOnly</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">mask</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
           </tr>
         </tbody>
@@ -94,4 +138,5 @@ export class OtpInputDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly code = new FormControl('', { nonNullable: true });
   protected readonly shortCode = new FormControl('', { nonNullable: true });
+  protected readonly maskedCode = new FormControl('', { nonNullable: true });
 }

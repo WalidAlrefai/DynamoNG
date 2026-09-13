@@ -1,4 +1,12 @@
 <div [class]="rootClasses()" data-testid="DynamoSpeedDial">
+  @if (mask() && open()) {
+  <div
+    class="fixed inset-0 z-40 bg-surface-900/50"
+    [attr.aria-hidden]="true"
+    data-testid="DynamoSpeedDialMask"
+    (click)="close()"
+  ></div>
+  }
   <button
     #trigger
     type="button"
@@ -13,7 +21,13 @@
     (mouseenter)="onTriggerHover(true)"
     (mouseleave)="onTriggerHover(false)"
   >
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" [attr.aria-hidden]="true">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      [attr.aria-hidden]="true"
+    >
       <path
         d="M10 4v12M4 10h12"
         stroke="currentColor"
@@ -32,24 +46,24 @@
     (mouseleave)="onListHover(false)"
   >
     @for (action of actions(); track action; let i = $index) {
-      <li role="none">
-        <button
-          type="button"
-          role="menuitem"
-          tabindex="-1"
-          [class]="actionClasses(action)"
-          [disabled]="action.disabled"
-          [style.transform]="actionTransform(i)"
-          [attr.aria-label]="action.label"
-          [title]="action.label"
-          (click)="runAction(action)"
-          (keydown)="onActionKeydown($event, i)"
-        >
-          <span [attr.aria-hidden]="true">
-            {{ action.icon ?? action.label.charAt(0) }}
-          </span>
-        </button>
-      </li>
+    <li role="none">
+      <button
+        type="button"
+        role="menuitem"
+        tabindex="-1"
+        [class]="actionClasses(action)"
+        [disabled]="action.disabled"
+        [style.transform]="actionTransform(i)"
+        [attr.aria-label]="action.label"
+        [title]="action.label"
+        (click)="runAction(action)"
+        (keydown)="onActionKeydown($event, i)"
+      >
+        <span [attr.aria-hidden]="true">
+          {{ action.icon ?? action.label.charAt(0) }}
+        </span>
+      </button>
+    </li>
     }
   </ul>
 </div>

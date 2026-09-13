@@ -34,13 +34,22 @@ import type { DynamoPasswordPart } from './password.types';
     },
   ],
 })
-export class DynamoPassword extends DynamoBaseComponent<DynamoPasswordPart> implements ControlValueAccessor {
+export class DynamoPassword
+  extends DynamoBaseComponent<DynamoPasswordPart>
+  implements ControlValueAccessor
+{
   readonly size = input<DynamoSize>('md');
   readonly placeholder = input('');
   readonly invalid = input(false);
   /** Accessible name for the input when no visible `<label>` wraps it. */
   readonly ariaLabel = input<string | undefined>(undefined);
   readonly showStrengthMeter = input(false);
+  /** Text shown next to the strength meter for each level — override for i18n/customization. */
+  readonly weakLabel = input('Weak');
+  readonly mediumLabel = input('Medium');
+  readonly strongLabel = input('Strong');
+  /** Whether the show/hide (eye icon) toggle button renders at all. */
+  readonly showToggle = input(true);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
   /** HTML `readonly` semantics: the current value stays visible and the control
@@ -59,11 +68,23 @@ export class DynamoPassword extends DynamoBaseComponent<DynamoPasswordPart> impl
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
 
-  protected readonly inputType = computed(() => (this.visible() ? 'text' : 'password'));
+  protected readonly inputType = computed(() =>
+    this.visible() ? 'text' : 'password',
+  );
   protected readonly toggleLabel = computed(() =>
     this.visible() ? 'Hide password' : 'Show password',
   );
-  protected readonly strength = computed(() => calculatePasswordStrength(this.value()));
+  protected readonly strength = computed(() =>
+    calculatePasswordStrength(this.value()),
+  );
+  protected readonly strengthLabelText = computed(() => {
+    const label = this.strength().label;
+    return label === 'weak'
+      ? this.weakLabel()
+      : label === 'medium'
+        ? this.mediumLabel()
+        : this.strongLabel();
+  });
   protected readonly meterId = this.idGenerator.next('dg-password-meter');
 
   protected readonly wrapperClasses = computed(() =>

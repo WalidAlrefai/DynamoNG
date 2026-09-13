@@ -29,6 +29,7 @@ import {
   selectChevronStyles,
   selectFilterFieldWrapperStyles,
   selectFilterIconStyles,
+  selectClearButtonStyles,
   selectFilterInputExtraClasses,
   selectGroupHeadingStyles,
   selectListboxStyles,
@@ -104,6 +105,12 @@ export class DynamoMultiSelect<TValue = unknown>
    *  drives it. */
   readonly loading = input(false);
   readonly invalid = input(false);
+  /** HTML `readonly` semantics: the trigger/panel stay browsable but
+   *  selections can't be added, removed, or cleared. Unlike `disabled`,
+   *  doesn't dim the trigger or remove it from the tab order. */
+  readonly readOnly = input(false);
+  /** Shows a trigger-level clear (×) button once at least one option is selected, clearing the whole selection at once — mirrors `DynamoSelect`'s `clearable`. */
+  readonly clearable = input(false);
   readonly position = input<DynamoSelectPosition>('bottom-start');
   readonly filterable = input(false);
   readonly filterText = model('');
@@ -269,6 +276,7 @@ export class DynamoMultiSelect<TValue = unknown>
   protected readonly tagClasses = multiSelectTagStyles;
   protected readonly overflowTagClasses = multiSelectOverflowTagStyles;
   protected readonly tagRemoveButtonClasses = multiSelectTagRemoveButtonStyles;
+  protected readonly clearButtonClasses = selectClearButtonStyles;
   protected readonly chevronClasses = computed(() =>
     selectChevronStyles({ open: this.isOpen() }),
   );
@@ -369,7 +377,7 @@ export class DynamoMultiSelect<TValue = unknown>
   }
 
   protected toggleOption(option: DynamoSelectOption<TValue>): void {
-    if (option.disabled) return;
+    if (option.disabled || this.readOnly()) return;
     const current = this.value();
     const isSelected = current.includes(option.value);
     let next: TValue[];
@@ -387,15 +395,22 @@ export class DynamoMultiSelect<TValue = unknown>
 
   protected removeTag(value: TValue, event: Event): void {
     event.stopPropagation();
-    if (this.isDisabled()) return;
+    if (this.isDisabled() || this.readOnly()) return;
     const next = this.value().filter((v) => v !== value);
     this.value.set(next);
     this.onChangeFn(next);
     this.tagRemoved.emit(value);
   }
 
+  protected clearSelection(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.isDisabled() || this.readOnly()) return;
+    this.value.set([]);
+    this.onChangeFn([]);
+  }
+
   protected selectAll(): void {
-    if (this.isDisabled()) return;
+    if (this.isDisabled() || this.readOnly()) return;
     const current = this.value();
     const currentSet = new Set(current);
     let candidates = this.filteredOptions().filter(
@@ -413,7 +428,7 @@ export class DynamoMultiSelect<TValue = unknown>
   }
 
   protected clearAll(): void {
-    if (this.isDisabled()) return;
+    if (this.isDisabled() || this.readOnly()) return;
     const visibleValues = new Set(
       this.filteredOptions().map((option) => option.value),
     );
@@ -539,7 +554,11 @@ export class DynamoMultiSelect<TValue = unknown>
     }
     const buffer = this.typeahead.append(event.key);
     const query = resolveTypeaheadQuery(buffer);
-    const match = findTypeaheadMatch(this.visibleOptions(), this.activeIndex(), query);
+    const match = findTypeaheadMatch(
+      this.visibleOptions(),
+      this.activeIndex(),
+      query,
+    );
     if (match === null) return;
     event.preventDefault();
     if (!this.isOpen()) this.isOpen.set(true);

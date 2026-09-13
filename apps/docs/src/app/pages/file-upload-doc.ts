@@ -11,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'single', title: 'Single File' },
+  { id: 'no-preview', title: 'No Preview' },
 ];
 
 const API: ApiTableRow[] = [
@@ -25,6 +26,7 @@ const API: ApiTableRow[] = [
     type: 'string',
     default: "'Drag and drop files here, or click to browse'",
   },
+  { name: 'showPreview', type: 'boolean', default: 'true' },
 ];
 
 @Component({
@@ -41,7 +43,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="multiple with accept and maxFileSize validation; (rejected) reports files that failed a rule."
+        description="multiple with accept and maxFileSize validation; (rejected) reports files that failed a rule. Picking an image file shows a small thumbnail preview automatically."
       >
         <div preview class="max-w-md">
           <dg-file-upload
@@ -75,6 +77,25 @@ const API: ApiTableRow[] = [
         <div code>&lt;dg-file-upload [(value)]="file" /&gt;</div>
       </docs-example>
 
+      <docs-example
+        exampleId="no-preview"
+        title="No Preview"
+        description="showPreview disables the automatic image thumbnail, showing only the file name and size."
+      >
+        <div preview class="max-w-md">
+          <dg-file-upload
+            [(value)]="noPreviewFiles"
+            [multiple]="true"
+            accept="image/*"
+            [showPreview]="false"
+            ariaLabel="Attachments (no preview)"
+          />
+        </div>
+        <div code>
+          &lt;dg-file-upload [(value)]="files" [showPreview]="false" /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -86,4 +107,5 @@ export class FileUploadDocPage {
   protected readonly files = signal<File[]>([]);
   protected readonly oneFile = signal<File[]>([]);
   protected readonly rejections = signal<DynamoFileRejection[]>([]);
+  protected readonly noPreviewFiles = signal<File[]>([]);
 }

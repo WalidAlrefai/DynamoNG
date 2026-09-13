@@ -596,6 +596,44 @@ describe('DynamoSelect', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('still opens the panel and reflects aria-readonly, but blocks selection', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, readOnly: true } },
+      );
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      expect(trigger.getAttribute('aria-readonly')).toBe('true');
+      expect((trigger as HTMLButtonElement).disabled).toBe(false);
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+
+      await userEvent.click(getOptionByText('Option 2'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    it('disables the clear button', () => {
+      const { container } = renderDynamoComponent(DynamoSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          value: 'option-1',
+          clearable: true,
+          readOnly: true,
+        },
+      });
+
+      const clearButton = within(container).getByRole('button', {
+        name: 'Clear selection',
+      }) as HTMLButtonElement;
+      expect(clearButton.disabled).toBe(true);
+    });
+  });
+
   describe('grouped options', () => {
     const GROUPED_OPTIONS: DynamoSelectOption<string>[] = [
       { label: 'Ava', value: 'ava', group: 'Engineering' },
@@ -845,8 +883,7 @@ describe('DynamoSelect', () => {
       });
 
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(true);
     });
 
@@ -867,15 +904,13 @@ describe('DynamoSelect', () => {
         inputs: { options: THREE_OPTIONS, loading: true },
       });
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(true);
 
       setInputs({ loading: false });
 
       expect(
-        (within(container).getByRole('combobox') as HTMLButtonElement)
-          .disabled,
+        (within(container).getByRole('combobox') as HTMLButtonElement).disabled,
       ).toBe(false);
     });
   });
@@ -982,13 +1017,12 @@ describe('DynamoSelect', () => {
     it('resets the buffer after the timeout so a new letter starts a fresh match', () => {
       vi.useFakeTimers();
       try {
-        const { container, fixture, componentInstance } =
-          renderDynamoComponent<DynamoSelect<string>>(DynamoSelect, {
-            inputs: { options: FRUITS },
-          });
-        const trigger = within(container).getByRole(
-          'combobox',
-        ) as HTMLElement;
+        const { container, fixture, componentInstance } = renderDynamoComponent<
+          DynamoSelect<string>
+        >(DynamoSelect, {
+          inputs: { options: FRUITS },
+        });
+        const trigger = within(container).getByRole('combobox') as HTMLElement;
 
         dispatchKey(trigger, 'a');
         fixture.detectChanges();

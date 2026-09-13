@@ -22,35 +22,40 @@ protected onItemSelect(option: DynamoSelectOption<string>): void { ... }
 
 ## Inputs
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `options` | `DynamoSelectOption<TValue>[]` (required) | — | The option list. Supports an optional `group` field for grouped rendering. |
-| `multiple` | `boolean` | `false` | Switches between scalar and array `value`, and changes arrow-key behavior (see Accessibility). |
-| `size` | `DynamoListboxSize` | `'md'` | |
-| `disabled` | `boolean` | `false` | |
-| `ariaLabel` | `string \| undefined` | `undefined` | |
-| `value` | `DynamoListboxValue<TValue>` (model) | `null` | Two-way bindable. Scalar (`TValue \| null`) when `multiple` is `false`, array (`TValue[]`) once `multiple` is `true`. |
-| `virtualScroll` | `boolean` | `false` | Renders the option list through `@dynamong/virtual-scroll`. Ungrouped lists only — a grouped Listbox silently falls back to the full, non-virtualized render since virtual-scroll rows are fixed-height and group headings aren't. |
-| `virtualScrollItemSize` | `number` | `36` | |
-| `virtualScrollHeight` | `number` | `288` | |
+| Input                   | Type                                      | Default                 | Description                                                                                                                                                                                                                        |
+| ----------------------- | ----------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `options`               | `DynamoSelectOption<TValue>[]` (required) | —                       | The option list. Supports an optional `group` field for grouped rendering.                                                                                                                                                         |
+| `multiple`              | `boolean`                                 | `false`                 | Switches between scalar and array `value`, and changes arrow-key behavior (see Accessibility).                                                                                                                                     |
+| `size`                  | `DynamoListboxSize`                       | `'md'`                  |                                                                                                                                                                                                                                    |
+| `disabled`              | `boolean`                                 | `false`                 |                                                                                                                                                                                                                                    |
+| `readOnly`              | `boolean`                                 | `false`                 | HTML `readonly` semantics: options stay visible/focusable/navigable but can't be (de)selected. Unlike `disabled`, doesn't dim the list or remove it from the tab order.                                                            |
+| `ariaLabel`             | `string \| undefined`                     | `undefined`             |                                                                                                                                                                                                                                    |
+| `filterable`            | `boolean`                                 | `false`                 | Renders a search box above the option list that narrows it by label substring match.                                                                                                                                               |
+| `filterText`            | `string` (model)                          | `''`                    | Two-way bindable.                                                                                                                                                                                                                  |
+| `filterPlaceholder`     | `string`                                  | `'Search...'`           |                                                                                                                                                                                                                                    |
+| `noResultsMessage`      | `string`                                  | `'No matching options'` | Shown only when `filterable` is set, `options` is non-empty, and the filter matched nothing.                                                                                                                                       |
+| `value`                 | `DynamoListboxValue<TValue>` (model)      | `null`                  | Two-way bindable. Scalar (`TValue \| null`) when `multiple` is `false`, array (`TValue[]`) once `multiple` is `true`.                                                                                                              |
+| `virtualScroll`         | `boolean`                                 | `false`                 | Renders the option list through `@dynamong/virtual-scroll`. Ungrouped lists only — a grouped Listbox silently falls back to the full, non-virtualized render since virtual-scroll rows are fixed-height and group headings aren't. |
+| `virtualScrollItemSize` | `number`                                  | `36`                    |                                                                                                                                                                                                                                    |
+| `virtualScrollHeight`   | `number`                                  | `288`                   |                                                                                                                                                                                                                                    |
 
 ## Outputs
 
-| Output | Payload | Fires when |
-|---|---|---|
-| `valueChange` | `DynamoListboxValue<TValue>` | `value` changes (auto-generated by `model()`). |
-| `itemSelect` | `DynamoSelectOption<TValue>` | A user directly activates an option — click, Enter/Space, and (in single-select mode only, since selection follows focus there) arrow-key navigation. Not emitted for programmatic `value` changes. |
+| Output        | Payload                      | Fires when                                                                                                                                                                                          |
+| ------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `valueChange` | `DynamoListboxValue<TValue>` | `value` changes (auto-generated by `model()`).                                                                                                                                                      |
+| `itemSelect`  | `DynamoSelectOption<TValue>` | A user directly activates an option — click, Enter/Space, and (in single-select mode only, since selection follows focus there) arrow-key navigation. Not emitted for programmatic `value` changes. |
 
 ## Accessibility
 
 - `role="listbox"` root with `aria-activedescendant`, `role="option"` rows (`aria-selected`), and `role="presentation"` group headings.
 - Keyboard: `ArrowDown`/`ArrowUp` move the active option, `Home`/`End` jump to the first/last enabled option, `Enter`/`Space` toggles selection.
 - **Selection follows focus** in single-select mode — arrow-key movement also selects, matching native `<select size>` behavior. In multi-select mode arrows only move the active highlight; `Enter`/`Space` is the sole toggle.
-- **Typeahead**: typing a printable character jumps to (and cycles through, on repeat) options whose label starts with it, resetting after ~500ms of no input.
+- **Typeahead**: typing a printable character jumps to (and cycles through, on repeat) options whose label starts with it, resetting after ~500ms of no input. Disabled once `filterable` is set — typing instead goes into the filter box, which has its own `ArrowDown`/`ArrowUp`/`Enter`/`Escape` handling.
 
 ## Tier / dependencies
 
-- `tier:1`. Peer dependencies: `@dynamong/icons`, `@dynamong/virtual-scroll`.
+- `tier:1`. Peer dependencies: `@dynamong/icons`, `@dynamong/virtual-scroll`, `@dynamong/input-text`, `@angular/forms`.
 
 ## Running unit tests
 

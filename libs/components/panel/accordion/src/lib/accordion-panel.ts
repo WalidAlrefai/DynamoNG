@@ -24,6 +24,9 @@ export class DynamoAccordionPanel {
 
   readonly contentTemplate =
     viewChild.required<TemplateRef<unknown>>('content');
+  /** Renders custom content projected via `[header]` (e.g. an icon + text combo) in place of the plain `header` text, when provided. */
+  readonly headerTemplate =
+    viewChild.required<TemplateRef<unknown>>('headerTemplate');
 
   // Latches true the first time this panel expands; content stays mounted
   // (hidden, not destroyed) afterward so in-panel state survives toggling.

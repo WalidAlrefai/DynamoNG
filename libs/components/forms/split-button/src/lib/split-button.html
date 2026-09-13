@@ -4,7 +4,7 @@
     [severity]="severity()"
     [variant]="variant()"
     [size]="size()"
-    [disabled]="disabled()"
+    [disabled]="isPrimaryDisabled()"
     [styleClass]="primaryClasses"
     (click)="onPrimaryClick()"
   >
@@ -17,7 +17,7 @@
     aria-haspopup="menu"
     [attr.aria-expanded]="open()"
     [attr.aria-label]="ariaLabel() ?? 'More actions'"
-    [disabled]="disabled()"
+    [disabled]="isMenuDisabled()"
     [class]="triggerClasses()"
     (click)="toggle()"
     (keydown)="onTriggerKeydown($event)"
@@ -47,17 +47,17 @@
       (keydown)="onPanelKeydown($event)"
     >
       @for (item of items(); track item) {
-        <button
-          #itemButton
-          type="button"
-          role="menuitem"
-          tabindex="-1"
-          [attr.aria-disabled]="item.disabled() ? 'true' : null"
-          [class]="itemClasses(item)"
-          (click)="onItemClick(item)"
-        >
-          {{ item.label() }}
-        </button>
+      <button
+        #itemButton
+        type="button"
+        role="menuitem"
+        tabindex="-1"
+        [attr.aria-disabled]="item.disabled() ? 'true' : null"
+        [class]="itemClasses(item)"
+        (click)="onItemClick(item)"
+      >
+        {{ item.label() }}
+      </button>
       }
     </div>
   </ng-template>

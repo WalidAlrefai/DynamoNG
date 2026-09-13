@@ -41,6 +41,8 @@ export class DynamoConfirmService {
       severity: options.severity ?? 'primary',
       closeOnBackdropClick: options.closeOnBackdropClick ?? true,
       closeOnEscape: options.closeOnEscape ?? true,
+      showCancel: options.showCancel ?? true,
+      defaultFocus: options.defaultFocus ?? 'none',
     };
 
     return new Promise<boolean>((resolve) => {

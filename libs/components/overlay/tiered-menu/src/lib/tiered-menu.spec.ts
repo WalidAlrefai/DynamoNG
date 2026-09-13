@@ -1,7 +1,10 @@
 import { Component, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -62,7 +65,11 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   selector: 'dg-tiered-menu-test-host',
   standalone: true,
   imports: [DynamoTieredMenu],
-  template: `<dg-tiered-menu [items]="items" label="File" (itemSelect)="lastSelected.set($event.label)" />`,
+  template: `<dg-tiered-menu
+    [items]="items"
+    label="File"
+    (itemSelect)="lastSelected.set($event.label)"
+  />`,
 })
 class TieredMenuTestHostComponent {
   readonly items = ITEMS;
@@ -76,11 +83,15 @@ describe('DynamoTieredMenu', () => {
         inputs: { items: ITEMS, label: 'File' },
       });
 
-      expect(within(container).getByRole('combobox', { name: 'File' })).toBeTruthy();
+      expect(
+        within(container).getByRole('combobox', { name: 'File' }),
+      ).toBeTruthy();
     });
 
     it('does not render any panel until opened', () => {
-      renderDynamoComponent(DynamoTieredMenu, { inputs: { items: ITEMS, label: 'File' } });
+      renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ITEMS, label: 'File' },
+      });
 
       expect(getMenus()).toHaveLength(0);
     });
@@ -99,9 +110,13 @@ describe('DynamoTieredMenu', () => {
 
   describe('single-level activation', () => {
     it('clicking a root-level leaf emits itemSelect and closes the panel', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
       getItemByText(getMenus()[0]!, 'Print').click();
       await settle(fixture);
@@ -111,9 +126,13 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('clicking a disabled item does nothing', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
       getItemByText(getMenus()[0]!, 'Locked').click();
       await settle(fixture);
@@ -125,24 +144,38 @@ describe('DynamoTieredMenu', () => {
 
   describe('multi-level drill-down', () => {
     it('hovering a branch opens a second panel showing its children', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
-      getItemByText(getMenus()[0]!, 'New').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      getItemByText(getMenus()[0]!, 'New').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(2);
-      const level1Labels = getItemsIn(getMenus()[1]!).map((el) => el.textContent?.trim());
+      const level1Labels = getItemsIn(getMenus()[1]!).map((el) =>
+        el.textContent?.trim(),
+      );
       expect(level1Labels).toEqual(['Document', 'Spreadsheet']);
     });
 
     it('drills 3 levels deep and commits the deep leaf', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
-      getItemByText(getMenus()[0]!, 'New').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      getItemByText(getMenus()[0]!, 'New').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
       await settle(fixture);
       expect(getMenus()).toHaveLength(2);
 
@@ -154,28 +187,95 @@ describe('DynamoTieredMenu', () => {
     });
   });
 
+  describe('autoDisplay', () => {
+    it('does not open a flyout on hover when autoDisplay is false', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ITEMS, label: 'File', autoDisplay: false },
+      });
+
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      getItemByText(getMenus()[0]!, 'New').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+
+      expect(getMenus()).toHaveLength(1);
+    });
+
+    it('still opens a flyout on click when autoDisplay is false', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ITEMS, label: 'File', autoDisplay: false },
+      });
+
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      getItemByText(getMenus()[0]!, 'New').click();
+      await settle(fixture);
+
+      expect(getMenus()).toHaveLength(2);
+      const level1Labels = getItemsIn(getMenus()[1]!).map((el) =>
+        el.textContent?.trim(),
+      );
+      expect(level1Labels).toEqual(['Document', 'Spreadsheet']);
+    });
+
+    it('still opens a flyout on hover by default (autoDisplay: true)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ITEMS, label: 'File' },
+      });
+
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      getItemByText(getMenus()[0]!, 'New').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+
+      expect(getMenus()).toHaveLength(2);
+    });
+  });
+
   describe('sibling-switch truncation', () => {
     it("hovering a sibling branch collapses the previous branch's flyout", async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
-      getItemByText(getMenus()[0]!, 'New').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      getItemByText(getMenus()[0]!, 'New').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
       await settle(fixture);
       expect(getMenus()).toHaveLength(2);
 
-      getItemByText(getMenus()[0]!, 'Export').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      getItemByText(getMenus()[0]!, 'Export').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(2);
-      const level1Labels = getItemsIn(getMenus()[1]!).map((el) => el.textContent?.trim());
+      const level1Labels = getItemsIn(getMenus()[1]!).map((el) =>
+        el.textContent?.trim(),
+      );
       expect(level1Labels).toEqual(['PDF', 'CSV']);
     });
   });
 
   describe('keyboard navigation', () => {
     it('ArrowDown opens the closed panel', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
       const trigger = within(container).getByRole('combobox', { name: 'File' });
 
       trigger.focus();
@@ -186,7 +286,9 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('ArrowDown/ArrowUp move within the current level without wrapping', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
       const trigger = within(container).getByRole('combobox', { name: 'File' });
 
       await userEvent.click(trigger); // active is New (index 0)
@@ -200,7 +302,9 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('Home/End jump to the first/last enabled item within the current level', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
       const trigger = within(container).getByRole('combobox', { name: 'File' });
 
       await userEvent.click(trigger);
@@ -214,9 +318,13 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('Enter on a branch drills in rather than committing', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' })); // active is New
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      ); // active is New
       await settle(fixture);
       await userEvent.keyboard('{Enter}');
       await settle(fixture);
@@ -226,7 +334,9 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('ArrowRight drills into a branch, ArrowLeft backs out one level', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
       const trigger = within(container).getByRole('combobox', { name: 'File' });
 
       await userEvent.click(trigger);
@@ -241,9 +351,13 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('ArrowLeft at the root level is a no-op', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
       await userEvent.keyboard('{ArrowLeft}');
       await settle(fixture);
@@ -252,7 +366,9 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('Enter on a leaf commits and closes every open level', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
       const trigger = within(container).getByRole('combobox', { name: 'File' });
 
       await userEvent.click(trigger);
@@ -269,7 +385,9 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('Escape closes every open level at once', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
       const trigger = within(container).getByRole('combobox', { name: 'File' });
 
       await userEvent.click(trigger);
@@ -287,19 +405,25 @@ describe('DynamoTieredMenu', () => {
 
   describe('disabled items', () => {
     it('a disabled branch does not open its children on hover or ArrowRight', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
       const trigger = within(container).getByRole('combobox', { name: 'File' });
 
       await userEvent.click(trigger);
       await settle(fixture);
-      getItemByText(getMenus()[0]!, 'Import').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      getItemByText(getMenus()[0]!, 'Import').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(1);
     });
 
     it('skips disabled items during ArrowDown navigation', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
       const trigger = within(container).getByRole('combobox', { name: 'File' });
 
       await userEvent.click(trigger); // New (0)
@@ -318,13 +442,19 @@ describe('DynamoTieredMenu', () => {
   describe('user interactions', () => {
     it('supports interaction through the DynamoTieredMenuHarness', async () => {
       const { fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoTieredMenuHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTieredMenuHarness,
+      );
 
       expect(await harness.isOpen()).toBe(false);
       await harness.drillInto('New');
       await settle(fixture);
 
-      expect(await harness.getVisibleLabelsAtLevel(1)).toEqual(['Document', 'Spreadsheet']);
+      expect(await harness.getVisibleLabelsAtLevel(1)).toEqual([
+        'Document',
+        'Spreadsheet',
+      ]);
 
       await harness.selectPath('Export', 'CSV');
       await settle(fixture);
@@ -335,14 +465,16 @@ describe('DynamoTieredMenu', () => {
   });
 
   describe('output events', () => {
-    it('emits itemSelect and invokes the item\'s command() on commit', async () => {
+    it("emits itemSelect and invokes the item's command() on commit", async () => {
       const command = vi.fn();
       const items: DynamoTieredMenuItem[] = [{ label: 'Save', command }];
       const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
         inputs: { items, label: 'File' },
       });
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
       getItemByText(getMenus()[0]!, 'Save').click();
       await settle(fixture);
@@ -353,26 +485,38 @@ describe('DynamoTieredMenu', () => {
 
   describe('backdrop', () => {
     it('renders exactly one backdrop regardless of how many levels are open', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
       await userEvent.keyboard('{ArrowRight}');
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(2);
-      expect(document.querySelectorAll('.cdk-overlay-backdrop')).toHaveLength(1);
+      expect(document.querySelectorAll('.cdk-overlay-backdrop')).toHaveLength(
+        1,
+      );
     });
 
     it('clicking the backdrop while several levels deep closes everything', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
       await userEvent.keyboard('{ArrowRight}');
       await settle(fixture);
 
-      const backdrop = document.querySelector('.cdk-overlay-backdrop') as HTMLElement;
+      const backdrop = document.querySelector(
+        '.cdk-overlay-backdrop',
+      ) as HTMLElement;
       backdrop.click();
       await settle(fixture);
 
@@ -389,8 +533,12 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('has no axe violations with several levels open', async () => {
-      const { container, fixture } = renderDynamoComponent(TieredMenuTestHostComponent);
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuTestHostComponent,
+      );
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
       await userEvent.keyboard('{ArrowRight}');
       await settle(fixture);
@@ -406,9 +554,12 @@ describe('DynamoTieredMenu', () => {
     });
 
     it('reflects the active item via aria-activedescendant on the trigger', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(DynamoTieredMenu, {
-        inputs: { items: ITEMS, label: 'File' },
-      });
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTieredMenu,
+        {
+          inputs: { items: ITEMS, label: 'File' },
+        },
+      );
       const trigger = within(container).getByRole('combobox', { name: 'File' });
 
       await userEvent.click(trigger);
@@ -416,7 +567,9 @@ describe('DynamoTieredMenu', () => {
 
       const activeId = trigger.getAttribute('aria-activedescendant');
       expect(activeId).toBeTruthy();
-      expect(document.getElementById(activeId!)?.textContent?.trim()).toBe('New');
+      expect(document.getElementById(activeId!)?.textContent?.trim()).toBe(
+        'New',
+      );
       expect(componentInstance.open()).toBe(true);
     });
   });
@@ -440,7 +593,9 @@ describe('DynamoTieredMenu', () => {
         inputs: { items: [{ label: 'Only' }], label: 'File' },
       });
 
-      await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(1);
@@ -448,18 +603,28 @@ describe('DynamoTieredMenu', () => {
 
     it('does not throw when every item is disabled', async () => {
       const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
-        inputs: { items: [{ label: 'A', disabled: true }, { label: 'B', disabled: true }], label: 'File' },
+        inputs: {
+          items: [
+            { label: 'A', disabled: true },
+            { label: 'B', disabled: true },
+          ],
+          label: 'File',
+        },
       });
 
       await expect(async () => {
-        await userEvent.click(within(container).getByRole('combobox', { name: 'File' }));
+        await userEvent.click(
+          within(container).getByRole('combobox', { name: 'File' }),
+        );
         await settle(fixture);
       }).not.toThrow();
     });
 
     it('handles an empty items array without throwing', () => {
       expect(() => {
-        renderDynamoComponent(DynamoTieredMenu, { inputs: { items: [], label: 'File' } });
+        renderDynamoComponent(DynamoTieredMenu, {
+          inputs: { items: [], label: 'File' },
+        });
       }).not.toThrow();
     });
   });

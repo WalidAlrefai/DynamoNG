@@ -42,9 +42,8 @@ describe('DynamoFileUpload', () => {
 
   describe('default behavior', () => {
     it('defaults to an empty file list, single-file mode, and the default label', () => {
-      const { container, componentInstance } = renderDynamoComponent(
-        DynamoFileUpload,
-      );
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoFileUpload);
 
       expect(componentInstance.value()).toEqual([]);
       expect(componentInstance.multiple()).toBe(false);
@@ -94,9 +93,8 @@ describe('DynamoFileUpload', () => {
     });
 
     it('adds a file selected through the native input', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(
-        DynamoFileUpload,
-      );
+      const { fixture, container, componentInstance } =
+        renderDynamoComponent(DynamoFileUpload);
       const input = container.querySelector(
         'input[type="file"]',
       ) as HTMLInputElement;
@@ -123,9 +121,8 @@ describe('DynamoFileUpload', () => {
     });
 
     it('replaces rather than appends when multiple is false', () => {
-      const { container, componentInstance } = renderDynamoComponent(
-        DynamoFileUpload,
-      );
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoFileUpload);
       const input = container.querySelector(
         'input[type="file"]',
       ) as HTMLInputElement;
@@ -199,9 +196,8 @@ describe('DynamoFileUpload', () => {
 
   describe('drag and drop', () => {
     it('accepts dropped files', () => {
-      const { container, componentInstance } = renderDynamoComponent(
-        DynamoFileUpload,
-      );
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoFileUpload);
       const dropzone = within(container).getByRole('button');
 
       fireEvent(dropzone, dropEvent([makeFile('dropped.txt', 10)]));
@@ -262,7 +258,9 @@ describe('DynamoFileUpload', () => {
         DynamoFileUpload,
         { inputs: { multiple: true, accept: '.png,image/*' } },
       );
-      componentInstance.rejected.subscribe((batch) => rejections.push(...batch));
+      componentInstance.rejected.subscribe((batch) =>
+        rejections.push(...batch),
+      );
       const input = container.querySelector(
         'input[type="file"]',
       ) as HTMLInputElement;
@@ -282,7 +280,10 @@ describe('DynamoFileUpload', () => {
         'icon.svg',
       ]);
       expect(rejections).toEqual([
-        { file: expect.objectContaining({ name: 'notes.txt' }), reason: 'type' },
+        {
+          file: expect.objectContaining({ name: 'notes.txt' }),
+          reason: 'type',
+        },
       ]);
     });
 
@@ -292,12 +293,16 @@ describe('DynamoFileUpload', () => {
         DynamoFileUpload,
         { inputs: { maxFileSize: 100 } },
       );
-      componentInstance.rejected.subscribe((batch) => rejections.push(...batch));
+      componentInstance.rejected.subscribe((batch) =>
+        rejections.push(...batch),
+      );
       const input = container.querySelector(
         'input[type="file"]',
       ) as HTMLInputElement;
 
-      fireEvent.change(input, { target: { files: [makeFile('huge.bin', 200)] } });
+      fireEvent.change(input, {
+        target: { files: [makeFile('huge.bin', 200)] },
+      });
 
       expect(componentInstance.value()).toEqual([]);
       expect(rejections).toEqual([
@@ -318,9 +323,7 @@ describe('DynamoFileUpload', () => {
         target: { files: [makeFile('doc.pdf', 10, 'application/pdf')] },
       });
 
-      expect(componentInstance.value().map((f) => f.name)).toEqual([
-        'doc.pdf',
-      ]);
+      expect(componentInstance.value().map((f) => f.name)).toEqual(['doc.pdf']);
     });
 
     it('accepts everything when accept resolves to no patterns', () => {
@@ -343,7 +346,9 @@ describe('DynamoFileUpload', () => {
         DynamoFileUpload,
         { inputs: { multiple: true, maxFiles: 2 } },
       );
-      componentInstance.rejected.subscribe((batch) => rejections.push(...batch));
+      componentInstance.rejected.subscribe((batch) =>
+        rejections.push(...batch),
+      );
       const input = container.querySelector(
         'input[type="file"]',
       ) as HTMLInputElement;
@@ -351,15 +356,73 @@ describe('DynamoFileUpload', () => {
       fireEvent.change(input, {
         target: { files: [makeFile('one.txt', 10), makeFile('two.txt', 10)] },
       });
-      fireEvent.change(input, { target: { files: [makeFile('three.txt', 10)] } });
+      fireEvent.change(input, {
+        target: { files: [makeFile('three.txt', 10)] },
+      });
 
       expect(componentInstance.value().map((f) => f.name)).toEqual([
         'one.txt',
         'two.txt',
       ]);
       expect(rejections).toEqual([
-        { file: expect.objectContaining({ name: 'three.txt' }), reason: 'count' },
+        {
+          file: expect.objectContaining({ name: 'three.txt' }),
+          reason: 'count',
+        },
       ]);
+    });
+  });
+
+  describe('preview', () => {
+    it('defaults showPreview to true', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoFileUpload);
+      expect(componentInstance.showPreview()).toBe(true);
+    });
+
+    it('renders a thumbnail for an image file', () => {
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(DynamoFileUpload);
+      componentInstance.value.set([makeFile('photo.png', 10, 'image/png')]);
+      fixture.detectChanges();
+
+      const img = container.querySelector('img');
+      expect(img).not.toBeNull();
+      expect(img?.getAttribute('src')).toMatch(/^blob:/);
+    });
+
+    it('renders no thumbnail for a non-image file', () => {
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(DynamoFileUpload);
+      componentInstance.value.set([makeFile('notes.txt', 10, 'text/plain')]);
+      fixture.detectChanges();
+
+      expect(container.querySelector('img')).toBeNull();
+    });
+
+    it('renders no thumbnail for an image file when showPreview is false', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoFileUpload,
+        { inputs: { showPreview: false } },
+      );
+      componentInstance.value.set([makeFile('photo.png', 10, 'image/png')]);
+      fixture.detectChanges();
+
+      expect(container.querySelector('img')).toBeNull();
+    });
+
+    it('revokes the object URL when the file is removed', () => {
+      const revokeSpy = vi.spyOn(URL, 'revokeObjectURL');
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(DynamoFileUpload);
+      const file = makeFile('photo.png', 10, 'image/png');
+      componentInstance.value.set([file]);
+      fixture.detectChanges();
+      expect(container.querySelector('img')).not.toBeNull(); // the preview URL is created during this render
+
+      within(container).getByLabelText('Remove photo.png').click();
+
+      expect(revokeSpy).toHaveBeenCalled();
+      revokeSpy.mockRestore();
     });
   });
 
@@ -397,10 +460,9 @@ describe('DynamoFileUpload', () => {
 
   describe('loading', () => {
     it('renders a spinner in the dropzone only while loading', () => {
-      const { container, setInputs } = renderDynamoComponent(
-        DynamoFileUpload,
-        { inputs: { loading: false } },
-      );
+      const { container, setInputs } = renderDynamoComponent(DynamoFileUpload, {
+        inputs: { loading: false },
+      });
       expect(container.querySelector('dg-spinner')).toBeNull();
 
       setInputs({ loading: true });
@@ -444,10 +506,9 @@ describe('DynamoFileUpload', () => {
     });
 
     it('re-enables the dropzone when loading transitions back to false', () => {
-      const { container, setInputs } = renderDynamoComponent(
-        DynamoFileUpload,
-        { inputs: { loading: true } },
-      );
+      const { container, setInputs } = renderDynamoComponent(DynamoFileUpload, {
+        inputs: { loading: true },
+      });
       const dropzone = within(container).getByRole('button');
       expect(dropzone.getAttribute('aria-disabled')).toBe('true');
 
@@ -462,9 +523,7 @@ describe('DynamoFileUpload', () => {
       const { container } = renderDynamoComponent(DynamoFileUpload);
 
       expect(
-        within(container)
-          .getByRole('button')
-          .getAttribute('aria-label'),
+        within(container).getByRole('button').getAttribute('aria-label'),
       ).toBe('Drag and drop files here, or click to browse');
     });
 
@@ -485,7 +544,10 @@ describe('DynamoFileUpload', () => {
 
     it('has no axe violations with files selected', async () => {
       const { container } = renderDynamoComponent(DynamoFileUpload, {
-        inputs: { multiple: true, value: [makeFile('a.txt', 10), makeFile('b.txt', 20)] },
+        inputs: {
+          multiple: true,
+          value: [makeFile('a.txt', 10), makeFile('b.txt', 20)],
+        },
       });
       await expectNoA11yViolations(container);
     });
@@ -493,9 +555,8 @@ describe('DynamoFileUpload', () => {
 
   describe('edge cases', () => {
     it('ignores an empty FileList without throwing', () => {
-      const { container, componentInstance } = renderDynamoComponent(
-        DynamoFileUpload,
-      );
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoFileUpload);
       const input = container.querySelector(
         'input[type="file"]',
       ) as HTMLInputElement;
@@ -542,9 +603,7 @@ describe('DynamoFileUpload', () => {
       expect(await harness.isDisabled()).toBe(false);
 
       await harness.removeFileByName('one.txt');
-      expect(componentInstance.value().map((f) => f.name)).toEqual([
-        'two.txt',
-      ]);
+      expect(componentInstance.value().map((f) => f.name)).toEqual(['two.txt']);
     });
 
     it('opens the file browser', async () => {

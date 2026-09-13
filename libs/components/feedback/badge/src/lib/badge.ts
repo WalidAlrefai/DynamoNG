@@ -20,6 +20,8 @@ export class DynamoBadge extends DynamoBaseComponent<DynamoBadgePart> {
   readonly severity = input<DynamoSeverity>('primary');
   readonly variant = input<DynamoBadgeVariant>('solid');
   readonly size = input<DynamoSize>('md');
+  /** Renders a bare notification dot instead of the pill — no padding, no projected content, a fixed square per `size`. */
+  readonly dot = input(false);
 
   protected readonly classes = computed(() =>
     this.unstyled()
@@ -29,6 +31,7 @@ export class DynamoBadge extends DynamoBaseComponent<DynamoBadgePart> {
             severity: this.severity(),
             variant: this.variant(),
             size: this.size(),
+            dot: this.dot(),
           }),
           this.styleClass(),
         ),

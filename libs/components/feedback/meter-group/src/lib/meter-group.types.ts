@@ -11,12 +11,10 @@ export interface DynamoMeterItem {
 
 export type DynamoMeterGroupOrientation = 'horizontal' | 'vertical';
 
+/** Where the legend renders relative to the track. */
+export type DynamoMeterGroupLabelPosition = 'start' | 'end';
+
 export type DynamoMeterGroupSize = DynamoSize;
 
 export type DynamoMeterGroupPart =
-  | 'root'
-  | 'track'
-  | 'meter'
-  | 'legend'
-  | 'legendItem'
-  | 'legendMarker';
+  'root' | 'track' | 'meter' | 'legend' | 'legendItem' | 'legendMarker';

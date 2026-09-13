@@ -10,26 +10,35 @@
     (keydown)="onKeydown($event)"
   >
     @for (item of items(); track item; let i = $index) {
-      <li role="none">
-        <button
-          #tileEl
-          type="button"
-          role="menuitem"
-          [tabindex]="focusedIndex() === i ? 0 : -1"
-          [attr.aria-disabled]="item.disabled ? 'true' : null"
-          [attr.aria-label]="item.label"
-          [class]="itemClasses()"
-          [style.transform]="tileTransform(i)"
-          (click)="run(i)"
-        >
-          <span [attr.aria-hidden]="true">
-            {{ item.icon ?? item.label.charAt(0) }}
-          </span>
-          <span [class]="labelClasses()" [attr.aria-hidden]="true">
-            {{ item.label }}
-          </span>
-        </button>
-      </li>
+    <li role="none">
+      <button
+        #tileEl
+        type="button"
+        role="menuitem"
+        [tabindex]="focusedIndex() === i ? 0 : -1"
+        [attr.aria-disabled]="item.disabled ? 'true' : null"
+        [attr.aria-label]="
+            item.badge !== undefined
+              ? item.label + ' (' + item.badge + ')'
+              : item.label
+          "
+        [class]="itemClasses()"
+        [style.transform]="tileTransform(i)"
+        (click)="run(i)"
+      >
+        <span [attr.aria-hidden]="true">
+          {{ item.icon ?? item.label.charAt(0) }}
+        </span>
+        @if (item.badge !== undefined) {
+        <span [class]="badgeClasses" [attr.aria-hidden]="true">
+          {{ item.badge }}
+        </span>
+        }
+        <span [class]="labelClasses()" [attr.aria-hidden]="true">
+          {{ item.label }}
+        </span>
+      </button>
+    </li>
     }
   </ul>
 </div>

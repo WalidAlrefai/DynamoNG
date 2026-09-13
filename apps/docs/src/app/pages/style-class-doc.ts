@@ -21,6 +21,7 @@ const API: ApiTableRow[] = [
   { name: 'toggleClass', type: 'string', default: '—' },
   { name: 'enterClass / leaveClass', type: 'string', default: '—' },
   { name: 'hideOnOutsideClick', type: 'boolean', default: 'false' },
+  { name: 'hideOnEscape', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -62,7 +63,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="enter-leave"
         title="Enter / Leave"
-        description="enterClass / leaveClass swap on alternating clicks; hideOnOutsideClick reverts when you click away."
+        description="enterClass / leaveClass swap on alternating clicks; hideOnOutsideClick reverts when you click away, and hideOnEscape does the same for the Escape key."
       >
         <div preview class="space-y-2">
           <button
@@ -71,9 +72,10 @@ const API: ApiTableRow[] = [
             enterClass="translate-x-0"
             leaveClass="-translate-x-full"
             [hideOnOutsideClick]="true"
+            [hideOnEscape]="true"
             class="rounded-md border border-border px-3 py-1 text-sm"
           >
-            Slide in / out (click away to close)
+            Slide in / out (click away or press Escape to close)
           </button>
           <div class="overflow-hidden">
             <div
@@ -86,8 +88,8 @@ const API: ApiTableRow[] = [
         </div>
         <div code>
           &lt;button dgStyleClass="#panel" enterClass="translate-x-0"
-          leaveClass="-translate-x-full" [hideOnOutsideClick]="true"&gt;
-          Toggle &lt;/button&gt;
+          leaveClass="-translate-x-full" [hideOnOutsideClick]="true"
+          [hideOnEscape]="true"&gt; Toggle &lt;/button&gt;
         </div>
       </docs-example>
 

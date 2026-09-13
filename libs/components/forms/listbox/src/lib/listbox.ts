@@ -9,9 +9,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import type { DynamoSelectOption } from '@dynamong/core/api';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoCheckIcon } from '@dynamong/icons';
+import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -20,12 +22,18 @@ import {
   resolveTypeaheadQuery,
 } from '@dynamong/utils/typeahead';
 import {
+  filterListboxOptions,
   findEnabledListboxIndex,
   flattenGroupedListboxOptions,
   groupListboxOptions,
 } from './listbox-option-filter';
 import {
+  listboxFilterFieldWrapperStyles,
+  listboxFilterIconStyles,
+  listboxFilterInputExtraClasses,
+  listboxFilterWrapperStyles,
   listboxGroupHeadingStyles,
+  listboxNoResultsStyles,
   listboxOptionCheckboxStyles,
   listboxOptionStyles,
   listboxRootStyles,
@@ -50,15 +58,27 @@ type DynamoListboxRenderItem<TValue> =
   selector: 'dg-listbox',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoCheckIcon, DynamoVirtualScroll],
+  imports: [DynamoCheckIcon, DynamoVirtualScroll, DynamoInputText, FormsModule],
   templateUrl: './listbox.html',
 })
-export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoListboxPart> {
+export class DynamoListbox<
+  TValue = unknown,
+> extends DynamoBaseComponent<DynamoListboxPart> {
   readonly options = input.required<DynamoSelectOption<TValue>[]>();
   readonly multiple = input(false);
   readonly size = input<DynamoListboxSize>('md');
   readonly disabled = input(false);
+  /** HTML `readonly` semantics: options stay visible/focusable but can't be
+   *  (de)selected. Unlike `disabled`, doesn't dim the list or remove it from
+   *  the tab order. */
+  readonly readOnly = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Opt-in filter box rendered above the option list — mirrors `DynamoSelect`'s `filterable`. */
+  readonly filterable = input(false);
+  readonly filterText = model('');
+  readonly filterPlaceholder = input('Search...');
+  /** Shown when `options()` is non-empty but the filter matched nothing — distinct from a genuinely empty `options()`, which renders no message. */
+  readonly noResultsMessage = input('No matching options');
   /** Two-way bindable. Scalar (`TValue | null`) in single-select mode, array (`TValue[]`) once `multiple` is true. */
   readonly value = model<DynamoListboxValue<TValue>>(null);
   /**
@@ -88,23 +108,37 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
   private hasSeededActive = false;
   private readonly typeahead = createTypeaheadBuffer();
 
-  protected readonly groupedOptions = computed(() => groupListboxOptions(this.options()));
+  protected readonly filteredOptions = computed(() =>
+    filterListboxOptions(this.options(), this.filterText()),
+  );
+  protected readonly groupedOptions = computed(() =>
+    groupListboxOptions(this.filteredOptions()),
+  );
   protected readonly visibleOptions = computed(() =>
     flattenGroupedListboxOptions(this.groupedOptions()),
   );
-  protected readonly renderItems = computed<DynamoListboxRenderItem<TValue>[]>(() => {
-    const items: DynamoListboxRenderItem<TValue>[] = [];
-    let index = 0;
-    for (const group of this.groupedOptions()) {
-      if (group.group !== null) {
-        items.push({ kind: 'heading', label: group.group });
+  /** True once filtering is active and matched nothing, distinct from a genuinely empty `options()` (which renders no message at all). */
+  protected readonly showNoResults = computed(
+    () =>
+      this.filterable() &&
+      this.options().length > 0 &&
+      this.filteredOptions().length === 0,
+  );
+  protected readonly renderItems = computed<DynamoListboxRenderItem<TValue>[]>(
+    () => {
+      const items: DynamoListboxRenderItem<TValue>[] = [];
+      let index = 0;
+      for (const group of this.groupedOptions()) {
+        if (group.group !== null) {
+          items.push({ kind: 'heading', label: group.group });
+        }
+        for (const option of group.options) {
+          items.push({ kind: 'option', option, index: index++ });
+        }
       }
-      for (const option of group.options) {
-        items.push({ kind: 'option', option, index: index++ });
-      }
-    }
-    return items;
-  });
+      return items;
+    },
+  );
   /** True only for the ungrouped case — see `virtualScroll`'s own doc comment for why grouped lists can't be virtualized in v1. `groupedOptions()` always yields at least one bucket (a single `group: null` one for ungrouped input), so "ungrouped" is exactly "at most one group". */
   protected readonly isVirtualized = computed(
     () => this.virtualScroll() && this.groupedOptions().length <= 1,
@@ -122,6 +156,12 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
         ),
   );
   protected readonly groupHeadingClasses = listboxGroupHeadingStyles;
+  protected readonly filterWrapperClasses = listboxFilterWrapperStyles;
+  protected readonly filterFieldWrapperClasses =
+    listboxFilterFieldWrapperStyles;
+  protected readonly filterIconClasses = listboxFilterIconStyles;
+  protected readonly filterInputExtraClasses = listboxFilterInputExtraClasses;
+  protected readonly noResultsClasses = listboxNoResultsStyles;
 
   constructor() {
     super();
@@ -134,7 +174,9 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
       this.hasSeededActive = true;
       const selectedIndex = opts.findIndex((o) => this.isSelected(o));
       this.activeIndex.set(
-        selectedIndex >= 0 ? selectedIndex : (findEnabledListboxIndex(opts, -1, 1) ?? -1),
+        selectedIndex >= 0
+          ? selectedIndex
+          : (findEnabledListboxIndex(opts, -1, 1) ?? -1),
       );
     });
   }
@@ -162,7 +204,10 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
     return this.disabled() || !!option.disabled;
   }
 
-  protected optionClasses(option: DynamoSelectOption<TValue>, index: number): string {
+  protected optionClasses(
+    option: DynamoSelectOption<TValue>,
+    index: number,
+  ): string {
     return listboxOptionStyles({
       active: index === this.activeIndex(),
       selected: this.isSelected(option),
@@ -175,7 +220,7 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
   }
 
   protected activate(option: DynamoSelectOption<TValue>): void {
-    if (this.isOptionDisabled(option)) return;
+    if (this.isOptionDisabled(option) || this.readOnly()) return;
 
     if (this.multiple()) {
       const current = this.toArray(this.value());
@@ -225,6 +270,41 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
     }
   }
 
+  protected onFilterInputChange(value: string): void {
+    this.filterText.set(value);
+    this.activeIndex.set(
+      findEnabledListboxIndex(this.visibleOptions(), -1, 1) ?? -1,
+    );
+  }
+
+  protected onFilterKeydown(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'Escape':
+        event.preventDefault();
+        this.filterText.set('');
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        this.moveActive(1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.moveActive(-1);
+        break;
+      case 'Enter': {
+        event.preventDefault();
+        const active = this.visibleOptions()[this.activeIndex()];
+        if (active) this.activate(active);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  // Typeahead only applies to the non-filterable path — once `filterable()`
+  // is true, typing moves focus into the separate filter `<input>` (its own
+  // `onFilterKeydown` handler), matching DynamoSelect's identical precedent.
   private handleTypeahead(
     event: KeyboardEvent,
     options: readonly DynamoSelectOption<TValue>[],
@@ -233,7 +313,8 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
       event.key.length !== 1 ||
       event.ctrlKey ||
       event.metaKey ||
-      event.altKey
+      event.altKey ||
+      this.filterable()
     ) {
       return;
     }
@@ -246,7 +327,11 @@ export class DynamoListbox<TValue = unknown> extends DynamoBaseComponent<DynamoL
   }
 
   private moveActive(delta: number): void {
-    const next = findEnabledListboxIndex(this.visibleOptions(), this.activeIndex(), delta);
+    const next = findEnabledListboxIndex(
+      this.visibleOptions(),
+      this.activeIndex(),
+      delta,
+    );
     if (next !== null) this.setActiveIndex(next);
   }
 

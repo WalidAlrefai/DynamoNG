@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoRadio } from '@dynamong/radio';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
@@ -10,6 +11,7 @@ import radioApiRows from '../generated/api/radio.json';
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'group', title: 'Radio Group' },
+  { id: 'reactive-forms', title: 'Reactive Forms' },
   { id: 'disabled', title: 'Disabled' },
 ];
 
@@ -17,7 +19,13 @@ const EXAMPLES: DocExampleRef[] = [
   selector: 'docs-radio-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoRadio, DocExamplesLayout, DocExample, DocApiTable],
+  imports: [
+    DynamoRadio,
+    ReactiveFormsModule,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
     <docs-examples-layout
       name="Radio"
@@ -59,6 +67,29 @@ const EXAMPLES: DocExampleRef[] = [
       </docs-example>
 
       <docs-example
+        exampleId="reactive-forms"
+        title="Reactive Forms"
+        description="Implements ControlValueAccessor, so a group can instead bind formControl/formControlName/ngModel — every radio sharing a name stays in sync even when bound to the same control."
+      >
+        <div preview class="flex flex-col gap-1">
+          <dg-radio name="tier" value="basic" [formControl]="tier"
+            >Basic</dg-radio
+          >
+          <dg-radio name="tier" value="premium" [formControl]="tier"
+            >Premium</dg-radio
+          >
+          <p class="mt-2 text-sm text-text-muted">
+            Value: <span class="font-mono">{{ tier.value }}</span>
+          </p>
+        </div>
+        <div code>
+          &lt;dg-radio name="tier" value="basic" [formControl]="tier"
+          /&gt;&lt;dg-radio name="tier" value="premium" [formControl]="tier"
+          /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="disabled"
         title="Disabled"
         description="A single option can be disabled without affecting its siblings."
@@ -75,11 +106,12 @@ const EXAMPLES: DocExampleRef[] = [
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
-          There is no <code>RadioGroup</code> container — give sibling radios the
-          same <code>name</code> for native grouping, and drive them from one
-          shared selection signal using the split-binding form shown above (not
-          full <code>[(checked)]</code>, which would desync a deselected sibling
-          since native radios never fire <code>change</code> on deselection).
+          There is no <code>RadioGroup</code> container — give sibling radios
+          the same <code>name</code> for native grouping, and drive them from
+          one shared selection signal using the split-binding form shown above
+          (not full <code>[(checked)]</code>, which would desync a deselected
+          sibling since native radios never fire <code>change</code> on
+          deselection).
         </p>
       </div>
     </docs-examples-layout>
@@ -89,6 +121,7 @@ export class RadioDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows: ApiTableRow[] = radioApiRows;
   protected readonly plan = signal<'free' | 'pro' | 'enterprise'>('free');
+  protected readonly tier = new FormControl('basic', { nonNullable: true });
 
   protected readonly groupCode = `plan = signal<'free' | 'pro' | 'enterprise'>('free');
 

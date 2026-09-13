@@ -102,6 +102,19 @@ export class DynamoAutocomplete<TValue = unknown>
   readonly value = model('');
   /** Fires with the full matched option when a suggestion is picked (click or Enter). */
   readonly optionSelect = output<DynamoSelectOption<TValue>>();
+  /**
+   * Opt-in server-side/async mode: `options()` is trusted to already be
+   * the current suggestion set (the consumer's own responsibility) — this
+   * component stops filtering it locally by the typed text. Pair with
+   * `(searchQuery)` to fetch matching options as the user types.
+   */
+  readonly lazy = input(false);
+  /** Debounced by `debounceTime`. Only fires in `lazy` mode, once the typed text reaches `minLength`. Named `searchQuery`, not `search`, to avoid colliding with the native DOM `search` event. */
+  readonly searchQuery = output<string>();
+  /** Milliseconds to wait after the last keystroke before emitting `searchQuery` — mirrors PrimeNG's own `delay`. */
+  readonly debounceTime = input(300);
+  /** Minimum typed length before `searchQuery` fires. Below this, no request is made and no event is emitted. */
+  readonly minLength = input(1);
 
   private readonly triggerEl =
     viewChild.required<ElementRef<HTMLInputElement>>('triggerEl');
@@ -120,9 +133,12 @@ export class DynamoAutocomplete<TValue = unknown>
   private onTouchedFn: () => void = () => {
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
+  private searchTimer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly filteredOptions = computed(() =>
-    filterSelectOptions(this.options(), this.value()),
+    this.lazy()
+      ? this.options()
+      : filterSelectOptions(this.options(), this.value()),
   );
   protected readonly groupedOptions = computed(() =>
     groupSelectOptions(this.filteredOptions()),
@@ -150,11 +166,18 @@ export class DynamoAutocomplete<TValue = unknown>
     }
     return items;
   });
+  /**
+   * In `lazy` mode, `options()` IS the current (possibly server-empty)
+   * result set, not "every option that exists" — so a genuinely empty
+   * server response must still show the message, unlike the non-lazy
+   * case's `this.options().length > 0` guard (which exists there only to
+   * distinguish "nothing configured at all" from "no matches").
+   */
   protected readonly showNoResults = computed(
     () =>
       this.visibleOptions().length === 0 &&
       this.value().trim().length > 0 &&
-      this.options().length > 0,
+      (this.lazy() || this.options().length > 0),
   );
   protected readonly activeOptionId = computed(() => {
     const index = this.activeIndex();
@@ -201,7 +224,10 @@ export class DynamoAutocomplete<TValue = unknown>
       }
     });
 
-    this.destroyRef.onDestroy(() => this.destroyOverlay());
+    this.destroyRef.onDestroy(() => {
+      this.destroyOverlay();
+      clearTimeout(this.searchTimer);
+    });
   }
 
   protected triggerElRef(): ElementRef<HTMLElement> {
@@ -253,6 +279,19 @@ export class DynamoAutocomplete<TValue = unknown>
     if (!this.isOpen()) {
       this.isOpen.set(true);
     }
+    if (this.lazy()) {
+      this.debounceSearch(text);
+    }
+  }
+
+  private debounceSearch(text: string): void {
+    clearTimeout(this.searchTimer);
+    if (text.trim().length < this.minLength()) {
+      return;
+    }
+    this.searchTimer = setTimeout(() => {
+      this.searchQuery.emit(text);
+    }, this.debounceTime());
   }
 
   protected onKeydown(event: KeyboardEvent): void {

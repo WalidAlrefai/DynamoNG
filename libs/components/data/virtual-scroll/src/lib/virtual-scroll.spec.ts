@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
+import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -37,6 +38,26 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
 })
 class VirtualScrollTestHostComponent {
   readonly items = items(1000);
+}
+
+@Component({
+  selector: 'dg-virtual-scroll-scrolled-index-host',
+  standalone: true,
+  imports: [DynamoVirtualScroll],
+  template: `
+    <dg-virtual-scroll
+      [items]="items"
+      [itemSize]="24"
+      [height]="120"
+      (scrolledIndexChange)="indexes.push($event)"
+    >
+      <ng-template let-item>{{ item }}</ng-template>
+    </dg-virtual-scroll>
+  `,
+})
+class ScrolledIndexHostComponent {
+  readonly items = items(1000);
+  readonly indexes: number[] = [];
 }
 
 describe('DynamoVirtualScroll', () => {
@@ -152,6 +173,71 @@ describe('DynamoVirtualScroll', () => {
       }
 
       expect(() => renderDynamoComponent(TrackByHostComponent)).not.toThrow();
+    });
+  });
+
+  describe('orientation / appendOnly / width', () => {
+    it('defaults to vertical orientation with appendOnly off', () => {
+      const { fixture } = renderDynamoComponent(VirtualScrollTestHostComponent);
+      const viewportDebugEl = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof CdkVirtualScrollViewport,
+      );
+      const viewport =
+        viewportDebugEl?.componentInstance as CdkVirtualScrollViewport;
+
+      expect(viewport.orientation).toBe('vertical');
+      expect(viewport.appendOnly).toBe(false);
+    });
+
+    it('passes orientation, appendOnly, and width through to the CDK viewport', () => {
+      @Component({
+        selector: 'dg-virtual-scroll-horizontal-host',
+        standalone: true,
+        imports: [DynamoVirtualScroll],
+        template: `
+          <dg-virtual-scroll
+            [items]="items"
+            [itemSize]="24"
+            [height]="120"
+            [width]="300"
+            orientation="horizontal"
+            [appendOnly]="true"
+          >
+            <ng-template let-item>{{ item }}</ng-template>
+          </dg-virtual-scroll>
+        `,
+      })
+      class HorizontalHostComponent {
+        readonly items = items(50);
+      }
+
+      const { container, fixture } = renderDynamoComponent(
+        HorizontalHostComponent,
+      );
+      const viewportDebugEl = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof CdkVirtualScrollViewport,
+      );
+      const viewport =
+        viewportDebugEl?.componentInstance as CdkVirtualScrollViewport;
+
+      expect(viewport.orientation).toBe('horizontal');
+      expect(viewport.appendOnly).toBe(true);
+      const el = container.querySelector<HTMLElement>(
+        'cdk-virtual-scroll-viewport',
+      );
+      expect(el?.style.width).toBe('300px');
+    });
+  });
+
+  describe('scrolledIndexChange', () => {
+    it('re-emits the CDK viewport scrolledIndexChange stream', async () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        ScrolledIndexHostComponent,
+      );
+      await settle(fixture);
+
+      expect(componentInstance.indexes.length).toBeGreaterThan(0);
+      expect(componentInstance.indexes[0]).toBe(0);
     });
   });
 

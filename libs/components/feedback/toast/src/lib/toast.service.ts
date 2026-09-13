@@ -56,6 +56,18 @@ interface ContainerHandle {
   componentRef: ComponentRef<DynamoToastContainer>;
 }
 
+/**
+ * Tracks one toast's auto-dismiss countdown across pause/resume cycles.
+ * `timeoutId` is `undefined` while paused (hovered) — `remainingMs` then
+ * holds whatever was left when the pause started, so `resume()` restarts a
+ * fresh `setTimeout` for exactly that long rather than the full duration.
+ */
+interface TimerState {
+  timeoutId: ReturnType<typeof setTimeout> | undefined;
+  remainingMs: number;
+  startedAt: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DynamoToastService {
   private readonly overlayService = inject(DynamoOverlayService);
@@ -64,6 +76,7 @@ export class DynamoToastService {
 
   private readonly toasts = signal<DynamoToastEntry[]>([]);
   private readonly containers = new Map<DynamoToastPosition, ContainerHandle>();
+  private readonly timers = new Map<string, TimerState>();
 
   /** Read-only signal of every currently-visible toast, across all positions — consumed by `DynamoToastContainer`. */
   readonly allToasts = this.toasts.asReadonly();
@@ -84,10 +97,44 @@ export class DynamoToastService {
     this.refreshContainers();
 
     if (entry.duration > 0) {
-      setTimeout(() => this.dismiss(entry.id), entry.duration);
+      this.startTimer(entry.id, entry.duration);
     }
 
     return entry.id;
+  }
+
+  /** Pauses a toast's auto-dismiss countdown — called on pointer hover. A no-op for a sticky (`duration: 0`) toast or one already paused. */
+  pause(id: string): void {
+    const timer = this.timers.get(id);
+    if (!timer?.timeoutId) {
+      return;
+    }
+    clearTimeout(timer.timeoutId);
+    const elapsed = Date.now() - timer.startedAt;
+    timer.timeoutId = undefined;
+    timer.remainingMs = Math.max(0, timer.remainingMs - elapsed);
+  }
+
+  /** Resumes a paused toast's countdown for whatever time was left when it was paused. */
+  resume(id: string): void {
+    const timer = this.timers.get(id);
+    if (!timer || timer.timeoutId || timer.remainingMs <= 0) {
+      return;
+    }
+    this.startTimer(id, timer.remainingMs);
+  }
+
+  private startTimer(id: string, ms: number): void {
+    const timeoutId = setTimeout(() => this.dismiss(id), ms);
+    this.timers.set(id, { timeoutId, remainingMs: ms, startedAt: Date.now() });
+  }
+
+  private clearTimer(id: string): void {
+    const timer = this.timers.get(id);
+    if (timer?.timeoutId) {
+      clearTimeout(timer.timeoutId);
+    }
+    this.timers.delete(id);
   }
 
   success(
@@ -119,11 +166,15 @@ export class DynamoToastService {
   }
 
   dismiss(id: string): void {
+    this.clearTimer(id);
     this.toasts.update((list) => list.filter((toast) => toast.id !== id));
     this.refreshContainers();
   }
 
   dismissAll(): void {
+    for (const id of [...this.timers.keys()]) {
+      this.clearTimer(id);
+    }
     this.toasts.set([]);
     this.refreshContainers();
   }

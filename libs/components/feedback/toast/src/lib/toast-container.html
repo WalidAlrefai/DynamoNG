@@ -1,6 +1,10 @@
 <div [class]="containerClasses" role="status" aria-live="polite">
   @for (toast of toasts(); track toast.id) {
-  <div [class]="cardClasses(toast.severity)">
+  <div
+    [class]="cardClasses(toast.severity)"
+    (mouseenter)="pause(toast.id)"
+    (mouseleave)="resume(toast.id)"
+  >
     <svg
       [class]="iconClasses(toast.severity)"
       [attr.aria-hidden]="true"

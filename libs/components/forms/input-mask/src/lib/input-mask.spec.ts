@@ -1,7 +1,10 @@
 import { Component } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -14,7 +17,11 @@ const PHONE_MASK = '(999) 999-9999';
   selector: 'dg-input-mask-reactive-form-host',
   standalone: true,
   imports: [DynamoInputMask, ReactiveFormsModule],
-  template: `<dg-input-mask [formControl]="control" [mask]="mask" aria-label="Phone" />`,
+  template: `<dg-input-mask
+    [formControl]="control"
+    [mask]="mask"
+    aria-label="Phone"
+  />`,
 })
 class ReactiveFormHostComponent {
   readonly control = new FormControl('', { nonNullable: true });
@@ -25,7 +32,11 @@ class ReactiveFormHostComponent {
   selector: 'dg-input-mask-ng-model-host',
   standalone: true,
   imports: [DynamoInputMask, FormsModule],
-  template: `<dg-input-mask [(ngModel)]="value" [mask]="mask" aria-label="Phone" />`,
+  template: `<dg-input-mask
+    [(ngModel)]="value"
+    [mask]="mask"
+    aria-label="Phone"
+  />`,
 })
 class NgModelHostComponent {
   value = '';
@@ -60,7 +71,9 @@ function deleteAt(input: HTMLInputElement, pos: number): void {
 }
 
 function pasteText(input: HTMLInputElement, text: string): void {
-  fireEvent.paste(input, { clipboardData: { getData: () => text } as unknown as DataTransfer });
+  fireEvent.paste(input, {
+    clipboardData: { getData: () => text } as unknown as DataTransfer,
+  });
 }
 
 describe('DynamoInputMask', () => {
@@ -90,10 +103,16 @@ describe('DynamoInputMask', () => {
   describe('input properties', () => {
     it('reflects the placeholder input', () => {
       const { container } = renderDynamoComponent(DynamoInputMask, {
-        inputs: { mask: PHONE_MASK, placeholder: '(___) ___-____', ariaLabel: 'Phone' },
+        inputs: {
+          mask: PHONE_MASK,
+          placeholder: '(___) ___-____',
+          ariaLabel: 'Phone',
+        },
       });
 
-      expect(within(container).getByPlaceholderText('(___) ___-____')).toBeTruthy();
+      expect(
+        within(container).getByPlaceholderText('(___) ___-____'),
+      ).toBeTruthy();
     });
 
     it('reflects the disabled input onto the native element', () => {
@@ -101,13 +120,18 @@ describe('DynamoInputMask', () => {
         inputs: { mask: PHONE_MASK, disabled: true, ariaLabel: 'Phone' },
       });
 
-      expect((within(container).getByRole('textbox') as HTMLInputElement).disabled).toBe(true);
+      expect(
+        (within(container).getByRole('textbox') as HTMLInputElement).disabled,
+      ).toBe(true);
     });
 
     it('accepts every documented size without throwing', () => {
-      const { componentInstance, setInputs } = renderDynamoComponent(DynamoInputMask, {
-        inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' },
-      });
+      const { componentInstance, setInputs } = renderDynamoComponent(
+        DynamoInputMask,
+        {
+          inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' },
+        },
+      );
 
       for (const size of ['sm', 'md', 'lg'] as const) {
         setInputs({ size });
@@ -377,7 +401,9 @@ describe('DynamoInputMask', () => {
 
   describe('output events', () => {
     it('propagates the masked value to a bound reactive FormControl', async () => {
-      const { container, componentInstance } = renderDynamoComponent(ReactiveFormHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
       const input = within(container).getByRole('textbox') as HTMLInputElement;
 
       typeString(input, '5551234567');
@@ -386,7 +412,8 @@ describe('DynamoInputMask', () => {
     });
 
     it('propagates the masked value to an [(ngModel)] binding', async () => {
-      const { container, componentInstance } = renderDynamoComponent(NgModelHostComponent);
+      const { container, componentInstance } =
+        renderDynamoComponent(NgModelHostComponent);
       const input = within(container).getByRole('textbox') as HTMLInputElement;
 
       typeString(input, '5551234567');
@@ -397,7 +424,9 @@ describe('DynamoInputMask', () => {
 
   describe('user interactions', () => {
     it('marks the FormControl as touched on blur', async () => {
-      const { container, componentInstance } = renderDynamoComponent(ReactiveFormHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
       expect(componentInstance.control.touched).toBe(false);
 
       const input = within(container).getByRole('textbox');
@@ -411,7 +440,10 @@ describe('DynamoInputMask', () => {
       const { fixture } = renderDynamoComponent(DynamoInputMask, {
         inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' },
       });
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoInputMaskHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoInputMaskHarness,
+      );
 
       await harness.setValue('5551234567');
 
@@ -424,17 +456,26 @@ describe('DynamoInputMask', () => {
       const { container, setInputs } = renderDynamoComponent(DynamoInputMask, {
         inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' },
       });
-      expect(within(container).getByRole('textbox').getAttribute('aria-invalid')).toBeNull();
+      expect(
+        within(container).getByRole('textbox').getAttribute('aria-invalid'),
+      ).toBeNull();
 
       setInputs({ invalid: true });
-      expect(within(container).getByRole('textbox').getAttribute('aria-invalid')).toBe('true');
+      expect(
+        within(container).getByRole('textbox').getAttribute('aria-invalid'),
+      ).toBe('true');
     });
   });
 
   describe('readOnly', () => {
     it('blocks typed input, keeps the value unchanged, and reflects aria-readonly', async () => {
       const { container } = renderDynamoComponent(DynamoInputMask, {
-        inputs: { mask: PHONE_MASK, value: '(555) 123-4567', readOnly: true, ariaLabel: 'Phone' },
+        inputs: {
+          mask: PHONE_MASK,
+          value: '(555) 123-4567',
+          readOnly: true,
+          ariaLabel: 'Phone',
+        },
       });
       const input = within(container).getByRole('textbox') as HTMLInputElement;
 
@@ -450,7 +491,12 @@ describe('DynamoInputMask', () => {
 
     it('does not delete a masked character on Backspace', () => {
       const { container } = renderDynamoComponent(DynamoInputMask, {
-        inputs: { mask: PHONE_MASK, value: '(555) 123-4567', readOnly: true, ariaLabel: 'Phone' },
+        inputs: {
+          mask: PHONE_MASK,
+          value: '(555) 123-4567',
+          readOnly: true,
+          ariaLabel: 'Phone',
+        },
       });
       const input = within(container).getByRole('textbox') as HTMLInputElement;
 
@@ -461,7 +507,12 @@ describe('DynamoInputMask', () => {
 
     it('ignores a paste', () => {
       const { container } = renderDynamoComponent(DynamoInputMask, {
-        inputs: { mask: PHONE_MASK, value: '(555) 123-4567', readOnly: true, ariaLabel: 'Phone' },
+        inputs: {
+          mask: PHONE_MASK,
+          value: '(555) 123-4567',
+          readOnly: true,
+          ariaLabel: 'Phone',
+        },
       });
       const input = within(container).getByRole('textbox') as HTMLInputElement;
 
@@ -504,39 +555,53 @@ describe('DynamoInputMask', () => {
     });
 
     it('flags a nameless input as an accessibility violation (sanity check on the test helper itself)', async () => {
-      const { container } = renderDynamoComponent(DynamoInputMask, { inputs: { mask: PHONE_MASK } });
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK },
+      });
       await expect(expectNoA11yViolations(container)).rejects.toThrow(/label/i);
     });
   });
 
   describe('state changes', () => {
     it('disables the native input when the bound FormControl is disabled', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(ReactiveFormHostComponent);
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
 
       componentInstance.control.disable();
       fixture.detectChanges();
 
-      expect((within(container).getByRole('textbox') as HTMLInputElement).disabled).toBe(true);
+      expect(
+        (within(container).getByRole('textbox') as HTMLInputElement).disabled,
+      ).toBe(true);
     });
 
     it('re-enables the native input when the bound FormControl is enabled again', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(ReactiveFormHostComponent);
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
       componentInstance.control.disable();
       fixture.detectChanges();
 
       componentInstance.control.enable();
       fixture.detectChanges();
 
-      expect((within(container).getByRole('textbox') as HTMLInputElement).disabled).toBe(false);
+      expect(
+        (within(container).getByRole('textbox') as HTMLInputElement).disabled,
+      ).toBe(false);
     });
 
     it('reflects an externally-set FormControl value through the mask (writeValue)', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(ReactiveFormHostComponent);
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
 
       componentInstance.control.setValue('5551234567');
       fixture.detectChanges();
 
-      expect((within(container).getByRole('textbox') as HTMLInputElement).value).toBe('(555) 123-4567');
+      expect(
+        (within(container).getByRole('textbox') as HTMLInputElement).value,
+      ).toBe('(555) 123-4567');
     });
 
     it('ignores typing, backspace, and paste while disabled', () => {
@@ -545,7 +610,9 @@ describe('DynamoInputMask', () => {
       // by mutating .value directly, so what actually matters is whether
       // the component ever *commits* the change — checked here through the
       // bound FormControl's value, the channel a real consumer observes.
-      const { fixture, container, componentInstance } = renderDynamoComponent(ReactiveFormHostComponent);
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
       componentInstance.control.disable();
       fixture.detectChanges();
       const input = within(container).getByRole('textbox') as HTMLInputElement;
@@ -558,9 +625,173 @@ describe('DynamoInputMask', () => {
     });
   });
 
+  describe('placeholder buffer (slotChar)', () => {
+    it('shows no buffer until the field is focused', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      expect(input.value).toBe('');
+    });
+
+    it('displays the full mask buffer with the default slot char once focused', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      input.focus();
+      fireEvent.focus(input);
+
+      expect(input.value).toBe('(___) ___-____');
+    });
+
+    it('fills in typed digits and pads the rest of the buffer while focused', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      input.focus();
+      fireEvent.focus(input);
+
+      typeString(input, '555');
+
+      expect(input.value).toBe('(555) ___-____');
+    });
+
+    it('honors a custom slotChar', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, slotChar: '*', ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      input.focus();
+      fireEvent.focus(input);
+
+      expect(input.value).toBe('(***) ***-****');
+    });
+
+    it('drops the buffer again on blur, showing only the real matched value', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, autoClear: false, ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      input.focus();
+      fireEvent.focus(input);
+      typeString(input, '555');
+      expect(input.value).toBe('(555) ___-____');
+
+      fireEvent.blur(input);
+
+      expect(input.value).toBe('(555) ');
+    });
+  });
+
+  describe('autoClear', () => {
+    it('clears an incomplete value on blur by default', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoInputMask,
+        { inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' } },
+      );
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      input.focus();
+      fireEvent.focus(input);
+      typeString(input, '555');
+
+      fireEvent.blur(input);
+
+      expect(input.value).toBe('');
+      expect(componentInstance.value()).toBe('');
+    });
+
+    it('leaves a complete value untouched on blur', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      input.focus();
+      fireEvent.focus(input);
+      typeString(input, '5551234567');
+
+      fireEvent.blur(input);
+
+      expect(input.value).toBe('(555) 123-4567');
+    });
+
+    it('does nothing when disabled', () => {
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: {
+          mask: PHONE_MASK,
+          value: '(555) ',
+          autoClear: true,
+          disabled: true,
+          ariaLabel: 'Phone',
+        },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      fireEvent.blur(input);
+
+      expect(input.value).toBe('(555) ');
+    });
+  });
+
+  describe('complete output', () => {
+    it('emits once, with the final masked value, the moment the mask is fully filled', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoInputMask,
+        { inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' } },
+      );
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      const emitted: string[] = [];
+      componentInstance.complete.subscribe((value: string) =>
+        emitted.push(value),
+      );
+
+      typeString(input, '5551234567');
+
+      expect(emitted).toEqual(['(555) 123-4567']);
+    });
+
+    it('does not emit again for further edits while already complete', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoInputMask,
+        { inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' } },
+      );
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      typeString(input, '5551234567');
+      const emitted: string[] = [];
+      componentInstance.complete.subscribe((value: string) =>
+        emitted.push(value),
+      );
+
+      typeChar(input, '8'); // no-op, still complete
+
+      expect(emitted).toEqual([]);
+    });
+
+    it('does not emit for an incomplete value', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoInputMask,
+        { inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' } },
+      );
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      const emitted: string[] = [];
+      componentInstance.complete.subscribe((value: string) =>
+        emitted.push(value),
+      );
+
+      typeString(input, '555');
+
+      expect(emitted).toEqual([]);
+    });
+  });
+
   describe('edge cases', () => {
     it('treats an empty mask as unconstrained passthrough without throwing', () => {
-      const { container } = renderDynamoComponent(DynamoInputMask, { inputs: { mask: '', ariaLabel: 'Free text' } });
+      const { container } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: '', ariaLabel: 'Free text' },
+      });
       const input = within(container).getByRole('textbox') as HTMLInputElement;
 
       expect(() => typeChar(input, 'x')).not.toThrow();
@@ -575,7 +806,9 @@ describe('DynamoInputMask', () => {
       fixture.componentInstance.writeValue(null);
       fixture.detectChanges();
 
-      expect((within(container).getByRole('textbox') as HTMLInputElement).value).toBe('');
+      expect(
+        (within(container).getByRole('textbox') as HTMLInputElement).value,
+      ).toBe('');
     });
   });
 });

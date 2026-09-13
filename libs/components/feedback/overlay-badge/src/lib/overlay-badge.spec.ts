@@ -19,6 +19,7 @@ import type { DynamoOverlayBadgePosition } from './overlay-badge.types';
       [dot]="dot()"
       [max]="max()"
       [position]="position()"
+      [hidden]="hidden()"
     >
       <button type="button" aria-label="Notifications">🔔</button>
     </dg-overlay-badge>
@@ -29,6 +30,7 @@ class OverlayBadgeHostComponent {
   readonly dot = signal(false);
   readonly max = signal<number | undefined>(undefined);
   readonly position = signal<DynamoOverlayBadgePosition>('top-right');
+  readonly hidden = signal(false);
 }
 
 /** The `<dg-badge>` renders its classes onto an inner `<span>`. */
@@ -143,6 +145,50 @@ describe('DynamoOverlayBadge', () => {
 
       const { container } = renderDynamoComponent(SevHost);
       expect(dot(container)?.className).toContain('bg-success');
+    });
+  });
+
+  describe('badgeSize', () => {
+    it('defaults to "sm"', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoOverlayBadge);
+      expect(componentInstance.badgeSize()).toBe('sm');
+    });
+
+    it('passes badgeSize through to the internal dg-badge', () => {
+      @Component({
+        selector: 'dg-ob-size-host',
+        standalone: true,
+        imports: [DynamoOverlayBadge],
+        template: `<dg-overlay-badge [value]="3" badgeSize="lg"
+          ><span>x</span></dg-overlay-badge
+        >`,
+      })
+      class SizeHost {}
+
+      const { container } = renderDynamoComponent(SizeHost);
+      expect(badgeSpan(container)?.className).toContain('text-base');
+    });
+  });
+
+  describe('hidden', () => {
+    it('defaults to false', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoOverlayBadge);
+      expect(componentInstance.hidden()).toBe(false);
+    });
+
+    it('suppresses both the badge and the dot while keeping projected content', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        OverlayBadgeHostComponent,
+      );
+      componentInstance.dot.set(true);
+      componentInstance.hidden.set(true);
+      fixture.detectChanges();
+
+      expect(dot(container)).toBeNull();
+      expect(badgeText(container)).toBeNull();
+      expect(
+        container.querySelector('button[aria-label="Notifications"]'),
+      ).toBeTruthy();
     });
   });
 

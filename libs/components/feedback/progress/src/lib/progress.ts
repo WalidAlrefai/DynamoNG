@@ -21,6 +21,10 @@ export class DynamoProgress extends DynamoBaseComponent<DynamoProgressPart> {
   readonly severity = input<DynamoSeverity>('primary');
   readonly size = input<DynamoSize>('md');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Renders an animated, unmeasured loading bar — `value` is ignored and `aria-valuenow` is omitted, per WAI-ARIA guidance for an indeterminate progressbar. */
+  readonly indeterminate = input(false);
+  /** Explicit CSS color for the fill — overrides `severity` when set, mirroring `DynamoMeterItem.color`. */
+  readonly color = input<string | undefined>(undefined);
 
   /**
    * Single source of truth for both the ARIA attrs and the fill's width —
@@ -41,6 +45,9 @@ export class DynamoProgress extends DynamoBaseComponent<DynamoProgressPart> {
       : cn(progressTrackStyles({ size: this.size() }), this.styleClass()),
   );
   protected readonly fillClasses = computed(() =>
-    progressFillStyles({ severity: this.severity() }),
+    progressFillStyles({
+      severity: this.color() ? 'none' : this.severity(),
+      indeterminate: this.indeterminate(),
+    }),
   );
 }

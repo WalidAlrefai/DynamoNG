@@ -9,12 +9,18 @@ export interface SpeedDialOffset {
 }
 
 // Screen-space angle convention: 0° points right, 90° points down (matching
-// CSS's y-axis), 180° left, 270° up.
+// CSS's y-axis), 180° left, 270° up. The diagonals sit exactly between their
+// two adjacent cardinals, so e.g. a `quarter-circle` centred on `up-left`
+// spans precisely from `left` to `up` — the "fan out of a corner" shape.
 const DIRECTION_ANGLE: Record<DynamoSpeedDialDirection, number> = {
   right: 0,
+  'down-right': 45,
   down: 90,
+  'down-left': 135,
   left: 180,
+  'up-left': 225,
   up: 270,
+  'up-right': 315,
 };
 
 const ARC_SPAN: Record<Exclude<DynamoSpeedDialType, 'linear'>, number> = {
@@ -40,16 +46,11 @@ export function computeActionOffset(
 ): SpeedDialOffset {
   if (type === 'linear') {
     const distance = gap * (index + 1);
-    switch (direction) {
-      case 'up':
-        return { x: 0, y: -distance };
-      case 'down':
-        return { x: 0, y: distance };
-      case 'left':
-        return { x: -distance, y: 0 };
-      case 'right':
-        return { x: distance, y: 0 };
-    }
+    const rad = (DIRECTION_ANGLE[direction] * Math.PI) / 180;
+    return {
+      x: normalizeZero(Math.round(distance * Math.cos(rad))),
+      y: normalizeZero(Math.round(distance * Math.sin(rad))),
+    };
   }
 
   const center = DIRECTION_ANGLE[direction];

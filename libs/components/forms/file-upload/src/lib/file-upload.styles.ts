@@ -32,6 +32,11 @@ export const fileUploadFileListStyles = 'mt-3 flex flex-col gap-2';
 export const fileUploadFileItemStyles =
   'flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm';
 
+// Fixed small square — matches the file item row's own height rather than
+// scaling with the (arbitrary, per-file) source image's aspect ratio.
+export const fileUploadPreviewStyles =
+  'h-8 w-8 shrink-0 rounded-sm object-cover';
+
 export const fileUploadFileNameStyles = 'min-w-0 flex-1 truncate';
 
 export const fileUploadFileSizeStyles = 'shrink-0 text-xs text-text-muted';

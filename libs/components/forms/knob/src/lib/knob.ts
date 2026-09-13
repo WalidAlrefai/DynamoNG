@@ -3,11 +3,13 @@ import {
   Component,
   ElementRef,
   computed,
+  forwardRef,
   input,
   model,
   signal,
   viewChild,
 } from '@angular/core';
+import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import type { DynamoSeverity, DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
@@ -25,17 +27,41 @@ import type { DynamoKnobPart } from './knob.types';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './knob.html',
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => DynamoKnob),
+      multi: true,
+    },
+  ],
 })
-export class DynamoKnob extends DynamoBaseComponent<DynamoKnobPart> {
-  /** Two-way bindable: `<dg-knob [(value)]="amount">`. */
+export class DynamoKnob
+  extends DynamoBaseComponent<DynamoKnobPart>
+  implements ControlValueAccessor
+{
+  /** Two-way bindable: `<dg-knob [(value)]="amount">`. Also driven by Angular forms via `writeValue`. */
   readonly value = model(0);
   readonly min = input(0);
   readonly max = input(100);
   readonly step = input(1);
-  readonly disabled = input(false);
+  /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
+  readonly disabled = model(false);
+  /** HTML `readonly` semantics: the dial stays visible/focusable but can't be
+   *  dragged, wheeled, or stepped. Unlike `disabled`, doesn't dim it or
+   *  remove it from the tab order. */
+  readonly readOnly = input(false);
   readonly size = input<DynamoSize>('md');
   readonly severity = input<DynamoSeverity>('primary');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Formats the centered label, replacing the literal `{value}` token — e.g. `'{value}%'`. */
+  readonly valueTemplate = input('{value}');
+
+  private onChangeFn: (value: number) => void = () => {
+    /* replaced by registerOnChange once bound to a FormControl/ngModel */
+  };
+  private onTouchedFn: () => void = () => {
+    /* replaced by registerOnTouched once bound to a FormControl/ngModel */
+  };
 
   // Slider's track fills 100% of its flex parent by CSS; a circle has no
   // such equivalent without a ResizeObserver, which is unwarranted
@@ -48,7 +74,8 @@ export class DynamoKnob extends DynamoBaseComponent<DynamoKnobPart> {
   // breaking change, so it ships now even though it's a one-line @if.
   readonly showValue = input(true);
 
-  private readonly svgRef = viewChild.required<ElementRef<SVGSVGElement>>('svg');
+  private readonly svgRef =
+    viewChild.required<ElementRef<SVGSVGElement>>('svg');
 
   protected readonly dragging = signal(false);
 
@@ -87,6 +114,35 @@ export class DynamoKnob extends DynamoBaseComponent<DynamoKnobPart> {
   protected readonly labelClasses = computed(() =>
     knobLabelStyles({ size: this.size() }),
   );
+  protected readonly formattedValue = computed(() =>
+    this.valueTemplate().replace('{value}', String(this.clampedValue())),
+  );
+
+  writeValue(value: number | null): void {
+    this.value.set(value ?? 0);
+  }
+
+  registerOnChange(fn: (value: number) => void): void {
+    this.onChangeFn = fn;
+  }
+
+  registerOnTouched(fn: () => void): void {
+    this.onTouchedFn = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.disabled.set(isDisabled);
+  }
+
+  protected onBlur(): void {
+    this.onTouchedFn();
+  }
+
+  private commit(next: number): void {
+    const clamped = this.clamp(next);
+    this.value.set(clamped);
+    this.onChangeFn(clamped);
+  }
 
   private clamp(raw: number): number {
     if (Number.isNaN(raw)) {
@@ -105,7 +161,7 @@ export class DynamoKnob extends DynamoBaseComponent<DynamoKnobPart> {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const step = this.step();
@@ -135,11 +191,11 @@ export class DynamoKnob extends DynamoBaseComponent<DynamoKnobPart> {
         return;
     }
     event.preventDefault();
-    this.value.set(this.clamp(next));
+    this.commit(next);
   }
 
   protected onPointerDown(event: PointerEvent): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     this.dragging.set(true);
@@ -162,6 +218,9 @@ export class DynamoKnob extends DynamoBaseComponent<DynamoKnobPart> {
   }
 
   protected onPointerUp(): void {
+    if (this.dragging()) {
+      this.onTouchedFn();
+    }
     this.dragging.set(false);
   }
 
@@ -172,7 +231,11 @@ export class DynamoKnob extends DynamoBaseComponent<DynamoKnobPart> {
   // check happens inside a template binding for this — it's read here so
   // the handler stays a single, directly testable unit.
   protected onWheel(event: WheelEvent): void {
-    if (this.disabled() || document.activeElement !== this.svgRef().nativeElement) {
+    if (
+      this.disabled() ||
+      this.readOnly() ||
+      document.activeElement !== this.svgRef().nativeElement
+    ) {
       return;
     }
     event.preventDefault();
@@ -184,7 +247,7 @@ export class DynamoKnob extends DynamoBaseComponent<DynamoKnobPart> {
     // now). Negative deltaY ("scroll up"/away from the user) increments,
     // matching a physical volume-knob's conventional scroll direction.
     const direction = event.deltaY < 0 ? 1 : -1;
-    this.value.set(this.clamp(this.clampedValue() + direction * this.step()));
+    this.commit(this.clampedValue() + direction * this.step());
   }
 
   // Full 360deg sweep only for v1 (0% and 100% both sit at 12 o'clock,
@@ -224,6 +287,6 @@ export class DynamoKnob extends DynamoBaseComponent<DynamoKnobPart> {
       return;
     }
     const angle = this.angleFromPointer(clientX, clientY);
-    this.value.set(this.clamp(this.valueFromAngle(angle)));
+    this.commit(this.valueFromAngle(angle));
   }
 }

@@ -30,6 +30,8 @@ export class DynamoButton extends DynamoBaseComponent<DynamoButtonPart> {
   readonly type = input<DynamoButtonType>('button');
   readonly disabled = input(false);
   readonly loading = input(false);
+  /** Stretches the button to fill its container's width — `w-full` instead of the default `inline-flex` sizing. */
+  readonly fullWidth = input(false);
   /**
    * Forwarded to the native `<button>` as `aria-label`. Needed for icon-only
    * usage (no visible text content for the accessible name to come from) —
@@ -70,6 +72,7 @@ export class DynamoButton extends DynamoBaseComponent<DynamoButtonPart> {
             severity: this.severity(),
             size: this.size(),
             variant: this.variant(),
+            fullWidth: this.fullWidth(),
           }),
           this.styleClass(),
         ),

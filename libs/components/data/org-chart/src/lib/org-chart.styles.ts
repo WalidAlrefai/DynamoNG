@@ -51,8 +51,19 @@ export const orgChartBoxStyles = cva(
         true: 'border-primary ring-2 ring-primary',
         false: '',
       },
+      disabled: {
+        true: 'opacity-60',
+        false: '',
+      },
     },
-    defaultVariants: { selectable: false, selected: false },
+    compoundVariants: [
+      {
+        selectable: true,
+        disabled: true,
+        class: 'cursor-not-allowed hover:bg-transparent',
+      },
+    ],
+    defaultVariants: { selectable: false, selected: false, disabled: false },
   },
 );
 

@@ -32,6 +32,12 @@ export class DynamoDialog extends DynamoBaseComponent<DynamoDialogPart> {
   readonly closeOnEscape = input(true);
   /** Required when no `title` is set, so the dialog has an accessible name. */
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Renders the dimming backdrop and blocks interaction with the rest of the page. Set `false` for a non-modal floating panel — `closeOnBackdropClick` has no effect then, since there's no backdrop to click. */
+  readonly modal = input(true);
+  /** Prevents the page behind the dialog from scrolling while it's open. */
+  readonly blockScroll = input(false);
+  /** Shows the header close button. Only relevant when `title` is set — with no title there's no header to put it in regardless. */
+  readonly closable = input(true);
 
   protected readonly titleId = this.idGenerator.next('dg-dialog-title');
   private readonly panelRef = viewChild<ElementRef<HTMLElement>>('panel');
@@ -41,7 +47,9 @@ export class DynamoDialog extends DynamoBaseComponent<DynamoDialogPart> {
   private previouslyFocusedElement: HTMLElement | null = null;
 
   protected readonly panelClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(dialogPanelStyles({ size: this.size() }), this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(dialogPanelStyles({ size: this.size() }), this.styleClass()),
   );
   protected readonly closeButtonClasses = dialogCloseButtonStyles;
 
@@ -55,6 +63,17 @@ export class DynamoDialog extends DynamoBaseComponent<DynamoDialogPart> {
       } else if (!this.open()) {
         this.releaseFocusTrap();
       }
+    });
+
+    effect((onCleanup) => {
+      if (!isBrowser() || !this.open() || !this.blockScroll()) {
+        return;
+      }
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      onCleanup(() => {
+        document.body.style.overflow = previousOverflow;
+      });
     });
   }
 
@@ -79,7 +98,8 @@ export class DynamoDialog extends DynamoBaseComponent<DynamoDialogPart> {
       return;
     }
     if (isBrowser()) {
-      this.previouslyFocusedElement = document.activeElement as HTMLElement | null;
+      this.previouslyFocusedElement =
+        document.activeElement as HTMLElement | null;
     }
     this.focusTrap = this.focusTrapService.create(panel);
     // The focus trap's own initial-focus routine resolves asynchronously; move
