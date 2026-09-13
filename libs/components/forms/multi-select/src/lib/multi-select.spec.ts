@@ -661,6 +661,116 @@ describe('DynamoMultiSelect', () => {
     });
   });
 
+  describe('clearable', () => {
+    it('does not render a clear button when clearable is false', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          value: ['option-1'],
+          clearable: false,
+        },
+      });
+
+      expect(
+        within(container).queryByRole('button', { name: 'Clear selection' }),
+      ).toBeNull();
+    });
+
+    it('does not render a clear button when nothing is selected', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS, clearable: true },
+      });
+
+      expect(
+        within(container).queryByRole('button', { name: 'Clear selection' }),
+      ).toBeNull();
+    });
+
+    it('clears the whole selection at once, without opening the panel', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            value: ['option-1', 'option-2'],
+            clearable: true,
+          },
+        },
+      );
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Clear selection' }),
+      );
+
+      expect(componentInstance.value()).toEqual([]);
+      expect(getPanel()).toBeNull();
+    });
+
+    it('ignores the clear button when disabled', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            value: ['option-1'],
+            clearable: true,
+            disabled: true,
+          },
+        },
+      );
+
+      const clearButton = within(container).getByRole('button', {
+        name: 'Clear selection',
+      }) as HTMLButtonElement;
+      expect(clearButton.disabled).toBe(true);
+      expect(componentInstance.value()).toEqual(['option-1']);
+    });
+  });
+
+  describe('readOnly', () => {
+    it('blocks toggling an option, removing a tag, select-all, and the clear button, but keeps the trigger focusable', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            value: ['option-1'],
+            readOnly: true,
+            clearable: true,
+            showSelectAll: true,
+          },
+        },
+      );
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      await userEvent.click(getOptionByText('Option 2'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(['option-1']);
+      expect(trigger.getAttribute('aria-readonly')).toBe('true');
+      expect(trigger.tabIndex).toBe(0);
+
+      const removeButton = within(container).getByRole('button', {
+        name: 'Remove Option 1',
+      }) as HTMLButtonElement;
+      expect(removeButton.disabled).toBe(true);
+
+      const clearButton = within(container).getByRole('button', {
+        name: 'Clear selection',
+      }) as HTMLButtonElement;
+      expect(clearButton.disabled).toBe(true);
+
+      const selectAll = within(document.body).getByTestId(
+        'dg-multi-select-select-all',
+      );
+      expect(selectAll.querySelector('input')?.hasAttribute('disabled')).toBe(
+        true,
+      );
+    });
+  });
+
   describe('loading', () => {
     it('renders a spinner in the trigger only while loading', () => {
       const { container, setInputs } = renderDynamoComponent(

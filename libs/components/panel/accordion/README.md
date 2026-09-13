@@ -28,11 +28,20 @@ input.
 
 ### `<dg-accordion-panel>` inputs
 
-| Input      | Type                | Default | Description                              |
-| ---------- | ------------------- | ------- | ---------------------------------------- |
-| `value`    | `string` (required) | —       | Matched against the accordion's `value`. |
-| `header`   | `string` (required) | —       | Header button text.                      |
-| `disabled` | `boolean`           | `false` |                                          |
+| Input      | Type                | Default | Description                                                                                      |
+| ---------- | ------------------- | ------- | ------------------------------------------------------------------------------------------------ |
+| `value`    | `string` (required) | —       | Matched against the accordion's `value`.                                                         |
+| `header`   | `string` (required) | —       | Header button text. Used as the fallback whenever nothing is projected into the `[header]` slot. |
+| `disabled` | `boolean`           | `false` |                                                                                                  |
+
+Project custom content into the `[header]` slot (a sibling of the panel's own body content) to render something richer than plain text — an icon + label combo, a trailing badge, etc. — in place of `header`, e.g.:
+
+```html
+<dg-accordion-panel value="p1" header="Billing">
+  <span header><dg-icon-credit-card /> Billing <dg-badge value="2" /></span>
+  Panel body content.
+</dg-accordion-panel>
+```
 
 ## Outputs
 

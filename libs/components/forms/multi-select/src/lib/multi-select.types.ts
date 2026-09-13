@@ -11,7 +11,8 @@ export type DynamoMultiSelectPart =
   | 'optionCheckbox'
   | 'filterInput'
   | 'selectAll'
-  | 'clearAll';
+  | 'clearAll'
+  | 'clearButton';
 
 export type {
   DynamoSelectOption,

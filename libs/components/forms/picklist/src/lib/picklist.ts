@@ -56,6 +56,11 @@ export class DynamoPicklist<
   readonly itemSelect = output<DynamoPicklistItemSelectEvent<TValue>>();
   readonly size = input<DynamoPicklistSize>('md');
   readonly disabled = input(false);
+  /** HTML `readonly` semantics: rows stay visible/focusable/navigable, but
+   *  moving items (drag, arrows, buttons) and selection are all blocked.
+   *  Unlike `disabled`, doesn't dim either panel or remove it from the tab
+   *  order. */
+  readonly readOnly = input(false);
   readonly sourceLabel = input('Available');
   readonly targetLabel = input('Selected');
 
@@ -101,7 +106,7 @@ export class DynamoPicklist<
     side: DynamoPicklistSide,
     option: DynamoSelectOption<TValue>,
   ): void {
-    if (this.disabled() || option.disabled) {
+    if (this.disabled() || this.readOnly() || option.disabled) {
       return;
     }
     const sig = side === 'source' ? this.sourceSelected : this.targetSelected;
@@ -157,7 +162,7 @@ export class DynamoPicklist<
     from: DynamoPicklistSide,
     to: DynamoPicklistSide,
   ): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const fromModel = from === 'source' ? this.source : this.target;
@@ -187,7 +192,7 @@ export class DynamoPicklist<
     event: CdkDragDrop<DynamoSelectOption<TValue>[]>,
     side: DynamoPicklistSide,
   ): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const ownModel = side === 'source' ? this.source : this.target;
@@ -224,12 +229,14 @@ export class DynamoPicklist<
   // --- keyboard reorder (activeIndex-driven, always-visible buttons) ---
 
   protected canMoveUp(side: DynamoPicklistSide): boolean {
+    if (this.readOnly()) return false;
     const idx =
       side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex();
     return idx > 0;
   }
 
   protected canMoveDown(side: DynamoPicklistSide): boolean {
+    if (this.readOnly()) return false;
     const idx =
       side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex();
     const len = (side === 'source' ? this.source() : this.target()).length;
@@ -237,7 +244,7 @@ export class DynamoPicklist<
   }
 
   protected reorder(side: DynamoPicklistSide, direction: -1 | 1): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const activeSig =

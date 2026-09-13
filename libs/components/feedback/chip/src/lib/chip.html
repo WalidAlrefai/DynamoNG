@@ -1,10 +1,12 @@
 <span [class]="classes()" [attr.data-testid]="'DynamoChip'">
+  <ng-content select="[icon]" />
   <ng-content />
   @if (removable()) {
   <button
     type="button"
     [class]="removeButtonClasses"
     [attr.aria-label]="removeAriaLabel()"
+    [disabled]="disabled()"
     (click)="remove()"
   >
     <svg

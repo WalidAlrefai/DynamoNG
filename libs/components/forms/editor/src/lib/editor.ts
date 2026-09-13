@@ -51,16 +51,25 @@ const STATEFUL_COMMANDS: DynamoEditorStatefulCommand[] = [
     },
   ],
 })
-export class DynamoEditor extends DynamoBaseComponent<DynamoEditorPart> implements ControlValueAccessor {
+export class DynamoEditor
+  extends DynamoBaseComponent<DynamoEditorPart>
+  implements ControlValueAccessor
+{
   /** Accessible name for the editable region when no visible `<label>` wraps it. */
   readonly ariaLabel = input<string | undefined>(undefined);
   readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** Shown via CSS (`:empty:before`) whenever the content is empty. */
+  readonly placeholder = input<string | undefined>(undefined);
+  /** HTML `readonly` semantics: the content stays visible, focusable, and selectable (native browser text selection/copy), but typing and toolbar commands are blocked. Unlike `disabled`, does not dim its appearance. */
+  readonly readOnly = input(false);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model('');
-  protected readonly activeStates = signal<Record<DynamoEditorStatefulCommand, boolean>>({
+  protected readonly activeStates = signal<
+    Record<DynamoEditorStatefulCommand, boolean>
+  >({
     bold: false,
     italic: false,
     underline: false,
@@ -68,7 +77,8 @@ export class DynamoEditor extends DynamoBaseComponent<DynamoEditorPart> implemen
     insertOrderedList: false,
   });
 
-  private readonly contentEl = viewChild.required<ElementRef<HTMLDivElement>>('contentEl');
+  private readonly contentEl =
+    viewChild.required<ElementRef<HTMLDivElement>>('contentEl');
   private readonly sanitizer = inject(DomSanitizer);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -143,6 +153,9 @@ export class DynamoEditor extends DynamoBaseComponent<DynamoEditorPart> implemen
   }
 
   protected onInput(event: Event): void {
+    if (this.readOnly()) {
+      return;
+    }
     const el = event.target as HTMLDivElement;
     this.commitHtml(el.innerHTML, true);
   }
@@ -152,7 +165,7 @@ export class DynamoEditor extends DynamoBaseComponent<DynamoEditorPart> implemen
   }
 
   protected onFormat(command: DynamoEditorStatefulCommand): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const el = this.contentEl().nativeElement;
@@ -163,7 +176,7 @@ export class DynamoEditor extends DynamoBaseComponent<DynamoEditorPart> implemen
   }
 
   protected onLink(): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const el = this.contentEl().nativeElement;

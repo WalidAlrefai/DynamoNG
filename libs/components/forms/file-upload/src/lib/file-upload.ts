@@ -1,8 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
+  inject,
   input,
   model,
   output,
@@ -19,6 +21,7 @@ import {
   fileUploadFileListStyles,
   fileUploadFileNameStyles,
   fileUploadFileSizeStyles,
+  fileUploadPreviewStyles,
   fileUploadRemoveButtonStyles,
 } from './file-upload.styles';
 import type {
@@ -71,6 +74,8 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
   readonly size = input<DynamoSize>('md');
   readonly label = input('Drag and drop files here, or click to browse');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Shows a small image thumbnail (via `URL.createObjectURL`) next to each selected file whose type starts with `image/`. */
+  readonly showPreview = input(true);
 
   /** Two-way bindable: `<dg-file-upload [(value)]="attachments">`. */
   readonly value = model<File[]>([]);
@@ -103,6 +108,32 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
   protected readonly fileNameClasses = fileUploadFileNameStyles;
   protected readonly fileSizeClasses = fileUploadFileSizeStyles;
   protected readonly removeButtonClasses = fileUploadRemoveButtonStyles;
+  protected readonly previewClasses = fileUploadPreviewStyles;
+
+  /** Lazily-created, cached by `File` reference — revoked in `removeFile()` and on destroy so a long upload session never leaks object URLs. */
+  private readonly previewUrls = new Map<File, string>();
+
+  constructor() {
+    super();
+    inject(DestroyRef).onDestroy(() => {
+      for (const url of this.previewUrls.values()) {
+        URL.revokeObjectURL(url);
+      }
+      this.previewUrls.clear();
+    });
+  }
+
+  protected previewUrl(file: File): string | null {
+    if (!this.showPreview() || !file.type.startsWith('image/')) {
+      return null;
+    }
+    let url = this.previewUrls.get(file);
+    if (!url) {
+      url = URL.createObjectURL(file);
+      this.previewUrls.set(file, url);
+    }
+    return url;
+  }
 
   protected openBrowser(): void {
     if (this.isDisabled()) {
@@ -149,6 +180,15 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
 
   protected removeFile(file: File): void {
     this.value.update((files) => files.filter((f) => f !== file));
+    this.revokePreview(file);
+  }
+
+  private revokePreview(file: File): void {
+    const url = this.previewUrls.get(file);
+    if (url) {
+      URL.revokeObjectURL(url);
+      this.previewUrls.delete(file);
+    }
   }
 
   protected formatSize(bytes: number): string {
@@ -193,6 +233,14 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
     }
 
     if (accepted.length > 0) {
+      if (!this.multiple()) {
+        // Single-file mode replaces the whole value — the previous file (if
+        // any) is no longer referenced anywhere, so its preview URL would
+        // otherwise leak.
+        for (const file of this.value()) {
+          this.revokePreview(file);
+        }
+      }
       this.value.set(
         this.multiple() ? [...this.value(), ...accepted] : accepted.slice(0, 1),
       );

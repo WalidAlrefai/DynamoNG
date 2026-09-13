@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { DynamoBadge } from '@dynamong/badge';
 import { DynamoFieldset } from '@dynamong/fieldset';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
@@ -11,6 +12,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'collapsible', title: 'Collapsible' },
   { id: 'disabled', title: 'Disabled' },
+  { id: 'legend-content', title: 'Legend Content' },
 ];
 
 const API: ApiTableRow[] = [
@@ -31,6 +33,7 @@ const API: ApiTableRow[] = [
   imports: [
     DynamoFieldset,
     DynamoInputText,
+    DynamoBadge,
     DocExamplesLayout,
     DocExample,
     DocApiTable,
@@ -76,6 +79,28 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-fieldset legend="Section" [disabled]="true"&gt; ...
           &lt;/dg-fieldset&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="legend-content"
+        title="Legend Content"
+        description="A projected [legend]-attributed element renders alongside the plain legend string — a sibling within <legend>, useful for a badge or count."
+      >
+        <div preview class="max-w-md">
+          <dg-fieldset legend="Team members" [collapsible]="true">
+            <dg-badge legend severity="secondary" size="sm">4</dg-badge>
+            <div class="flex flex-col gap-2">
+              <dg-input-text
+                placeholder="Add a member"
+                ariaLabel="Add a member"
+              />
+            </div>
+          </dg-fieldset>
+        </div>
+        <div code>
+          &lt;dg-fieldset legend="Team members"&gt; &lt;dg-badge
+          legend&gt;4&lt;/dg-badge&gt; ... &lt;/dg-fieldset&gt;
         </div>
       </docs-example>
 

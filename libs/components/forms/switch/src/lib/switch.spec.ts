@@ -1,4 +1,5 @@
 import { Component, model } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -18,6 +19,18 @@ import { DynamoSwitchHarness } from './switch.harness';
 })
 class SwitchTwoWayHostComponent {
   readonly value = model(false);
+}
+
+@Component({
+  selector: 'dg-switch-reactive-form-host',
+  standalone: true,
+  imports: [DynamoSwitch, ReactiveFormsModule],
+  template: `<dg-switch [formControl]="control"
+    >Enable notifications</dg-switch
+  >`,
+})
+class ReactiveFormHostComponent {
+  readonly control = new FormControl(false, { nonNullable: true });
 }
 
 describe('DynamoSwitch', () => {
@@ -229,6 +242,81 @@ describe('DynamoSwitch', () => {
         expect(label?.classList.contains('inline-flex')).toBe(false);
       },
     );
+  });
+
+  describe('readOnly', () => {
+    it('defaults to false', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoSwitch);
+      expect(componentInstance.readOnly()).toBe(false);
+    });
+
+    it('blocks toggling via click while keeping the input focusable', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSwitch,
+        { inputs: { readOnly: true } },
+      );
+      const input = within(container).getByRole('switch') as HTMLInputElement;
+
+      await userEvent.click(input);
+
+      expect(componentInstance.checked()).toBe(false);
+      expect(input.disabled).toBe(false);
+    });
+
+    it('reflects aria-readonly on the native input', () => {
+      const { container } = renderDynamoComponent(DynamoSwitch, {
+        inputs: { readOnly: true },
+      });
+
+      expect(
+        within(container).getByRole('switch').getAttribute('aria-readonly'),
+      ).toBe('true');
+    });
+  });
+
+  describe('ControlValueAccessor / forms integration', () => {
+    it('propagates a click toggle to a bound reactive FormControl', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      await userEvent.click(within(container).getByRole('switch'));
+
+      expect(componentInstance.control.value).toBe(true);
+    });
+
+    it('reflects an externally-set FormControl value (writeValue)', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      componentInstance.control.setValue(true);
+      fixture.detectChanges();
+
+      expect(
+        (within(container).getByRole('switch') as HTMLInputElement).checked,
+      ).toBe(true);
+    });
+
+    it('setDisabledState reflects onto the disabled model', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoSwitch);
+
+      componentInstance.setDisabledState(true);
+
+      expect(componentInstance.disabled()).toBe(true);
+    });
+
+    it('marks the FormControl as touched on blur', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+      expect(componentInstance.control.touched).toBe(false);
+
+      const input = within(container).getByRole('switch');
+      input.dispatchEvent(new Event('blur', { bubbles: true }));
+
+      expect(componentInstance.control.touched).toBe(true);
+    });
   });
 
   describe('accessibility', () => {

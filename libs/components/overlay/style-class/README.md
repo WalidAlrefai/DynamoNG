@@ -34,6 +34,7 @@ simple panels) without any overlay/portal machinery.
 | `enterClass`                                 | `string \| undefined` | `undefined` | Added to the target (and `leaveClass` removed) when transitioning to shown. Only used when `toggleClass` is unset.                                      |
 | `leaveClass`                                 | `string \| undefined` | `undefined` | Added to the target (and `enterClass` removed) when transitioning to hidden. Only used when `toggleClass` is unset.                                     |
 | `hideOnOutsideClick`                         | `boolean`             | `false`     | While shown, a document click outside both the host and the target hides the target again.                                                              |
+| `hideOnEscape`                               | `boolean`             | `false`     | While shown, pressing `Escape` anywhere hides the target again.                                                                                         |
 
 ## Outputs
 

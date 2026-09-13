@@ -124,6 +124,62 @@ describe('DynamoProgress', () => {
     });
   });
 
+  describe('indeterminate', () => {
+    it('defaults to false', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoProgress);
+      expect(componentInstance.indeterminate()).toBe(false);
+    });
+
+    it('omits aria-valuenow/min/max and gives the fill a full width when true', () => {
+      const { container } = renderDynamoComponent(DynamoProgress, {
+        inputs: { value: 40, indeterminate: true },
+      });
+
+      const track = within(container).getByRole('progressbar');
+      expect(track.hasAttribute('aria-valuenow')).toBe(false);
+      expect(track.hasAttribute('aria-valuemin')).toBe(false);
+      expect(track.hasAttribute('aria-valuemax')).toBe(false);
+
+      const fill = container.querySelector(
+        '[role="progressbar"] > div',
+      ) as HTMLElement;
+      expect(fill.style.width).toBe('');
+      expect(fill.className).toContain('animate-pulse');
+    });
+
+    it('has no axe violations when indeterminate', async () => {
+      const { container } = renderDynamoComponent(DynamoProgress, {
+        inputs: { indeterminate: true },
+      });
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('color', () => {
+    it('overrides the severity class with an inline background-color', () => {
+      const { container } = renderDynamoComponent(DynamoProgress, {
+        inputs: { value: 40, color: 'rgb(1, 2, 3)' },
+      });
+
+      const fill = container.querySelector(
+        '[role="progressbar"] > div',
+      ) as HTMLElement;
+      expect(fill.style.backgroundColor).toBe('rgb(1, 2, 3)');
+      expect(fill.className).not.toContain('bg-primary');
+    });
+
+    it('falls back to the severity palette class when no color is set', () => {
+      const { container } = renderDynamoComponent(DynamoProgress, {
+        inputs: { value: 40, severity: 'success' },
+      });
+
+      const fill = container.querySelector(
+        '[role="progressbar"] > div',
+      ) as HTMLElement;
+      expect(fill.className).toContain('bg-success');
+    });
+  });
+
   describe('accessibility', () => {
     it('sets aria-valuemin/aria-valuemax and falls back aria-label to "Progress" when unset', () => {
       const { container } = renderDynamoComponent(DynamoProgress, {

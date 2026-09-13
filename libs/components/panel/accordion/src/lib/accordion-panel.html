@@ -1,1 +1,6 @@
+<ng-template #headerTemplate>
+  <ng-content select="[header]">
+    <span>{{ header() }}</span>
+  </ng-content>
+</ng-template>
 <ng-template #content><ng-content /></ng-template>

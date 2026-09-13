@@ -15,15 +15,18 @@ forms; for a centered blocking panel, use Dialog instead.
 
 ## Inputs
 
-| Input                  | Type                   | Default     | Description                                                                                             |
-| ---------------------- | ---------------------- | ----------- | ------------------------------------------------------------------------------------------------------- |
-| `open`                 | `boolean` (model)      | `false`     | Two-way bindable.                                                                                       |
-| `position`             | `DynamoDrawerPosition` | `'right'`   | Which viewport edge the panel slides in from (`'left' \| 'right' \| 'top' \| 'bottom'`).                |
-| `size`                 | `DynamoSize`           | `'md'`      |                                                                                                         |
-| `closeOnBackdropClick` | `boolean`              | `true`      |                                                                                                         |
-| `closeOnEscape`        | `boolean`              | `true`      |                                                                                                         |
-| `title`                | `string \| undefined`  | `undefined` | Rendered as an `<h2>` header with a close button. Omit for a chrome-less panel (pair with `ariaLabel`). |
-| `ariaLabel`            | `string \| undefined`  | `undefined` | Required when no `title` is set, so the drawer has an accessible name.                                  |
+| Input                  | Type                   | Default     | Description                                                                                                                                                                                                  |
+| ---------------------- | ---------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `open`                 | `boolean` (model)      | `false`     | Two-way bindable.                                                                                                                                                                                            |
+| `position`             | `DynamoDrawerPosition` | `'right'`   | Which viewport edge the panel slides in from (`'left' \| 'right' \| 'top' \| 'bottom'`).                                                                                                                     |
+| `size`                 | `DynamoSize`           | `'md'`      |                                                                                                                                                                                                              |
+| `closeOnBackdropClick` | `boolean`              | `true`      | Only relevant while `modal` is true — there's no backdrop to click otherwise.                                                                                                                                |
+| `closeOnEscape`        | `boolean`              | `true`      |                                                                                                                                                                                                              |
+| `title`                | `string \| undefined`  | `undefined` | Rendered as an `<h2>` header with a close button. Omit for a chrome-less panel (pair with `ariaLabel`).                                                                                                      |
+| `ariaLabel`            | `string \| undefined`  | `undefined` | Required when no `title` is set, so the drawer has an accessible name.                                                                                                                                       |
+| `modal`                | `boolean`              | `true`      | Renders the dimming backdrop and blocks interaction with the rest of the page. Set `false` for a non-modal panel that leaves the page behind it interactive. Only consulted the first time the drawer opens. |
+| `blockScroll`          | `boolean`              | `false`     | Prevents the page behind the drawer from scrolling while it's open.                                                                                                                                          |
+| `closable`             | `boolean`              | `true`      | Shows the header close button. Only relevant when `title` is set.                                                                                                                                            |
 
 The component also exposes a public `close()` method for imperative
 closing, e.g. from a button inside the projected content.
@@ -36,7 +39,7 @@ closing, e.g. from a button inside the projected content.
 
 ## Accessibility
 
-- `role="dialog"` with `aria-modal="true"` (attached through the CDK overlay), labelled via `aria-label` or `aria-labelledby` pointing at the title's `id` when only `title` is set.
+- `role="dialog"` with `aria-modal` reflecting `modal` (attached through the CDK overlay), labelled via `aria-label` or `aria-labelledby` pointing at the title's `id` when only `title` is set.
 - A focus trap (via `@dynamong/core/a11y`) activates once the panel finishes its open animation, and restores focus to the previously-focused element on close.
 - `Escape` closes when `closeOnEscape` is true (default); clicking the backdrop closes when `closeOnBackdropClick` is true (default).
 - The panel animates in/out over 200ms; the overlay is only detached after the close transition finishes, so it never disappears mid-animation.

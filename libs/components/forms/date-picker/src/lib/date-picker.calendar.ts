@@ -2,6 +2,7 @@ import {
   addDays,
   isAfter,
   isBefore,
+  isSameDay,
   startOfDay,
   startOfMonth,
   startOfWeek,
@@ -33,14 +34,23 @@ export function clampToRange(
   return day;
 }
 
-/** True when `date` falls outside the inclusive [min, max] day range. */
+/**
+ * True when `date` falls outside the inclusive [min, max] day range, matches
+ * one of `disabledDates` (by calendar day, ignoring time-of-day), or falls
+ * on one of `disabledDays` (0 = Sunday, matching `date-fns`'s own weekday
+ * numbering) — e.g. `disabledDays: [0, 6]` blocks weekends.
+ */
 export function isDateDisabled(
   date: Date,
   min: Date | undefined,
   max: Date | undefined,
+  disabledDates: readonly Date[] = [],
+  disabledDays: readonly number[] = [],
 ): boolean {
   const day = startOfDay(date);
   if (min && isBefore(day, startOfDay(min))) return true;
   if (max && isAfter(day, startOfDay(max))) return true;
+  if (disabledDays.includes(day.getDay())) return true;
+  if (disabledDates.some((disabled) => isSameDay(disabled, day))) return true;
   return false;
 }

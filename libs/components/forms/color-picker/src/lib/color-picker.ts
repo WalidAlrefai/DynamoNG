@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -76,6 +77,7 @@ const POSITIONS: ConnectedPosition[] = [
   selector: 'dg-color-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [NgTemplateOutlet],
   templateUrl: './color-picker.html',
   providers: [
     {
@@ -95,6 +97,8 @@ export class DynamoColorPicker
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
   readonly swatches = input<string[]>(DEFAULT_SWATCHES);
+  /** Renders the swatch grid + native color input directly in the page, with no trigger button or overlay — for embedding the picker permanently rather than behind a popup. */
+  readonly inline = input(false);
   /** Two-way bindable; also driven by Angular forms via `writeValue`. Empty until set. */
   readonly value = model('');
 
@@ -187,7 +191,9 @@ export class DynamoColorPicker
     this.value.set(swatch);
     this.onChangeFn(swatch);
     this.close();
-    this.triggerEl().nativeElement.focus();
+    if (!this.inline()) {
+      this.triggerEl().nativeElement.focus();
+    }
   }
 
   protected onNativeColorInput(event: Event): void {
@@ -195,7 +201,9 @@ export class DynamoColorPicker
     this.value.set(color);
     this.onChangeFn(color);
     this.close();
-    this.triggerEl().nativeElement.focus();
+    if (!this.inline()) {
+      this.triggerEl().nativeElement.focus();
+    }
   }
 
   // Focus never moves into the panel on open (unlike DatePicker's day grid) —

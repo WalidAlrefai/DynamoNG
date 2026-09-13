@@ -2,7 +2,7 @@
   <div
     #panel
     role="dialog"
-    aria-modal="true"
+    [attr.aria-modal]="modal()"
     tabindex="-1"
     [class]="panelClasses()"
     [attr.aria-label]="ariaLabel() ?? null"
@@ -14,6 +14,7 @@
       <h2 [id]="titleId" class="text-lg font-semibold text-text-primary">
         {{ title() }}
       </h2>
+      @if (closable()) {
       <button
         type="button"
         [class]="closeButtonClasses"
@@ -30,6 +31,7 @@
           />
         </svg>
       </button>
+      }
     </div>
     }
     <ng-content />

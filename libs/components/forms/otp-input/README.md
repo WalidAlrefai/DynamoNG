@@ -17,15 +17,17 @@ paste.
 
 ## Inputs
 
-| Input       | Type                  | Default     | Description                                                                                                                                                                        |
-| ----------- | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `length`    | `number`              | `6`         | Number of boxes.                                                                                                                                                                   |
-| `numeric`   | `boolean`             | `true`      | When `true`, only digit keystrokes and pasted digits are accepted; non-digits are stripped/rejected.                                                                               |
-| `size`      | `DynamoSize`          | `'md'`      |                                                                                                                                                                                    |
-| `invalid`   | `boolean`             | `false`     |                                                                                                                                                                                    |
-| `disabled`  | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                             |
-| `ariaLabel` | `string \| undefined` | `undefined` | Falls back to `'One-time code'` on the group container.                                                                                                                            |
-| `value`     | `string` (model)      | `''`        | Two-way bindable; also driven by Angular forms via `writeValue`. Derived per-box display is padded/truncated to `length` characters — there's no separate per-box state to desync. |
+| Input       | Type                  | Default     | Description                                                                                                                                                                               |
+| ----------- | --------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `length`    | `number`              | `6`         | Number of boxes.                                                                                                                                                                          |
+| `numeric`   | `boolean`             | `true`      | When `true`, only digit keystrokes and pasted digits are accepted; non-digits are stripped/rejected.                                                                                      |
+| `size`      | `DynamoSize`          | `'md'`      |                                                                                                                                                                                           |
+| `invalid`   | `boolean`             | `false`     |                                                                                                                                                                                           |
+| `disabled`  | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                    |
+| `readOnly`  | `boolean`             | `false`     | HTML `readonly` semantics: boxes stay visible/focusable, but keystrokes, backspace, and paste are all no-ops. Unlike `disabled`, doesn't dim the boxes or remove them from the tab order. |
+| `mask`      | `boolean`             | `false`     | Renders each box as a native `type="password"` field (masked dots) instead of the plain character.                                                                                        |
+| `ariaLabel` | `string \| undefined` | `undefined` | Falls back to `'One-time code'` on the group container.                                                                                                                                   |
+| `value`     | `string` (model)      | `''`        | Two-way bindable; also driven by Angular forms via `writeValue`. Derived per-box display is padded/truncated to `length` characters — there's no separate per-box state to desync.        |
 
 ## Outputs
 

@@ -8,7 +8,10 @@ label to the top-inside of the field, always visible, for dense forms.
 Association with the wrapped control is implicit — the control lives
 _inside_ the `<label>` element, so no `for`/`id` wiring is needed. The
 projected control must carry a `placeholder` attribute (a single space is
-fine) so the filled state can be detected via `:placeholder-shown`.
+fine) so the filled state can be detected via `:placeholder-shown`. If the
+projected control sets `aria-invalid="true"` (as DynamoNG's own form
+controls do via their `invalid` input), the label is colored `text-danger`
+automatically — no wiring needed on the label itself.
 
 ## Usage
 

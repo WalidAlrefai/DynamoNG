@@ -12,6 +12,7 @@ import { DynamoBaseComponent } from '@dynamong/core/base';
 import type { DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
 import {
+  inputNumberAffixStyles,
   inputNumberButtonStyles,
   inputNumberInputStyles,
   inputNumberWrapperStyles,
@@ -48,6 +49,20 @@ export class DynamoInputNumber
   readonly min = input<number | undefined>(undefined);
   readonly max = input<number | undefined>(undefined);
   readonly step = input(1);
+  /** `'currency'` requires `currency` to also be set (an ISO 4217 code, e.g. `'USD'`). */
+  readonly mode = input<'decimal' | 'currency'>('decimal');
+  readonly currency = input<string | undefined>(undefined);
+  /** BCP 47 locale tag passed to `Intl.NumberFormat`; `undefined` uses the runtime's default locale. */
+  readonly locale = input<string | undefined>(undefined);
+  readonly useGrouping = input(true);
+  readonly minFractionDigits = input<number | undefined>(undefined);
+  readonly maxFractionDigits = input<number | undefined>(undefined);
+  /** Literal text shown flush against the input, outside the editable value
+   *  (e.g. a unit label) — never part of the parsed number, unlike PrimeNG's
+   *  in-text prefix/suffix, matching how `dg-input-group` keeps chrome on the
+   *  wrapper rather than baked into the field's own text. */
+  readonly prefix = input<string | undefined>(undefined);
+  readonly suffix = input<string | undefined>(undefined);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model<number | null>(null);
@@ -63,8 +78,12 @@ export class DynamoInputNumber
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
 
+  // While editing, the field shows the plain, parse-friendly text
+  // (`formatValue`) so grouping separators/currency symbols never fight
+  // with the user's keystrokes or caret; the locale-formatted rendering
+  // (`formatDisplay`) only ever appears once focus has left the field.
   protected readonly displayValue = computed(
-    () => this.editingText() ?? this.formatValue(this.value()),
+    () => this.editingText() ?? this.formatDisplay(this.value()),
   );
 
   protected readonly incrementDisabled = computed(() => {
@@ -97,6 +116,7 @@ export class DynamoInputNumber
         ),
   );
   protected readonly inputClasses = inputNumberInputStyles;
+  protected readonly affixClasses = inputNumberAffixStyles;
   protected readonly buttonClasses = computed(() =>
     inputNumberButtonStyles({ size: this.size() }),
   );
@@ -184,6 +204,25 @@ export class DynamoInputNumber
 
   protected formatValue(value: number | null): string {
     return value === null ? '' : String(value);
+  }
+
+  // Locale/currency/grouping formatting, e.g. "1,234.5" or "$1,234.50" —
+  // used only for the blurred display; `formatValue` above stays the
+  // plain parse-friendly text used while editing.
+  protected formatDisplay(value: number | null): string {
+    if (value === null) {
+      return '';
+    }
+    const options: Intl.NumberFormatOptions = {
+      useGrouping: this.useGrouping(),
+      minimumFractionDigits: this.minFractionDigits(),
+      maximumFractionDigits: this.maxFractionDigits(),
+    };
+    if (this.mode() === 'currency') {
+      options.style = 'currency';
+      options.currency = this.currency();
+    }
+    return new Intl.NumberFormat(this.locale(), options).format(value);
   }
 
   private commit(text: string | null): void {

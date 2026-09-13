@@ -156,13 +156,17 @@ describe('DynamoButton', () => {
         inputs: { role: 'radio' },
       });
 
-      expect(container.querySelector('button')?.getAttribute('role')).toBe('radio');
+      expect(container.querySelector('button')?.getAttribute('role')).toBe(
+        'radio',
+      );
     });
 
     it('omits role entirely when role is unset', () => {
       const { container } = renderDynamoComponent(DynamoButton);
 
-      expect(container.querySelector('button')?.hasAttribute('role')).toBe(false);
+      expect(container.querySelector('button')?.hasAttribute('role')).toBe(
+        false,
+      );
     });
 
     it('forwards ariaChecked to the native button as aria-checked', () => {
@@ -170,13 +174,17 @@ describe('DynamoButton', () => {
         inputs: { ariaChecked: true },
       });
 
-      expect(container.querySelector('button')?.getAttribute('aria-checked')).toBe('true');
+      expect(
+        container.querySelector('button')?.getAttribute('aria-checked'),
+      ).toBe('true');
     });
 
     it('omits aria-checked entirely when ariaChecked is unset', () => {
       const { container } = renderDynamoComponent(DynamoButton);
 
-      expect(container.querySelector('button')?.hasAttribute('aria-checked')).toBe(false);
+      expect(
+        container.querySelector('button')?.hasAttribute('aria-checked'),
+      ).toBe(false);
     });
 
     it('forwards ariaPressed to the native button as aria-pressed', () => {
@@ -184,13 +192,17 @@ describe('DynamoButton', () => {
         inputs: { ariaPressed: false },
       });
 
-      expect(container.querySelector('button')?.getAttribute('aria-pressed')).toBe('false');
+      expect(
+        container.querySelector('button')?.getAttribute('aria-pressed'),
+      ).toBe('false');
     });
 
     it('omits aria-pressed entirely when ariaPressed is unset', () => {
       const { container } = renderDynamoComponent(DynamoButton);
 
-      expect(container.querySelector('button')?.hasAttribute('aria-pressed')).toBe(false);
+      expect(
+        container.querySelector('button')?.hasAttribute('aria-pressed'),
+      ).toBe(false);
     });
 
     it('forwards tabIndexOverride to the native button as tabindex', () => {
@@ -198,13 +210,41 @@ describe('DynamoButton', () => {
         inputs: { tabIndexOverride: -1 },
       });
 
-      expect(container.querySelector('button')?.getAttribute('tabindex')).toBe('-1');
+      expect(container.querySelector('button')?.getAttribute('tabindex')).toBe(
+        '-1',
+      );
     });
 
     it('omits tabindex entirely when tabIndexOverride is unset', () => {
       const { container } = renderDynamoComponent(DynamoButton);
 
-      expect(container.querySelector('button')?.hasAttribute('tabindex')).toBe(false);
+      expect(container.querySelector('button')?.hasAttribute('tabindex')).toBe(
+        false,
+      );
+    });
+
+    it('defaults fullWidth to false', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoButton);
+
+      expect(componentInstance.fullWidth()).toBe(false);
+    });
+
+    it('applies w-full when fullWidth is true', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { fullWidth: true },
+      });
+
+      expect(within(container).getByRole('button').className).toContain(
+        'w-full',
+      );
+    });
+
+    it('omits w-full when fullWidth is false', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+
+      expect(within(container).getByRole('button').className).not.toContain(
+        'w-full',
+      );
     });
   });
 

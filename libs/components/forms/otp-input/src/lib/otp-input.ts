@@ -39,6 +39,12 @@ export class DynamoOtpInput
   readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: boxes stay visible/focusable, but keystrokes,
+   *  backspace, and paste are all no-ops. Unlike `disabled`, doesn't dim the
+   *  boxes or remove them from the tab order. */
+  readonly readOnly = input(false);
+  /** Renders each filled box as a native `type="password"` field (masked dots) instead of the plain character. */
+  readonly mask = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
@@ -57,8 +63,7 @@ export class DynamoOtpInput
     );
   });
 
-  private readonly boxRefs =
-    viewChildren<ElementRef<HTMLInputElement>>('box');
+  private readonly boxRefs = viewChildren<ElementRef<HTMLInputElement>>('box');
 
   private onChangeFn: (value: string) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
@@ -94,6 +99,13 @@ export class DynamoOtpInput
 
   protected onBoxInput(index: number, event: Event): void {
     const input = event.target as HTMLInputElement;
+    // The native `readonly` attribute already blocks real user typing; this
+    // guard is defense-in-depth against a synthetic/forced `input` event,
+    // matching InputMask's/InputNumber's own belt-and-suspenders approach.
+    if (this.readOnly()) {
+      input.value = this.boxValues()[index] ?? '';
+      return;
+    }
     let char = input.value.slice(-1);
     if (this.numeric() && char && !/^[0-9]$/.test(char)) {
       char = '';
@@ -108,7 +120,12 @@ export class DynamoOtpInput
   }
 
   protected onBoxKeydown(index: number, event: KeyboardEvent): void {
-    if (event.key === 'Backspace' && !this.boxValues()[index] && index > 0) {
+    if (
+      event.key === 'Backspace' &&
+      !this.boxValues()[index] &&
+      index > 0 &&
+      !this.readOnly()
+    ) {
       event.preventDefault();
       const chars = [...this.boxValues()];
       chars[index - 1] = '';
@@ -125,6 +142,7 @@ export class DynamoOtpInput
 
   protected onBoxPaste(index: number, event: ClipboardEvent): void {
     event.preventDefault();
+    if (this.readOnly()) return;
     const pasted = event.clipboardData?.getData('text') ?? '';
     const pastedChars = (
       this.numeric() ? pasted.replace(/\D/g, '') : pasted

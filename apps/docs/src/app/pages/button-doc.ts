@@ -11,6 +11,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'variants', title: 'Severity & Variant' },
   { id: 'sizes', title: 'Sizes' },
   { id: 'states', title: 'Loading & Disabled' },
+  { id: 'full-width', title: 'Full Width' },
 ];
 
 const API: ApiTableRow[] = [
@@ -19,6 +20,7 @@ const API: ApiTableRow[] = [
   { name: 'variant', type: "'solid' | 'outline' | 'text'", default: "'solid'" },
   { name: 'disabled', type: 'boolean', default: 'false' },
   { name: 'loading', type: 'boolean', default: 'false' },
+  { name: 'fullWidth', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -39,7 +41,9 @@ const API: ApiTableRow[] = [
       >
         <div preview class="flex flex-wrap gap-2">
           <dg-button severity="primary">Primary</dg-button>
-          <dg-button severity="danger" variant="outline">Danger outline</dg-button>
+          <dg-button severity="danger" variant="outline"
+            >Danger outline</dg-button
+          >
           <dg-button severity="success" variant="text">Success text</dg-button>
         </div>
         <div code>
@@ -75,8 +79,21 @@ const API: ApiTableRow[] = [
           <dg-button [disabled]="true">Disabled</dg-button>
         </div>
         <div code>
-          &lt;dg-button [loading]="true"&gt;Loading&lt;/dg-button&gt; &lt;dg-button
-          [disabled]="true"&gt;Disabled&lt;/dg-button&gt;
+          &lt;dg-button [loading]="true"&gt;Loading&lt;/dg-button&gt;
+          &lt;dg-button [disabled]="true"&gt;Disabled&lt;/dg-button&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="full-width"
+        title="Full Width"
+        description="fullWidth stretches the button to fill its container."
+      >
+        <div preview class="max-w-sm">
+          <dg-button [fullWidth]="true">Continue</dg-button>
+        </div>
+        <div code>
+          &lt;dg-button [fullWidth]="true"&gt;Continue&lt;/dg-button&gt;
         </div>
       </docs-example>
 

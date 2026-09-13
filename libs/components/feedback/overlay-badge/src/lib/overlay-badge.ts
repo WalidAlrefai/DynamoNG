@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import { DynamoBadge } from '@dynamong/badge';
 import { DynamoBaseComponent } from '@dynamong/core/base';
+import type { DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   overlayBadgeBadgeStyles,
@@ -39,6 +40,10 @@ export class DynamoOverlayBadge extends DynamoBaseComponent<DynamoOverlayBadgePa
   readonly max = input<number | undefined>(undefined);
   readonly severity = input<DynamoSeverity>('danger');
   readonly position = input<DynamoOverlayBadgePosition>('top-right');
+  /** Size of the overlaid `dg-badge` (the count variant only — the bare dot has a fixed size). */
+  readonly badgeSize = input<DynamoSize>('sm');
+  /** Suppresses the badge/dot marker entirely while still rendering the wrapped content — mirrors PrimeNG's `badgeDisabled`. */
+  readonly hidden = input(false);
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
@@ -61,7 +66,10 @@ export class DynamoOverlayBadge extends DynamoBaseComponent<DynamoOverlayBadgePa
   });
 
   protected readonly badgeOverlayClasses = computed(() =>
-    overlayBadgeBadgeStyles({ position: this.position() }),
+    overlayBadgeBadgeStyles({
+      position: this.position(),
+      size: this.badgeSize(),
+    }),
   );
 
   protected readonly dotClasses = computed(() =>

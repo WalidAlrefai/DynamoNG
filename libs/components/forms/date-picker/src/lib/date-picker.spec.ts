@@ -617,11 +617,165 @@ describe('DynamoDatePicker', () => {
       const { container } = renderDynamoComponent(DynamoDatePicker, {
         inputs: { readOnly: true },
       });
-      const trigger = within(container).getByRole('button') as HTMLButtonElement;
+      const trigger = within(container).getByRole(
+        'button',
+      ) as HTMLButtonElement;
 
       expect(trigger.getAttribute('aria-readonly')).toBe('true');
       expect(trigger.disabled).toBe(false);
       expect(trigger.tabIndex).toBe(0);
+    });
+  });
+
+  describe('clearable', () => {
+    it('defaults to false, rendering no clear button even with a value set', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { value: TODAY } },
+      );
+
+      expect(componentInstance.clearable()).toBe(false);
+      expect(
+        within(container).queryByRole('button', { name: 'Clear selection' }),
+      ).toBeNull();
+    });
+
+    it('clears the value when the clear button is clicked', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { value: TODAY, clearable: true } },
+      );
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Clear selection' }),
+      );
+
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    it('does not render a clear button when nothing is selected, even if clearable', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { clearable: true },
+      });
+
+      expect(
+        within(container).queryByRole('button', { name: 'Clear selection' }),
+      ).toBeNull();
+    });
+  });
+
+  describe('disabledDates / disabledDays', () => {
+    it('disables an exact date in disabledDates regardless of min/max', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { disabledDates: [new Date(2026, 7, 20)] },
+      });
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getDayButtonByText('20').disabled).toBe(true);
+      expect(getDayButtonByText('21').disabled).toBe(false);
+    });
+
+    it('disables every weekday listed in disabledDays', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        // 2026-08-16 is a Sunday, 2026-08-22 is a Saturday.
+        inputs: { disabledDays: [0, 6] },
+      });
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getDayButtonByText('16').disabled).toBe(true);
+      expect(getDayButtonByText('22').disabled).toBe(true);
+      expect(getDayButtonByText('19').disabled).toBe(false);
+    });
+
+    it('blocks clicking a disabledDates day from committing a value', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { disabledDates: [new Date(2026, 7, 20)] } },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      getDayButtonByText('20').click();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBeNull();
+    });
+  });
+
+  describe('inline', () => {
+    function getInlineDayButtons(container: HTMLElement): HTMLButtonElement[] {
+      return Array.from(
+        container.querySelectorAll('table[role="grid"] button'),
+      );
+    }
+
+    it('renders the calendar directly with no trigger button or dialog role', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { inline: true },
+      });
+
+      expect(container.querySelector('[aria-haspopup="dialog"]')).toBeNull();
+      expect(container.querySelector('[role="dialog"]')).toBeNull();
+      expect(getInlineDayButtons(container).length).toBeGreaterThan(0);
+    });
+
+    it('shows the month containing the current value, not just today', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { inline: true, value: new Date(2026, 11, 25) },
+      });
+
+      expect(container.textContent).toContain('December 2026');
+    });
+
+    it('commits a day click directly, with no dialog to close', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { inline: true } },
+      );
+      const day19 = getInlineDayButtons(container).find(
+        (btn) => btn.textContent?.trim() === '19',
+      ) as HTMLButtonElement;
+
+      day19.click();
+
+      expect(componentInstance.value()).toEqual(TODAY);
+    });
+
+    it('does not steal focus from the page on mount', () => {
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      outside.focus();
+      try {
+        renderDynamoComponent(DynamoDatePicker, { inputs: { inline: true } });
+
+        expect(document.activeElement).toBe(outside);
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('only one day (the focused one) is a natural tab stop', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { inline: true },
+      });
+
+      const tabbable = getInlineDayButtons(container).filter(
+        (btn) => btn.tabIndex === 0,
+      );
+      expect(tabbable).toHaveLength(1);
+      expect(tabbable[0]?.textContent?.trim()).toBe('19');
+    });
+
+    it('has no axe violations while inline', async () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { inline: true, ariaLabel: 'Choose a date' },
+      });
+      await expectNoA11yViolations(container);
     });
   });
 

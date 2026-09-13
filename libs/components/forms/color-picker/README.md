@@ -19,14 +19,15 @@ protected brandColor = signal('#3b82f6');
 
 ## Inputs
 
-| Input       | Type                  | Default              | Description                                                                                        |
-| ----------- | --------------------- | -------------------- | -------------------------------------------------------------------------------------------------- |
-| `value`     | `string` (model)      | `''`                 | Two-way bindable hex color string; also driven by Angular forms via `writeValue`. Empty until set. |
-| `size`      | `DynamoSize`          | `'md'`               |                                                                                                    |
-| `ariaLabel` | `string \| undefined` | `undefined`          |                                                                                                    |
-| `invalid`   | `boolean`             | `false`              |                                                                                                    |
-| `swatches`  | `string[]`            | 10 preset hex colors | Options rendered in the swatch grid.                                                               |
-| `disabled`  | `boolean` (model)     | `false`              | Two-way bindable; also driven by Angular forms via `setDisabledState`.                             |
+| Input       | Type                  | Default              | Description                                                                                                                                                                                                            |
+| ----------- | --------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`     | `string` (model)      | `''`                 | Two-way bindable hex color string; also driven by Angular forms via `writeValue`. Empty until set.                                                                                                                     |
+| `size`      | `DynamoSize`          | `'md'`               |                                                                                                                                                                                                                        |
+| `ariaLabel` | `string \| undefined` | `undefined`          |                                                                                                                                                                                                                        |
+| `invalid`   | `boolean`             | `false`              |                                                                                                                                                                                                                        |
+| `swatches`  | `string[]`            | 10 preset hex colors | Options rendered in the swatch grid.                                                                                                                                                                                   |
+| `inline`    | `boolean`             | `false`              | Renders the swatch grid + native color input directly in the page, with no trigger button or overlay — for embedding the picker permanently rather than behind a popup. The hex text input still renders alongside it. |
+| `disabled`  | `boolean` (model)     | `false`              | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                                                 |
 
 ## Outputs
 

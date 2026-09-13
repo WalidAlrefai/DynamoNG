@@ -22,9 +22,33 @@ const MANY_OPTIONS: DynamoSelectOption<string>[] = Array.from(
   (_, i) => ({ label: `Item ${i + 1}`, value: `item-${i + 1}` }),
 );
 
+const ALL_CITIES: DynamoSelectOption<string>[] = [
+  'Amsterdam',
+  'Austin',
+  'Bangkok',
+  'Berlin',
+  'Cairo',
+  'Chicago',
+  'Denver',
+  'Dubai',
+  'Dublin',
+  'Lisbon',
+  'London',
+  'Madrid',
+  'Manila',
+  'Nairobi',
+  'Osaka',
+  'Paris',
+  'Prague',
+  'Seattle',
+  'Seoul',
+  'Toronto',
+].map((label) => ({ label, value: label.toLowerCase() }));
+
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
+  { id: 'lazy', title: 'Lazy / Async Search' },
 ];
 
 @Component({
@@ -81,7 +105,29 @@ const EXAMPLES: DocExampleRef[] = [
           </p>
         </div>
         <div code>
-          &lt;dg-autocomplete [options]="manyOptions" [virtualScroll]="true" /&gt;
+          &lt;dg-autocomplete [options]="manyOptions" [virtualScroll]="true"
+          /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="lazy"
+        title="Lazy / Async Search"
+        description="lazy trusts options() to already be the current suggestion set — pair it with (searchQuery), debounced by debounceTime, to fetch matches as the user types (simulated here with a delay)."
+      >
+        <div preview class="max-w-sm">
+          <dg-autocomplete
+            [options]="citySuggestions()"
+            [lazy]="true"
+            [loading]="citySearching()"
+            (searchQuery)="onCitySearch($event)"
+            ariaLabel="City"
+            placeholder="Type a city name..."
+          />
+        </div>
+        <div code>
+          &lt;dg-autocomplete [options]="suggestions()" [lazy]="true"
+          (searchQuery)="fetchSuggestions($event)" /&gt;
         </div>
       </docs-example>
 
@@ -128,10 +174,27 @@ const EXAMPLES: DocExampleRef[] = [
               <td class="py-2 pr-4 font-mono">boolean</td>
               <td class="py-2 font-mono">false</td>
             </tr>
-            <tr>
-              <td class="py-2 pr-4 font-mono">virtualScrollItemSize / Height</td>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">
+                virtualScrollItemSize / Height
+              </td>
               <td class="py-2 pr-4 font-mono">number</td>
               <td class="py-2 font-mono">36 / 240</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">lazy</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">false</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">debounceTime</td>
+              <td class="py-2 pr-4 font-mono">number</td>
+              <td class="py-2 font-mono">300</td>
+            </tr>
+            <tr>
+              <td class="py-2 pr-4 font-mono">minLength</td>
+              <td class="py-2 pr-4 font-mono">number</td>
+              <td class="py-2 font-mono">1</td>
             </tr>
           </tbody>
         </table>
@@ -152,4 +215,20 @@ export class AutocompleteDocPage {
   protected readonly manyOptions = MANY_OPTIONS;
   protected readonly fruit = signal('');
   protected readonly lastSelected = signal<string | null>(null);
+
+  protected readonly citySuggestions = signal<DynamoSelectOption<string>[]>([]);
+  protected readonly citySearching = signal(false);
+  private citySearchTimer: ReturnType<typeof setTimeout> | undefined;
+
+  protected onCitySearch(query: string): void {
+    clearTimeout(this.citySearchTimer);
+    this.citySearching.set(true);
+    this.citySearchTimer = setTimeout(() => {
+      const q = query.toLowerCase();
+      this.citySuggestions.set(
+        ALL_CITIES.filter((city) => city.label.toLowerCase().includes(q)),
+      );
+      this.citySearching.set(false);
+    }, 400);
+  }
 }

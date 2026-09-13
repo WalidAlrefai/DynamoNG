@@ -11,13 +11,14 @@ purely presentational, with no interactive behavior of its own.
 
 ## Inputs
 
-| Input      | Type                 | Default     | Description                                                                 |
-| ---------- | -------------------- | ----------- | --------------------------------------------------------------------------- |
-| `severity` | `DynamoSeverity`     | `'primary'` | `'primary' \| 'secondary' \| 'success' \| 'info' \| 'warning' \| 'danger'`. |
-| `variant`  | `DynamoBadgeVariant` | `'solid'`   | `'solid' \| 'outline'`.                                                     |
-| `size`     | `DynamoSize`         | `'md'`      | `'sm' \| 'md' \| 'lg'`.                                                     |
+| Input      | Type                 | Default     | Description                                                                                                        |
+| ---------- | -------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
+| `severity` | `DynamoSeverity`     | `'primary'` | `'primary' \| 'secondary' \| 'success' \| 'info' \| 'warning' \| 'danger'`.                                        |
+| `variant`  | `DynamoBadgeVariant` | `'solid'`   | `'solid' \| 'outline'`.                                                                                            |
+| `size`     | `DynamoSize`         | `'md'`      | `'sm' \| 'md' \| 'lg'`.                                                                                            |
+| `dot`      | `boolean`            | `false`     | Renders a bare notification dot instead of the pill — no padding, no projected content, a fixed square per `size`. |
 
-Content is projected via plain `<ng-content>`.
+Content is projected via plain `<ng-content>` (ignored when `dot` is true).
 
 ## Outputs
 

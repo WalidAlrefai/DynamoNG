@@ -1,7 +1,8 @@
 import type { DynamoSize } from '@dynamong/core/api';
 
 export type DynamoListboxSize = DynamoSize;
-export type DynamoListboxPart = 'root' | 'option' | 'group-heading' | 'checkbox';
+export type DynamoListboxPart =
+  'root' | 'option' | 'group-heading' | 'checkbox' | 'filter' | 'no-results';
 export type DynamoListboxValue<TValue> = TValue | TValue[] | null;
 
 // DynamoSelectOption (label/value/disabled?/group?) already lives in

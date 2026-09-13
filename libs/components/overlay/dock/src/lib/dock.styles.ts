@@ -51,6 +51,10 @@ export const dockItemStyles = cva(
   },
 );
 
+export const dockBadgeStyles =
+  'pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full ' +
+  'bg-danger px-1 text-[0.65rem] font-medium leading-none text-on-danger';
+
 export const dockLabelStyles = cva(
   'pointer-events-none absolute whitespace-nowrap rounded-sm bg-surface-900 px-1.5 py-0.5 text-xs text-surface-0 ' +
     'opacity-0 transition-opacity duration-150 group-hover/tile:opacity-100 group-focus-visible/tile:opacity-100',

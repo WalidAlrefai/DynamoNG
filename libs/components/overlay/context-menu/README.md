@@ -21,11 +21,12 @@ protected onItemSelect(event: DynamoMenuItemSelectEvent): void { ... }
 
 ## Inputs
 
-| Input       | Type                  | Default     | Description                                                                  |
-| ----------- | --------------------- | ----------- | ---------------------------------------------------------------------------- |
-| `disabled`  | `boolean`             | `false`     | Suppresses the `contextmenu` handler entirely — right-clicking does nothing. |
-| `ariaLabel` | `string \| undefined` | `undefined` | Labels the `role="menu"` panel; falls back to `'Context menu'` when omitted. |
-| `open`      | `boolean` (model)     | `false`     | Two-way bindable panel open state.                                           |
+| Input       | Type                  | Default     | Description                                                                                                                                                                        |
+| ----------- | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled`  | `boolean`             | `false`     | Suppresses the `contextmenu` handler entirely — right-clicking does nothing.                                                                                                       |
+| `ariaLabel` | `string \| undefined` | `undefined` | Labels the `role="menu"` panel; falls back to `'Context menu'` when omitted.                                                                                                       |
+| `global`    | `boolean`             | `false`     | Right-clicking anywhere in the document opens the menu at the cursor, not just the projected trigger content — for a page-wide context menu with no single bounded trigger region. |
+| `open`      | `boolean` (model)     | `false`     | Two-way bindable panel open state.                                                                                                                                                 |
 
 Items are `<dg-menu-item>` — the same component `@dynamong/menu` exports (`value`/`label`/`disabled` inputs), projected as siblings of the trigger content and read via `contentChildren()`.
 

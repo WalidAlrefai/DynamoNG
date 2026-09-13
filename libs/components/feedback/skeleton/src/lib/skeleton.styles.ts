@@ -6,19 +6,23 @@ import { cva } from 'class-variance-authority';
 // `animate-spin` is unrelated) — `animate-pulse` is introduced fresh here,
 // paired with `motion-reduce:animate-none` matching Progress's
 // `motion-reduce:transition-none` precedent for respecting reduced motion.
-export const skeletonStyles = cva(
-  'animate-pulse bg-surface-200 motion-reduce:animate-none',
-  {
-    variants: {
-      variant: {
-        text: 'h-4 w-full rounded-sm',
-        circular: 'h-10 w-10 rounded-full',
-        rectangular: 'h-24 w-full rounded-md',
-      },
+export const skeletonStyles = cva('bg-surface-200', {
+  variants: {
+    variant: {
+      text: 'h-4 w-full rounded-sm',
+      circular: 'h-10 w-10 rounded-full',
+      rectangular: 'h-24 w-full rounded-md',
     },
-    defaultVariants: { variant: 'text' },
+    // Opt out of the pulse for a static/non-animated placeholder — separate
+    // from (and in addition to) the automatic `motion-reduce:animate-none`
+    // below, which only fires on the OS-level reduced-motion preference.
+    animation: {
+      pulse: 'animate-pulse motion-reduce:animate-none',
+      none: '',
+    },
   },
-);
+  defaultVariants: { variant: 'text', animation: 'pulse' },
+});
 
 /**
  * Arbitrary width/height can't be expressed as discrete cva variants — the

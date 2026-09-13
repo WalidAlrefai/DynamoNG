@@ -596,6 +596,44 @@ describe('DynamoSelect', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('still opens the panel and reflects aria-readonly, but blocks selection', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, readOnly: true } },
+      );
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      expect(trigger.getAttribute('aria-readonly')).toBe('true');
+      expect((trigger as HTMLButtonElement).disabled).toBe(false);
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+
+      await userEvent.click(getOptionByText('Option 2'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    it('disables the clear button', () => {
+      const { container } = renderDynamoComponent(DynamoSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          value: 'option-1',
+          clearable: true,
+          readOnly: true,
+        },
+      });
+
+      const clearButton = within(container).getByRole('button', {
+        name: 'Clear selection',
+      }) as HTMLButtonElement;
+      expect(clearButton.disabled).toBe(true);
+    });
+  });
+
   describe('grouped options', () => {
     const GROUPED_OPTIONS: DynamoSelectOption<string>[] = [
       { label: 'Ava', value: 'ava', group: 'Engineering' },

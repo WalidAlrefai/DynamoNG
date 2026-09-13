@@ -20,6 +20,7 @@ type TargetKeyword = '@next' | '@prev' | '@parent' | '@grandparent';
  * - `enterClass` / `leaveClass` — swapped on alternating clicks (show / hide).
  * - `hideOnOutsideClick` — while shown, a document click outside the host and
  *   target hides it.
+ * - `hideOnEscape` — while shown, pressing Escape anywhere hides it.
  */
 @Directive({
   selector: '[dgStyleClass]',
@@ -34,6 +35,7 @@ export class DynamoStyleClass {
   readonly enterClass = input<string | undefined>(undefined);
   readonly leaveClass = input<string | undefined>(undefined);
   readonly hideOnOutsideClick = input(false);
+  readonly hideOnEscape = input(false);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly document = inject(DOCUMENT);
@@ -41,9 +43,13 @@ export class DynamoStyleClass {
 
   private shown = false;
   private outsideClickHandler: ((event: MouseEvent) => void) | null = null;
+  private escapeHandler: ((event: KeyboardEvent) => void) | null = null;
 
   constructor() {
-    this.destroyRef.onDestroy(() => this.teardownOutsideClick());
+    this.destroyRef.onDestroy(() => {
+      this.teardownOutsideClick();
+      this.teardownEscape();
+    });
   }
 
   protected onClick(): void {
@@ -61,6 +67,10 @@ export class DynamoStyleClass {
     if (this.hideOnOutsideClick()) {
       if (this.shown) this.setupOutsideClick(target);
       else this.teardownOutsideClick();
+    }
+    if (this.hideOnEscape()) {
+      if (this.shown) this.setupEscape(target);
+      else this.teardownEscape();
     }
   }
 
@@ -82,16 +92,14 @@ export class DynamoStyleClass {
     this.shown = false;
     if (!toggle) this.applyEnterLeave(target);
     this.teardownOutsideClick();
+    this.teardownEscape();
   }
 
   private setupOutsideClick(target: HTMLElement): void {
     this.teardownOutsideClick();
     const handler = (event: MouseEvent) => {
       const node = event.target as Node;
-      if (
-        !this.host.nativeElement.contains(node) &&
-        !target.contains(node)
-      ) {
+      if (!this.host.nativeElement.contains(node) && !target.contains(node)) {
         this.hide(target);
       }
     };
@@ -104,6 +112,22 @@ export class DynamoStyleClass {
     if (this.outsideClickHandler) {
       this.document.removeEventListener('click', this.outsideClickHandler);
       this.outsideClickHandler = null;
+    }
+  }
+
+  private setupEscape(target: HTMLElement): void {
+    this.teardownEscape();
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') this.hide(target);
+    };
+    this.escapeHandler = handler;
+    this.document.addEventListener('keydown', handler);
+  }
+
+  private teardownEscape(): void {
+    if (this.escapeHandler) {
+      this.document.removeEventListener('keydown', this.escapeHandler);
+      this.escapeHandler = null;
     }
   }
 

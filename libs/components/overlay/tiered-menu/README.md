@@ -22,13 +22,14 @@ protected onItemSelect(item: DynamoTieredMenuItem): void { ... }
 
 ## Inputs
 
-| Input       | Type                                | Default          | Description                                                                                                         |
-| ----------- | ----------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `items`     | `DynamoTieredMenuItem[]` (required) | —                | The root level's items. Each has `label`, optional `disabled`, `children` (rendered as a nested flyout), `command`. |
-| `label`     | `string` (required)                 | —                | Trigger button text, e.g. `<dg-tiered-menu label="File">`.                                                          |
-| `position`  | `DynamoTieredMenuPosition`          | `'bottom-start'` | Root panel position: `'bottom-start' \| 'bottom-end' \| 'top-start' \| 'top-end'`.                                  |
-| `ariaLabel` | `string \| undefined`               | `undefined`      |                                                                                                                     |
-| `open`      | `boolean` (model)                   | `false`          | Two-way bindable: `<dg-tiered-menu [(open)]="isOpen">`.                                                             |
+| Input         | Type                                | Default          | Description                                                                                                                                                                                                  |
+| ------------- | ----------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `items`       | `DynamoTieredMenuItem[]` (required) | —                | The root level's items. Each has `label`, optional `disabled`, `children` (rendered as a nested flyout), `command`.                                                                                          |
+| `label`       | `string` (required)                 | —                | Trigger button text, e.g. `<dg-tiered-menu label="File">`.                                                                                                                                                   |
+| `position`    | `DynamoTieredMenuPosition`          | `'bottom-start'` | Root panel position: `'bottom-start' \| 'bottom-end' \| 'top-start' \| 'top-end'`.                                                                                                                           |
+| `ariaLabel`   | `string \| undefined`               | `undefined`      |                                                                                                                                                                                                              |
+| `open`        | `boolean` (model)                   | `false`          | Two-way bindable: `<dg-tiered-menu [(open)]="isOpen">`.                                                                                                                                                      |
+| `autoDisplay` | `boolean`                           | `true`           | Whether hovering a branch row opens its flyout automatically. Set `false` so hover only moves the active-row highlight — the flyout then opens via click, or `Enter`/`Space`/`ArrowRight` from the keyboard. |
 
 ## Outputs
 
@@ -42,7 +43,7 @@ protected onItemSelect(item: DynamoTieredMenuItem): void { ... }
 - Real DOM focus never leaves the trigger button — rows across every open level use virtual focus via `aria-activedescendant` instead (several levels can be portaled open at once, so focus can't live inside any one of them). The trigger carries `role="combobox"` purely to make `aria-activedescendant` a valid attribute there.
 - Keyboard on the closed trigger: `ArrowDown`/`ArrowUp`/`Enter`/`Space` open the menu.
 - Keyboard while open: `ArrowDown`/`ArrowUp` move within the currently active level, `Home`/`End` jump to the first/last enabled item, `ArrowRight` drills into a branch item's children and moves navigation into that level, `ArrowLeft` walks back up a level, `Enter`/`Space` drills into a branch or commits a leaf, `Escape` closes and refocuses the trigger, `Tab` closes without trapping focus.
-- Hovering a branch item drills into its children the same way as `ArrowRight`/`Enter`. Only the root panel has a backdrop; clicking it closes every open level.
+- Hovering a branch item drills into its children the same way as `ArrowRight`/`Enter`, unless `autoDisplay` is `false`. Only the root panel has a backdrop; clicking it closes every open level.
 
 ## Tier / dependencies
 

@@ -8,7 +8,8 @@ import { focusRingClass } from '@dynamong/utils/styles';
 export const speedDialRootStyles = 'relative inline-flex h-12 w-12';
 
 export const speedDialTriggerStyles = cva(
-  'absolute inset-0 flex h-12 w-12 items-center justify-center rounded-full ' +
+  // z-50 keeps the trigger above the optional `mask` backdrop (z-40).
+  'absolute inset-0 z-50 flex h-12 w-12 items-center justify-center rounded-full ' +
     'bg-primary text-on-primary shadow-lg transition-transform duration-200 ease-out ' +
     'disabled:cursor-not-allowed disabled:opacity-60 ' +
     focusRingClass,
@@ -23,7 +24,8 @@ export const speedDialTriggerStyles = cva(
 // The list is a zero-size box centred on the trigger; each action is
 // absolutely centred on it and pushed out via a `transform` translate.
 export const speedDialListStyles = cva(
-  'absolute start-1/2 top-1/2 h-0 w-0 transition-opacity duration-200 ease-out',
+  // z-50 keeps the fanned-out actions above the optional `mask` backdrop (z-40).
+  'absolute start-1/2 top-1/2 z-50 h-0 w-0 transition-opacity duration-200 ease-out',
   {
     variants: {
       open: {

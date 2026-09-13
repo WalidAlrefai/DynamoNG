@@ -3,11 +3,13 @@ import {
   Component,
   ElementRef,
   computed,
+  forwardRef,
   input,
   model,
   signal,
   viewChild,
 } from '@angular/core';
+import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import type { DynamoSeverity, DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
@@ -24,20 +26,44 @@ import type { DynamoSliderPart } from './slider.types';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './slider.html',
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => DynamoSlider),
+      multi: true,
+    },
+  ],
 })
-export class DynamoSlider extends DynamoBaseComponent<DynamoSliderPart> {
-  /** Two-way bindable: `<dg-slider [(value)]="amount">`. */
+export class DynamoSlider
+  extends DynamoBaseComponent<DynamoSliderPart>
+  implements ControlValueAccessor
+{
+  /** Two-way bindable: `<dg-slider [(value)]="amount">`. Also driven by Angular forms via `writeValue`. */
   readonly value = model(0);
   readonly min = input(0);
   readonly max = input(100);
   readonly step = input(1);
-  readonly disabled = input(false);
+  /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
+  readonly disabled = model(false);
+  /** HTML `readonly` semantics: the thumb stays visible/focusable, but
+   *  dragging and keyboard changes are both blocked. Unlike `disabled`,
+   *  doesn't dim the track or remove it from the tab order. */
+  readonly readOnly = input(false);
   readonly size = input<DynamoSize>('md');
   readonly severity = input<DynamoSeverity>('primary');
   readonly ariaLabel = input<string | undefined>(undefined);
 
-  private readonly trackRef = viewChild.required<ElementRef<HTMLElement>>('track');
-  private readonly thumbRef = viewChild.required<ElementRef<HTMLElement>>('thumb');
+  private onChangeFn: (value: number) => void = () => {
+    /* replaced by registerOnChange once bound to a FormControl/ngModel */
+  };
+  private onTouchedFn: () => void = () => {
+    /* replaced by registerOnTouched once bound to a FormControl/ngModel */
+  };
+
+  private readonly trackRef =
+    viewChild.required<ElementRef<HTMLElement>>('track');
+  private readonly thumbRef =
+    viewChild.required<ElementRef<HTMLElement>>('thumb');
 
   protected readonly dragging = signal(false);
 
@@ -87,7 +113,7 @@ export class DynamoSlider extends DynamoBaseComponent<DynamoSliderPart> {
   }
 
   protected onThumbKeydown(event: KeyboardEvent): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     const step = this.step();
@@ -117,14 +143,14 @@ export class DynamoSlider extends DynamoBaseComponent<DynamoSliderPart> {
         return;
     }
     event.preventDefault();
-    this.value.set(this.clamp(next));
+    this.commit(this.clamp(next));
   }
 
   // Both click-to-jump and drag are handled here rather than split between
   // track and thumb — the thumb's position is purely derived from `value`,
   // so one pointer region (matching Carousel's viewport) covers both.
   protected onTrackPointerDown(event: PointerEvent): void {
-    if (this.disabled()) {
+    if (this.disabled() || this.readOnly()) {
       return;
     }
     this.dragging.set(true);
@@ -147,6 +173,9 @@ export class DynamoSlider extends DynamoBaseComponent<DynamoSliderPart> {
   }
 
   protected onTrackPointerUp(): void {
+    if (this.dragging()) {
+      this.onTouchedFn();
+    }
     this.dragging.set(false);
   }
 
@@ -156,6 +185,27 @@ export class DynamoSlider extends DynamoBaseComponent<DynamoSliderPart> {
       rect.width > 0
         ? Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
         : 0;
-    this.value.set(this.clamp(this.min() + ratio * (this.max() - this.min())));
+    this.commit(this.clamp(this.min() + ratio * (this.max() - this.min())));
+  }
+
+  private commit(next: number): void {
+    this.value.set(next);
+    this.onChangeFn(next);
+  }
+
+  writeValue(value: number | null): void {
+    this.value.set(value ?? 0);
+  }
+
+  registerOnChange(fn: (value: number) => void): void {
+    this.onChangeFn = fn;
+  }
+
+  registerOnTouched(fn: () => void): void {
+    this.onTouchedFn = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.disabled.set(isDisabled);
   }
 }

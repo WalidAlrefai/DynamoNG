@@ -1,5 +1,8 @@
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
 import { DynamoMeterGroup } from './meter-group';
@@ -109,6 +112,51 @@ describe('DynamoMeterGroup', () => {
     it('hides the legend when showLegend is false', () => {
       const { container } = renderDynamoComponent(DynamoMeterGroup, {
         inputs: { value: ITEMS, showLegend: false },
+      });
+      expect(
+        container.querySelector('[data-testid="DynamoMeterGroup-legend"]'),
+      ).toBeNull();
+    });
+  });
+
+  describe('labelPosition', () => {
+    it('defaults to "end", rendering the legend after the track', () => {
+      const { container } = renderDynamoComponent(DynamoMeterGroup, {
+        inputs: { value: ITEMS },
+      });
+      const root = container.querySelector(
+        '[data-testid="DynamoMeterGroup"]',
+      ) as HTMLElement;
+      const track = container.querySelector(
+        '[data-testid="DynamoMeterGroup-track"]',
+      );
+      const legend = container.querySelector(
+        '[data-testid="DynamoMeterGroup-legend"]',
+      );
+
+      expect(track?.compareDocumentPosition(legend as Node)).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      expect(root.firstElementChild).toBe(track);
+    });
+
+    it('renders the legend before the track when set to "start"', () => {
+      const { container } = renderDynamoComponent(DynamoMeterGroup, {
+        inputs: { value: ITEMS, labelPosition: 'start' },
+      });
+      const root = container.querySelector(
+        '[data-testid="DynamoMeterGroup"]',
+      ) as HTMLElement;
+      const legend = container.querySelector(
+        '[data-testid="DynamoMeterGroup-legend"]',
+      );
+
+      expect(root.firstElementChild).toBe(legend);
+    });
+
+    it('still hides the legend entirely when showLegend is false, regardless of labelPosition', () => {
+      const { container } = renderDynamoComponent(DynamoMeterGroup, {
+        inputs: { value: ITEMS, showLegend: false, labelPosition: 'start' },
       });
       expect(
         container.querySelector('[data-testid="DynamoMeterGroup-legend"]'),

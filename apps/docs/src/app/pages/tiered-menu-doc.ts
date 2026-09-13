@@ -8,7 +8,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'no-auto-display', title: 'No Auto Display' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'items', type: 'DynamoTieredMenuItem[] (required)', default: '—' },
@@ -19,6 +22,7 @@ const API: ApiTableRow[] = [
     default: "'bottom-start'",
   },
   { name: 'open', type: 'boolean (model)', default: 'false' },
+  { name: 'autoDisplay', type: 'boolean', default: 'true' },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
 ];
 
@@ -53,6 +57,20 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-tiered-menu label="File" [items]="items"
           (itemSelect)="onSelect($event)" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="no-auto-display"
+        title="No Auto Display"
+        description="autoDisplay: false stops hover from opening a branch's flyout automatically — only a click, or Enter/Space/ArrowRight from the keyboard, drills in."
+      >
+        <div preview>
+          <dg-tiered-menu label="File" [items]="items" [autoDisplay]="false" />
+        </div>
+        <div code>
+          &lt;dg-tiered-menu label="File" [items]="items" [autoDisplay]="false"
+          /&gt;
         </div>
       </docs-example>
 

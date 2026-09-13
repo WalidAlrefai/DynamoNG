@@ -1,11 +1,12 @@
 @if (visible()) {
-  <button
-    type="button"
-    [class]="rootClasses()"
-    [attr.aria-label]="ariaLabel()"
-    [attr.data-testid]="'DynamoScrollTop'"
-    (click)="scrollToTop()"
-  >
+<button
+  type="button"
+  [class]="rootClasses()"
+  [attr.aria-label]="ariaLabel()"
+  [attr.data-testid]="'DynamoScrollTop'"
+  (click)="scrollToTop()"
+>
+  <ng-content select="[icon]">
     <svg
       width="16"
       height="16"
@@ -19,5 +20,6 @@
         clip-rule="evenodd"
       />
     </svg>
-  </button>
+  </ng-content>
+</button>
 }

@@ -1,1 +1,2 @@
-export type DynamoScrollTopPart = 'root';
+export type DynamoScrollTopPart = 'root' | 'icon';
+export type DynamoScrollTopTarget = 'window' | 'parent';

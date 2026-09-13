@@ -668,6 +668,59 @@ describe('DynamoPicklist', () => {
     });
   });
 
+  describe('readOnly root', () => {
+    it('makes checkbox toggling, move buttons, and reordering all inert, but keeps panels focusable', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET, readOnly: true },
+        },
+      );
+
+      within(container).getByRole('option', { name: 'Rust' }).click();
+      fixture.detectChanges();
+      within(container)
+        .getByRole('button', { name: 'Move all to Selected' })
+        .click();
+      fixture.detectChanges();
+
+      expect(componentInstance.source().map((o) => o.value)).toEqual([
+        'rust',
+        'go',
+        'py',
+      ]);
+      expect(componentInstance.target().map((o) => o.value)).toEqual(['ts']);
+
+      const sourceList = panelListEl(container, 'source');
+      expect(sourceList.getAttribute('tabindex')).toBe('0');
+      expect(sourceList.getAttribute('aria-readonly')).toBe('true');
+    });
+
+    it('still allows keyboard navigation to move the active row highlight', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET, readOnly: true },
+        },
+      );
+      const sourceList = panelListEl(container, 'source');
+
+      dispatchKey(sourceList, 'ArrowDown');
+
+      expect(componentInstance['sourceActiveIndex']()).toBe(0);
+    });
+
+    it('disables all move/reorder buttons', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, readOnly: true },
+      });
+
+      for (const button of within(container).getAllByRole('button')) {
+        expect((button as HTMLButtonElement).disabled).toBe(true);
+      }
+    });
+  });
+
   describe('edge cases', () => {
     it('moving the last source item empties the panel and axe still passes', async () => {
       const { fixture, container, componentInstance } = renderDynamoComponent(

@@ -1,5 +1,8 @@
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -259,6 +262,85 @@ describe('DynamoSpeedDial', () => {
       // direction "right" → first action sits straight right of the trigger.
       expect(first.style.transform).toContain('100px');
       expect(first.style.transform).toContain('scale(1)');
+    });
+  });
+
+  describe('diagonal directions', () => {
+    it('centers a quarter-circle exactly between its two adjacent cardinals for a corner direction', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSpeedDial, {
+        inputs: {
+          actions: [{ label: 'A' }, { label: 'B' }, { label: 'C' }],
+          type: 'quarter-circle',
+          direction: 'up-left',
+          radius: 100,
+        },
+      });
+      fixture.componentInstance.open.set(true);
+      fixture.detectChanges();
+
+      const buttons = getActionButtons(container);
+      // A 3-action quarter-circle centred on up-left (225°) spans 180°→270°:
+      // first action at 180° (straight left), last at 270° (straight up).
+      expect(buttons[0]?.style.transform).toContain('-100px');
+      expect(buttons[2]?.style.transform).toContain('-100px');
+    });
+
+    it('accepts every documented direction without throwing', () => {
+      const { setInputs } = renderDynamoComponent(DynamoSpeedDial, {
+        inputs: { actions: actions() },
+      });
+
+      for (const direction of [
+        'up',
+        'down',
+        'left',
+        'right',
+        'up-left',
+        'up-right',
+        'down-left',
+        'down-right',
+      ] as const) {
+        expect(() => setInputs({ direction })).not.toThrow();
+      }
+    });
+  });
+
+  describe('mask', () => {
+    it('renders no backdrop by default', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSpeedDial, {
+        inputs: { actions: actions() },
+      });
+      await userEvent.click(getTrigger(container));
+      fixture.detectChanges();
+
+      expect(container.querySelector('[data-testid="DynamoSpeedDialMask"]')).toBeNull();
+    });
+
+    it('renders a backdrop while open when mask is true', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSpeedDial, {
+        inputs: { actions: actions(), mask: true },
+      });
+      await userEvent.click(getTrigger(container));
+      fixture.detectChanges();
+
+      expect(container.querySelector('[data-testid="DynamoSpeedDialMask"]')).not.toBeNull();
+    });
+
+    it('closes and refocuses the trigger when the mask is clicked', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSpeedDial, {
+        inputs: { actions: actions(), mask: true },
+      });
+      await userEvent.click(getTrigger(container));
+      fixture.detectChanges();
+      const mask = container.querySelector(
+        '[data-testid="DynamoSpeedDialMask"]',
+      ) as HTMLElement;
+
+      await userEvent.click(mask);
+      fixture.detectChanges();
+
+      expect(getTrigger(container).getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(getTrigger(container));
     });
   });
 

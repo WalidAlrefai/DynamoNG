@@ -55,4 +55,13 @@ export class DynamoToastContainer {
   protected dismiss(id: string): void {
     this.toastService.dismiss(id);
   }
+
+  /** Pauses/resumes a toast's auto-dismiss countdown while it's hovered — a no-op for a sticky (`duration: 0`) toast. */
+  protected pause(id: string): void {
+    this.toastService.pause(id);
+  }
+
+  protected resume(id: string): void {
+    this.toastService.resume(id);
+  }
 }

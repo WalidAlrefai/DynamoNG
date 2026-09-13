@@ -21,6 +21,10 @@ protected readonly status = signal<DynamoSeverity>('success');
 | `variant`  | `DynamoTagVariant` (`'solid' \| 'outline'`) | `'solid'`   |             |
 | `size`     | `DynamoSize`                                | `'md'`      |             |
 
+Content is projected via plain `<ng-content>`. A projected `[icon]`-attributed
+element (e.g. an icon component) renders ahead of the label:
+`<dg-tag><dg-icon-check icon />Verified</dg-tag>`.
+
 ## Outputs
 
 None — this component has no outputs.

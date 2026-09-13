@@ -14,7 +14,10 @@ import { DynamoOtpInputHarness } from './otp-input.harness';
   selector: 'dg-otp-input-reactive-form-host',
   standalone: true,
   imports: [DynamoOtpInput, ReactiveFormsModule],
-  template: `<dg-otp-input [formControl]="control" ariaLabel="Verification code" />`,
+  template: `<dg-otp-input
+    [formControl]="control"
+    ariaLabel="Verification code"
+  />`,
 })
 class ReactiveFormHostComponent {
   readonly control = new FormControl('', { nonNullable: true });
@@ -24,7 +27,10 @@ class ReactiveFormHostComponent {
   selector: 'dg-otp-input-ng-model-host',
   standalone: true,
   imports: [DynamoOtpInput, FormsModule],
-  template: `<dg-otp-input [(ngModel)]="value" ariaLabel="Verification code" />`,
+  template: `<dg-otp-input
+    [(ngModel)]="value"
+    ariaLabel="Verification code"
+  />`,
 })
 class NgModelHostComponent {
   value = '';
@@ -219,9 +225,8 @@ describe('DynamoOtpInput', () => {
     });
 
     it('propagates typed digits to an [(ngModel)] binding', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(
-        NgModelHostComponent,
-      );
+      const { fixture, container, componentInstance } =
+        renderDynamoComponent(NgModelHostComponent);
       const first = box(container, 0);
       first.value = '9';
       fireEvent.input(first);
@@ -274,18 +279,85 @@ describe('DynamoOtpInput', () => {
     });
   });
 
+  describe('mask', () => {
+    it('renders plain text boxes by default', () => {
+      const { container } = renderDynamoComponent(DynamoOtpInput, {
+        inputs: { ariaLabel: 'Verification code' },
+      });
+
+      expect(box(container, 0).type).toBe('text');
+    });
+
+    it('renders password-type boxes when mask is true', () => {
+      const { container } = renderDynamoComponent(DynamoOtpInput, {
+        inputs: { ariaLabel: 'Verification code', mask: true },
+      });
+
+      expect(box(container, 0).type).toBe('password');
+    });
+  });
+
+  describe('readOnly', () => {
+    it('reflects the readOnly and aria-readonly attributes, keeping boxes focusable', () => {
+      const { container } = renderDynamoComponent(DynamoOtpInput, {
+        inputs: { ariaLabel: 'Verification code', readOnly: true },
+      });
+      const first = box(container, 0);
+
+      expect(first.readOnly).toBe(true);
+      expect(first.getAttribute('aria-readonly')).toBe('true');
+      expect(first.disabled).toBe(false);
+    });
+
+    it('ignores typed input via the (input) handler, reverting the box back to its committed value', () => {
+      const { container } = renderDynamoComponent(DynamoOtpInput, {
+        inputs: {
+          ariaLabel: 'Verification code',
+          value: '123456',
+          readOnly: true,
+        },
+      });
+
+      const first = box(container, 0);
+      first.value = '9';
+      fireEvent.input(first);
+
+      expect(first.value).toBe('1');
+    });
+
+    it('ignores backspace-across-boxes and paste', () => {
+      const { container } = renderDynamoComponent(DynamoOtpInput, {
+        inputs: { ariaLabel: 'Verification code', value: '12', readOnly: true },
+      });
+      const second = box(container, 1);
+      second.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Backspace',
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+      box(container, 0).dispatchEvent(pasteEvent('999999'));
+
+      expect(boxes(container).map((b) => b.value)).toEqual([
+        '1',
+        '2',
+        '',
+        '',
+        '',
+        '',
+      ]);
+    });
+  });
+
   describe('accessibility', () => {
     it('gives each box a "Digit N of M" aria-label', () => {
       const { container } = renderDynamoComponent(DynamoOtpInput, {
         inputs: { ariaLabel: 'Verification code', length: 4 },
       });
 
-      expect(box(container, 0).getAttribute('aria-label')).toBe(
-        'Digit 1 of 4',
-      );
-      expect(box(container, 3).getAttribute('aria-label')).toBe(
-        'Digit 4 of 4',
-      );
+      expect(box(container, 0).getAttribute('aria-label')).toBe('Digit 1 of 4');
+      expect(box(container, 3).getAttribute('aria-label')).toBe('Digit 4 of 4');
     });
 
     it('has no axe violations', async () => {

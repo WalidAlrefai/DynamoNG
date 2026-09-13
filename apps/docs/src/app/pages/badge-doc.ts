@@ -10,6 +10,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'severities', title: 'Severities' },
   { id: 'variant-size', title: 'Variant & Size' },
+  { id: 'dot', title: 'Dot' },
 ];
 
 const API: ApiTableRow[] = [
@@ -20,6 +21,7 @@ const API: ApiTableRow[] = [
   },
   { name: 'variant', type: "'solid' | 'outline'", default: "'solid'" },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
+  { name: 'dot', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -46,7 +48,9 @@ const API: ApiTableRow[] = [
           <dg-badge severity="warning">Warning</dg-badge>
           <dg-badge severity="danger">Danger</dg-badge>
         </div>
-        <div code>&lt;dg-badge severity="success"&gt;Active&lt;/dg-badge&gt;</div>
+        <div code>
+          &lt;dg-badge severity="success"&gt;Active&lt;/dg-badge&gt;
+        </div>
       </docs-example>
 
       <docs-example
@@ -60,8 +64,22 @@ const API: ApiTableRow[] = [
           <dg-badge severity="success" size="lg">Large</dg-badge>
         </div>
         <div code>
-          &lt;dg-badge severity="primary" variant="outline"&gt;Outline&lt;/dg-badge&gt;
+          &lt;dg-badge severity="primary"
+          variant="outline"&gt;Outline&lt;/dg-badge&gt;
         </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="dot"
+        title="Dot"
+        description="dot renders a bare notification dot instead of the pill — no padding, no projected content, a fixed square per size."
+      >
+        <div preview class="flex flex-wrap items-center gap-3">
+          <dg-badge severity="danger" [dot]="true" size="sm" />
+          <dg-badge severity="danger" [dot]="true" size="md" />
+          <dg-badge severity="danger" [dot]="true" size="lg" />
+        </div>
+        <div code>&lt;dg-badge severity="danger" [dot]="true" /&gt;</div>
       </docs-example>
 
       <docs-api-table api [rows]="apiRows" />

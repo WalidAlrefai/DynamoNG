@@ -28,6 +28,13 @@ protected addressCollapsed = signal(false);
 | `collapsed`   | `boolean` (model) | `false` | Two-way bindable. Only meaningful when `collapsible` is `true`.                                                                          |
 | `disabled`    | `boolean`         | `false` | Maps to the native `<fieldset disabled>` attribute — disables every descendant form control without this component touching any of them. |
 
+A projected `[legend]`-attributed element renders alongside the plain
+`legend` string — a sibling within `<legend>` (not nested inside the toggle
+button, even when `collapsible`), for e.g. a badge or icon next to the
+legend text: `<dg-fieldset legend="Address"><dg-badge legend>3</dg-badge>…</dg-fieldset>`.
+Pair it with a plain `legend` string or `collapsible` — the `<legend>`
+wrapper itself only renders when one of those is set.
+
 ## Outputs
 
 | Output            | Payload   | Fires when                                                                                     |

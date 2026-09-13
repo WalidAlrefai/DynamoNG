@@ -25,6 +25,10 @@ export const chipStyles = cva(
         md: 'px-2.5 py-0.5 text-sm',
         lg: 'px-3 py-1 text-base',
       },
+      disabled: {
+        true: 'cursor-not-allowed opacity-60',
+        false: '',
+      },
     },
     compoundVariants: [
       {
@@ -89,6 +93,7 @@ export const chipStyles = cva(
       severity: 'primary',
       variant: 'solid',
       size: 'md',
+      disabled: false,
     },
   },
 );

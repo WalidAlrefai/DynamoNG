@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoAlert } from '@dynamong/alert';
+import { DynamoCheckIcon } from '@dynamong/icons';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
 import {
@@ -10,6 +11,8 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'severities', title: 'Severities' },
   { id: 'closable', title: 'Closable' },
+  { id: 'duration', title: 'Auto-Dismiss' },
+  { id: 'custom-icon', title: 'Custom Icon' },
 ];
 
 const API: ApiTableRow[] = [
@@ -21,13 +24,20 @@ const API: ApiTableRow[] = [
   { name: 'title', type: 'string | undefined', default: 'undefined' },
   { name: 'closable', type: 'boolean', default: 'false' },
   { name: 'visible', type: 'boolean (model)', default: 'true' },
+  { name: 'duration', type: 'number | undefined', default: 'undefined' },
 ];
 
 @Component({
   selector: 'docs-alert-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoAlert, DocExamplesLayout, DocExample, DocApiTable],
+  imports: [
+    DynamoAlert,
+    DynamoCheckIcon,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
     <docs-examples-layout
       name="Alert"
@@ -65,7 +75,54 @@ const API: ApiTableRow[] = [
           </dg-alert>
         </div>
         <div code>
-          &lt;dg-alert severity="warning" [closable]="true"&gt;…&lt;/dg-alert&gt;
+          &lt;dg-alert severity="warning"
+          [closable]="true"&gt;…&lt;/dg-alert&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="duration"
+        title="Auto-Dismiss"
+        description="duration self-dismisses the alert after the given ms, mirroring @dynamong/toast's own duration."
+      >
+        <div preview class="flex flex-col gap-2">
+          @if (durationVisible()) {
+            <dg-alert
+              severity="info"
+              [(visible)]="durationVisible"
+              [duration]="3000"
+            >
+              This disappears after 3 seconds.
+            </dg-alert>
+          }
+          <button
+            type="button"
+            class="self-start text-sm text-primary underline"
+            (click)="durationVisible.set(true)"
+          >
+            Show again
+          </button>
+        </div>
+        <div code>
+          &lt;dg-alert [duration]="3000"&gt;This disappears after 3
+          seconds.&lt;/dg-alert&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="custom-icon"
+        title="Custom Icon"
+        description="Projecting an [icon]-attributed element replaces the default per-severity SVG."
+      >
+        <div preview>
+          <dg-alert severity="success" title="Verified">
+            <dg-icon-check icon />
+            Your account has been verified.
+          </dg-alert>
+        </div>
+        <div code>
+          &lt;dg-alert severity="success" title="Verified"&gt; &lt;dg-icon-check
+          icon /&gt; Your account has been verified.&lt;/dg-alert&gt;
         </div>
       </docs-example>
 
@@ -76,4 +133,5 @@ const API: ApiTableRow[] = [
 export class AlertDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows = API;
+  protected readonly durationVisible = signal(true);
 }

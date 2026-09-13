@@ -12,6 +12,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'indeterminate', title: 'Indeterminate' },
   { id: 'disabled', title: 'Disabled' },
+  { id: 'read-only', title: 'Read-Only' },
 ];
 
 @Component({
@@ -62,6 +63,19 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="read-only"
+        title="Read-Only"
+        description="readOnly keeps the current state visible and the input focusable, but blocks toggling — unlike disabled, it stays in the tab order and isn't dimmed."
+        [code]="readOnlyCode"
+      >
+        <div preview>
+          <dg-checkbox [checked]="true" [readOnly]="true">
+            Read-only, checked
+          </dg-checkbox>
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -79,4 +93,7 @@ export class CheckboxDocPage {
   Select all (partially selected)
 </dg-checkbox>`;
   protected readonly disabledCode = `<dg-checkbox [disabled]="true">Disabled option</dg-checkbox>`;
+  protected readonly readOnlyCode = `<dg-checkbox [checked]="true" [readOnly]="true">
+  Read-only, checked
+</dg-checkbox>`;
 }

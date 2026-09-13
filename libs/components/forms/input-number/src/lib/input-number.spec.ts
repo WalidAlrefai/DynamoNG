@@ -66,7 +66,9 @@ describe('DynamoInputNumber', () => {
         inputs: { ariaLabel: 'Quantity' },
       });
 
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
       expect(input.value).toBe('');
       expect(input.disabled).toBe(false);
       expect(input.getAttribute('aria-valuenow')).toBeNull();
@@ -139,9 +141,8 @@ describe('DynamoInputNumber', () => {
     });
 
     it('propagates a typed-then-blurred value to an [(ngModel)] binding', async () => {
-      const { container, componentInstance } = renderDynamoComponent(
-        NgModelHostComponent,
-      );
+      const { container, componentInstance } =
+        renderDynamoComponent(NgModelHostComponent);
 
       await userEvent.type(within(container).getByRole('spinbutton'), '7');
       await userEvent.tab();
@@ -155,7 +156,9 @@ describe('DynamoInputNumber', () => {
       const { container } = renderDynamoComponent(DynamoInputNumber, {
         inputs: { ariaLabel: 'Quantity' },
       });
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
 
       await userEvent.type(input, '15');
       expect(input.value).toBe('15');
@@ -168,7 +171,9 @@ describe('DynamoInputNumber', () => {
       const { container } = renderDynamoComponent(DynamoInputNumber, {
         inputs: { ariaLabel: 'Quantity' },
       });
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
 
       await userEvent.type(input, '-');
 
@@ -177,7 +182,9 @@ describe('DynamoInputNumber', () => {
 
     it('reverts to the last committed value when blurred with unparseable text', async () => {
       const { container } = renderWithValue(5);
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
 
       await userEvent.clear(input);
       await userEvent.type(input, 'abc');
@@ -192,7 +199,9 @@ describe('DynamoInputNumber', () => {
       );
       componentInstance.control.setValue(5);
       fixture.detectChanges();
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
 
       await userEvent.clear(input);
       await userEvent.tab();
@@ -263,7 +272,9 @@ describe('DynamoInputNumber', () => {
 
     it('ignores Home/End when min/max are not set', async () => {
       const { container } = renderWithValue(5);
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
       input.focus();
 
       await userEvent.keyboard('{Home}');
@@ -273,7 +284,9 @@ describe('DynamoInputNumber', () => {
 
     it('ignores all interaction when disabled', async () => {
       const { container } = renderWithValue(5, { inputs: { disabled: true } });
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
       input.focus();
 
       await userEvent.keyboard('{ArrowUp}');
@@ -338,7 +351,9 @@ describe('DynamoInputNumber', () => {
       const { container } = renderDynamoComponent(DynamoInputNumber, {
         inputs: { value: 5, readOnly: true, ariaLabel: 'Quantity' },
       });
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
       input.focus();
 
       await userEvent.type(input, '9');
@@ -352,7 +367,9 @@ describe('DynamoInputNumber', () => {
       const { container } = renderDynamoComponent(DynamoInputNumber, {
         inputs: { value: 5, readOnly: true, ariaLabel: 'Quantity' },
       });
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
 
       expect(input.disabled).toBe(false);
       expect(input.tabIndex).toBe(0);
@@ -370,7 +387,9 @@ describe('DynamoInputNumber', () => {
       const { container } = renderDynamoComponent(DynamoInputNumber, {
         inputs: { value: 5, readOnly: true, ariaLabel: 'Quantity' },
       });
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
 
       await userEvent.click(within(container).getByLabelText('Increment'));
 
@@ -437,6 +456,152 @@ describe('DynamoInputNumber', () => {
     });
   });
 
+  describe('locale-aware display formatting', () => {
+    it('groups thousands by default once blurred', () => {
+      const { container } = renderWithValue(1234, {
+        inputs: { locale: 'en-US' },
+      });
+
+      expect(
+        (within(container).getByRole('spinbutton') as HTMLInputElement).value,
+      ).toBe('1,234');
+    });
+
+    it('shows the plain unformatted value while focused, not the grouped one', () => {
+      const { container, fixture } = renderWithValue(1234, {
+        inputs: { locale: 'en-US' },
+      });
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
+
+      input.focus();
+      fixture.detectChanges();
+
+      expect(input.value).toBe('1234');
+    });
+
+    it('disables grouping when useGrouping is false', () => {
+      const { container } = renderWithValue(1234, {
+        inputs: { locale: 'en-US', useGrouping: false },
+      });
+
+      expect(
+        (within(container).getByRole('spinbutton') as HTMLInputElement).value,
+      ).toBe('1234');
+    });
+
+    it('formats as currency when mode is currency', () => {
+      const { container } = renderWithValue(19.9, {
+        inputs: { locale: 'en-US', mode: 'currency', currency: 'USD' },
+      });
+
+      expect(
+        (within(container).getByRole('spinbutton') as HTMLInputElement).value,
+      ).toBe('$19.90');
+    });
+
+    it('pads to minFractionDigits', () => {
+      const { container } = renderWithValue(5, {
+        inputs: { locale: 'en-US', minFractionDigits: 2 },
+      });
+
+      expect(
+        (within(container).getByRole('spinbutton') as HTMLInputElement).value,
+      ).toBe('5.00');
+    });
+
+    it('rounds to maxFractionDigits', () => {
+      const { container } = renderWithValue(5.6789, {
+        inputs: { locale: 'en-US', maxFractionDigits: 2 },
+      });
+
+      expect(
+        (within(container).getByRole('spinbutton') as HTMLInputElement).value,
+      ).toBe('5.68');
+    });
+  });
+
+  describe('prefix / suffix', () => {
+    it('renders literal prefix/suffix text flush against the input, outside the editable value', () => {
+      const { container } = renderWithValue(5, {
+        inputs: { prefix: '$', suffix: '/mo' },
+      });
+
+      expect(
+        container
+          .querySelector('[data-testid="dg-input-number-prefix"]')
+          ?.textContent?.trim(),
+      ).toBe('$');
+      expect(
+        container
+          .querySelector('[data-testid="dg-input-number-suffix"]')
+          ?.textContent?.trim(),
+      ).toBe('/mo');
+      expect(
+        (within(container).getByRole('spinbutton') as HTMLInputElement).value,
+      ).toBe('5');
+    });
+
+    it('renders no prefix/suffix element when unset', () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { ariaLabel: 'Quantity' },
+      });
+
+      expect(
+        container.querySelector('[data-testid="dg-input-number-prefix"]'),
+      ).toBeNull();
+      expect(
+        container.querySelector('[data-testid="dg-input-number-suffix"]'),
+      ).toBeNull();
+    });
+  });
+
+  describe('custom increment/decrement icons', () => {
+    it('projects custom content into the buttons in place of the default glyphs', () => {
+      @Component({
+        selector: 'dg-input-number-custom-icon-host',
+        standalone: true,
+        imports: [DynamoInputNumber],
+        template: `
+          <dg-input-number ariaLabel="Quantity">
+            <svg incrementIcon data-testid="custom-inc"></svg>
+            <svg decrementIcon data-testid="custom-dec"></svg>
+          </dg-input-number>
+        `,
+      })
+      class CustomIconHostComponent {}
+
+      const { container } = renderDynamoComponent(CustomIconHostComponent);
+
+      expect(
+        container.querySelector('[data-testid="custom-inc"]'),
+      ).toBeTruthy();
+      expect(
+        container.querySelector('[data-testid="custom-dec"]'),
+      ).toBeTruthy();
+      expect(
+        within(container).getByLabelText('Increment').textContent?.trim(),
+      ).toBe('');
+      expect(
+        within(container).getByLabelText('Decrement').textContent?.trim(),
+      ).toBe('');
+    });
+
+    it('falls back to the default +/- glyphs when nothing is projected', () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { ariaLabel: 'Quantity' },
+      });
+
+      expect(
+        within(container).getByLabelText('Increment').textContent?.trim(),
+      ).toBe('+');
+      expect(
+        within(container).getByLabelText('Decrement').textContent?.trim(),
+      ).toBe('−');
+    });
+  });
+
   describe('edge cases', () => {
     it('leaves the value unchanged when step is zero or negative', async () => {
       const { container } = renderWithValue(5, { inputs: { step: 0 } });
@@ -467,7 +632,9 @@ describe('DynamoInputNumber', () => {
       const { container, componentInstance } = renderDynamoComponent(
         ReactiveFormHostComponent,
       );
-      const input = within(container).getByRole('spinbutton') as HTMLInputElement;
+      const input = within(container).getByRole(
+        'spinbutton',
+      ) as HTMLInputElement;
       input.focus();
 
       await userEvent.tab();

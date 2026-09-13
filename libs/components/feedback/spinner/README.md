@@ -20,6 +20,7 @@ protected readonly isLoading = signal(true);
 | ----------- | --------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `size`      | `DynamoSize`          | `'md'`      |                                                                                                                                                                                                 |
 | `ariaLabel` | `string \| undefined` | `undefined` | Accessible name for a standalone, announced loading indicator. Leave unset when the spinner is embedded inside something that already announces its own busy state (e.g. Button's `aria-busy`). |
+| `speed`     | `string \| undefined` | `undefined` | Overrides `animate-spin`'s default 1s rotation duration — a raw CSS duration (e.g. `'1.5s'`, `'500ms'`). Unset keeps Tailwind's default.                                                        |
 
 ## Outputs
 

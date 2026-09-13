@@ -10,6 +10,7 @@ import {
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'prefix-suffix', title: 'Prefix & Suffix' },
+  { id: 'multiple-addons', title: 'Multiple Addons' },
   { id: 'invalid', title: 'Invalid' },
 ];
 
@@ -57,6 +58,43 @@ const API: ApiTableRow[] = [
           &lt;dg-input-text [unstyled]="true" styleClass="min-w-0 flex-1
           bg-transparent outline-none" /&gt; &lt;span suffix&gt;USD&lt;/span&gt;
           &lt;/dg-input-group&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="multiple-addons"
+        title="Multiple Addons"
+        description="Each slot accepts more than one projected element — they're laid out with a small gap, e.g. an icon and a unit label sharing the same [prefix]."
+      >
+        <div preview class="w-48">
+          <dg-input-group>
+            <svg
+              prefix
+              viewBox="0 0 20 20"
+              class="h-4 w-4"
+              fill="currentColor"
+              [attr.aria-hidden]="true"
+            >
+              <path
+                d="M10.75 10.818v-4.6c0-.505-.409-.914-.914-.914h-.457a.914.914 0 00-.914.914v4.6"
+              />
+            </svg>
+            <span prefix>$</span>
+            <dg-input-text
+              [unstyled]="true"
+              styleClass="min-w-0 flex-1 bg-transparent outline-none"
+              placeholder="0.00"
+              ariaLabel="Amount in USD"
+            />
+            <span suffix>USD</span>
+            <span suffix>/mo</span>
+          </dg-input-group>
+        </div>
+        <div code>
+          &lt;dg-input-group&gt; &lt;svg prefix&gt;…&lt;/svg&gt; &lt;span
+          prefix&gt;$&lt;/span&gt; &lt;dg-input-text [unstyled]="true" /&gt;
+          &lt;span suffix&gt;USD&lt;/span&gt; &lt;span
+          suffix&gt;/mo&lt;/span&gt; &lt;/dg-input-group&gt;
         </div>
       </docs-example>
 

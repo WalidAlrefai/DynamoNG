@@ -8,11 +8,17 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'placeholder', title: 'Placeholder' },
+  { id: 'read-only', title: 'Read-Only' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  { name: 'placeholder', type: 'string | undefined', default: 'undefined' },
+  { name: 'readOnly', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -40,7 +46,44 @@ const API: ApiTableRow[] = [
         <div preview class="max-w-lg">
           <dg-editor [formControl]="control" ariaLabel="Demo editor" />
         </div>
-        <div code>&lt;dg-editor [formControl]="control" ariaLabel="Notes" /&gt;</div>
+        <div code>
+          &lt;dg-editor [formControl]="control" ariaLabel="Notes" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="placeholder"
+        title="Placeholder"
+        description="placeholder shows via CSS whenever the content is empty — the contenteditable equivalent of a native placeholder."
+      >
+        <div preview class="max-w-lg">
+          <dg-editor
+            [formControl]="emptyControl"
+            ariaLabel="Notes"
+            placeholder="Write your notes here..."
+          />
+        </div>
+        <div code>
+          &lt;dg-editor [formControl]="control" placeholder="Write your notes
+          here..." /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="read-only"
+        title="Read-Only"
+        description="readOnly keeps the content visible, focusable, and selectable, but blocks typing and toolbar commands — unlike disabled, it isn't dimmed."
+      >
+        <div preview class="max-w-lg">
+          <dg-editor
+            [formControl]="readOnlyControl"
+            ariaLabel="Notes"
+            [readOnly]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-editor [formControl]="control" [readOnly]="true" /&gt;
+        </div>
       </docs-example>
 
       <docs-api-table api [rows]="apiRows" />
@@ -53,4 +96,11 @@ export class EditorDocPage {
   protected readonly control = new FormControl('<p>Hello <b>world</b></p>', {
     nonNullable: true,
   });
+  protected readonly emptyControl = new FormControl('', {
+    nonNullable: true,
+  });
+  protected readonly readOnlyControl = new FormControl(
+    '<p>This content cannot be edited.</p>',
+    { nonNullable: true },
+  );
 }

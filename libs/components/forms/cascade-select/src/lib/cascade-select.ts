@@ -20,6 +20,7 @@ import {
   DynamoListboxBase,
   buildListboxPositions,
   selectChevronStyles,
+  selectClearButtonStyles,
   selectPanelWrapperStyles,
   selectPanelWrapperVirtualStyles,
   selectTriggerButtonStyles,
@@ -130,6 +131,8 @@ export class DynamoCascadeSelect<TValue = string>
    *  drives it. */
   readonly loading = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoSelect`'s own `clearable`. */
+  readonly clearable = input(false);
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model<TValue | null>(null);
   /** Fires once a leaf node is committed (click or keyboard Enter/Space) with the full node object — not while drilling into a branch. */
@@ -213,6 +216,7 @@ export class DynamoCascadeSelect<TValue = string>
         ),
   );
   protected readonly triggerButtonClasses = selectTriggerButtonStyles;
+  protected readonly clearButtonClasses = selectClearButtonStyles;
   protected readonly chevronClasses = computed(() =>
     selectChevronStyles({ open: this.isOpen() }),
   );
@@ -352,6 +356,13 @@ export class DynamoCascadeSelect<TValue = string>
     this.activeLevelIndex.set(0);
     this.typeahead.clear();
     this.onTouchedFn();
+  }
+
+  protected clearValue(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.isDisabled()) return;
+    this.value.set(null);
+    this.onChangeFn(null);
   }
 
   protected selectNode(node: DynamoTreeNode<TValue>): void {

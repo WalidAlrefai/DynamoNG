@@ -20,19 +20,20 @@ protected onItemSelect(node: DynamoTreeNode<string>): void { ... }
 
 ## Inputs
 
-| Input                   | Type                                  | Default       | Description                                                                                            |
-| ----------------------- | ------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
-| `nodes`                 | `DynamoTreeNode<TValue>[]` (required) | —             | The hierarchy. A node's `value` (falling back to its `id`) is what gets committed.                     |
-| `placeholder`           | `string`                              | `'Select...'` |                                                                                                        |
-| `size`                  | `DynamoSize`                          | `'md'`        |                                                                                                        |
-| `invalid`               | `boolean`                             | `false`       |                                                                                                        |
-| `disabled`              | `boolean` (model)                     | `false`       | Also driven by Angular forms.                                                                          |
-| `loading`               | `boolean`                             | `false`       | Renders a small spinner in the trigger and makes the component fully non-interactive, like `disabled`. |
-| `ariaLabel`             | `string \| undefined`                 | `undefined`   |                                                                                                        |
-| `value`                 | `TValue \| null` (model)              | `null`        | Also driven by Angular forms.                                                                          |
-| `virtualScroll`         | `boolean`                             | `false`       | Renders every open level's row list through `@dynamong/virtual-scroll`.                                |
-| `virtualScrollItemSize` | `number`                              | `36`          |                                                                                                        |
-| `virtualScrollHeight`   | `number`                              | `240`         |                                                                                                        |
+| Input                   | Type                                  | Default       | Description                                                                                                       |
+| ----------------------- | ------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `nodes`                 | `DynamoTreeNode<TValue>[]` (required) | —             | The hierarchy. A node's `value` (falling back to its `id`) is what gets committed.                                |
+| `placeholder`           | `string`                              | `'Select...'` |                                                                                                                   |
+| `size`                  | `DynamoSize`                          | `'md'`        |                                                                                                                   |
+| `invalid`               | `boolean`                             | `false`       |                                                                                                                   |
+| `disabled`              | `boolean` (model)                     | `false`       | Also driven by Angular forms.                                                                                     |
+| `loading`               | `boolean`                             | `false`       | Renders a small spinner in the trigger and makes the component fully non-interactive, like `disabled`.            |
+| `ariaLabel`             | `string \| undefined`                 | `undefined`   |                                                                                                                   |
+| `clearable`             | `boolean`                             | `false`       | Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoSelect`'s own `clearable`. |
+| `value`                 | `TValue \| null` (model)              | `null`        | Also driven by Angular forms.                                                                                     |
+| `virtualScroll`         | `boolean`                             | `false`       | Renders every open level's row list through `@dynamong/virtual-scroll`.                                           |
+| `virtualScrollItemSize` | `number`                              | `36`          |                                                                                                                   |
+| `virtualScrollHeight`   | `number`                              | `240`         |                                                                                                                   |
 
 ## Outputs
 

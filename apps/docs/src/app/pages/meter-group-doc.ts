@@ -18,13 +18,23 @@ const STORAGE: DynamoMeterItem[] = [
 const EXAMPLES: DocExampleRef[] = [
   { id: 'horizontal', title: 'Horizontal' },
   { id: 'vertical', title: 'Vertical' },
+  { id: 'label-position', title: 'Label Position' },
 ];
 
 const API: ApiTableRow[] = [
   { name: 'value', type: 'DynamoMeterItem[] (required)', default: '—' },
   { name: 'max', type: 'number', default: '100' },
-  { name: 'orientation', type: "'horizontal' | 'vertical'", default: "'horizontal'" },
+  {
+    name: 'orientation',
+    type: "'horizontal' | 'vertical'",
+    default: "'horizontal'",
+  },
   { name: 'showLegend', type: 'boolean', default: 'true' },
+  {
+    name: 'labelPosition',
+    type: "'start' | 'end'",
+    default: "'end'",
+  },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
 ];
 
@@ -47,13 +57,15 @@ const API: ApiTableRow[] = [
         <div preview class="max-w-md">
           <dg-meter-group [value]="storage" ariaLabel="Storage breakdown" />
         </div>
-        <div code>&lt;dg-meter-group [value]="storage" ariaLabel="Storage" /&gt;</div>
+        <div code>
+          &lt;dg-meter-group [value]="storage" ariaLabel="Storage" /&gt;
+        </div>
       </docs-example>
 
       <docs-example
         exampleId="vertical"
         title="Vertical"
-        description="orientation=&quot;vertical&quot; stacks the segments bottom to top."
+        description='orientation="vertical" stacks the segments bottom to top.'
       >
         <div preview class="max-w-md">
           <dg-meter-group
@@ -67,15 +79,31 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="label-position"
+        title="Label Position"
+        description="labelPosition places the legend before or after the track."
+      >
+        <div preview class="max-w-md">
+          <dg-meter-group
+            [value]="storage"
+            labelPosition="start"
+            ariaLabel="Storage breakdown"
+          />
+        </div>
+        <div code>
+          &lt;dg-meter-group [value]="storage" labelPosition="start" /&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
           Each <code class="font-mono">DynamoMeterItem</code> is
           <code class="font-mono"
             >&#123; label, value, severity?, color? &#125;</code
-          >. Segments that would sum past
-          <code class="font-mono">max</code> are scaled down proportionally so
-          the bar never overflows.
+          >. Segments that would sum past <code class="font-mono">max</code> are
+          scaled down proportionally so the bar never overflows.
         </p>
       </div>
     </docs-examples-layout>

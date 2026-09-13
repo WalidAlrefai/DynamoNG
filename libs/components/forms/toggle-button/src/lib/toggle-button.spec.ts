@@ -1,4 +1,5 @@
 import { Component, model } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -17,6 +18,18 @@ import { DynamoToggleButtonHarness } from './toggle-button.harness';
 })
 class ToggleButtonTwoWayHostComponent {
   readonly value = model(false);
+}
+
+@Component({
+  selector: 'dg-toggle-button-reactive-form-host',
+  standalone: true,
+  imports: [DynamoToggleButton, ReactiveFormsModule],
+  template: `<dg-toggle-button [formControl]="control" ariaLabel="Bold"
+    >Bold</dg-toggle-button
+  >`,
+})
+class ReactiveFormHostComponent {
+  readonly control = new FormControl(false, { nonNullable: true });
 }
 
 describe('DynamoToggleButton', () => {
@@ -41,9 +54,8 @@ describe('DynamoToggleButton', () => {
 
   describe('user interactions', () => {
     it('clicking toggles pressed true, then false, then true again', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(
-        DynamoToggleButton,
-      );
+      const { fixture, container, componentInstance } =
+        renderDynamoComponent(DynamoToggleButton);
       const button = within(container).getByRole('button');
 
       button.click();
@@ -113,10 +125,9 @@ describe('DynamoToggleButton', () => {
 
   describe('template behavior', () => {
     it('renders solid + the configured severity when pressed', () => {
-      const { fixture, container } = renderDynamoComponent(
-        DynamoToggleButton,
-        { inputs: { severity: 'danger' } },
-      );
+      const { fixture, container } = renderDynamoComponent(DynamoToggleButton, {
+        inputs: { severity: 'danger' },
+      });
 
       within(container).getByRole('button').click();
       fixture.detectChanges();
@@ -165,14 +176,64 @@ describe('DynamoToggleButton', () => {
     });
 
     it('accepts every documented size without throwing', () => {
-      const { componentInstance, setInputs } = renderDynamoComponent(
-        DynamoToggleButton,
-      );
+      const { componentInstance, setInputs } =
+        renderDynamoComponent(DynamoToggleButton);
 
       for (const size of ['sm', 'md', 'lg'] as const) {
         setInputs({ size });
         expect(componentInstance.size()).toBe(size);
       }
+    });
+  });
+
+  describe('ControlValueAccessor / forms integration', () => {
+    it('propagates a click to a bound reactive FormControl', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      within(container).getByRole('button').click();
+      fixture.detectChanges();
+
+      expect(componentInstance.control.value).toBe(true);
+    });
+
+    it('marks the FormControl as touched after a click', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      expect(componentInstance.control.touched).toBe(false);
+      within(container).getByRole('button').click();
+      fixture.detectChanges();
+
+      expect(componentInstance.control.touched).toBe(true);
+    });
+
+    it('reflects an externally-set FormControl value (writeValue)', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      componentInstance.control.setValue(true);
+      fixture.detectChanges();
+
+      expect(
+        within(container).getByRole('button').getAttribute('aria-pressed'),
+      ).toBe('true');
+    });
+
+    it('disables the button when the bound FormControl is disabled', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      componentInstance.control.disable();
+      fixture.detectChanges();
+
+      expect(
+        (within(container).getByRole('button') as HTMLButtonElement).disabled,
+      ).toBe(true);
     });
   });
 

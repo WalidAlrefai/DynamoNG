@@ -12,16 +12,22 @@ import {
   viewChild,
 } from '@angular/core';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
+import { FormsModule } from '@angular/forms';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import {
   DynamoListboxBase,
   buildListboxPositions,
   selectChevronStyles,
+  selectFilterFieldWrapperStyles,
+  selectFilterIconStyles,
+  selectFilterInputExtraClasses,
+  selectFilterWrapperStyles,
   selectPanelWrapperStyles,
   selectPanelWrapperVirtualStyles,
   selectTriggerButtonStyles,
   selectTriggerStyles,
 } from '@dynamong/select';
+import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoTreeNode } from '@dynamong/tree';
@@ -114,11 +120,74 @@ function findEnabledEntryIndex<TValue>(
   return null;
 }
 
+function nodeMatchesFilter<TValue>(
+  node: DynamoTreeNode<TValue>,
+  query: string,
+): boolean {
+  return node.label.toLowerCase().includes(query);
+}
+
+function subtreeMatchesFilter<TValue>(
+  node: DynamoTreeNode<TValue>,
+  query: string,
+): boolean {
+  if (nodeMatchesFilter(node, query)) return true;
+  return !!node.children?.some((child) => subtreeMatchesFilter(child, query));
+}
+
+// Ids of every branch that must be force-expanded to keep a matching
+// descendant visible, regardless of the user's own `expandedIds` selection —
+// a branch that itself matches only reveals its children when the user has
+// actually expanded it.
+function collectForcedExpandedIds<TValue>(
+  nodes: DynamoTreeNode<TValue>[],
+  query: string,
+): Set<string> {
+  const ids = new Set<string>();
+  const visit = (list: DynamoTreeNode<TValue>[]): boolean => {
+    let anyMatch = false;
+    for (const node of list) {
+      const childMatches = node.children?.length ? visit(node.children) : false;
+      if (childMatches) ids.add(node.id);
+      if (nodeMatchesFilter(node, query) || childMatches) anyMatch = true;
+    }
+    return anyMatch;
+  };
+  visit(nodes);
+  return ids;
+}
+
+// Same depth-first walk as `flattenVisibleNodes`, but skips branches with no
+// match anywhere in their subtree and relies on `isNodeExpanded` (which
+// already folds in `collectForcedExpandedIds`) to decide what to descend into.
+function flattenFilteredNodes<TValue>(
+  nodes: DynamoTreeNode<TValue>[],
+  isNodeExpanded: (id: string) => boolean,
+  query: string,
+): DynamoTreeSelectEntry<TValue>[] {
+  const result: DynamoTreeSelectEntry<TValue>[] = [];
+  const walk = (
+    list: DynamoTreeNode<TValue>[],
+    depth: number,
+    parentId: string | null,
+  ): void => {
+    for (const node of list) {
+      if (!subtreeMatchesFilter(node, query)) continue;
+      result.push({ node, depth, parentId });
+      if (node.children?.length && isNodeExpanded(node.id)) {
+        walk(node.children, depth + 1, node.id);
+      }
+    }
+  };
+  walk(nodes, 0, null);
+  return result;
+}
+
 @Component({
   selector: 'dg-tree-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSpinner, DynamoVirtualScroll],
+  imports: [FormsModule, DynamoInputText, DynamoSpinner, DynamoVirtualScroll],
   templateUrl: './tree-select.html',
   providers: [
     {
@@ -161,6 +230,16 @@ export class DynamoTreeSelect<TValue = string>
   readonly virtualScrollItemSize = input(36);
   /** Viewport height in px when virtualized — matches `selectPanelWrapperStyles`' own `max-h-60` (240px). */
   readonly virtualScrollHeight = input(240);
+  /** HTML `readonly` semantics: the trigger stays focusable and the panel
+   *  still opens for browsing, but committing a node is blocked. Unlike
+   *  `disabled`, doesn't dim it or remove it from the tab order. */
+  readonly readOnly = input(false);
+  /** Opt-in filter box rendered above the tree — mirrors `DynamoSelect`'s `filterable`. Matching branches auto-reveal regardless of `expandedIds`. */
+  readonly filterable = input(false);
+  readonly filterText = model('');
+  readonly filterPlaceholder = input('Search...');
+  /** Shown when `nodes()` is non-empty but the filter matched nothing. */
+  readonly noResultsMessage = input('No matching options');
 
   private readonly triggerEl =
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
@@ -178,8 +257,25 @@ export class DynamoTreeSelect<TValue = string>
   };
   private readonly typeahead = createTypeaheadBuffer();
 
-  protected readonly visibleEntries = computed(() =>
-    flattenVisibleNodes(this.nodes(), this.expandedIds()),
+  protected readonly activeFilterQuery = computed(() =>
+    this.filterable() ? this.filterText().trim().toLowerCase() : '',
+  );
+  private readonly forcedExpandedIds = computed(() => {
+    const query = this.activeFilterQuery();
+    return query ? collectForcedExpandedIds(this.nodes(), query) : null;
+  });
+  protected readonly visibleEntries = computed(() => {
+    const query = this.activeFilterQuery();
+    return query
+      ? flattenFilteredNodes(this.nodes(), (id) => this.isExpanded(id), query)
+      : flattenVisibleNodes(this.nodes(), this.expandedIds());
+  });
+  /** Distinct from a genuinely empty `nodes()`, which renders no message. */
+  protected readonly showNoResults = computed(
+    () =>
+      this.nodes().length > 0 &&
+      this.activeFilterQuery() !== '' &&
+      this.visibleEntries().length === 0,
   );
   protected readonly isVirtualized = computed(() => this.virtualScroll());
   protected readonly selectedNode = computed(() =>
@@ -221,6 +317,10 @@ export class DynamoTreeSelect<TValue = string>
   );
   protected readonly expandButtonClasses = treeSelectExpandButtonStyles;
   protected readonly expandSpacerClasses = treeSelectExpandSpacerStyles;
+  protected readonly filterWrapperClasses = selectFilterWrapperStyles;
+  protected readonly filterFieldWrapperClasses = selectFilterFieldWrapperStyles;
+  protected readonly filterIconClasses = selectFilterIconStyles;
+  protected readonly filterInputExtraClasses = selectFilterInputExtraClasses;
 
   constructor() {
     super();
@@ -267,7 +367,9 @@ export class DynamoTreeSelect<TValue = string>
   }
 
   protected isExpanded(id: string): boolean {
-    return this.expandedIds().includes(id);
+    return (
+      this.expandedIds().includes(id) || !!this.forcedExpandedIds()?.has(id)
+    );
   }
 
   protected isSelected(node: DynamoTreeNode<TValue>): boolean {
@@ -319,6 +421,7 @@ export class DynamoTreeSelect<TValue = string>
 
   protected close(): void {
     this.isOpen.set(false);
+    this.filterText.set('');
     this.typeahead.clear();
     this.onTouchedFn();
   }
@@ -331,7 +434,7 @@ export class DynamoTreeSelect<TValue = string>
   }
 
   protected selectNode(node: DynamoTreeNode<TValue>): void {
-    if (node.disabled) {
+    if (node.disabled || this.readOnly()) {
       return;
     }
     const next = nodeValue(node);
@@ -444,12 +547,44 @@ export class DynamoTreeSelect<TValue = string>
     }
   }
 
+  protected onFilterInputChange(value: string): void {
+    this.filterText.set(value);
+    const entries = this.visibleEntries();
+    this.activeIndex.set(findEnabledEntryIndex(entries, -1, 1) ?? -1);
+    this.scrollActiveIntoView();
+  }
+
+  protected onFilterKeydown(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'Escape':
+        event.preventDefault();
+        this.close();
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        this.moveActive(1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.moveActive(-1);
+        break;
+      case 'Enter': {
+        event.preventDefault();
+        const active = this.visibleEntries()[this.activeIndex()];
+        if (active) this.selectNode(active.node);
+        break;
+      }
+    }
+  }
+
+  /** Typeahead only applies to the non-filterable path — once `filterable()` is true, the filter box's own `onFilterKeydown` supersedes it. */
   private handleTypeahead(event: KeyboardEvent): void {
     if (
       event.key.length !== 1 ||
       event.ctrlKey ||
       event.metaKey ||
-      event.altKey
+      event.altKey ||
+      this.filterable()
     ) {
       return;
     }

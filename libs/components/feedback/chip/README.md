@@ -25,8 +25,11 @@ protected onRemove(tag: Tag): void { ... }
 | `size`            | `DynamoSize`        | `'md'`      | `'sm' \| 'md' \| 'lg'`.                                                                                                              |
 | `removable`       | `boolean`           | `false`     | Shows a remove button. The chip itself is never removed from the DOM by this component — the consumer handles removal via `removed`. |
 | `removeAriaLabel` | `string`            | `'Remove'`  | `aria-label` for the remove button.                                                                                                  |
+| `disabled`        | `boolean`           | `false`     | Dims the chip and disables the remove button; the click/keyboard remove path becomes a no-op.                                        |
 
-Content is projected via plain `<ng-content>`.
+Content is projected via plain `<ng-content>`. A projected `[icon]`-attributed
+element (e.g. an icon component or `<img>`) renders ahead of the label:
+`<dg-chip><dg-icon-check icon />Verified</dg-chip>`.
 
 ## Outputs
 

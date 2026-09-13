@@ -3,5 +3,6 @@
   "dest": "../../../../dist/libs/components/overlay/scroll-top",
   "lib": {
     "entryFile": "src/index.ts"
-  }
+  },
+  "allowedNonPeerDependencies": ["class-variance-authority"]
 }

@@ -23,14 +23,15 @@ protected onItemSelect(event: DynamoPicklistItemSelectEvent<string>): void { ...
 
 ## Inputs
 
-| Input         | Type                                   | Default       | Description                                                                    |
-| ------------- | -------------------------------------- | ------------- | ------------------------------------------------------------------------------ |
-| `source`      | `DynamoSelectOption<TValue>[]` (model) | `[]`          | Two-way bindable. Options currently in the left/available panel.               |
-| `target`      | `DynamoSelectOption<TValue>[]` (model) | `[]`          | Two-way bindable. Options currently in the right/selected panel.               |
-| `size`        | `DynamoPicklistSize`                   | `'md'`        |                                                                                |
-| `disabled`    | `boolean`                              | `false`       | Disables checkbox toggling, drag-and-drop, move buttons, and keyboard reorder. |
-| `sourceLabel` | `string`                               | `'Available'` | Left panel heading; also used to build move/reorder button `aria-label`s.      |
-| `targetLabel` | `string`                               | `'Selected'`  | Right panel heading; also used to build move/reorder button `aria-label`s.     |
+| Input         | Type                                   | Default       | Description                                                                                                                                                                                                            |
+| ------------- | -------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`      | `DynamoSelectOption<TValue>[]` (model) | `[]`          | Two-way bindable. Options currently in the left/available panel.                                                                                                                                                       |
+| `target`      | `DynamoSelectOption<TValue>[]` (model) | `[]`          | Two-way bindable. Options currently in the right/selected panel.                                                                                                                                                       |
+| `size`        | `DynamoPicklistSize`                   | `'md'`        |                                                                                                                                                                                                                        |
+| `disabled`    | `boolean`                              | `false`       | Disables checkbox toggling, drag-and-drop, move buttons, and keyboard reorder.                                                                                                                                         |
+| `readOnly`    | `boolean`                              | `false`       | HTML `readonly` semantics: rows stay visible/focusable/navigable, but moving items (drag, arrows, buttons) and selection are all blocked. Unlike `disabled`, doesn't dim either panel or remove it from the tab order. |
+| `sourceLabel` | `string`                               | `'Available'` | Left panel heading; also used to build move/reorder button `aria-label`s.                                                                                                                                              |
+| `targetLabel` | `string`                               | `'Selected'`  | Right panel heading; also used to build move/reorder button `aria-label`s.                                                                                                                                             |
 
 ## Outputs
 

@@ -23,16 +23,18 @@ protected onItemSelect(event: DynamoMenuItemSelectEvent): void { ... }
 
 ## Inputs
 
-| Input       | Type                        | Default          | Description                                                                           |
-| ----------- | --------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
-| `label`     | `string` (required)         | —                | Text of the primary button.                                                           |
-| `severity`  | `DynamoButtonSeverity`      | `'primary'`      | Applied to the primary button and, as a color cue, the chevron trigger.               |
-| `variant`   | `DynamoButtonVariant`       | `'solid'`        |                                                                                       |
-| `size`      | `DynamoButtonSize`          | `'md'`           |                                                                                       |
-| `disabled`  | `boolean`                   | `false`          | Disables the primary button and the chevron trigger.                                  |
-| `position`  | `DynamoSplitButtonPosition` | `'bottom-start'` | Preferred panel corner; the other three corners are tried as CDK collision fallbacks. |
-| `ariaLabel` | `string \| undefined`       | `undefined`      | Accessible name for the chevron trigger; defaults to `'More actions'`.                |
-| `open`      | `boolean` (model)           | `false`          | Two-way bindable panel open state.                                                    |
+| Input                | Type                        | Default          | Description                                                                           |
+| -------------------- | --------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
+| `label`              | `string` (required)         | —                | Text of the primary button.                                                           |
+| `severity`           | `DynamoButtonSeverity`      | `'primary'`      | Applied to the primary button and, as a color cue, the chevron trigger.               |
+| `variant`            | `DynamoButtonVariant`       | `'solid'`        |                                                                                       |
+| `size`               | `DynamoButtonSize`          | `'md'`           |                                                                                       |
+| `disabled`           | `boolean`                   | `false`          | Disables the primary button and the chevron trigger.                                  |
+| `buttonDisabled`     | `boolean`                   | `false`          | Disables only the primary action button, leaving the dropdown toggle usable.          |
+| `menuButtonDisabled` | `boolean`                   | `false`          | Disables only the dropdown-toggle button, leaving the primary action usable.          |
+| `position`           | `DynamoSplitButtonPosition` | `'bottom-start'` | Preferred panel corner; the other three corners are tried as CDK collision fallbacks. |
+| `ariaLabel`          | `string \| undefined`       | `undefined`      | Accessible name for the chevron trigger; defaults to `'More actions'`.                |
+| `open`               | `boolean` (model)           | `false`          | Two-way bindable panel open state.                                                    |
 
 ## Outputs
 

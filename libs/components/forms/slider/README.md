@@ -1,7 +1,9 @@
 # @dynamong/slider
 
 A draggable range slider — click the track to jump to a value, drag the
-thumb, or use the keyboard once it's focused.
+thumb, or use the keyboard once it's focused. Implements
+`ControlValueAccessor`, so it works with `formControl`/`ngModel` in
+addition to `[(value)]`.
 
 ## Usage
 
@@ -17,32 +19,34 @@ thumb, or use the keyboard once it's focused.
 
 ## Inputs
 
-| Input       | Type                  | Default     | Description                                                                                                |
-| ----------- | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
-| `value`     | `number` (model)      | `0`         | Two-way bindable.                                                                                          |
-| `min`       | `number`              | `0`         |                                                                                                            |
-| `max`       | `number`              | `100`       |                                                                                                            |
-| `step`      | `number`              | `1`         | Values are snapped to the nearest step (relative to `min`) before clamping. `step <= 0` disables snapping. |
-| `disabled`  | `boolean`             | `false`     |                                                                                                            |
-| `size`      | `DynamoSize`          | `'md'`      |                                                                                                            |
-| `severity`  | `DynamoSeverity`      | `'primary'` | Color of the fill and thumb.                                                                               |
-| `ariaLabel` | `string \| undefined` | `undefined` | Defaults to `'Slider'` when unset.                                                                         |
+| Input       | Type                  | Default     | Description                                                                                                                                                                                 |
+| ----------- | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`     | `number` (model)      | `0`         | Two-way bindable; also driven by Angular forms via `writeValue`.                                                                                                                            |
+| `min`       | `number`              | `0`         |                                                                                                                                                                                             |
+| `max`       | `number`              | `100`       |                                                                                                                                                                                             |
+| `step`      | `number`              | `1`         | Values are snapped to the nearest step (relative to `min`) before clamping. `step <= 0` disables snapping.                                                                                  |
+| `disabled`  | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                      |
+| `readOnly`  | `boolean`             | `false`     | HTML `readonly` semantics: the thumb stays visible/focusable, but dragging and keyboard changes are both blocked. Unlike `disabled`, doesn't dim the track or remove it from the tab order. |
+| `size`      | `DynamoSize`          | `'md'`      |                                                                                                                                                                                             |
+| `severity`  | `DynamoSeverity`      | `'primary'` | Color of the fill and thumb.                                                                                                                                                                |
+| `ariaLabel` | `string \| undefined` | `undefined` | Defaults to `'Slider'` when unset.                                                                                                                                                          |
 
 ## Outputs
 
-| Output        | Payload  | Fires when                                                                                             |
-| ------------- | -------- | ------------------------------------------------------------------------------------------------------ |
-| `valueChange` | `number` | `value` changes (auto-generated by `model()`) — from a track click, a drag, or a keyboard interaction. |
+| Output           | Payload   | Fires when                                                                                             |
+| ---------------- | --------- | ------------------------------------------------------------------------------------------------------ |
+| `valueChange`    | `number`  | `value` changes (auto-generated by `model()`) — from a track click, a drag, or a keyboard interaction. |
+| `disabledChange` | `boolean` | `disabled` changes (auto-generated by `model()`).                                                      |
 
 ## Accessibility
 
-- `role="slider"` thumb with `aria-valuenow`/`aria-valuemin`/`aria-valuemax`/`aria-disabled`.
+- `role="slider"` thumb with `aria-valuenow`/`aria-valuemin`/`aria-valuemax`/`aria-disabled`/`aria-readonly`.
 - Keyboard (thumb focused): `ArrowRight`/`ArrowUp` and `ArrowLeft`/`ArrowDown` step by `step`, `PageUp`/`PageDown` step by `step * 10`, `Home`/`End` jump to `min`/`max`.
 - Pointer: pressing anywhere on the track jumps the thumb there and starts a drag (via pointer capture); the track and fill are non-focusable — the thumb is the sole tab stop.
 
 ## Tier / dependencies
 
-- `tier:0`. Peer dependencies: none beyond Angular core/CDK.
+- `tier:0`. Peer dependencies: `@angular/forms` (`ControlValueAccessor`).
 
 ## Running unit tests
 

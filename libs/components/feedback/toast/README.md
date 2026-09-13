@@ -42,15 +42,21 @@ export class SaveButton {
 
 ## Methods
 
-| Method                       | Returns             | Description                                                    |
-| ---------------------------- | ------------------- | -------------------------------------------------------------- |
-| `show(options)`              | `string` (toast id) | Shows a toast with full control over every option.             |
-| `success(message, options?)` | `string`            | Shorthand for `show()` with `severity: 'success'`.             |
-| `info(message, options?)`    | `string`            | Shorthand for `show()` with `severity: 'info'`.                |
-| `warning(message, options?)` | `string`            | Shorthand for `show()` with `severity: 'warning'`.             |
-| `error(message, options?)`   | `string`            | Shorthand for `show()` with `severity: 'danger'`.              |
-| `dismiss(id)`                | `void`              | Dismisses one toast early.                                     |
-| `dismissAll()`               | `void`              | Dismisses every currently-visible toast, across all positions. |
+| Method                       | Returns             | Description                                                                                                                                             |
+| ---------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show(options)`              | `string` (toast id) | Shows a toast with full control over every option.                                                                                                      |
+| `success(message, options?)` | `string`            | Shorthand for `show()` with `severity: 'success'`.                                                                                                      |
+| `info(message, options?)`    | `string`            | Shorthand for `show()` with `severity: 'info'`.                                                                                                         |
+| `warning(message, options?)` | `string`            | Shorthand for `show()` with `severity: 'warning'`.                                                                                                      |
+| `error(message, options?)`   | `string`            | Shorthand for `show()` with `severity: 'danger'`.                                                                                                       |
+| `dismiss(id)`                | `void`              | Dismisses one toast early.                                                                                                                              |
+| `dismissAll()`               | `void`              | Dismisses every currently-visible toast, across all positions.                                                                                          |
+| `pause(id)`                  | `void`              | Pauses a toast's auto-dismiss countdown. Called automatically on pointer hover; a no-op for a sticky (`duration: 0`) toast or one already paused.       |
+| `resume(id)`                 | `void`              | Resumes a paused toast's countdown for whatever time was left when it was paused (not the full duration). Called automatically when the pointer leaves. |
+
+Hovering a toast card pauses its auto-dismiss countdown so it doesn't
+disappear while you're reading it; moving the pointer away resumes the
+countdown for the remaining time.
 
 ## Accessibility
 

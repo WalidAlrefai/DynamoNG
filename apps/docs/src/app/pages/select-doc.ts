@@ -37,6 +37,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'grouped', title: 'Grouped Options' },
   { id: 'sizes', title: 'Sizes' },
   { id: 'disabled', title: 'Disabled' },
+  { id: 'readonly', title: 'Read-only' },
   { id: 'invalid', title: 'Invalid' },
   { id: 'forms', title: 'Reactive Forms' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
@@ -50,6 +51,7 @@ const API_ROWS: ApiTableRow[] = [
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
   { name: 'invalid', type: 'boolean', default: 'false' },
+  { name: 'readOnly', type: 'boolean', default: 'false' },
   { name: 'clearable', type: 'boolean', default: 'false' },
   {
     name: 'position',
@@ -59,7 +61,11 @@ const API_ROWS: ApiTableRow[] = [
   { name: 'filterable', type: 'boolean', default: 'false' },
   { name: 'filterText', type: 'string (model)', default: "''" },
   { name: 'filterPlaceholder', type: 'string', default: "'Search...'" },
-  { name: 'noResultsMessage', type: 'string', default: "'No matching options'" },
+  {
+    name: 'noResultsMessage',
+    type: 'string',
+    default: "'No matching options'",
+  },
   { name: 'virtualScroll', type: 'boolean', default: 'false' },
   { name: 'virtualScrollItemSize', type: 'number', default: '36' },
   { name: 'virtualScrollHeight', type: 'number', default: '240' },
@@ -100,6 +106,12 @@ const DISABLED_CODE = `<!-- whole control -->
 <dg-select [options]="countries" [disabled]="true" placeholder="Choose a country" />
 
 <!-- a single option: { label: 'Japan', value: 'jp', disabled: true } -->`;
+
+const READONLY_CODE = `<dg-select
+  [options]="countries"
+  [value]="'us'"
+  ariaLabel="Country"
+  [readOnly]="true" />`;
 
 const INVALID_CODE = `<dg-select
   [options]="countries"
@@ -256,6 +268,22 @@ const VIRTUAL_SCROLL_CODE = `<dg-select
       </docs-example>
 
       <docs-example
+        exampleId="readonly"
+        title="Read-only"
+        description="readOnly keeps the trigger/panel browsable but blocks changing or clearing the value — unlike disabled, it doesn't dim the trigger or remove it from the tab order."
+        [code]="readonlyCode"
+      >
+        <div preview class="max-w-sm">
+          <dg-select
+            [options]="countries"
+            [value]="'us'"
+            ariaLabel="Country (read-only)"
+            [readOnly]="true"
+          />
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="invalid"
         title="Invalid"
         description="invalid applies the error styling for a failed validation state without changing behavior."
@@ -346,6 +374,7 @@ export class SelectDocPage {
   protected readonly groupedCode = GROUPED_CODE;
   protected readonly sizesCode = SIZES_CODE;
   protected readonly disabledCode = DISABLED_CODE;
+  protected readonly readonlyCode = READONLY_CODE;
   protected readonly invalidCode = INVALID_CODE;
   protected readonly formsCode = FORMS_CODE;
   protected readonly virtualScrollCode = VIRTUAL_SCROLL_CODE;

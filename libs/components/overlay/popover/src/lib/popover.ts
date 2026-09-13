@@ -91,6 +91,9 @@ export class DynamoPopover extends DynamoBaseComponent<DynamoPopoverPart> {
   /** Two-way bindable: `<dg-popover [(open)]="isOpen">`. */
   readonly open = model(false);
   readonly closeOnBackdropClick = input(true);
+  readonly closeOnEscape = input(true);
+  /** Moves focus into the panel (and traps it there) once shown. Set `false` to leave focus on the trigger — e.g. for a purely informational popover the user isn't expected to interact with. */
+  readonly focusOnShow = input(true);
 
   protected readonly content = contentChild.required(DynamoPopoverContent);
   private readonly triggerEl =
@@ -132,7 +135,7 @@ export class DynamoPopover extends DynamoBaseComponent<DynamoPopoverPart> {
     // same activate/release pair as DynamoDrawer.
     effect(() => {
       const panelEl = this.panel();
-      if (this.open() && panelEl) {
+      if (this.open() && panelEl && this.focusOnShow()) {
         this.activateFocusTrap(panelEl.nativeElement);
       } else if (!this.open()) {
         this.releaseFocusTrap();
@@ -171,6 +174,9 @@ export class DynamoPopover extends DynamoBaseComponent<DynamoPopoverPart> {
   }
 
   protected onEscape(): void {
+    if (!this.closeOnEscape()) {
+      return;
+    }
     this.close();
     this.triggerEl().nativeElement.focus();
   }

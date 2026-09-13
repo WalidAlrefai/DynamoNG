@@ -423,6 +423,78 @@ describe('DynamoDrawer', () => {
     });
   });
 
+  describe('modal', () => {
+    it('renders a backdrop by default', async () => {
+      const { fixture } = renderDynamoComponent(DynamoDrawer, {
+        inputs: { open: true, title: 'Title' },
+      });
+      await settleOpen(fixture);
+
+      expect(
+        document.body.querySelector('.cdk-overlay-backdrop'),
+      ).not.toBeNull();
+    });
+
+    it('renders no backdrop when modal is false', async () => {
+      const { fixture } = renderDynamoComponent(DynamoDrawer, {
+        inputs: { open: true, title: 'Title', modal: false },
+      });
+      await settleOpen(fixture);
+
+      expect(document.body.querySelector('.cdk-overlay-backdrop')).toBeNull();
+    });
+
+    it('reflects aria-modal on the panel', async () => {
+      const { fixture } = renderDynamoComponent(DynamoDrawer, {
+        inputs: { open: true, title: 'Title', modal: false },
+      });
+      await settleOpen(fixture);
+
+      expect(getPanel()?.getAttribute('aria-modal')).toBe('false');
+    });
+  });
+
+  describe('blockScroll', () => {
+    it('does not touch body overflow by default', async () => {
+      const original = document.body.style.overflow;
+      const { fixture, setInputs } = renderDynamoComponent(DynamoDrawer, {
+        inputs: { title: 'Title' },
+      });
+
+      setInputs({ open: true });
+      await settleOpen(fixture);
+
+      expect(document.body.style.overflow).toBe(original);
+    });
+
+    it('sets body overflow to hidden while open and restores it on close', async () => {
+      const original = document.body.style.overflow;
+      const { fixture, setInputs } = renderDynamoComponent(DynamoDrawer, {
+        inputs: { title: 'Title', blockScroll: true },
+      });
+
+      setInputs({ open: true });
+      await settleOpen(fixture);
+      expect(document.body.style.overflow).toBe('hidden');
+
+      setInputs({ open: false });
+      expect(document.body.style.overflow).toBe(original);
+    });
+  });
+
+  describe('closable', () => {
+    it('hides the header close button when closable is false', async () => {
+      const { fixture } = renderDynamoComponent(DynamoDrawer, {
+        inputs: { open: true, title: 'Title', closable: false },
+      });
+      await settleOpen(fixture);
+
+      expect(
+        document.body.querySelector('button[aria-label="Close drawer"]'),
+      ).toBeNull();
+    });
+  });
+
   describe('edge cases', () => {
     it('handles rapid open/close toggling without throwing', () => {
       const { setInputs } = renderDynamoComponent(DynamoDrawer, {

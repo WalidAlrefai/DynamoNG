@@ -5,7 +5,9 @@ export type DynamoPaginationPart =
   | 'root'
   | 'summary'
   | 'pageSizeSelect'
+  | 'firstButton'
   | 'prevButton'
   | 'pageButton'
   | 'ellipsis'
-  | 'nextButton';
+  | 'nextButton'
+  | 'lastButton';

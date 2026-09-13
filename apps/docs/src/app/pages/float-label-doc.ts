@@ -11,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'variants', title: 'FloatLabel Variants' },
   { id: 'ifta', title: 'IftaLabel' },
+  { id: 'invalid', title: 'Invalid State' },
 ];
 
 @Component({
@@ -38,7 +39,11 @@ const EXAMPLES: DocExampleRef[] = [
       >
         <div preview class="flex max-w-xs flex-col gap-6">
           <dg-float-label label="Name (over)" variant="over">
-            <dg-input-text [(ngModel)]="name" placeholder=" " ariaLabel="Name" />
+            <dg-input-text
+              [(ngModel)]="name"
+              placeholder=" "
+              ariaLabel="Name"
+            />
           </dg-float-label>
           <dg-float-label label="Email (in)" variant="in">
             <dg-input-text
@@ -78,6 +83,27 @@ const EXAMPLES: DocExampleRef[] = [
         <div code>
           &lt;dg-ifta-label label="Phone"&gt; &lt;dg-input-text placeholder=" "
           /&gt; &lt;/dg-ifta-label&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="invalid"
+        title="Invalid State"
+        description="When the projected control reports aria-invalid (e.g. via its own invalid input), the label automatically colors text-danger — no wiring needed on the label itself."
+      >
+        <div preview class="max-w-xs">
+          <dg-float-label label="Email" variant="over">
+            <dg-input-text
+              [(ngModel)]="invalidEmail"
+              placeholder=" "
+              ariaLabel="Email"
+              [invalid]="true"
+            />
+          </dg-float-label>
+        </div>
+        <div code>
+          &lt;dg-float-label label="Email"&gt; &lt;dg-input-text placeholder=" "
+          [invalid]="true" /&gt; &lt;/dg-float-label&gt;
         </div>
       </docs-example>
 
@@ -126,4 +152,5 @@ export class FloatLabelDocPage {
   protected email = '';
   protected company = 'Acme';
   protected phone = '';
+  protected invalidEmail = 'not-an-email';
 }

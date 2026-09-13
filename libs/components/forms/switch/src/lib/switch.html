@@ -7,8 +7,10 @@
     [checked]="checked()"
     [disabled]="disabled()"
     [attr.aria-checked]="checked()"
+    [attr.aria-readonly]="readOnly() ? 'true' : null"
     [attr.aria-label]="ariaLabel() ?? null"
     (change)="onNativeChange($event)"
+    (blur)="onBlur()"
   />
   <span [class]="trackClasses()" [attr.aria-hidden]="true">
     <span [class]="thumbClasses()"></span>

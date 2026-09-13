@@ -31,8 +31,18 @@ export const progressFillStyles = cva(
         info: 'bg-info',
         warning: 'bg-warning',
         danger: 'bg-danger',
+        // Fallback when an explicit `color` is set — the inline style wins,
+        // mirroring `DynamoMeterGroup`'s own `meterGroupSegmentStyles`.
+        none: '',
+      },
+      // No custom keyframes anywhere in this repo for a sliding indeterminate
+      // bar — `animate-pulse` + `motion-reduce:animate-none` is the same
+      // established pairing Skeleton uses for its own loading indicator.
+      indeterminate: {
+        true: 'w-full animate-pulse motion-reduce:animate-none',
+        false: '',
       },
     },
-    defaultVariants: { severity: 'primary' },
+    defaultVariants: { severity: 'primary', indeterminate: false },
   },
 );

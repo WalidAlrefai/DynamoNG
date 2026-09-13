@@ -55,6 +55,10 @@ export class DynamoOrderList<
   readonly listLabel = input('Items');
   readonly size = input<DynamoOrderListSize>('md');
   readonly disabled = input(false);
+  /** HTML `readonly` semantics: rows stay visible/focusable/navigable, but
+   *  reordering (drag, ▲/▼, ⤒/⤓) and selection are both blocked. Unlike
+   *  `disabled`, doesn't dim the list or remove it from the tab order. */
+  readonly readOnly = input(false);
   /** When true, rows carry a checkbox and click/Enter toggles multi-selection. */
   readonly selectable = input(false);
   /** Allow CDK drag reordering. */
@@ -66,11 +70,16 @@ export class DynamoOrderList<
   protected readonly selected = signal<Set<TValue>>(new Set());
 
   protected readonly canMoveUp = computed(
-    () => !this.disabled() && this.activeIndex() > 0,
+    () => !this.disabled() && !this.readOnly() && this.activeIndex() > 0,
   );
   protected readonly canMoveDown = computed(() => {
     const idx = this.activeIndex();
-    return !this.disabled() && idx >= 0 && idx < this.value().length - 1;
+    return (
+      !this.disabled() &&
+      !this.readOnly() &&
+      idx >= 0 &&
+      idx < this.value().length - 1
+    );
   });
 
   protected readonly rootClasses = computed(() =>
@@ -106,7 +115,7 @@ export class DynamoOrderList<
   protected onRowClick(index: number): void {
     if (this.disabled()) return;
     this.activeIndex.set(index);
-    if (!this.selectable()) return;
+    if (!this.selectable() || this.readOnly()) return;
     const option = this.value()[index];
     if (!option || option.disabled) return;
     const next = new Set(this.selected());
@@ -119,7 +128,7 @@ export class DynamoOrderList<
   // --- reordering (adapted from Picklist's `reorder`, minus the `side` param) ---
 
   protected reorder(direction: -1 | 1): void {
-    if (this.disabled()) return;
+    if (this.disabled() || this.readOnly()) return;
     const idx = this.activeIndex();
     const target = idx + direction;
     if (idx < 0 || target < 0 || target >= this.value().length) return;
@@ -130,7 +139,7 @@ export class DynamoOrderList<
   }
 
   protected moveTo(edge: 'top' | 'bottom'): void {
-    if (this.disabled()) return;
+    if (this.disabled() || this.readOnly()) return;
     const idx = this.activeIndex();
     if (idx < 0) return;
     const target = edge === 'top' ? 0 : this.value().length - 1;
@@ -145,7 +154,7 @@ export class DynamoOrderList<
   // its in-place array mutation — same reasoning as `picklist.ts`'s
   // `onDropped` doc comment.
   protected onDropped(event: CdkDragDrop<DynamoSelectOption<TValue>[]>): void {
-    if (this.disabled()) return;
+    if (this.disabled() || this.readOnly()) return;
     const next = [...this.value()];
     moveItemInArray(next, event.previousIndex, event.currentIndex);
     this.value.set(next);

@@ -49,6 +49,10 @@ export class DynamoPagination extends DynamoBaseComponent<DynamoPaginationPart> 
   readonly pageSize = model(10);
   readonly pageSizeOptions = input<number[]>([10, 25, 50, 100]);
   readonly showPageSizeSelector = input(true);
+  /** Also renders "first page" / "last page" jump buttons flanking prev/next. */
+  readonly showFirstLastButtons = input(false);
+  /** Renders nothing at all once there's only one page (or none) — the default (`false`) always shows the paginator, matching PrimeNG's `alwaysShow`. */
+  readonly hideOnSinglePage = input(false);
   /** Soft target for how many page-number buttons show before collapsing to an ellipsis — see `buildPaginationRange`. */
   readonly maxVisiblePages = input(5);
   readonly size = input<DynamoPaginationSize>('md');
@@ -61,6 +65,10 @@ export class DynamoPagination extends DynamoBaseComponent<DynamoPaginationPart> 
 
   protected readonly currentPage = computed(() =>
     Math.min(Math.max(1, this.page()), this.pageCount()),
+  );
+
+  protected readonly shouldRender = computed(
+    () => !this.hideOnSinglePage() || this.pageCount() > 1,
   );
 
   protected readonly rangeItems = computed<DynamoPaginationRangeItem[]>(() =>
@@ -123,12 +131,20 @@ export class DynamoPagination extends DynamoBaseComponent<DynamoPaginationPart> 
     this.page.set(Math.min(Math.max(1, page), this.pageCount()));
   }
 
+  protected goToFirstPage(): void {
+    this.goToPage(1);
+  }
+
   protected goToPreviousPage(): void {
     this.goToPage(this.currentPage() - 1);
   }
 
   protected goToNextPage(): void {
     this.goToPage(this.currentPage() + 1);
+  }
+
+  protected goToLastPage(): void {
+    this.goToPage(this.pageCount());
   }
 
   /**

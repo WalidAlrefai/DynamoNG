@@ -10,6 +10,9 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'min-max', title: 'Min / Max' },
+  { id: 'disabled-days', title: 'Disabled Dates & Weekdays' },
+  { id: 'clearable', title: 'Clearable' },
+  { id: 'inline', title: 'Inline' },
 ];
 
 const API: ApiTableRow[] = [
@@ -18,6 +21,10 @@ const API: ApiTableRow[] = [
   { name: 'max', type: 'Date | undefined', default: 'undefined' },
   { name: 'weekStartsOn', type: '0 | 1 | 2 | 3 | 4 | 5 | 6', default: '0' },
   { name: 'placeholder', type: 'string', default: "'Select a date'" },
+  { name: 'disabledDates', type: 'Date[]', default: '[]' },
+  { name: 'disabledDays', type: 'number[]', default: '[]' },
+  { name: 'clearable', type: 'boolean', default: 'false' },
+  { name: 'inline', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -43,7 +50,9 @@ const API: ApiTableRow[] = [
             placeholder="Choose a date"
           />
         </div>
-        <div code>&lt;dg-date-picker [(value)]="date" ariaLabel="Date" /&gt;</div>
+        <div code>
+          &lt;dg-date-picker [(value)]="date" ariaLabel="Date" /&gt;
+        </div>
       </docs-example>
 
       <docs-example
@@ -66,6 +75,58 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="disabled-days"
+        title="Disabled Dates & Weekdays"
+        description="disabledDates blocks specific days (e.g. holidays); disabledDays blocks entire weekdays (e.g. weekends) — both on top of any min/max range."
+      >
+        <div preview class="max-w-sm">
+          <dg-date-picker
+            [(value)]="weekdayOnly"
+            [disabledDays]="[0, 6]"
+            ariaLabel="Weekday appointment"
+            placeholder="Pick a weekday"
+          />
+        </div>
+        <div code>
+          &lt;dg-date-picker [(value)]="date" [disabledDays]="[0, 6]" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="clearable"
+        title="Clearable"
+        description="clearable shows a × button next to the trigger once a value is selected."
+      >
+        <div preview class="max-w-sm">
+          <dg-date-picker
+            [(value)]="clearableDate"
+            [clearable]="true"
+            ariaLabel="Date"
+          />
+        </div>
+        <div code>
+          &lt;dg-date-picker [(value)]="date" [clearable]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="inline"
+        title="Inline"
+        description="inline renders the calendar directly in the page, with no trigger button or overlay."
+      >
+        <div preview class="max-w-sm">
+          <dg-date-picker
+            [(value)]="inlineDate"
+            [inline]="true"
+            ariaLabel="Date"
+          />
+        </div>
+        <div code>
+          &lt;dg-date-picker [(value)]="date" [inline]="true" /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -77,4 +138,7 @@ export class DatePickerDocPage {
   protected readonly ranged = signal<Date | null>(null);
   protected readonly minDate = new Date();
   protected readonly maxDate = new Date(Date.now() + 30 * 864e5);
+  protected readonly weekdayOnly = signal<Date | null>(null);
+  protected readonly clearableDate = signal<Date | null>(new Date());
+  protected readonly inlineDate = signal<Date | null>(null);
 }

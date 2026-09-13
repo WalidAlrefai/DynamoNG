@@ -12,6 +12,7 @@ import {
   computed,
   contentChild,
   input,
+  output,
   viewChild,
 } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
@@ -82,10 +83,25 @@ export class DynamoVirtualScroll<
   readonly itemSize = input.required<number>();
   /** The viewport's own height in px — CDK's viewport needs an explicit CSS size to know its own bounds; it does not auto-size to its content or parent. */
   readonly height = input.required<number>();
+  /** The viewport's own width in px. Only meaningful for `orientation: 'horizontal'`; left unset otherwise so the viewport keeps sizing to its container's width as before. */
+  readonly width = input<number | undefined>(undefined);
   /** `@for`-style track escape hatch, mirroring `DynamoTable`'s own `trackBy` input shape. Falls back to item reference identity when omitted. */
   readonly trackBy = input<((item: T, index: number) => unknown) | undefined>(
     undefined,
   );
+  /** Scroll axis, passed straight through to CDK's own viewport input. Horizontal layouts need `itemSize` to mean column width, not row height, and a `width()`-driven CSS layout instead of `height()`'s. */
+  readonly orientation = input<'vertical' | 'horizontal'>('vertical');
+  /**
+   * Passed straight through to CDK's own viewport input: once an item has
+   * been rendered, it's never removed from the DOM even after it scrolls
+   * out of view above/before the visible range — only appended to below.
+   * For lists that only ever grow forward (chat logs, activity feeds),
+   * where letting old DOM nodes persist avoids their layout/media
+   * re-flowing back into view on every re-render.
+   */
+  readonly appendOnly = input(false);
+  /** Passed straight through from CDK's own `scrolledIndexChange` — the index of the first item considered "in view" after each scroll. A consumer can use this to drive its own infinite-scroll/lazy-load fetch when the index nears `items().length`. */
+  readonly scrolledIndexChange = output<number>();
 
   protected readonly itemTemplate = contentChild.required(TemplateRef);
   private readonly viewportRef = viewChild.required(CdkVirtualScrollViewport);

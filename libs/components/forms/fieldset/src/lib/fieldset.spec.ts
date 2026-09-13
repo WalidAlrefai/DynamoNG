@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -12,7 +15,11 @@ import { DynamoFieldsetHarness } from './fieldset.harness';
   standalone: true,
   imports: [DynamoFieldset],
   template: `
-    <dg-fieldset legend="Contact info" [collapsible]="true" [disabled]="disabled">
+    <dg-fieldset
+      legend="Contact info"
+      [collapsible]="true"
+      [disabled]="disabled"
+    >
       <input type="text" placeholder="Name" />
     </dg-fieldset>
   `,
@@ -24,17 +31,23 @@ class FieldsetTestHostComponent {
 describe('DynamoFieldset', () => {
   describe('creation', () => {
     it('renders a real <fieldset> and <legend>', () => {
-      const { container } = renderDynamoComponent(DynamoFieldset, { inputs: { legend: 'Contact info' } });
+      const { container } = renderDynamoComponent(DynamoFieldset, {
+        inputs: { legend: 'Contact info' },
+      });
 
       expect(container.querySelector('fieldset')).not.toBeNull();
-      expect(container.querySelector('legend')?.textContent?.trim()).toBe('Contact info');
+      expect(container.querySelector('legend')?.textContent?.trim()).toBe(
+        'Contact info',
+      );
     });
 
     it('projects content inside the fieldset', () => {
       const { fixture } = renderDynamoComponent(FieldsetTestHostComponent);
       const container = fixture.nativeElement as HTMLElement;
 
-      expect(container.querySelector('input[placeholder="Name"]')).not.toBeNull();
+      expect(
+        container.querySelector('input[placeholder="Name"]'),
+      ).not.toBeNull();
     });
   });
 
@@ -48,17 +61,24 @@ describe('DynamoFieldset', () => {
     });
 
     it('does not render a toggle button when not collapsible', () => {
-      const { container } = renderDynamoComponent(DynamoFieldset, { inputs: { legend: 'Contact info' } });
+      const { container } = renderDynamoComponent(DynamoFieldset, {
+        inputs: { legend: 'Contact info' },
+      });
 
-      expect(container.querySelector('[data-testid="dg-fieldset-toggle"]')).toBeNull();
+      expect(
+        container.querySelector('[data-testid="dg-fieldset-toggle"]'),
+      ).toBeNull();
     });
   });
 
   describe('collapsing', () => {
     it('collapses and expands on click, updating the two-way-bound collapsed model', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoFieldset, {
-        inputs: { legend: 'Contact info', collapsible: true },
-      });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoFieldset,
+        {
+          inputs: { legend: 'Contact info', collapsible: true },
+        },
+      );
       const toggle = within(container).getByRole('button');
 
       await userEvent.click(toggle);
@@ -80,7 +100,9 @@ describe('DynamoFieldset', () => {
       const { container, setInputs } = renderDynamoComponent(DynamoFieldset, {
         inputs: { legend: 'Contact info' },
       });
-      const fieldsetEl = container.querySelector('fieldset') as HTMLFieldSetElement;
+      const fieldsetEl = container.querySelector(
+        'fieldset',
+      ) as HTMLFieldSetElement;
       expect(fieldsetEl.disabled).toBe(false);
 
       setInputs({ disabled: true });
@@ -89,12 +111,16 @@ describe('DynamoFieldset', () => {
     });
 
     it('does not disable the toggle button inside the legend (native legend exclusion)', () => {
-      const { fixture, componentInstance } = renderDynamoComponent(FieldsetTestHostComponent);
+      const { fixture, componentInstance } = renderDynamoComponent(
+        FieldsetTestHostComponent,
+      );
       componentInstance.disabled = true;
       fixture.detectChanges();
       const container = fixture.nativeElement as HTMLElement;
 
-      const toggle = container.querySelector('[data-testid="dg-fieldset-toggle"]') as HTMLButtonElement;
+      const toggle = container.querySelector(
+        '[data-testid="dg-fieldset-toggle"]',
+      ) as HTMLButtonElement;
       expect(toggle.disabled).toBe(false);
     });
   });
@@ -105,7 +131,9 @@ describe('DynamoFieldset', () => {
         inputs: { legend: 'Contact info', collapsible: true },
       });
       const toggle = within(container).getByRole('button');
-      const contentDiv = container.querySelector(`#${toggle.getAttribute('aria-controls')}`);
+      const contentDiv = container.querySelector(
+        `#${toggle.getAttribute('aria-controls')}`,
+      );
 
       expect(toggle.getAttribute('aria-expanded')).toBe('true');
       expect(contentDiv).not.toBeNull();
@@ -120,10 +148,65 @@ describe('DynamoFieldset', () => {
     });
   });
 
+  describe('projected legend content', () => {
+    it('renders projected [legend] content alongside the plain legend string, non-collapsible', () => {
+      @Component({
+        selector: 'dg-fieldset-legend-content-host',
+        standalone: true,
+        imports: [DynamoFieldset],
+        template: `<dg-fieldset legend="Contact info">
+          <span legend data-testid="legend-badge">New</span>
+          <input type="text" />
+        </dg-fieldset>`,
+      })
+      class LegendContentHostComponent {}
+
+      const { container } = renderDynamoComponent(LegendContentHostComponent);
+
+      expect(container.querySelector('legend')?.textContent).toContain(
+        'Contact info',
+      );
+      expect(
+        container.querySelector('[data-testid="legend-badge"]'),
+      ).not.toBeNull();
+    });
+
+    it('renders projected [legend] content alongside the toggle button, collapsible', () => {
+      @Component({
+        selector: 'dg-fieldset-legend-content-collapsible-host',
+        standalone: true,
+        imports: [DynamoFieldset],
+        template: `<dg-fieldset legend="Contact info" [collapsible]="true">
+          <span legend data-testid="legend-badge">New</span>
+          <input type="text" />
+        </dg-fieldset>`,
+      })
+      class LegendContentCollapsibleHostComponent {}
+
+      const { container } = renderDynamoComponent(
+        LegendContentCollapsibleHostComponent,
+      );
+
+      expect(
+        container.querySelector('[data-testid="dg-fieldset-toggle"]')
+          ?.textContent,
+      ).toContain('Contact info');
+      // A sibling of the toggle button within <legend>, not nested inside
+      // it — an interactive <button>'s accessible name shouldn't absorb
+      // arbitrary projected content like a badge.
+      expect(
+        container.querySelector('legend > [data-testid="legend-badge"]'),
+      ).not.toBeNull();
+    });
+  });
+
   describe('user interactions', () => {
     it('supports interaction through the DynamoFieldsetHarness', async () => {
       const { fixture } = renderDynamoComponent(FieldsetTestHostComponent);
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoFieldsetHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoFieldsetHarness,
+      );
 
       expect(await harness.getLegendText()).toBe('Contact info');
       expect(await harness.isCollapsed()).toBe(false);
@@ -147,20 +230,26 @@ describe('DynamoFieldset', () => {
       const { fixture } = renderDynamoComponent(FieldsetTestHostComponent);
       fixture.componentInstance.disabled = true;
       fixture.detectChanges();
-      await expect(expectNoA11yViolations(fixture.nativeElement)).resolves.toBeUndefined();
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
     });
   });
 
   describe('edge cases', () => {
     it('renders no legend element when legend is empty and not collapsible', () => {
-      const { container } = renderDynamoComponent(DynamoFieldset, { inputs: {} });
+      const { container } = renderDynamoComponent(DynamoFieldset, {
+        inputs: {},
+      });
 
       expect(container.querySelector('legend')).toBeNull();
     });
 
     it('renders an empty collapsible content region without throwing', () => {
       expect(() => {
-        renderDynamoComponent(DynamoFieldset, { inputs: { legend: 'Empty', collapsible: true } });
+        renderDynamoComponent(DynamoFieldset, {
+          inputs: { legend: 'Empty', collapsible: true },
+        });
       }).not.toThrow();
     });
   });

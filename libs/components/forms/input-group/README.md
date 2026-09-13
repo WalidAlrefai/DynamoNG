@@ -25,9 +25,11 @@ group's border shows.
 | `invalid` | `boolean`    | `false` |             |
 
 Content is projected via two named slots — `[prefix]` and `[suffix]` — plus a
-default slot for the input itself. There is deliberately no `disabled` input:
-disabling is the projected input's own job, since a wrapper-level dim would
-create a "set it in two places" footgun.
+default slot for the input itself. Each slot accepts more than one element
+(they're laid out with a small gap), so e.g. an icon _and_ a unit label can
+both be prefixed. There is deliberately no `disabled` input: disabling is the
+projected input's own job, since a wrapper-level dim would create a "set it
+in two places" footgun.
 
 ## Outputs
 

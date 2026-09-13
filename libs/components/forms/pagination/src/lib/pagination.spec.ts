@@ -278,6 +278,89 @@ describe('DynamoPagination', () => {
       ).toBeTruthy();
       expect(container.querySelector('span[aria-hidden="true"]')).toBeNull();
     });
+
+    it('does not render First/Last buttons by default', () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: { totalItems: 100 },
+      });
+
+      expect(
+        within(container).queryByRole('button', { name: 'First page' }),
+      ).toBeNull();
+      expect(
+        within(container).queryByRole('button', { name: 'Last page' }),
+      ).toBeNull();
+    });
+
+    it('renders First/Last buttons when showFirstLastButtons is set, jumping to the edges', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoPagination,
+        {
+          inputs: {
+            totalItems: 100,
+            pageSize: 10,
+            page: 5,
+            showFirstLastButtons: true,
+          },
+        },
+      );
+
+      within(container).getByRole('button', { name: 'Last page' }).click();
+      expect(componentInstance.page()).toBe(10);
+
+      within(container).getByRole('button', { name: 'First page' }).click();
+      expect(componentInstance.page()).toBe(1);
+    });
+
+    it('disables First/Last at the respective edges', () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: {
+          totalItems: 30,
+          pageSize: 10,
+          page: 1,
+          showFirstLastButtons: true,
+        },
+      });
+
+      expect(
+        (
+          within(container).getByRole('button', {
+            name: 'First page',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      expect(
+        (
+          within(container).getByRole('button', {
+            name: 'Last page',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(false);
+    });
+
+    it('renders nothing when hideOnSinglePage is set and there is only one page', () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: { totalItems: 5, pageSize: 10, hideOnSinglePage: true },
+      });
+
+      expect(within(container).queryByRole('navigation')).toBeNull();
+    });
+
+    it('still renders when hideOnSinglePage is set but there is more than one page', () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: { totalItems: 30, pageSize: 10, hideOnSinglePage: true },
+      });
+
+      expect(within(container).queryByRole('navigation')).not.toBeNull();
+    });
+
+    it('defaults hideOnSinglePage to false — always renders even with a single page', () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: { totalItems: 5, pageSize: 10 },
+      });
+
+      expect(within(container).queryByRole('navigation')).not.toBeNull();
+    });
   });
 
   describe('template behavior', () => {

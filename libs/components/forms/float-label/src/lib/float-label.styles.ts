@@ -26,6 +26,11 @@ const FLOATED_SHARED =
 export const floatLabelTextStyles = cva(
   'pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 origin-left rtl:origin-right ' +
     'text-sm text-text-muted transition-all duration-200 ease-out ' +
+    // Mirrors PrimeNG's `:has(.ng-invalid.ng-dirty) label` rule, but keyed off
+    // the projected control's own `aria-invalid` attribute instead of Angular
+    // Forms CSS classes, since not every projected control is a ReactiveForms
+    // field.
+    'group-has-[[aria-invalid="true"]]:text-danger ' +
     FLOATED_SHARED,
   {
     variants: {
@@ -56,7 +61,8 @@ export const floatLabelTextStyles = cva(
 // visible; the field itself gets extra top padding so its value clears the
 // label. `[&_:is(input,textarea,select)]` reaches the projected control.
 export const iftaLabelRootStyles =
-  'relative block [&_:is(input,textarea,select)]:pt-5 [&_:is(input,textarea,select)]:pb-1';
+  'group relative block [&_:is(input,textarea,select)]:pt-5 [&_:is(input,textarea,select)]:pb-1';
 
 export const iftaLabelTextStyles =
-  'pointer-events-none absolute start-3 top-1 text-xs font-medium text-text-muted';
+  'pointer-events-none absolute start-3 top-1 text-xs font-medium text-text-muted ' +
+  'group-has-[[aria-invalid="true"]]:text-danger';

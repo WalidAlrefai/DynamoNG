@@ -705,4 +705,139 @@ describe('DynamoListbox', () => {
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });
+
+  describe('filtering', () => {
+    it('renders no filter box by default', () => {
+      const { container } = renderDynamoComponent(DynamoListbox, {
+        inputs: { options: OPTIONS, ariaLabel: 'View' },
+      });
+      expect(container.querySelector('input[type="search"]')).toBeNull();
+    });
+
+    it('renders a filter box when filterable is set', () => {
+      const { container } = renderDynamoComponent(DynamoListbox, {
+        inputs: { options: OPTIONS, filterable: true, ariaLabel: 'View' },
+      });
+      expect(container.querySelector('input[type="search"]')).toBeTruthy();
+    });
+
+    it('narrows the option list as the filter box is typed into, and restores it when cleared', async () => {
+      const { container } = renderDynamoComponent(DynamoListbox, {
+        inputs: { options: OPTIONS, filterable: true, ariaLabel: 'View' },
+      });
+      const filterInput = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLElement;
+
+      await userEvent.type(filterInput, 'gri');
+      expect(
+        within(container)
+          .getAllByRole('option')
+          .map((el) => el.textContent?.trim()),
+      ).toEqual(['Grid']);
+
+      await userEvent.clear(filterInput);
+      expect(within(container).getAllByRole('option')).toHaveLength(3);
+    });
+
+    it('shows noResultsMessage when the filter matches nothing, distinct from genuinely-empty options', async () => {
+      const { container } = renderDynamoComponent(DynamoListbox, {
+        inputs: {
+          options: OPTIONS,
+          filterable: true,
+          noResultsMessage: 'Nothing found',
+          ariaLabel: 'View',
+        },
+      });
+      const filterInput = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLElement;
+
+      await userEvent.type(filterInput, 'zzz');
+
+      expect(within(container).queryAllByRole('option')).toHaveLength(0);
+      expect(container.textContent).toContain('Nothing found');
+    });
+
+    it('shows no message when options itself is genuinely empty', () => {
+      const { container } = renderDynamoComponent(DynamoListbox, {
+        inputs: {
+          options: [],
+          filterable: true,
+          noResultsMessage: 'Nothing found',
+          ariaLabel: 'View',
+        },
+      });
+
+      expect(container.textContent).not.toContain('Nothing found');
+    });
+
+    it('Enter directly on the filter box selects the (pre-seeded) active option', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoListbox,
+        { inputs: { options: OPTIONS, filterable: true, ariaLabel: 'View' } },
+      );
+      const filterInput = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLElement;
+
+      // No option is selected yet, so activeIndex is seeded to the first
+      // enabled option ('list') on construction — Enter alone selects it.
+      dispatchKey(filterInput, 'Enter');
+
+      expect(componentInstance.value()).toBe('list');
+    });
+
+    it('ArrowDown/ArrowUp on the filter box move the active option, and Enter selects it', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoListbox,
+        { inputs: { options: OPTIONS, filterable: true, ariaLabel: 'View' } },
+      );
+      const filterInput = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLElement;
+
+      dispatchKey(filterInput, 'ArrowDown');
+      dispatchKey(filterInput, 'Enter');
+
+      expect(componentInstance.value()).toBe('grid');
+    });
+
+    it('Escape on the filter box clears the filter text', async () => {
+      const { fixture, container } = renderDynamoComponent(DynamoListbox, {
+        inputs: { options: OPTIONS, filterable: true, ariaLabel: 'View' },
+      });
+      const filterInput = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      await userEvent.type(filterInput, 'gri');
+      expect(within(container).getAllByRole('option')).toHaveLength(1);
+
+      dispatchKey(filterInput, 'Escape');
+      fixture.detectChanges();
+
+      expect(within(container).getAllByRole('option')).toHaveLength(3);
+    });
+  });
+
+  describe('readOnly', () => {
+    it('blocks click and keyboard selection but keeps the list focusable', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoListbox,
+        { inputs: { options: OPTIONS, readOnly: true, ariaLabel: 'View' } },
+      );
+      const listbox = within(container).getByRole('listbox') as HTMLElement;
+
+      await userEvent.click(within(container).getByText('Grid'));
+      expect(componentInstance.value()).toBeNull();
+
+      listbox.focus();
+      dispatchKey(listbox, 'ArrowDown');
+      dispatchKey(listbox, 'Enter');
+
+      expect(componentInstance.value()).toBeNull();
+      expect(listbox.getAttribute('aria-readonly')).toBe('true');
+      expect(listbox.tabIndex).toBe(0);
+    });
+  });
 });

@@ -5,7 +5,10 @@ import { focusRingClass } from '@dynamong/utils/styles';
 // component — dialog.html only ever binds `[class]="...Classes()"`.
 export const dialogPanelStyles = cva(
   'relative z-modal max-h-[90vh] w-full overflow-y-auto rounded-lg border border-border bg-surface-0 p-6 shadow-lg ' +
-    'focus:outline-none',
+    // Always re-enables pointer events on the panel itself, since the root
+    // wrapper (dialog.html) is made `pointer-events-none` while `modal` is
+    // false, to let clicks reach the rest of the page around it.
+    'pointer-events-auto focus:outline-none',
   {
     variants: {
       size: {

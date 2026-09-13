@@ -1,3 +1,4 @@
+@if (!inline()) {
 <button
   #triggerEl
   type="button"
@@ -38,13 +39,42 @@
     />
   </svg>
 </button>
+@if (clearable() && value()) {
+<button
+  type="button"
+  [class]="clearButtonClasses"
+  [disabled]="disabled()"
+  aria-label="Clear selection"
+  (click)="clearValue($event)"
+>
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    [attr.aria-hidden]="true"
+  >
+    <path
+      fill-rule="evenodd"
+      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+      clip-rule="evenodd"
+    />
+  </svg>
+</button>
+} } @if (inline()) {
+<ng-container [ngTemplateOutlet]="panelTemplate" />
+}
+
 <ng-template #panelTemplate>
   <div
-    role="dialog"
-    [id]="dialogId"
-    [attr.aria-label]="ariaLabel() ?? null"
-    [attr.aria-labelledby]="ariaLabel() ? null : monthLabelId"
-    aria-modal="false"
+    [attr.role]="inline() ? null : 'dialog'"
+    [id]="inline() ? null : dialogId"
+    [attr.aria-label]="inline() ? null : (ariaLabel() ?? null)"
+    [attr.aria-labelledby]="
+      inline() || ariaLabel() ? null : monthLabelId
+    "
+    [attr.aria-modal]="inline() ? null : false"
+    tabindex="-1"
     [class]="panelClasses"
     (keydown)="onPanelKeydown($event)"
   >
@@ -119,7 +149,7 @@
             <button
               #dayButton
               type="button"
-              tabindex="-1"
+              [attr.tabindex]="inline() && isFocused(day) ? 0 : -1"
               [attr.aria-current]="isToday(day) ? 'date' : null"
               [disabled]="isDisabled(day)"
               [class]="dayClasses(day)"

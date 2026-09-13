@@ -204,6 +204,44 @@ describe('DynamoCascadeSelect', () => {
     });
   });
 
+  describe('clearable', () => {
+    it('defaults to false, rendering no clear button even with a value selected', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, value: 'mexico' } },
+      );
+
+      expect(componentInstance.clearable()).toBe(false);
+      expect(
+        within(container).queryByRole('button', { name: 'Clear selection' }),
+      ).toBeNull();
+    });
+
+    it('clears the value and closes the panel when the clear button is clicked', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, value: 'mexico', clearable: true } },
+      );
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Clear selection' }),
+      );
+
+      expect(componentInstance.value()).toBeNull();
+      expect(getListboxes()).toHaveLength(0);
+    });
+
+    it('does not render a clear button when nothing is selected, even if clearable', () => {
+      const { container } = renderDynamoComponent(DynamoCascadeSelect, {
+        inputs: { nodes: NODES, clearable: true },
+      });
+
+      expect(
+        within(container).queryByRole('button', { name: 'Clear selection' }),
+      ).toBeNull();
+    });
+  });
+
   describe('multi-level drill-down', () => {
     it('hovering a branch opens a second panel showing its children', async () => {
       const { container, fixture } = renderDynamoComponent(

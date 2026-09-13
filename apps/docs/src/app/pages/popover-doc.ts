@@ -10,7 +10,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'no-focus-trap', title: 'No Focus Trap' },
+];
 
 const API: ApiTableRow[] = [
   {
@@ -20,6 +23,8 @@ const API: ApiTableRow[] = [
   },
   { name: 'open', type: 'boolean (model)', default: 'false' },
   { name: 'closeOnBackdropClick', type: 'boolean', default: 'true' },
+  { name: 'closeOnEscape', type: 'boolean', default: 'true' },
+  { name: 'focusOnShow', type: 'boolean', default: 'true' },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
 ];
 
@@ -69,7 +74,31 @@ const API: ApiTableRow[] = [
         </div>
         <div code>
           &lt;dg-popover&gt; &lt;dg-button&gt;Filters&lt;/dg-button&gt;
-          &lt;dg-popover-content&gt;...&lt;/dg-popover-content&gt; &lt;/dg-popover&gt;
+          &lt;dg-popover-content&gt;...&lt;/dg-popover-content&gt;
+          &lt;/dg-popover&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="no-focus-trap"
+        title="No Focus Trap"
+        description="focusOnShow: false leaves focus on the trigger instead of moving it into the panel — for a purely informational popover the user isn't expected to interact with."
+      >
+        <div preview>
+          <dg-popover ariaLabel="Info" [focusOnShow]="false">
+            <dg-button variant="outline">Info</dg-button>
+            <dg-popover-content>
+              <p class="w-56 text-sm text-text-primary">
+                Focus stays on the "Info" button while this is open.
+              </p>
+            </dg-popover-content>
+          </dg-popover>
+        </div>
+        <div code>
+          &lt;dg-popover [focusOnShow]="false"&gt;
+          &lt;dg-button&gt;Info&lt;/dg-button&gt;
+          &lt;dg-popover-content&gt;...&lt;/dg-popover-content&gt;
+          &lt;/dg-popover&gt;
         </div>
       </docs-example>
 

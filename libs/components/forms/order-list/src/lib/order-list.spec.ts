@@ -408,6 +408,52 @@ describe('DynamoOrderList', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('freezes reordering, selection, and drag, but keeps keyboard navigation and focus working', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        { inputs: { value: ITEMS, readOnly: true, selectable: true } },
+      );
+      const list = getList(container);
+
+      expect(list.getAttribute('tabindex')).toBe('0');
+      expect(list.getAttribute('aria-readonly')).toBe('true');
+
+      dispatchKey(list, 'ArrowDown');
+      fixture.detectChanges();
+      expect(componentInstance['activeIndex']()).toBe(0);
+
+      dispatchKey(list, 'Enter');
+      fixture.detectChanges();
+      expect(componentInstance['selected']().size).toBe(0);
+
+      (
+        componentInstance as unknown as {
+          onDropped: (e: CdkDragDrop<unknown>) => void;
+        }
+      ).onDropped(dropEvent(0, 2));
+      expect(componentInstance.value().map((o) => o.label)).toEqual([
+        'Alpha',
+        'Bravo',
+        'Charlie',
+        'Delta',
+      ]);
+    });
+
+    it('disables the reorder buttons', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, readOnly: true },
+      });
+
+      dispatchKey(getList(container), 'ArrowDown');
+
+      const buttons = within(container).getAllByRole('button');
+      for (const button of buttons) {
+        expect((button as HTMLButtonElement).disabled).toBe(true);
+      }
+    });
+  });
+
   describe('harness', () => {
     it('reads labels/active index and drives the reorder buttons', async () => {
       const { fixture } = renderDynamoComponent(DynamoOrderList, {

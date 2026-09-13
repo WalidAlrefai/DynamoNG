@@ -38,6 +38,7 @@ protected onSave(): void { ... }
 | `ariaChecked`      | `boolean \| undefined`                                                                 | `undefined` | Forwarded as `aria-checked` — for a button acting as a radio-group segment.                                                                        |
 | `ariaPressed`      | `boolean \| undefined`                                                                 | `undefined` | Forwarded as `aria-pressed` — for a button acting as a toggle in a multi-select group.                                                             |
 | `tabIndexOverride` | `number \| undefined`                                                                  | `undefined` | Forwarded as `tabindex`, overriding the default tab-stop membership — for roving-tabindex patterns like Select Button's segmented control.         |
+| `fullWidth`        | `boolean`                                                                              | `false`     | Stretches the button to fill its container's width (`w-full`) instead of the default `inline-flex` sizing.                                         |
 
 ## Outputs
 

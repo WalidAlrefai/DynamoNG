@@ -4,12 +4,14 @@ import {
   ElementRef,
   computed,
   effect,
+  forwardRef,
   input,
   model,
   output,
   signal,
   viewChildren,
 } from '@angular/core';
+import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoButton } from '@dynamong/button';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
@@ -31,19 +33,37 @@ import type {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DynamoButton],
   templateUrl: './select-button.html',
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => DynamoSelectButton),
+      multi: true,
+    },
+  ],
 })
-export class DynamoSelectButton<
-  TValue = string,
-> extends DynamoBaseComponent<DynamoSelectButtonPart> {
+export class DynamoSelectButton<TValue = string>
+  extends DynamoBaseComponent<DynamoSelectButtonPart>
+  implements ControlValueAccessor
+{
   readonly options = input.required<DynamoSelectOption<TValue>[]>();
-  /** Two-way bindable. Scalar (`TValue | null`) in single-select mode, array (`TValue[]`) once `multiple` is true. */
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. Scalar (`TValue | null`) in single-select mode, array (`TValue[]`) once `multiple` is true. */
   readonly value = model<DynamoSelectButtonValue<TValue>>(null);
   /** Fires once per direct user activation (click, Enter/Space, and — in single-select mode only — arrow-key navigation) with the full option object. */
   readonly itemSelect = output<DynamoSelectOption<TValue>>();
   readonly multiple = input(false);
   readonly size = input<DynamoSelectButtonSize>('md');
-  readonly disabled = input(false);
+  /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
+  readonly disabled = model(false);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** In single-select mode, allows clicking the already-active segment to deselect it back to `null`. Off by default — a select button conventionally always has exactly one thing selected. */
+  readonly allowEmpty = input(false);
+
+  private onChangeFn: (value: DynamoSelectButtonValue<TValue>) => void = () => {
+    /* replaced by registerOnChange once bound to a FormControl/ngModel */
+  };
+  private onTouchedFn: () => void = () => {
+    /* replaced by registerOnTouched once bound to a FormControl/ngModel */
+  };
 
   private readonly segmentHosts = viewChildren<
     DynamoButton,
@@ -106,13 +126,35 @@ export class DynamoSelectButton<
         ? current.filter((v) => v !== option.value)
         : [...current, option.value];
       this.value.set(next);
+      this.onChangeFn(next);
+    } else if (this.allowEmpty() && this.value() === option.value) {
+      this.value.set(null);
+      this.onChangeFn(null);
     } else {
-      // Clicking the already-active segment is a no-op re-set — a select
-      // button never toggles off, matching "always exactly one" radio-group
-      // semantics.
+      // Clicking the already-active segment is a no-op re-set by default —
+      // a select button conventionally always has exactly one thing
+      // selected. `allowEmpty` opts into PrimeNG's own default instead.
       this.value.set(option.value);
+      this.onChangeFn(option.value);
     }
+    this.onTouchedFn();
     this.itemSelect.emit(option);
+  }
+
+  writeValue(value: DynamoSelectButtonValue<TValue> | null): void {
+    this.value.set(value ?? (this.multiple() ? [] : null));
+  }
+
+  registerOnChange(fn: (value: DynamoSelectButtonValue<TValue>) => void): void {
+    this.onChangeFn = fn;
+  }
+
+  registerOnTouched(fn: () => void): void {
+    this.onTouchedFn = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.disabled.set(isDisabled);
   }
 
   protected onSegmentKeydown(event: KeyboardEvent, index: number): void {

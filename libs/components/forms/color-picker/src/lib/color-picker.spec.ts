@@ -2,7 +2,10 @@ import { Component, model } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -21,15 +24,11 @@ function getOverlayContainer(): HTMLElement {
 }
 
 function getSwatches(): HTMLElement[] {
-  return Array.from(
-    document.body.querySelectorAll('button[aria-pressed]'),
-  );
+  return Array.from(document.body.querySelectorAll('button[aria-pressed]'));
 }
 
 function getNativeColorInput(): HTMLInputElement {
-  return document.body.querySelector(
-    'input[type="color"]',
-  ) as HTMLInputElement;
+  return document.body.querySelector('input[type="color"]') as HTMLInputElement;
 }
 
 // The isOpen()-driven overlay attach/detach effect runs via Angular's
@@ -67,9 +66,7 @@ describe('DynamoColorPicker', () => {
     it('renders a hex text field and a swatch-preview trigger', () => {
       const { container } = renderDynamoComponent(DynamoColorPicker);
 
-      expect(
-        container.querySelector('input[type="text"]'),
-      ).toBeTruthy();
+      expect(container.querySelector('input[type="text"]')).toBeTruthy();
       expect(
         within(container).getByRole('button', { name: /Choose color/ }),
       ).toBeTruthy();
@@ -139,10 +136,9 @@ describe('DynamoColorPicker', () => {
     });
 
     it('marks only the currently matching swatch as aria-pressed', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoColorPicker,
-        { inputs: { value: '#22c55e' } },
-      );
+      const { container, fixture } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { value: '#22c55e' },
+      });
       const trigger = within(container).getByRole('button', {
         name: /Choose color/,
       });
@@ -179,10 +175,9 @@ describe('DynamoColorPicker', () => {
     });
 
     it('falls back to #000000 for the native input when value is not a valid 6-digit hex', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoColorPicker,
-        { inputs: { value: 'not-a-color' } },
-      );
+      const { container, fixture } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { value: 'not-a-color' },
+      });
       const trigger = within(container).getByRole('button', {
         name: /Choose color/,
       });
@@ -278,6 +273,51 @@ describe('DynamoColorPicker', () => {
     });
   });
 
+  describe('inline', () => {
+    it('defaults to false, rendering a trigger button and no swatch grid until opened', () => {
+      const { container } = renderDynamoComponent(ColorPickerTestHostComponent);
+
+      expect(container.querySelector('button[aria-haspopup]')).not.toBeNull();
+      expect(getSwatches()).toHaveLength(0);
+    });
+
+    it('renders the swatch grid and native color input directly, with no trigger button', () => {
+      const { container } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true },
+      });
+
+      expect(container.querySelector('button[aria-haspopup]')).toBeNull();
+      expect(getSwatches().length).toBeGreaterThan(0);
+      expect(getNativeColorInput()).not.toBeNull();
+    });
+
+    it('still renders the hex text input alongside the inline grid', () => {
+      const { container } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true },
+      });
+
+      expect(container.querySelector('input[type="text"]')).not.toBeNull();
+    });
+
+    it('commits a swatch click directly, without needing to open/close an overlay', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true, swatches: ['#ef4444'] },
+      });
+      const swatch = getSwatches()[0] as HTMLButtonElement;
+
+      swatch.click();
+
+      expect(componentInstance.value().toLowerCase()).toBe('#ef4444');
+    });
+
+    it('has no axe violations while inline', async () => {
+      const { container } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true, ariaLabel: 'Color' },
+      });
+      await expectNoA11yViolations(container);
+    });
+  });
+
   describe('disabled', () => {
     it('disables the hex field and blocks opening the panel', async () => {
       const { container, fixture } = renderDynamoComponent(DynamoColorPicker, {
@@ -365,10 +405,9 @@ describe('DynamoColorPicker', () => {
 
   describe('edge cases', () => {
     it('renders a panel with only the native color input when swatches is empty', async () => {
-      const { container, fixture } = renderDynamoComponent(
-        DynamoColorPicker,
-        { inputs: { swatches: [] } },
-      );
+      const { container, fixture } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { swatches: [] },
+      });
       const trigger = within(container).getByRole('button', {
         name: /Choose color/,
       });

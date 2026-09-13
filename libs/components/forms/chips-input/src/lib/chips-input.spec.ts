@@ -263,9 +263,8 @@ describe('DynamoChipsInput', () => {
     });
 
     it('propagates committed chips to an [(ngModel)] binding', async () => {
-      const { container, componentInstance } = renderDynamoComponent(
-        NgModelHostComponent,
-      );
+      const { container, componentInstance } =
+        renderDynamoComponent(NgModelHostComponent);
       const input = within(container).getByRole('textbox');
 
       await userEvent.type(input, 'one{Enter}');
@@ -352,7 +351,7 @@ describe('DynamoChipsInput', () => {
       expect(chips(container)).toEqual([]);
     });
 
-    it('renders each chip\'s remove button as disabled', () => {
+    it("renders each chip's remove button as disabled", () => {
       const { container } = renderDynamoComponent(DynamoChipsInput, {
         inputs: { value: ['one'], readOnly: true, ariaLabel: 'Tags' },
       });
@@ -374,6 +373,70 @@ describe('DynamoChipsInput', () => {
     });
   });
 
+  describe('separator', () => {
+    it('defaults to a comma', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoChipsInput);
+      expect(componentInstance.separator()).toBe(',');
+    });
+
+    it('commits on the custom separator instead of comma', async () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { ariaLabel: 'Tags', separator: ';' },
+      });
+      const input = within(container).getByRole('textbox');
+
+      await userEvent.type(input, 'angular;');
+
+      expect(chips(container)).toEqual(['angular']);
+    });
+
+    it('no longer commits on comma once a custom separator is set', async () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { ariaLabel: 'Tags', separator: ';' },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+
+      await userEvent.type(input, 'angular,react');
+
+      expect(chips(container)).toEqual([]);
+      expect(input.value).toBe('angular,react');
+    });
+
+    it('splits a multi-value paste on the custom separator', () => {
+      const { fixture, container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { ariaLabel: 'Tags', separator: ';' },
+      });
+      const input = within(container).getByRole('textbox');
+
+      input.dispatchEvent(pasteEvent('angular;react;vue'));
+      fixture.detectChanges();
+
+      expect(chips(container)).toEqual(['angular', 'react', 'vue']);
+    });
+  });
+
+  describe('ariaLabelledBy', () => {
+    it('forwards ariaLabelledBy to the native input as aria-labelledby', () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { ariaLabelledBy: 'external-label' },
+      });
+
+      expect(
+        within(container).getByRole('textbox').getAttribute('aria-labelledby'),
+      ).toBe('external-label');
+    });
+
+    it('omits aria-labelledby entirely when unset', () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { ariaLabel: 'Tags' },
+      });
+
+      expect(
+        within(container).getByRole('textbox').hasAttribute('aria-labelledby'),
+      ).toBe(false);
+    });
+  });
+
   describe('accessibility', () => {
     it('gives each remove button a "Remove {chip}" aria-label', async () => {
       const { container } = renderDynamoComponent(DynamoChipsInput, {
@@ -382,9 +445,7 @@ describe('DynamoChipsInput', () => {
       const input = within(container).getByRole('textbox');
       await userEvent.type(input, 'angular{Enter}');
 
-      expect(
-        within(container).getByLabelText('Remove angular'),
-      ).toBeTruthy();
+      expect(within(container).getByLabelText('Remove angular')).toBeTruthy();
     });
 
     it('has no axe violations', async () => {

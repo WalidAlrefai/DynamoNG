@@ -10,6 +10,7 @@ import {
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
+  dockBadgeStyles,
   dockItemStyles,
   dockLabelStyles,
   dockListStyles,
@@ -42,7 +43,8 @@ export class DynamoDock extends DynamoBaseComponent<DynamoDockPart> {
   readonly magnificationRange = input(140);
   readonly ariaLabel = input<string | undefined>(undefined);
 
-  private readonly tileEls = viewChildren<ElementRef<HTMLButtonElement>>('tileEl');
+  private readonly tileEls =
+    viewChildren<ElementRef<HTMLButtonElement>>('tileEl');
 
   /** Roving-tabindex position — always exactly one item. */
   protected readonly focusedIndex = signal(0);
@@ -70,6 +72,7 @@ export class DynamoDock extends DynamoBaseComponent<DynamoDockPart> {
   protected readonly labelClasses = computed(() =>
     dockLabelStyles({ position: this.position() }),
   );
+  protected readonly badgeClasses = dockBadgeStyles;
 
   protected onPointerMove(event: MouseEvent): void {
     if (!this.magnification()) return;

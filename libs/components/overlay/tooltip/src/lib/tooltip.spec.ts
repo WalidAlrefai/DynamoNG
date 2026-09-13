@@ -275,6 +275,82 @@ describe('DynamoTooltip', () => {
     });
   });
 
+  describe('life', () => {
+    it('auto-hides after life ms even while still hovered', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0, life: 100 },
+      });
+      const trigger = getTrigger(container);
+
+      trigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+
+      await new Promise((resolve) => setTimeout(resolve, 110));
+      fixture.detectChanges();
+
+      expect(getPanel()).toBeNull();
+    });
+
+    it('does not auto-hide when life is unset', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0 },
+      });
+      const trigger = getTrigger(container);
+
+      trigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await settle(fixture);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      fixture.detectChanges();
+
+      expect(getPanel()).not.toBeNull();
+    });
+  });
+
+  describe('showOnEllipsis', () => {
+    it('does not show when the trigger text is not truncated', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0, showOnEllipsis: true },
+      });
+      const trigger = getTrigger(container);
+      Object.defineProperty(trigger, 'scrollWidth', { value: 100 });
+      Object.defineProperty(trigger, 'offsetWidth', { value: 100 });
+
+      trigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
+    });
+
+    it('shows when the trigger text is actually truncated', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0, showOnEllipsis: true },
+      });
+      const trigger = getTrigger(container);
+      Object.defineProperty(trigger, 'scrollWidth', { value: 200 });
+      Object.defineProperty(trigger, 'offsetWidth', { value: 100 });
+
+      trigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+    });
+
+    it('shows regardless of truncation when showOnEllipsis is false (default)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0 },
+      });
+      const trigger = getTrigger(container);
+      Object.defineProperty(trigger, 'scrollWidth', { value: 100 });
+      Object.defineProperty(trigger, 'offsetWidth', { value: 100 });
+
+      trigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+    });
+  });
+
   describe('conditional rendering', () => {
     it('only mounts the panel element while visible', async () => {
       const { container, fixture } = renderDynamoComponent(DynamoTooltip, {

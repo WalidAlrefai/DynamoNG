@@ -24,18 +24,22 @@ protected readonly layout = signal<DynamoDataViewLayout>('list');
 
 ## Inputs
 
-| Input                | Type                           | Default              | Description                                                                             |
-| -------------------- | ------------------------------ | -------------------- | --------------------------------------------------------------------------------------- |
-| `value`              | `readonly T[]` (required)      | —                    | The full data set. Sorting and paging operate on a copy — this array is never mutated.  |
-| `layout`             | `DynamoDataViewLayout` (model) | `'list'`             | `'list' \| 'grid'`. Two-way bindable so an external toggle can drive it.                |
-| `rows`               | `number` (model)               | `10`                 | Rows per page; mirrors the embedded `DynamoPagination`'s `pageSize`.                    |
-| `page`               | `number` (model)               | `1`                  | 1-indexed current page; mirrors `DynamoPagination`'s `page`.                            |
-| `paginator`          | `boolean`                      | `true`               | When `false`, every item renders and the paginator is hidden.                           |
-| `rowsPerPageOptions` | `number[]`                     | `[10, 25, 50]`       |                                                                                         |
-| `sortField`          | `keyof T \| null` (model)      | `null`               | When set, `value` is sorted by this field before paging. `null` preserves input order.  |
-| `sortOrder`          | `1 \| -1` (model)              | `1`                  |                                                                                         |
-| `dataKey`            | `keyof T \| undefined`         | `undefined`          | Field used to `@for`-track items across re-sorts/re-pages; falls back to item identity. |
-| `emptyMessage`       | `string`                       | `'No records found'` | Shown in place of the grid/list when `value` is empty.                                  |
+| Input                | Type                                                 | Default              | Description                                                                                                                                                                                                                                       |
+| -------------------- | ---------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`              | `readonly T[]` (required)                            | —                    | The full data set. Sorting and paging operate on a copy — this array is never mutated.                                                                                                                                                            |
+| `layout`             | `DynamoDataViewLayout` (model)                       | `'list'`             | `'list' \| 'grid'`. Two-way bindable so an external toggle can drive it.                                                                                                                                                                          |
+| `rows`               | `number` (model)                                     | `10`                 | Rows per page; mirrors the embedded `DynamoPagination`'s `pageSize`.                                                                                                                                                                              |
+| `page`               | `number` (model)                                     | `1`                  | 1-indexed current page; mirrors `DynamoPagination`'s `page`.                                                                                                                                                                                      |
+| `paginator`          | `boolean`                                            | `true`               | When `false`, every item renders and the paginator is hidden.                                                                                                                                                                                     |
+| `paginatorPosition`  | `'top' \| 'bottom' \| 'both'`                        | `'bottom'`           | Where the paginator renders relative to the content.                                                                                                                                                                                              |
+| `rowsPerPageOptions` | `number[]`                                           | `[10, 25, 50]`       |                                                                                                                                                                                                                                                   |
+| `sortField`          | `keyof T \| null` (model)                            | `null`               | When set, `value` is sorted by this field before paging. `null` preserves input order. Ignored in `lazy` mode.                                                                                                                                    |
+| `sortOrder`          | `1 \| -1` (model)                                    | `1`                  |                                                                                                                                                                                                                                                   |
+| `dataKey`            | `keyof T \| undefined`                               | `undefined`          | Field used to `@for`-track items across re-sorts/re-pages; falls back to item identity. Superseded by `trackBy` when both are set.                                                                                                                |
+| `trackBy`            | `((item: T, index: number) => unknown) \| undefined` | `undefined`          | A full track function, mirroring `DynamoTable`'s own `trackBy`. Takes priority over `dataKey`.                                                                                                                                                    |
+| `emptyMessage`       | `string`                                             | `'No records found'` | Shown in place of the grid/list when `value` is empty.                                                                                                                                                                                            |
+| `lazy`               | `boolean`                                            | `false`              | Opt-in server-side mode: `value` is expected to hold only the current page's already-sorted items. `DynamoDataView` no longer sorts or slices `value` itself — it only emits `lazyLoad` and expects the consumer to re-fetch and re-bind `value`. |
+| `totalRecords`       | `number \| undefined`                                | `undefined`          | Required in `lazy` mode to compute the correct page count from a `value` that only holds the current page. Ignored otherwise.                                                                                                                     |
 
 A projected `<ng-template let-item let-i="index">` (`contentChild.required`) is
 mandatory — it receives `{ $implicit: item, item, index }` for every rendered
@@ -44,13 +48,14 @@ renders above the content.
 
 ## Outputs
 
-| Output            | Payload                | Fires when                                      |
-| ----------------- | ---------------------- | ----------------------------------------------- |
-| `layoutChange`    | `DynamoDataViewLayout` | `layout` changes (auto-generated by `model()`). |
-| `rowsChange`      | `number`               | `rows` changes.                                 |
-| `pageChange`      | `number`               | `page` changes.                                 |
-| `sortFieldChange` | `keyof T \| null`      | `sortField` changes.                            |
-| `sortOrderChange` | `1 \| -1`              | `sortOrder` changes.                            |
+| Output            | Payload                          | Fires when                                                                                                                              |
+| ----------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `layoutChange`    | `DynamoDataViewLayout`           | `layout` changes (auto-generated by `model()`).                                                                                         |
+| `rowsChange`      | `number`                         | `rows` changes.                                                                                                                         |
+| `pageChange`      | `number`                         | `page` changes.                                                                                                                         |
+| `sortFieldChange` | `keyof T \| null`                | `sortField` changes.                                                                                                                    |
+| `sortOrderChange` | `1 \| -1`                        | `sortOrder` changes.                                                                                                                    |
+| `lazyLoad`        | `DynamoDataViewLazyLoadEvent<T>` | In `lazy` mode, whenever the page, page size, or sort changes (not on initial render). Carries `{ first, rows, sortField, sortOrder }`. |
 
 ## Accessibility
 

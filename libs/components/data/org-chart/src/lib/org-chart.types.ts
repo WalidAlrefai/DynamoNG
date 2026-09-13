@@ -10,6 +10,8 @@ export interface DynamoOrgChartNode<TValue = unknown> {
   label: string;
   value?: TValue;
   children?: DynamoOrgChartNode<TValue>[];
+  /** Excludes this node from selection and click activation; its subtree can still be toggled. */
+  disabled?: boolean;
 }
 
 export type DynamoOrgChartSelectionMode = 'single' | 'multiple';
@@ -23,10 +25,4 @@ export interface DynamoOrgChartNodeContext<TValue = unknown> {
 export type DynamoOrgChartTemplateRef = TemplateRef<DynamoOrgChartNodeContext>;
 
 export type DynamoOrgChartPart =
-  | 'root'
-  | 'tree'
-  | 'node'
-  | 'nodeContent'
-  | 'toggler'
-  | 'connector'
-  | 'group';
+  'root' | 'tree' | 'node' | 'nodeContent' | 'toggler' | 'connector' | 'group';

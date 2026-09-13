@@ -15,6 +15,7 @@
     [attr.aria-valuemin]="min()"
     [attr.aria-valuemax]="max()"
     [attr.aria-disabled]="disabled() ? 'true' : null"
+    [attr.aria-readonly]="readOnly() ? 'true' : null"
     [attr.aria-label]="ariaLabel() ?? 'Knob'"
     (pointerdown)="onPointerDown($event)"
     (pointermove)="onPointerMove($event)"
@@ -22,6 +23,7 @@
     (pointercancel)="onPointerUp()"
     (wheel)="onWheel($event)"
     (keydown)="onKeydown($event)"
+    (blur)="onBlur()"
   >
     <circle
       [class]="trackClasses()"
@@ -41,6 +43,6 @@
     />
   </svg>
   @if (showValue()) {
-    <span [class]="labelClasses()">{{ clampedValue() }}</span>
+  <span [class]="labelClasses()">{{ formattedValue() }}</span>
   }
 </div>

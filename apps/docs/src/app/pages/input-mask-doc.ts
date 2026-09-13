@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoInputMask } from '@dynamong/input-mask';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
@@ -11,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'phone', title: 'Phone' },
   { id: 'date', title: 'Date' },
+  { id: 'buffer', title: 'Placeholder Buffer' },
 ];
 
 const API: ApiTableRow[] = [
@@ -19,6 +20,8 @@ const API: ApiTableRow[] = [
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'invalid', type: 'boolean', default: 'false' },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  { name: 'slotChar', type: 'string', default: "'_'" },
+  { name: 'autoClear', type: 'boolean', default: 'true' },
 ];
 
 @Component({
@@ -72,7 +75,33 @@ const API: ApiTableRow[] = [
             placeholder="MM/DD/YYYY"
           />
         </div>
-        <div code>&lt;dg-input-mask [formControl]="date" mask="99/99/9999" /&gt;</div>
+        <div code>
+          &lt;dg-input-mask [formControl]="date" mask="99/99/9999" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="buffer"
+        title="Placeholder Buffer"
+        description="Focus the field: unfilled slots show as slotChar so the mask's shape is visible up front. autoClear (default true) reverts an incomplete value to empty on blur; complete fires once the mask is fully filled."
+      >
+        <div preview class="max-w-xs">
+          <dg-input-mask
+            [(value)]="serial"
+            mask="***-***-***"
+            slotChar="#"
+            ariaLabel="Serial number"
+            (complete)="completedCount.set(completedCount() + 1)"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Completed
+            <span class="font-mono">{{ completedCount() }}</span> time(s).
+          </p>
+        </div>
+        <div code>
+          &lt;dg-input-mask [(value)]="serial" mask="***-***-***" slotChar="#"
+          (complete)="onComplete()" /&gt;
+        </div>
       </docs-example>
 
       <docs-api-table api [rows]="apiRows" />
@@ -84,4 +113,6 @@ export class InputMaskDocPage {
   protected readonly apiRows = API;
   protected readonly phone = new FormControl<string | null>(null);
   protected readonly date = new FormControl<string | null>(null);
+  protected readonly serial = signal('');
+  protected readonly completedCount = signal(0);
 }

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoKeyFilter } from '@dynamong/key-filter';
 import { DocExample } from '../components/example-block';
 import {
@@ -9,13 +10,19 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'presets', title: 'Presets' },
   { id: 'custom', title: 'Custom RegExp' },
+  { id: 'validate-only', title: 'Validate Only' },
 ];
 
 @Component({
   selector: 'docs-key-filter-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoKeyFilter, DocExamplesLayout, DocExample],
+  imports: [
+    DynamoKeyFilter,
+    ReactiveFormsModule,
+    DocExamplesLayout,
+    DocExample,
+  ],
   template: `
     <docs-examples-layout
       name="KeyFilter"
@@ -69,8 +76,30 @@ const EXAMPLES: DocExampleRef[] = [
             placeholder="a–c only"
           />
         </div>
+        <div code>abc = /^[a-c]*$/; &lt;input [dgKeyFilter]="abc" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="validate-only"
+        title="Validate Only"
+        description="validateOnly never blocks keystrokes — instead it registers as an NG_VALIDATORS Validator, reporting a keyFilter error on the bound control whenever its current value fails the pattern."
+      >
+        <div preview class="max-w-sm">
+          <input
+            dgKeyFilter="int"
+            [validateOnly]="true"
+            [formControl]="freeform"
+            class="rounded border border-border px-2 py-1"
+            aria-label="Integer (validate only)"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Valid:
+            <span class="font-mono">{{ freeform.valid }}</span>
+          </p>
+        </div>
         <div code>
-          abc = /^[a-c]*$/; &lt;input [dgKeyFilter]="abc" /&gt;
+          &lt;input dgKeyFilter="int" [validateOnly]="true" [formControl]="qty"
+          /&gt;
         </div>
       </docs-example>
 
@@ -84,13 +113,18 @@ const EXAMPLES: DocExampleRef[] = [
             </tr>
           </thead>
           <tbody>
-            <tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">dgKeyFilter</td>
               <td class="py-2 pr-4 font-mono">
                 'int' | 'pint' | 'num' | 'pnum' | 'money' | 'hex' | 'alpha' |
                 'alphanum' | 'email' | RegExp
               </td>
               <td class="py-2 font-mono">required</td>
+            </tr>
+            <tr>
+              <td class="py-2 pr-4 font-mono">validateOnly</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">false</td>
             </tr>
           </tbody>
         </table>
@@ -101,4 +135,5 @@ const EXAMPLES: DocExampleRef[] = [
 export class KeyFilterDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly abc = /^[a-c]*$/;
+  protected readonly freeform = new FormControl('');
 }

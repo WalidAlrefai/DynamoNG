@@ -13,11 +13,13 @@ yet — text lines, avatars, and cards.
 
 ## Inputs
 
-| Input     | Type                            | Default     | Description                                                                                                                                           |
-| --------- | ------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `variant` | `DynamoSkeletonVariant`         | `'text'`    | `'text' \| 'circular' \| 'rectangular'`. Each variant has its own default size class (e.g. `text` is a full-width line, `circular` is a 40px circle). |
-| `width`   | `string \| number \| undefined` | `undefined` | Overrides the variant's default width. A number is treated as px; a string is used as-is (e.g. `'50%'`).                                              |
-| `height`  | `string \| number \| undefined` | `undefined` | Same rules as `width`.                                                                                                                                |
+| Input          | Type                            | Default     | Description                                                                                                                                           |
+| -------------- | ------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `variant`      | `DynamoSkeletonVariant`         | `'text'`    | `'text' \| 'circular' \| 'rectangular'`. Each variant has its own default size class (e.g. `text` is a full-width line, `circular` is a 40px circle). |
+| `width`        | `string \| number \| undefined` | `undefined` | Overrides the variant's default width. A number is treated as px; a string is used as-is (e.g. `'50%'`).                                              |
+| `height`       | `string \| number \| undefined` | `undefined` | Same rules as `width`.                                                                                                                                |
+| `animation`    | `DynamoSkeletonAnimation`       | `'pulse'`   | `'pulse' \| 'none'`. Opts out of the pulse for a static placeholder — separate from (and in addition to) the automatic `motion-reduce:animate-none`.  |
+| `borderRadius` | `string \| undefined`           | `undefined` | Explicit CSS `border-radius` — overrides the variant's own default (`rounded-sm`/`rounded-full`/`rounded-md`) when set.                               |
 
 ## Outputs
 

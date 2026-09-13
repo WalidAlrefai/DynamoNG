@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoMultiSelect } from '@dynamong/multi-select';
 import type { DynamoSelectOption } from '@dynamong/multi-select';
 import { DocExample } from '../components/example-block';
@@ -24,6 +24,7 @@ const MANY_OPTIONS: DynamoSelectOption<string>[] = Array.from(
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'max-tags', title: 'Max Visible Tags' },
+  { id: 'clearable-readonly', title: 'Clearable & Read-only' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
 ];
 
@@ -72,6 +73,33 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
         <div code>
           &lt;dg-multi-select [options]="options" [maxVisibleTags]="2" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="clearable-readonly"
+        title="Clearable & Read-only"
+        description="clearable shows a trigger-level × button that clears the whole selection at once. readOnly keeps the trigger/panel browsable but blocks adding, removing, or clearing selections."
+      >
+        <div preview class="flex max-w-sm flex-col gap-3">
+          <dg-multi-select
+            [options]="options"
+            [(value)]="clearableSkills"
+            ariaLabel="Skills (clearable)"
+            placeholder="Choose skills"
+            [clearable]="true"
+          />
+          <dg-multi-select
+            [options]="options"
+            [value]="['angular', 'typescript']"
+            ariaLabel="Skills (read-only)"
+            [readOnly]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-multi-select [options]="options" [(value)]="skills"
+          [clearable]="true" /&gt; &lt;dg-multi-select [options]="options"
+          [value]="skills" [readOnly]="true" /&gt;
         </div>
       </docs-example>
 
@@ -127,6 +155,16 @@ const EXAMPLES: DocExampleRef[] = [
               <td class="py-2 font-mono">false</td>
             </tr>
             <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">clearable</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">false</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">readOnly</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">false</td>
+            </tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">maxSelected</td>
               <td class="py-2 pr-4 font-mono">number | undefined</td>
               <td class="py-2 font-mono">undefined</td>
@@ -168,4 +206,5 @@ export class MultiSelectDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly options = SKILL_OPTIONS;
   protected readonly manyOptions = MANY_OPTIONS;
+  protected readonly clearableSkills = signal<string[]>(['react', 'vue']);
 }

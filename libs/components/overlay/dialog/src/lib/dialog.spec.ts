@@ -1,6 +1,9 @@
 import { Component, model } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -28,13 +31,17 @@ function flushFocusTrap(): Promise<void> {
 describe('DynamoDialog', () => {
   describe('creation', () => {
     it('renders nothing in the DOM when closed', () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { title: 'Title' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { title: 'Title' },
+      });
 
       expect(container.querySelector('[role="dialog"]')).toBeNull();
     });
 
     it('renders a [role="dialog"] element when open', () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, title: 'Title' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title' },
+      });
 
       expect(container.querySelector('[role="dialog"]')).not.toBeNull();
     });
@@ -42,13 +49,17 @@ describe('DynamoDialog', () => {
 
   describe('default behavior', () => {
     it('defaults to closed', () => {
-      const { componentInstance } = renderDynamoComponent(DynamoDialog, { inputs: { title: 'Title' } });
+      const { componentInstance } = renderDynamoComponent(DynamoDialog, {
+        inputs: { title: 'Title' },
+      });
 
       expect(componentInstance.open()).toBe(false);
     });
 
     it('defaults closeOnBackdropClick and closeOnEscape to true', () => {
-      const { componentInstance } = renderDynamoComponent(DynamoDialog, { inputs: { title: 'Title' } });
+      const { componentInstance } = renderDynamoComponent(DynamoDialog, {
+        inputs: { title: 'Title' },
+      });
 
       expect(componentInstance.closeOnBackdropClick()).toBe(true);
       expect(componentInstance.closeOnEscape()).toBe(true);
@@ -57,15 +68,22 @@ describe('DynamoDialog', () => {
 
   describe('input properties', () => {
     it('reflects the title input as the dialog heading', () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, title: 'Delete item' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Delete item' },
+      });
 
-      expect(within(container).getByRole('heading', { name: 'Delete item' })).toBeTruthy();
+      expect(
+        within(container).getByRole('heading', { name: 'Delete item' }),
+      ).toBeTruthy();
     });
 
     it('accepts every documented size without throwing', () => {
-      const { componentInstance, setInputs } = renderDynamoComponent(DynamoDialog, {
-        inputs: { open: true, title: 'Title' },
-      });
+      const { componentInstance, setInputs } = renderDynamoComponent(
+        DynamoDialog,
+        {
+          inputs: { open: true, title: 'Title' },
+        },
+      );
 
       for (const size of ['sm', 'md', 'lg'] as const) {
         setInputs({ size });
@@ -74,7 +92,9 @@ describe('DynamoDialog', () => {
     });
 
     it('does not render a header when no title is provided', () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, ariaLabel: 'Untitled' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, ariaLabel: 'Untitled' },
+      });
 
       expect(container.querySelector('h2')).toBeNull();
     });
@@ -82,17 +102,24 @@ describe('DynamoDialog', () => {
 
   describe('output events', () => {
     it('sets open to false (via the model output) when the close button is clicked', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoDialog, {
-        inputs: { open: true, title: 'Title' },
-      });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDialog,
+        {
+          inputs: { open: true, title: 'Title' },
+        },
+      );
 
-      await userEvent.click(within(container).getByRole('button', { name: 'Close dialog' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Close dialog' }),
+      );
 
       expect(componentInstance.open()).toBe(false);
     });
 
     it('calling close() programmatically sets open to false', () => {
-      const { componentInstance } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, title: 'Title' } });
+      const { componentInstance } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title' },
+      });
 
       componentInstance.close();
 
@@ -100,11 +127,17 @@ describe('DynamoDialog', () => {
     });
 
     it('propagates close back to a two-way-bound host signal', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DialogTestHostComponent);
-      await userEvent.click(within(container).getByRole('button', { name: 'Open dialog' }));
+      const { container, componentInstance } = renderDynamoComponent(
+        DialogTestHostComponent,
+      );
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Open dialog' }),
+      );
       expect(componentInstance.isOpen()).toBe(true);
 
-      await userEvent.click(within(container).getByRole('button', { name: 'Close dialog' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Close dialog' }),
+      );
 
       expect(componentInstance.isOpen()).toBe(false);
     });
@@ -112,9 +145,12 @@ describe('DynamoDialog', () => {
 
   describe('user interactions', () => {
     it('closes when the Escape key is pressed while focus is inside the dialog', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoDialog, {
-        inputs: { open: true, title: 'Title' },
-      });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDialog,
+        {
+          inputs: { open: true, title: 'Title' },
+        },
+      );
       const panel = container.querySelector('[role="dialog"]') as HTMLElement;
       panel.focus();
 
@@ -124,10 +160,15 @@ describe('DynamoDialog', () => {
     });
 
     it('closes when the backdrop is clicked', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoDialog, {
-        inputs: { open: true, title: 'Title' },
-      });
-      const backdrop = container.querySelector('[aria-hidden="true"]') as HTMLElement;
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDialog,
+        {
+          inputs: { open: true, title: 'Title' },
+        },
+      );
+      const backdrop = container.querySelector(
+        '[aria-hidden="true"]',
+      ) as HTMLElement;
 
       await userEvent.click(backdrop);
 
@@ -135,9 +176,12 @@ describe('DynamoDialog', () => {
     });
 
     it('does not close when the panel itself is clicked', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoDialog, {
-        inputs: { open: true, title: 'Title' },
-      });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDialog,
+        {
+          inputs: { open: true, title: 'Title' },
+        },
+      );
       const panel = container.querySelector('[role="dialog"]') as HTMLElement;
 
       await userEvent.click(panel);
@@ -146,10 +190,15 @@ describe('DynamoDialog', () => {
     });
 
     it('does not close on backdrop click when closeOnBackdropClick is false', async () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoDialog, {
-        inputs: { open: true, title: 'Title', closeOnBackdropClick: false },
-      });
-      const backdrop = container.querySelector('[aria-hidden="true"]') as HTMLElement;
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDialog,
+        {
+          inputs: { open: true, title: 'Title', closeOnBackdropClick: false },
+        },
+      );
+      const backdrop = container.querySelector(
+        '[aria-hidden="true"]',
+      ) as HTMLElement;
 
       await userEvent.click(backdrop);
 
@@ -157,8 +206,13 @@ describe('DynamoDialog', () => {
     });
 
     it('supports interaction through the DynamoDialogHarness', async () => {
-      const { fixture, setInputs } = renderDynamoComponent(DynamoDialog, { inputs: { title: 'Delete item' } });
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoDialogHarness);
+      const { fixture, setInputs } = renderDynamoComponent(DynamoDialog, {
+        inputs: { title: 'Delete item' },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoDialogHarness,
+      );
       expect(await harness.isOpen()).toBe(false);
 
       setInputs({ open: true });
@@ -175,7 +229,9 @@ describe('DynamoDialog', () => {
       const { container } = renderDynamoComponent(DialogTestHostComponent);
       expect(container.textContent).not.toContain('Are you sure?');
 
-      await userEvent.click(within(container).getByRole('button', { name: 'Open dialog' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Open dialog' }),
+      );
 
       expect(container.textContent).toContain('Are you sure?');
     });
@@ -183,7 +239,9 @@ describe('DynamoDialog', () => {
 
   describe('template behavior', () => {
     it('sets aria-labelledby to the title heading id when a title is given', () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, title: 'Title' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title' },
+      });
 
       const panel = container.querySelector('[role="dialog"]') as HTMLElement;
       const headingId = container.querySelector('h2')?.id;
@@ -191,7 +249,9 @@ describe('DynamoDialog', () => {
     });
 
     it('sets aria-label instead when ariaLabel is provided without a title', () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, ariaLabel: 'Settings' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, ariaLabel: 'Settings' },
+      });
 
       const panel = container.querySelector('[role="dialog"]') as HTMLElement;
       expect(panel.getAttribute('aria-label')).toBe('Settings');
@@ -201,23 +261,31 @@ describe('DynamoDialog', () => {
 
   describe('accessibility', () => {
     it('has no axe violations when open with a title', async () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, title: 'Title' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title' },
+      });
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
 
     it('has no axe violations when open with only ariaLabel', async () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, ariaLabel: 'Settings' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, ariaLabel: 'Settings' },
+      });
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
 
     it('marks the backdrop as aria-hidden so it is excluded from the accessibility tree', () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, title: 'Title' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title' },
+      });
 
       expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
     });
 
     it('moves focus inside the dialog panel when opened', async () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, title: 'Title' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title' },
+      });
       await flushFocusTrap();
 
       const panel = container.querySelector('[role="dialog"]') as HTMLElement;
@@ -228,7 +296,9 @@ describe('DynamoDialog', () => {
   describe('state changes', () => {
     it('returns focus to the trigger element when the dialog closes', async () => {
       const { container } = renderDynamoComponent(DialogTestHostComponent);
-      const trigger = within(container).getByRole('button', { name: 'Open dialog' }) as HTMLButtonElement;
+      const trigger = within(container).getByRole('button', {
+        name: 'Open dialog',
+      }) as HTMLButtonElement;
       trigger.focus();
       expect(document.activeElement).toBe(trigger);
 
@@ -236,15 +306,97 @@ describe('DynamoDialog', () => {
       await flushFocusTrap();
       expect(document.activeElement).not.toBe(trigger);
 
-      await userEvent.click(within(container).getByRole('button', { name: 'Close dialog' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Close dialog' }),
+      );
 
       expect(document.activeElement).toBe(trigger);
     });
   });
 
+  describe('modal', () => {
+    it('renders a backdrop by default', () => {
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title' },
+      });
+
+      expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    });
+
+    it('renders no backdrop when modal is false', () => {
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title', modal: false },
+      });
+
+      expect(container.querySelector('.bg-surface-900\\/50')).toBeNull();
+    });
+
+    it('reflects aria-modal on the panel', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title' },
+      });
+      const panel = container.querySelector('[role="dialog"]') as HTMLElement;
+      expect(panel.getAttribute('aria-modal')).toBe('true');
+
+      setInputs({ modal: false });
+
+      expect(panel.getAttribute('aria-modal')).toBe('false');
+    });
+  });
+
+  describe('blockScroll', () => {
+    it('does not touch body overflow by default', () => {
+      const original = document.body.style.overflow;
+      const { setInputs } = renderDynamoComponent(DynamoDialog, {
+        inputs: { title: 'Title' },
+      });
+
+      setInputs({ open: true });
+
+      expect(document.body.style.overflow).toBe(original);
+    });
+
+    it('sets body overflow to hidden while open and restores it on close', () => {
+      const original = document.body.style.overflow;
+      const { setInputs } = renderDynamoComponent(DynamoDialog, {
+        inputs: { title: 'Title', blockScroll: true },
+      });
+
+      setInputs({ open: true });
+      expect(document.body.style.overflow).toBe('hidden');
+
+      setInputs({ open: false });
+      expect(document.body.style.overflow).toBe(original);
+    });
+  });
+
+  describe('closable', () => {
+    it('hides the header close button when closable is false', () => {
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title', closable: false },
+      });
+
+      expect(
+        container.querySelector('button[aria-label="Close dialog"]'),
+      ).toBeNull();
+    });
+
+    it('still shows the header title when closable is false', () => {
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, title: 'Title', closable: false },
+      });
+
+      expect(
+        within(container).getByRole('heading', { name: 'Title' }),
+      ).toBeTruthy();
+    });
+  });
+
   describe('edge cases', () => {
     it('handles rapid open/close toggling without throwing', () => {
-      const { setInputs } = renderDynamoComponent(DynamoDialog, { inputs: { title: 'Title' } });
+      const { setInputs } = renderDynamoComponent(DynamoDialog, {
+        inputs: { title: 'Title' },
+      });
 
       expect(() => {
         for (let i = 0; i < 5; i++) {
@@ -255,7 +407,9 @@ describe('DynamoDialog', () => {
     });
 
     it('renders correctly with no projected content and no title', () => {
-      const { container } = renderDynamoComponent(DynamoDialog, { inputs: { open: true, ariaLabel: 'Empty' } });
+      const { container } = renderDynamoComponent(DynamoDialog, {
+        inputs: { open: true, ariaLabel: 'Empty' },
+      });
 
       expect(container.querySelector('[role="dialog"]')).not.toBeNull();
     });

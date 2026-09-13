@@ -21,11 +21,14 @@ const CORNER: Record<DynamoOverlayBadgePosition, string> = {
     'bottom-0 start-0 translate-y-1/2 -translate-x-1/2 rtl:translate-x-1/2',
 };
 
-// Passed to `<dg-badge [styleClass]>` — shrinks it to an overlay size and
-// pins it to the chosen corner. `cn()`/tailwind-merge inside DynamoBadge
-// resolves this against its own `px-*`/`text-*`.
+// Passed to `<dg-badge [styleClass]>` — pins it to the chosen corner.
+// `cn()`/tailwind-merge inside DynamoBadge resolves this against its own
+// `px-*`/`text-*`. Only the default `sm` badgeSize gets the extra-tight
+// overlay padding/text override — `md`/`lg` keep DynamoBadge's own size
+// classes untouched so a deliberately larger overlay badge isn't shrunk
+// back down.
 export const overlayBadgeBadgeStyles = cva(
-  'pointer-events-none absolute z-10 min-w-4 justify-center px-1 text-xs',
+  'pointer-events-none absolute z-10 min-w-4 justify-center',
   {
     variants: {
       position: {
@@ -34,8 +37,13 @@ export const overlayBadgeBadgeStyles = cva(
         'bottom-right': CORNER['bottom-right'],
         'bottom-left': CORNER['bottom-left'],
       },
+      size: {
+        sm: 'px-1 text-xs',
+        md: '',
+        lg: '',
+      },
     },
-    defaultVariants: { position: 'top-right' },
+    defaultVariants: { position: 'top-right', size: 'sm' },
   },
 );
 

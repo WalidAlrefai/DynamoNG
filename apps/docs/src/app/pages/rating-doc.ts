@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoRating } from '@dynamong/rating';
 import { DocExample } from '../components/example-block';
 import {
@@ -9,13 +10,14 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'read-only', title: 'Read Only' },
+  { id: 'reactive-forms', title: 'Reactive Forms' },
 ];
 
 @Component({
   selector: 'docs-rating-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoRating, DocExamplesLayout, DocExample],
+  imports: [DynamoRating, ReactiveFormsModule, DocExamplesLayout, DocExample],
   template: `
     <docs-examples-layout
       name="Rating"
@@ -45,6 +47,23 @@ const EXAMPLES: DocExampleRef[] = [
         <div preview>
           <dg-rating [value]="4" [readOnly]="true" ariaLabel="Average rating" />
         </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="reactive-forms"
+        title="Reactive Forms"
+        description="Implements ControlValueAccessor, so it plugs directly into formControl/ngModel."
+      >
+        <div preview class="flex flex-col gap-2">
+          <dg-rating
+            [formControl]="reactiveStars"
+            ariaLabel="Reactive rating"
+          />
+          <p class="text-sm text-text-muted">
+            Value: <span class="font-mono">{{ reactiveStars.value }}</span>
+          </p>
+        </div>
+        <div code>&lt;dg-rating [formControl]="stars" /&gt;</div>
       </docs-example>
 
       <table api class="w-full border-collapse text-sm">
@@ -78,7 +97,7 @@ const EXAMPLES: DocExampleRef[] = [
           </tr>
           <tr>
             <td class="py-2 pr-4 font-mono">disabled</td>
-            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 pr-4 font-mono">boolean (model)</td>
             <td class="py-2 font-mono">false</td>
           </tr>
         </tbody>
@@ -89,6 +108,7 @@ const EXAMPLES: DocExampleRef[] = [
 export class RatingDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly stars = signal(3);
+  protected readonly reactiveStars = new FormControl(2, { nonNullable: true });
 
   protected readonly basicCode = `<dg-rating [(value)]="stars" ariaLabel="Rate this product" />`;
   protected readonly readOnlyCode = `<dg-rating [value]="4" [readOnly]="true" ariaLabel="Average rating" />`;

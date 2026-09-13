@@ -7,6 +7,7 @@ import {
   forwardRef,
   input,
   model,
+  output,
   viewChild,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
@@ -46,6 +47,10 @@ export class DynamoTextarea
    *  stays focusable/tabbable, but the user cannot change it. Unlike `disabled`,
    *  does not remove the control from the tab order or dim its appearance. */
   readonly readOnly = input(false);
+
+  /** Fires after each `autoResize` height adjustment (typed input or a
+   *  programmatic `writeValue`/`autoResize` change alike). */
+  readonly resized = output<void>();
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model('');
@@ -116,6 +121,11 @@ export class DynamoTextarea
   private resize(el: HTMLTextAreaElement): void {
     el.style.height = 'auto';
     const maxHeight = parseFloat(getComputedStyle(el).maxHeight);
-    el.style.height = `${!Number.isNaN(maxHeight) && el.scrollHeight > maxHeight ? maxHeight : el.scrollHeight}px`;
+    const exceedsMax = !Number.isNaN(maxHeight) && el.scrollHeight > maxHeight;
+    el.style.height = `${exceedsMax ? maxHeight : el.scrollHeight}px`;
+    // The autoResize styles hide overflow so the drag handle stays disabled;
+    // once content is clamped at max-height, restore scrolling so it's still reachable.
+    el.style.overflowY = exceedsMax ? 'auto' : 'hidden';
+    this.resized.emit();
   }
 }

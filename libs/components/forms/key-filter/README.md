@@ -15,17 +15,26 @@ keystrokes as they happen rather than validating after the fact.
 protected readonly customPattern = /^[A-Z]{0,3}$/;
 ```
 
+`validateOnly` flips the directive from blocking to passive: keystrokes are
+never prevented, and a bound `FormControl`/`ngModel` instead gets a
+`keyFilter` validation error whenever the current value fails the pattern.
+
+```html
+<input [dgKeyFilter]="'int'" [validateOnly]="true" [formControl]="qty" />
+```
+
 ## Inputs
 
 | Input                           | Type                                | Default | Description                                                                                                                                                                                                                                                                                                                                  |
 | ------------------------------- | ----------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pattern` (alias `dgKeyFilter`) | `DynamoKeyFilterPattern` (required) | —       | A preset name (`'int'`, `'pint'`, `'num'`, `'pnum'`, `'money'`, `'hex'`, `'alpha'`, `'alphanum'`, `'email'`) or a custom `RegExp`. Each preset matches against the _candidate full field value_, not just the new character, and allows the empty string and partial input (a lone `-` or `.`) so the field can be typed into progressively. |
+| `validateOnly`                  | `boolean`                           | `false` | When true, invalid keystrokes are never blocked; instead the directive registers as an `NG_VALIDATORS` `Validator` and reports a `{ keyFilter: true }` error on the bound control whenever its current value fails the pattern.                                                                                                              |
 
 ## Outputs
 
-None. The directive only blocks/allows native `input`/`paste` events; it does
-not emit anything of its own — bind the host's own `(input)`/`ngModel`/
-`formControl` as usual.
+None. The directive only blocks/allows native `input`/`paste` events (unless
+`validateOnly` is set); it does not emit anything of its own — bind the
+host's own `(input)`/`ngModel`/`formControl` as usual.
 
 ## Accessibility
 
@@ -37,7 +46,7 @@ not emit anything of its own — bind the host's own `(input)`/`ngModel`/
 
 ## Tier / dependencies
 
-- `tier:0`. Peer dependencies: none beyond Angular core/CDK.
+- `tier:0`. Peer dependencies: `@angular/forms` (`NG_VALIDATORS`/`Validator`, used only in `validateOnly` mode).
 
 ## Running unit tests
 

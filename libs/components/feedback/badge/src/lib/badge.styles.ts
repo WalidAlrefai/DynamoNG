@@ -27,8 +27,17 @@ export const badgeStyles = cva(
         md: 'px-2.5 py-0.5 text-sm',
         lg: 'px-3 py-1 text-base',
       },
+      dot: {
+        true: 'p-0',
+        false: '',
+      },
     },
     compoundVariants: [
+      // A bare notification dot instead of the pill: no padding, no text —
+      // a fixed square per size, overriding that size's own padding classes.
+      { dot: true, size: 'sm', class: 'h-2 w-2' },
+      { dot: true, size: 'md', class: 'h-2.5 w-2.5' },
+      { dot: true, size: 'lg', class: 'h-3 w-3' },
       {
         severity: 'primary',
         variant: 'solid',
@@ -91,6 +100,7 @@ export const badgeStyles = cva(
       severity: 'primary',
       variant: 'solid',
       size: 'md',
+      dot: false,
     },
   },
 );

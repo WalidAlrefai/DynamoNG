@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoKnob } from '@dynamong/knob';
 import { DocExample } from '../components/example-block';
 import {
@@ -10,13 +11,15 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'severity-size', title: 'Severity & Size' },
   { id: 'disabled', title: 'Disabled' },
+  { id: 'value-template', title: 'Value Template' },
+  { id: 'reactive-forms', title: 'Reactive Forms' },
 ];
 
 @Component({
   selector: 'docs-knob-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoKnob, DocExamplesLayout, DocExample],
+  imports: [DynamoKnob, ReactiveFormsModule, DocExamplesLayout, DocExample],
   template: `
     <docs-examples-layout
       name="Knob"
@@ -64,6 +67,38 @@ const EXAMPLES: DocExampleRef[] = [
         <div code>&lt;dg-knob [value]="40" [disabled]="true" /&gt;</div>
       </docs-example>
 
+      <docs-example
+        exampleId="value-template"
+        title="Value Template"
+        description="valueTemplate formats the centered label, replacing the literal &#123;value&#125; token."
+      >
+        <div preview>
+          <dg-knob
+            [value]="65"
+            [valueTemplate]="percentTemplate"
+            severity="info"
+            ariaLabel="Battery"
+          />
+        </div>
+        <div code>
+          &lt;dg-knob [value]="65" valueTemplate="&#123;value&#125;%" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="reactive-forms"
+        title="Reactive Forms"
+        description="Implements ControlValueAccessor, so it plugs directly into formControl/ngModel."
+      >
+        <div preview class="flex flex-col items-center gap-2">
+          <dg-knob [formControl]="reactiveValue" ariaLabel="Reactive volume" />
+          <span class="text-sm text-text-muted"
+            >Value: {{ reactiveValue.value }}</span
+          >
+        </div>
+        <div code>&lt;dg-knob [formControl]="volume" /&gt;</div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -95,8 +130,18 @@ const EXAMPLES: DocExampleRef[] = [
           </tr>
           <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">disabled</td>
+            <td class="py-2 pr-4 font-mono">boolean (model)</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">readOnly</td>
             <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">valueTemplate</td>
+            <td class="py-2 pr-4 font-mono">string</td>
+            <td class="py-2 font-mono">'&#123;value&#125;'</td>
           </tr>
           <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">severity</td>
@@ -124,4 +169,6 @@ const EXAMPLES: DocExampleRef[] = [
 export class KnobDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly volume = signal(50);
+  protected readonly reactiveValue = new FormControl(30, { nonNullable: true });
+  protected readonly percentTemplate = '{value}%';
 }

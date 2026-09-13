@@ -5,7 +5,7 @@ import {
   renderDynamoComponent,
 } from '@dynamong/testing';
 import type { DynamoSeverity } from '@dynamong/core/api';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoAlert } from './alert';
 import { DynamoAlertHarness } from './alert.harness';
 
@@ -215,6 +215,80 @@ describe('DynamoAlert', () => {
         closeButton.click();
         fixture.detectChanges();
       }).not.toThrow();
+    });
+  });
+
+  describe('duration (auto-dismiss)', () => {
+    it('does not auto-dismiss when duration is unset', () => {
+      vi.useFakeTimers();
+      try {
+        const { container, fixture } = renderDynamoComponent(DynamoAlert);
+        vi.advanceTimersByTime(10_000);
+        fixture.detectChanges();
+
+        expect(container.querySelector('[role="alert"]')).not.toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('self-dismisses after duration elapses', () => {
+      vi.useFakeTimers();
+      try {
+        const { container, fixture } = renderDynamoComponent(DynamoAlert, {
+          inputs: { duration: 1000 },
+        });
+        expect(container.querySelector('[role="alert"]')).not.toBeNull();
+
+        vi.advanceTimersByTime(1000);
+        fixture.detectChanges();
+
+        expect(container.querySelector('[role="alert"]')).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('never starts the timer when duration is 0', () => {
+      vi.useFakeTimers();
+      try {
+        const { container, fixture } = renderDynamoComponent(DynamoAlert, {
+          inputs: { duration: 0 },
+        });
+        vi.advanceTimersByTime(10_000);
+        fixture.detectChanges();
+
+        expect(container.querySelector('[role="alert"]')).not.toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  describe('projected custom icon', () => {
+    it('renders projected [icon] content instead of the default severity SVG', () => {
+      @Component({
+        selector: 'dg-alert-icon-host',
+        standalone: true,
+        imports: [DynamoAlert],
+        template: `<dg-alert
+          ><span icon data-testid="custom-icon">!</span>Body</dg-alert
+        >`,
+      })
+      class AlertIconHostComponent {}
+
+      const { container } = renderDynamoComponent(AlertIconHostComponent);
+
+      expect(
+        container.querySelector('[data-testid="custom-icon"]'),
+      ).not.toBeNull();
+      expect(container.querySelector('svg')).toBeNull();
+    });
+
+    it('falls back to the default severity SVG when nothing is projected', () => {
+      const { container } = renderDynamoComponent(DynamoAlert);
+
+      expect(container.querySelector('svg')).not.toBeNull();
     });
   });
 

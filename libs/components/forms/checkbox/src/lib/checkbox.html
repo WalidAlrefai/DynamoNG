@@ -8,6 +8,8 @@
     [disabled]="disabled()"
     [attr.aria-checked]="indeterminate() ? 'mixed' : null"
     [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-labelledby]="ariaLabelledBy() ?? null"
+    [attr.aria-readonly]="readOnly() ? 'true' : null"
     (change)="onNativeChange($event)"
   />
   <span [class]="boxClasses()" [attr.aria-hidden]="true">

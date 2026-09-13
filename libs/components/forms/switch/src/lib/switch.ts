@@ -2,9 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  forwardRef,
   input,
   model,
 } from '@angular/core';
+import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -19,16 +21,38 @@ import type { DynamoSwitchPart, DynamoSwitchSize } from './switch.types';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './switch.html',
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => DynamoSwitch),
+      multi: true,
+    },
+  ],
 })
-export class DynamoSwitch extends DynamoBaseComponent<DynamoSwitchPart> {
-  /** Two-way bindable: `<dg-switch [(checked)]="value">`. */
+export class DynamoSwitch
+  extends DynamoBaseComponent<DynamoSwitchPart>
+  implements ControlValueAccessor
+{
+  /** Two-way bindable: `<dg-switch [(checked)]="value">`. Also driven by Angular forms via `writeValue`. */
   readonly checked = model(false);
-  readonly disabled = input(false);
+  /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
+  readonly disabled = model(false);
+  /** HTML `readonly` semantics: the switch stays visible/focusable, but
+   *  toggling is blocked. Unlike `disabled`, doesn't dim it or remove it
+   *  from the tab order. */
+  readonly readOnly = input(false);
   readonly size = input<DynamoSwitchSize>('md');
   /** Accessible name for the native switch when no visible label content is projected. */
   readonly ariaLabel = input<string | undefined>(undefined);
 
   protected readonly inputId = this.idGenerator.next('dg-switch');
+
+  private onChangeFn: (value: boolean) => void = () => {
+    /* replaced by registerOnChange once bound to a FormControl/ngModel */
+  };
+  private onTouchedFn: () => void = () => {
+    /* replaced by registerOnTouched once bound to a FormControl/ngModel */
+  };
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
@@ -48,7 +72,32 @@ export class DynamoSwitch extends DynamoBaseComponent<DynamoSwitchPart> {
   );
 
   protected onNativeChange(event: Event): void {
+    if (this.readOnly()) {
+      (event.target as HTMLInputElement).checked = this.checked();
+      return;
+    }
     const target = event.target as HTMLInputElement;
     this.checked.set(target.checked);
+    this.onChangeFn(target.checked);
+  }
+
+  protected onBlur(): void {
+    this.onTouchedFn();
+  }
+
+  writeValue(value: boolean | null): void {
+    this.checked.set(value ?? false);
+  }
+
+  registerOnChange(fn: (value: boolean) => void): void {
+    this.onChangeFn = fn;
+  }
+
+  registerOnTouched(fn: () => void): void {
+    this.onTouchedFn = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.disabled.set(isDisabled);
   }
 }

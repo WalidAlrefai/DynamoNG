@@ -14,7 +14,8 @@ import {
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
-import { DynamoListboxBase } from '@dynamong/select';
+import { NgTemplateOutlet } from '@angular/common';
+import { DynamoListboxBase, selectClearButtonStyles } from '@dynamong/select';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   addDays,
@@ -83,6 +84,7 @@ const POSITIONS: ConnectedPosition[] = [
   selector: 'dg-date-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [NgTemplateOutlet],
   templateUrl: './date-picker.html',
   providers: [
     {
@@ -108,6 +110,14 @@ export class DynamoDatePicker
    *  Unlike `disabled`, does not remove the control from the tab order or
    *  dim its appearance. */
   readonly readOnly = input(false);
+  /** Individual dates disabled beyond the `min`/`max` range — e.g. holidays. Only blocks selection, not keyboard navigation onto them (same posture as `min`/`max`). */
+  readonly disabledDates = input<Date[]>([]);
+  /** Weekdays disabled beyond the `min`/`max` range — e.g. `[0, 6]` for weekends. `0` is Sunday, matching `date-fns`. */
+  readonly disabledDays = input<number[]>([]);
+  /** Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoSelect`'s own `clearable`. Ignored when `inline`, which has no trigger to attach it to. */
+  readonly clearable = input(false);
+  /** Renders the calendar directly in the page, with no trigger button or overlay — for embedding the picker permanently rather than behind a popup. */
+  readonly inline = input(false);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<Date | null>(null);
@@ -180,6 +190,10 @@ export class DynamoDatePicker
   protected readonly panelClasses = datePickerPanelStyles;
   protected readonly headerButtonClasses = datePickerHeaderButtonStyles;
   protected readonly weekdayClasses = datePickerWeekdayStyles;
+  protected readonly clearButtonClasses = selectClearButtonStyles;
+
+  /** First effect run while `inline` is true is skipped — see the constructor's day-focus effect doc comment for why. */
+  private inlineFocusReady = false;
 
   private onChangeFn: (value: Date | null) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
@@ -204,13 +218,36 @@ export class DynamoDatePicker
     // Home/End/PageUp/PageDown, or a header nav click) — the effect covers
     // in-month navigation (same 42 buttons) and month/year changes (a fresh
     // set of 42 buttons) with the same lookup.
+    //
+    // `inline` also keeps this effect live (the calendar has no `open()`
+    // moment of its own to gate on), but its very first run is skipped —
+    // otherwise an always-visible inline calendar would steal focus from
+    // wherever it legitimately was on the page the instant it mounts. Every
+    // run after that first one is safe to focus unconditionally: `focusedDate`
+    // only changes afterward via `moveFocus()`/`selectDay()`, both of which
+    // are only reachable from a keydown/click that already has a day button
+    // focused.
     effect(() => {
-      if (!this.open()) return;
+      const visible = this.open() || this.inline();
+      if (!visible) return;
       const days = this.calendarDays();
       const buttons = this.dayButtons();
       if (buttons.length !== days.length) return;
+      if (this.inline() && !this.inlineFocusReady) {
+        this.inlineFocusReady = true;
+        return;
+      }
       const index = days.findIndex((day) => isSameDay(day, this.focusedDate()));
       buttons[index]?.nativeElement.focus();
+    });
+
+    // Keeps the visible month in sync with `value` for `inline` mode, which
+    // has no `openPanel()` moment of its own to re-anchor `focusedDate` from
+    // the current value the way opening the popup does.
+    effect(() => {
+      if (!this.inline()) return;
+      const anchor = this.value() ?? startOfDay(new Date());
+      this.focusedDate.set(clampToRange(anchor, this.min(), this.max()));
     });
 
     this.destroyRef.onDestroy(() => this.destroyOverlay());
@@ -234,7 +271,17 @@ export class DynamoDatePicker
   }
 
   protected isDisabled(day: Date): boolean {
-    return isDateDisabled(day, this.min(), this.max());
+    return isDateDisabled(
+      day,
+      this.min(),
+      this.max(),
+      this.disabledDates(),
+      this.disabledDays(),
+    );
+  }
+
+  protected isFocused(day: Date): boolean {
+    return isSameDay(day, this.focusedDate());
   }
 
   protected toggle(): void {
@@ -319,6 +366,7 @@ export class DynamoDatePicker
         );
         break;
       case 'Escape':
+        if (this.inline()) return; // nothing to escape from — no popup to close
         this.close();
         this.triggerEl().nativeElement.focus();
         return;
@@ -343,7 +391,16 @@ export class DynamoDatePicker
     this.value.set(normalized);
     this.onChangeFn(normalized);
     this.close();
-    this.triggerEl().nativeElement.focus();
+    if (!this.inline()) {
+      this.triggerEl().nativeElement.focus();
+    }
+  }
+
+  protected clearValue(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.disabled()) return;
+    this.value.set(null);
+    this.onChangeFn(null);
   }
 
   protected triggerElRef(): ElementRef<HTMLElement> {

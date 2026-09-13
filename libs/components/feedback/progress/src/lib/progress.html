@@ -1,13 +1,18 @@
 <div
   role="progressbar"
   [class]="trackClasses()"
-  [attr.aria-valuenow]="clampedValue()"
-  aria-valuemin="0"
-  aria-valuemax="100"
+  [attr.aria-valuenow]="indeterminate() ? null : clampedValue()"
+  [attr.aria-valuemin]="indeterminate() ? null : 0"
+  [attr.aria-valuemax]="indeterminate() ? null : 100"
   [attr.aria-label]="ariaLabel() ?? 'Progress'"
 >
   <!-- The one deliberate exception to "only .styles.ts holds visual values"
   in this component — width is a continuous 0-100 value with no discrete
-  class variant that could express it. -->
-  <div [class]="fillClasses()" [style.width.%]="clampedValue()"></div>
+  class variant that could express it. Skipped entirely in indeterminate
+  mode, where the fill is always full-width (see progressFillStyles). -->
+  <div
+    [class]="fillClasses()"
+    [style.width.%]="indeterminate() ? null : clampedValue()"
+    [style.background-color]="color() || null"
+  ></div>
 </div>

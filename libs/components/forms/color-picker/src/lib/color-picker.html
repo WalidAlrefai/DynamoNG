@@ -9,6 +9,7 @@
     [attr.aria-invalid]="invalid() ? 'true' : null"
     (input)="onHexInput($event)"
   />
+  @if (!inline()) {
   <button
     #triggerEl
     type="button"
@@ -21,7 +22,12 @@
     (click)="toggle()"
     (keydown)="onTriggerKeydown($event)"
   ></button>
+  }
 </div>
+
+@if (inline()) {
+<ng-container [ngTemplateOutlet]="panelTemplate" />
+}
 
 <ng-template #panelTemplate>
   <div
@@ -31,14 +37,14 @@
   >
     <div [class]="swatchGridClasses">
       @for (swatch of swatches(); track swatch) {
-        <button
-          type="button"
-          [class]="swatchOptionClasses(isSameColor(swatch))"
-          [style.background-color]="swatch"
-          [attr.aria-label]="'Color ' + swatch"
-          [attr.aria-pressed]="isSameColor(swatch)"
-          (click)="selectSwatch(swatch)"
-        ></button>
+      <button
+        type="button"
+        [class]="swatchOptionClasses(isSameColor(swatch))"
+        [style.background-color]="swatch"
+        [attr.aria-label]="'Color ' + swatch"
+        [attr.aria-pressed]="isSameColor(swatch)"
+        (click)="selectSwatch(swatch)"
+      ></button>
       }
       <div [class]="nativeInputWrapperClasses">
         <input

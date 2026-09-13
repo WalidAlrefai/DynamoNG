@@ -92,6 +92,26 @@ class AccordionDynamicHostComponent {
   ]);
 }
 
+@Component({
+  selector: 'dg-accordion-custom-header-host',
+  standalone: true,
+  imports: [DynamoAccordion, DynamoAccordionPanel],
+  template: `
+    <dg-accordion>
+      <dg-accordion-panel value="profile" header="Profile">
+        <span header data-testid="custom-header">
+          <strong>Profile</strong> (3 fields)
+        </span>
+        Profile content
+      </dg-accordion-panel>
+      <dg-accordion-panel value="settings" header="Settings">
+        Settings content
+      </dg-accordion-panel>
+    </dg-accordion>
+  `,
+})
+class AccordionCustomHeaderHostComponent {}
+
 describe('DynamoAccordion', () => {
   describe('creation', () => {
     it('renders one header button per projected dg-accordion-panel', () => {
@@ -154,6 +174,30 @@ describe('DynamoAccordion', () => {
       const { container } = renderDynamoComponent(AccordionTestHostComponent);
 
       expect(container.querySelector('[aria-label="FAQ"]')).toBeTruthy();
+    });
+  });
+
+  describe('custom header content', () => {
+    it('renders projected [header] content instead of the plain header text', () => {
+      const { container } = renderDynamoComponent(
+        AccordionCustomHeaderHostComponent,
+      );
+
+      expect(within(container).getByTestId('custom-header')).toBeTruthy();
+      const profileButton = within(container).getByRole('button', {
+        name: /Profile \(3 fields\)/,
+      });
+      expect(profileButton).toBeTruthy();
+    });
+
+    it('falls back to the plain header text when nothing is projected into [header]', () => {
+      const { container } = renderDynamoComponent(
+        AccordionCustomHeaderHostComponent,
+      );
+
+      expect(
+        within(container).getByRole('button', { name: 'Settings' }),
+      ).toBeTruthy();
     });
   });
 

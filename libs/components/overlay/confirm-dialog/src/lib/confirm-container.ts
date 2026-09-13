@@ -49,9 +49,38 @@ export class DynamoConfirmContainer implements OnDestroy {
       const panel = this.panelRef()?.nativeElement;
       if (panel && !this.focusTrap) {
         this.focusTrap = this.focusTrapService.create(panel);
-        panel.focus();
+        // Deferred a macrotask: at this exact point the panel element
+        // itself exists, but `dg-button`'s projected label content (and,
+        // for the cancel button, its whole `@if (request().showCancel)`
+        // block) haven't necessarily finished rendering yet — this effect
+        // can run before Angular has recursed into child-component views.
+        // A `setTimeout(0)` runs after the current synchronous render pass
+        // (including `DynamoConfirmService`'s own explicit
+        // `detectChanges()`) has fully committed, same technique the specs'
+        // own `flushFocusTrap()` helper relies on.
+        setTimeout(() => this.focusInitialElement(panel));
       }
     });
+  }
+
+  // Matches by rendered label text rather than DOM position — robust
+  // regardless of how the cancel button's `@if (request().showCancel)`
+  // block orders relative to the always-rendered confirm button.
+  private focusInitialElement(panel: HTMLElement): void {
+    const focusTarget = this.request().defaultFocus;
+    const label =
+      focusTarget === 'confirm'
+        ? this.request().confirmLabel
+        : focusTarget === 'cancel'
+          ? this.request().cancelLabel
+          : null;
+    const target =
+      label == null
+        ? undefined
+        : Array.from(panel.querySelectorAll('button')).find(
+            (button) => button.textContent?.trim() === label,
+          );
+    (target ?? panel).focus();
   }
 
   ngOnDestroy(): void {

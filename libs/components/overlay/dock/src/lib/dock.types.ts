@@ -5,8 +5,11 @@ export interface DynamoDockItem {
   icon?: string;
   disabled?: boolean;
   command?: () => void;
+  /** Short badge (e.g. a notification count) shown at the tile's corner. Folded into the tile's own `aria-label` — not read separately. */
+  badge?: string | number;
 }
 
 export type DynamoDockPosition = 'bottom' | 'top' | 'left' | 'right';
 
-export type DynamoDockPart = 'root' | 'list' | 'item' | 'icon' | 'label';
+export type DynamoDockPart =
+  'root' | 'list' | 'item' | 'icon' | 'label' | 'badge';

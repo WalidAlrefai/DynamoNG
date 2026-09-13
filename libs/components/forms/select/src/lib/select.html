@@ -10,21 +10,21 @@
     [attr.aria-controls]="isOpen() ? listboxId : null"
     [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
     [attr.aria-invalid]="invalid() ? 'true' : null"
+    [attr.aria-readonly]="readOnly() ? 'true' : null"
     [attr.aria-busy]="loading() ? 'true' : null"
     [attr.aria-label]="ariaLabel() ?? null"
     (click)="toggle()"
     (keydown)="onTriggerKeydown($event)"
   >
     @if (loading()) {
-      <dg-spinner size="sm" />
-    }
-    {{ selectedLabel() }}
+    <dg-spinner size="sm" />
+    } {{ selectedLabel() }}
   </button>
   @if (clearable() && selectedOption()) {
   <button
     type="button"
     [class]="clearButtonClasses"
-    [disabled]="isDisabled()"
+    [disabled]="isDisabled() || readOnly()"
     aria-label="Clear selection"
     (click)="clearValue($event)"
   >
@@ -102,31 +102,30 @@
       [attr.aria-label]="ariaLabel() ?? 'Options'"
     >
       @if (isVirtualized()) {
-        <dg-virtual-scroll
-          [items]="visibleOptions()"
-          [itemSize]="virtualScrollItemSize()"
-          [height]="virtualScrollHeight()"
-        >
-          <ng-template let-option let-i="index">
-            <li
-              [id]="optionId(i)"
-              role="option"
-              tabindex="-1"
-              [attr.aria-selected]="isSelected(option)"
-              [attr.aria-disabled]="option.disabled ? 'true' : null"
-              [class]="optionClasses(option, i)"
-              (click)="selectOption(option)"
-              (keydown.enter)="selectOption(option)"
-              (keydown.space)="selectOption(option)"
-              (mouseenter)="activeIndex.set(i)"
-            >
-              {{ option.label }}
-            </li>
-          </ng-template>
-        </dg-virtual-scroll>
-      } @else {
-      @for (item of renderItems(); track entryKey(item)) { @if (item.kind ===
-      'heading') {
+      <dg-virtual-scroll
+        [items]="visibleOptions()"
+        [itemSize]="virtualScrollItemSize()"
+        [height]="virtualScrollHeight()"
+      >
+        <ng-template let-option let-i="index">
+          <li
+            [id]="optionId(i)"
+            role="option"
+            tabindex="-1"
+            [attr.aria-selected]="isSelected(option)"
+            [attr.aria-disabled]="option.disabled ? 'true' : null"
+            [class]="optionClasses(option, i)"
+            (click)="selectOption(option)"
+            (keydown.enter)="selectOption(option)"
+            (keydown.space)="selectOption(option)"
+            (mouseenter)="activeIndex.set(i)"
+          >
+            {{ option.label }}
+          </li>
+        </ng-template>
+      </dg-virtual-scroll>
+      } @else { @for (item of renderItems(); track entryKey(item)) { @if
+      (item.kind === 'heading') {
       <li role="presentation" [class]="groupHeadingClasses">
         {{ item.label }}
       </li>
@@ -145,9 +144,7 @@
       >
         {{ item.option.label }}
       </li>
-      } }
-      }
-      @if (showNoResults()) {
+      } } } @if (showNoResults()) {
       <li role="presentation" [class]="noResultsClasses">
         <span role="status">{{ noResultsMessage() }}</span>
       </li>

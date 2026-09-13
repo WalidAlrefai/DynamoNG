@@ -219,6 +219,36 @@ describe('DynamoTextarea', () => {
     });
   });
 
+  describe('resized output', () => {
+    it('emits when autoResize adjusts height as content is typed', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTextarea,
+        { inputs: { autoResize: true } },
+      );
+      let emitCount = 0;
+      componentInstance.resized.subscribe(() => emitCount++);
+      const textarea = within(container).getByRole('textbox');
+
+      await userEvent.type(textarea, 'a\nb\nc');
+
+      expect(emitCount).toBeGreaterThan(0);
+    });
+
+    it('does not emit when autoResize is off', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTextarea,
+        { inputs: { autoResize: false } },
+      );
+      let emitCount = 0;
+      componentInstance.resized.subscribe(() => emitCount++);
+      const textarea = within(container).getByRole('textbox');
+
+      await userEvent.type(textarea, 'a\nb\nc');
+
+      expect(emitCount).toBe(0);
+    });
+  });
+
   describe('readOnly', () => {
     it('blocks typed input, keeps the value unchanged, and reflects aria-readonly', async () => {
       const { container } = renderDynamoComponent(DynamoTextarea, {

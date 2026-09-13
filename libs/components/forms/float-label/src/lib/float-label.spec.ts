@@ -1,6 +1,9 @@
 import { Component, signal } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import { describe, expect, it } from 'vitest';
 import { DynamoFloatLabel } from './float-label';
@@ -48,7 +51,9 @@ describe('DynamoFloatLabel', () => {
       expect(label.querySelector('input')).toBeTruthy();
       expect(label.textContent).toContain('Email');
       // testing-library resolves the accessible name via the wrapping label.
-      expect(within(container).getByRole('textbox', { name: 'Email' })).toBeTruthy();
+      expect(
+        within(container).getByRole('textbox', { name: 'Email' }),
+      ).toBeTruthy();
     });
   });
 
@@ -93,13 +98,29 @@ describe('DynamoFloatLabel', () => {
     });
   });
 
+  describe('invalid state', () => {
+    it('colors the label via group-has when the projected control is aria-invalid', () => {
+      const { container } = renderDynamoComponent(FloatLabelHostComponent);
+      const text = container.querySelector(
+        '[data-testid="DynamoFloatLabel-label"]',
+      ) as HTMLElement;
+      expect(text.className).toContain(
+        'group-has-[[aria-invalid="true"]]:text-danger',
+      );
+    });
+  });
+
   describe('unstyled', () => {
     it('emits only styleClass on the root when unstyled', () => {
       @Component({
         selector: 'dg-fl-unstyled-host',
         standalone: true,
         imports: [DynamoFloatLabel],
-        template: `<dg-float-label label="X" [unstyled]="true" styleClass="mine">
+        template: `<dg-float-label
+          label="X"
+          [unstyled]="true"
+          styleClass="mine"
+        >
           <input placeholder=" " />
         </dg-float-label>`,
       })
@@ -143,7 +164,9 @@ describe('DynamoIftaLabel', () => {
       container.querySelector('[data-testid="DynamoIftaLabel-label"]')
         ?.textContent,
     ).toContain('Email');
-    expect(within(container).getByRole('textbox', { name: 'Email' })).toBeTruthy();
+    expect(
+      within(container).getByRole('textbox', { name: 'Email' }),
+    ).toBeTruthy();
   });
 
   it('adds top padding to the projected control via a descendant selector', () => {
@@ -164,5 +187,15 @@ describe('DynamoIftaLabel', () => {
   it('has no axe violations', async () => {
     const { container } = renderDynamoComponent(IftaLabelHostComponent);
     await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+  });
+
+  it('colors the label via group-has when the projected control is aria-invalid', () => {
+    const { container } = renderDynamoComponent(IftaLabelHostComponent);
+    const text = container.querySelector(
+      '[data-testid="DynamoIftaLabel-label"]',
+    ) as HTMLElement;
+    expect(text.className).toContain(
+      'group-has-[[aria-invalid="true"]]:text-danger',
+    );
   });
 });

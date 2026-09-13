@@ -14,6 +14,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'auto-resize', title: 'Auto Resize' },
   { id: 'invalid', title: 'Invalid' },
   { id: 'disabled', title: 'Disabled' },
+  { id: 'readonly', title: 'Read-only' },
 ];
 
 @Component({
@@ -58,8 +59,12 @@ const EXAMPLES: DocExampleRef[] = [
           <dg-textarea
             placeholder="Grows as you type"
             [autoResize]="true"
+            (resized)="resizeCount.set(resizeCount() + 1)"
             ariaLabel="Auto-resizing example"
           />
+          <p class="mt-2 text-sm text-text-muted">
+            resized fired {{ resizeCount() }} time(s)
+          </p>
         </div>
       </docs-example>
 
@@ -93,6 +98,21 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="readonly"
+        title="Read-only"
+        description="readOnly keeps the value visible and the field focusable, but blocks edits — unlike disabled, it isn't dimmed or removed from the tab order."
+        [code]="readonlyCode"
+      >
+        <div preview class="max-w-sm">
+          <dg-textarea
+            value="This text can't be edited"
+            [readOnly]="true"
+            ariaLabel="Read-only example"
+          />
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -101,9 +121,11 @@ export class TextareaDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows: ApiTableRow[] = textareaApiRows;
   protected readonly bio = signal('');
+  protected readonly resizeCount = signal(0);
 
   protected readonly basicCode = `<dg-textarea [(ngModel)]="bio" placeholder="Tell us about yourself" ariaLabel="Bio" />`;
-  protected readonly autoResizeCode = `<dg-textarea [autoResize]="true" placeholder="Grows as you type" ariaLabel="Notes" />`;
+  protected readonly autoResizeCode = `<dg-textarea [autoResize]="true" (resized)="resizeCount.set(resizeCount() + 1)" placeholder="Grows as you type" ariaLabel="Notes" />`;
   protected readonly invalidCode = `<dg-textarea [invalid]="true" placeholder="Invalid state" ariaLabel="Bio" />`;
   protected readonly disabledCode = `<dg-textarea [disabled]="true" placeholder="Disabled" ariaLabel="Bio" />`;
+  protected readonly readonlyCode = `<dg-textarea value="This text can't be edited" [readOnly]="true" ariaLabel="Bio" />`;
 }

@@ -10,6 +10,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'sizes', title: 'Sizes' },
   { id: 'labelled', title: 'Labelled' },
+  { id: 'speed', title: 'Speed' },
 ];
 
 const API: ApiTableRow[] = [
@@ -19,6 +20,7 @@ const API: ApiTableRow[] = [
     type: 'string | undefined',
     default: 'undefined (decorative)',
   },
+  { name: 'speed', type: 'string | undefined', default: 'undefined' },
 ];
 
 @Component({
@@ -54,6 +56,18 @@ const API: ApiTableRow[] = [
           <dg-spinner ariaLabel="Loading results" />
         </div>
         <div code>&lt;dg-spinner ariaLabel="Loading results" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="speed"
+        title="Speed"
+        description="speed overrides the default 1s rotation with a raw CSS duration."
+      >
+        <div preview class="flex items-center gap-6 text-primary">
+          <dg-spinner speed="3s" />
+          <dg-spinner speed="500ms" />
+        </div>
+        <div code>&lt;dg-spinner speed="500ms" /&gt;</div>
       </docs-example>
 
       <docs-api-table api [rows]="apiRows" />

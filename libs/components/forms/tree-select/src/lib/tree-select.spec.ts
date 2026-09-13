@@ -741,6 +741,110 @@ describe('DynamoTreeSelect', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('blocks committing a node but still opens the panel and allows expanding branches', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: { nodes: NODES, readOnly: true, ariaLabel: 'Choose' },
+        },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(within(getRowByText('Fruits')).getByRole('button'));
+      await settle(fixture);
+      expect(getRows().map((r) => r.textContent?.trim())).toContain('Apple');
+
+      await userEvent.click(getRowByText('Apple'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBeNull();
+      expect(getPanel()).not.toBeNull();
+    });
+
+    it('reflects aria-readonly on the trigger', () => {
+      const { container } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, readOnly: true, ariaLabel: 'Choose' },
+      });
+
+      expect(
+        within(container).getByRole('combobox').getAttribute('aria-readonly'),
+      ).toBe('true');
+    });
+  });
+
+  describe('filterable', () => {
+    it('renders a filter box when filterable is enabled', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, filterable: true, ariaLabel: 'Choose' },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('input[type="search"]')).not.toBeNull();
+    });
+
+    it('hides non-matching branches and auto-reveals a matching descendant', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, filterable: true, ariaLabel: 'Choose' },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const filterInput = getPanel()?.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      await userEvent.type(filterInput, 'apple');
+      await settle(fixture);
+
+      const labels = getRows().map((r) => r.textContent?.trim());
+      expect(labels).toEqual(['Fruits', 'Apple']);
+    });
+
+    it('shows the no-results message when nothing matches', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, filterable: true, ariaLabel: 'Choose' },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const filterInput = getPanel()?.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      await userEvent.type(filterInput, 'zzz-no-match');
+      await settle(fixture);
+
+      expect(getPanel()?.textContent).toContain('No matching options');
+      expect(getRows()).toHaveLength(0);
+    });
+
+    it('clears the filter text when the panel closes', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, filterable: true, ariaLabel: 'Choose' },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const filterInput = getPanel()?.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      await userEvent.type(filterInput, 'apple');
+      await settle(fixture);
+      await userEvent.click(getRowByText('Apple'));
+      await settle(fixture);
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      const reopenedInput = getPanel()?.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      expect(reopenedInput.value).toBe('');
+    });
+  });
+
   describe('edge cases', () => {
     it('renders a flat list with no branches at all', async () => {
       const flatNodes: DynamoTreeNode<string>[] = [

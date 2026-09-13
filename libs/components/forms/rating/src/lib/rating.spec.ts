@@ -1,3 +1,5 @@
+import { Component } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -8,6 +10,16 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DynamoRating } from './rating';
 import { DynamoRatingHarness } from './rating.harness';
+
+@Component({
+  selector: 'dg-rating-reactive-form-host',
+  standalone: true,
+  imports: [DynamoRating, ReactiveFormsModule],
+  template: `<dg-rating [formControl]="control" ariaLabel="Rating" />`,
+})
+class ReactiveFormHostComponent {
+  readonly control = new FormControl(0, { nonNullable: true });
+}
 
 function stars(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll('[data-star]'));
@@ -49,9 +61,8 @@ describe('DynamoRating', () => {
 
   describe('user interactions', () => {
     it('clicking a star sets the value', async () => {
-      const { container, componentInstance } = renderDynamoComponent(
-        DynamoRating,
-      );
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoRating);
 
       await userEvent.click(star(container, 2));
 
@@ -70,9 +81,8 @@ describe('DynamoRating', () => {
     });
 
     it('hovering previews the value without committing it', () => {
-      const { fixture, container, componentInstance } = renderDynamoComponent(
-        DynamoRating,
-      );
+      const { fixture, container, componentInstance } =
+        renderDynamoComponent(DynamoRating);
       const root = within(container).getByRole('slider');
 
       fireEvent.mouseEnter(star(container, 3));
@@ -143,9 +153,8 @@ describe('DynamoRating', () => {
     });
 
     it('clamps at the 0 boundary', async () => {
-      const { container, componentInstance } = renderDynamoComponent(
-        DynamoRating,
-      );
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoRating);
       within(container).getByRole('slider').focus();
 
       await userEvent.keyboard('{ArrowLeft}');
@@ -206,6 +215,66 @@ describe('DynamoRating', () => {
       expect(componentInstance.value()).toBe(2);
       expect(root.getAttribute('aria-disabled')).toBe('true');
       expect(root.getAttribute('tabindex')).toBe('-1');
+    });
+  });
+
+  describe('ControlValueAccessor / forms integration', () => {
+    it('propagates a click selection to a bound reactive FormControl', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      await userEvent.click(star(container, 3));
+
+      expect(componentInstance.control.value).toBe(4);
+    });
+
+    it('reflects an externally-set FormControl value (writeValue)', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+
+      componentInstance.control.setValue(3);
+      fixture.detectChanges();
+
+      expect(
+        within(container).getByRole('slider').getAttribute('aria-valuenow'),
+      ).toBe('3');
+    });
+
+    it('writeValue(null) falls back to 0', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { ariaLabel: 'Rating', value: 3 } },
+      );
+
+      componentInstance.writeValue(null);
+      fixture.detectChanges();
+
+      expect(
+        within(container).getByRole('slider').getAttribute('aria-valuenow'),
+      ).toBe('0');
+    });
+
+    it('setDisabledState reflects onto the disabled model', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoRating, {
+        inputs: { ariaLabel: 'Rating' },
+      });
+
+      componentInstance.setDisabledState(true);
+
+      expect(componentInstance.disabled()).toBe(true);
+    });
+
+    it('marks the FormControl as touched on blur', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveFormHostComponent,
+      );
+      expect(componentInstance.control.touched).toBe(false);
+
+      fireEvent.blur(within(container).getByRole('slider'));
+
+      expect(componentInstance.control.touched).toBe(true);
     });
   });
 

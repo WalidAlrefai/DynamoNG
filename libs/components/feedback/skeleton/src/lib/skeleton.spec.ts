@@ -95,6 +95,47 @@ describe('DynamoSkeleton', () => {
     });
   });
 
+  describe('animation', () => {
+    it('defaults to "pulse", applying animate-pulse', () => {
+      const { componentInstance, container } =
+        renderDynamoComponent(DynamoSkeleton);
+
+      expect(componentInstance.animation()).toBe('pulse');
+      expect(container.querySelector('div')?.className).toContain(
+        'animate-pulse',
+      );
+    });
+
+    it('omits animate-pulse when animation is "none"', () => {
+      const { container } = renderDynamoComponent(DynamoSkeleton, {
+        inputs: { animation: 'none' },
+      });
+
+      expect(container.querySelector('div')?.className).not.toContain(
+        'animate-pulse',
+      );
+    });
+  });
+
+  describe('borderRadius', () => {
+    it('leaves border-radius unset by default, keeping the variant class', () => {
+      const { container } = renderDynamoComponent(DynamoSkeleton);
+
+      const div = container.querySelector('div') as HTMLElement;
+      expect(div.style.borderRadius).toBe('');
+      expect(div.className).toContain('rounded-sm');
+    });
+
+    it('applies an explicit borderRadius via inline style', () => {
+      const { container } = renderDynamoComponent(DynamoSkeleton, {
+        inputs: { borderRadius: '0.75rem' },
+      });
+
+      const div = container.querySelector('div') as HTMLElement;
+      expect(div.style.borderRadius).toBe('0.75rem');
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations', async () => {
       const { fixture } = renderDynamoComponent(DynamoSkeleton);

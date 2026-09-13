@@ -51,6 +51,10 @@ export class DynamoChipsInput
    *  dim its appearance. */
   readonly readOnly = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Accessible name via reference to an external label element, mirroring `ariaLabel`'s forwarding. */
+  readonly ariaLabelledBy = input<string | undefined>(undefined);
+  /** The character that commits the draft text as a chip — on keypress and when splitting a multi-value paste. Defaults to a comma. */
+  readonly separator = input(',');
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model<string[]>([]);
@@ -118,7 +122,7 @@ export class DynamoChipsInput
     if (this.disabled() || this.readOnly()) {
       return;
     }
-    if (event.key === 'Enter' || event.key === ',') {
+    if (event.key === 'Enter' || event.key === this.separator()) {
       event.preventDefault();
       this.commitDraft();
     } else if (
@@ -136,13 +140,14 @@ export class DynamoChipsInput
       return;
     }
     const pasted = event.clipboardData?.getData('text') ?? '';
-    // A plain single-value paste (no comma) is left to land in the field
-    // normally — only a multi-value paste is worth intercepting.
-    if (!pasted.includes(',')) {
+    const separator = this.separator();
+    // A plain single-value paste (no separator) is left to land in the
+    // field normally — only a multi-value paste is worth intercepting.
+    if (!pasted.includes(separator)) {
       return;
     }
     event.preventDefault();
-    for (const token of pasted.split(',')) {
+    for (const token of pasted.split(separator)) {
       this.tryCommit(token);
     }
   }

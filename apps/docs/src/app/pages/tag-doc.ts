@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { DynamoTag } from '@dynamong/tag';
+import { DynamoCheckIcon } from '@dynamong/icons';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
 import {
@@ -10,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'severities', title: 'Severities' },
   { id: 'variant-size', title: 'Variant & Size' },
+  { id: 'icon', title: 'Icon' },
 ];
 
 const API: ApiTableRow[] = [
@@ -26,7 +28,13 @@ const API: ApiTableRow[] = [
   selector: 'docs-tag-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoTag, DocExamplesLayout, DocExample, DocApiTable],
+  imports: [
+    DynamoTag,
+    DynamoCheckIcon,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
     <docs-examples-layout
       name="Tag"
@@ -59,7 +67,26 @@ const API: ApiTableRow[] = [
           <dg-tag severity="success" size="sm">Small</dg-tag>
           <dg-tag severity="success" size="lg">Large</dg-tag>
         </div>
-        <div code>&lt;dg-tag severity="primary" variant="outline"&gt;Outline&lt;/dg-tag&gt;</div>
+        <div code>
+          &lt;dg-tag severity="primary"
+          variant="outline"&gt;Outline&lt;/dg-tag&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="icon"
+        title="Icon"
+        description="Projecting an [icon]-attributed element renders it ahead of the label."
+      >
+        <div preview class="flex flex-wrap items-center gap-2">
+          <dg-tag severity="success">
+            <dg-icon-check icon />
+            Verified
+          </dg-tag>
+        </div>
+        <div code>
+          &lt;dg-tag&gt;&lt;dg-icon-check icon /&gt;Verified&lt;/dg-tag&gt;
+        </div>
       </docs-example>
 
       <docs-api-table api [rows]="apiRows" />

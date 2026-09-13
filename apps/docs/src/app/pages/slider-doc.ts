@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoSlider } from '@dynamong/slider';
 import { DocExample } from '../components/example-block';
 import {
@@ -10,13 +11,15 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'severity-size', title: 'Severity & Size' },
   { id: 'disabled', title: 'Disabled' },
+  { id: 'readonly', title: 'Read-only' },
+  { id: 'reactive-forms', title: 'Reactive Forms' },
 ];
 
 @Component({
   selector: 'docs-slider-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSlider, DocExamplesLayout, DocExample],
+  imports: [DynamoSlider, ReactiveFormsModule, DocExamplesLayout, DocExample],
   template: `
     <docs-examples-layout
       name="Slider"
@@ -62,6 +65,34 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="readonly"
+        title="Read-only"
+        description="readOnly keeps the thumb visible/focusable but blocks dragging, clicking, and keyboard changes — unlike disabled, it doesn't dim the track or remove it from the tab order."
+        [code]="readonlyCode"
+      >
+        <div preview>
+          <dg-slider [value]="60" [readOnly]="true" ariaLabel="Read-only" />
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="reactive-forms"
+        title="Reactive Forms"
+        description="Implements ControlValueAccessor, so it plugs directly into formControl/ngModel."
+        [code]="reactiveFormsCode"
+      >
+        <div preview class="flex flex-col gap-2">
+          <span class="text-sm text-text-muted"
+            >Value: {{ reactiveVolume.value }}</span
+          >
+          <dg-slider
+            [formControl]="reactiveVolume"
+            ariaLabel="Reactive volume"
+          />
+        </div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -83,6 +114,11 @@ const EXAMPLES: DocExampleRef[] = [
           </tr>
           <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">disabled</td>
+            <td class="py-2 pr-4 font-mono">boolean (model)</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">readOnly</td>
             <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
           </tr>
@@ -113,7 +149,13 @@ export class SliderDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly volume = signal(50);
 
+  protected readonly reactiveVolume = new FormControl(30, {
+    nonNullable: true,
+  });
+
   protected readonly basicCode = `<dg-slider [(value)]="volume" ariaLabel="Volume" />`;
   protected readonly severitySizeCode = `<dg-slider [value]="70" severity="success" size="lg" ariaLabel="Brightness" />`;
   protected readonly disabledCode = `<dg-slider [value]="40" [disabled]="true" ariaLabel="Disabled" />`;
+  protected readonly readonlyCode = `<dg-slider [value]="60" [readOnly]="true" ariaLabel="Read-only" />`;
+  protected readonly reactiveFormsCode = `<dg-slider [formControl]="volume" />`;
 }
