@@ -65,13 +65,12 @@ export class DynamoKnob
 
   // Slider's track fills 100% of its flex parent by CSS; a circle has no
   // such equivalent without a ResizeObserver, which is unwarranted
-  // complexity for v1 — diameter/strokeWidth are explicit px inputs instead
-  // (100/8 mirror PrimeNG's own Knob defaults).
+  // complexity for v1 — diameter/strokeWidth are explicit px inputs instead.
   readonly diameter = input(100);
   readonly strokeWidth = input(8);
   // Whether the center numeric label renders at all — a compact visual-only
-  // dial is a real PrimeNG use case, and hiding this later would be a
-  // breaking change, so it ships now even though it's a one-line @if.
+  // dial is a real use case, and hiding this later would be a breaking
+  // change, so it ships now even though it's a one-line @if.
   readonly showValue = input(true);
 
   private readonly svgRef =
@@ -251,12 +250,12 @@ export class DynamoKnob
   }
 
   // Full 360deg sweep only for v1 (0% and 100% both sit at 12 o'clock,
-  // value increases clockwise) — no configurable start/end angle like
-  // PrimeNG's rarely-used partial-arc option. This keeps the pointer-angle
-  // math a single unconditional formula instead of needing a second
-  // angle-range branch. The trade-off: dragging across the 12 o'clock seam
-  // is an inherent discontinuity (value jumps from ~max to ~min) — the same
-  // behavior PrimeNG's own full-circle Knob has, not a bug to fix here.
+  // value increases clockwise) — no configurable start/end angle for a
+  // partial arc. This keeps the pointer-angle math a single unconditional
+  // formula instead of needing a second angle-range branch. The trade-off:
+  // dragging across the 12 o'clock seam is an inherent discontinuity (value
+  // jumps from ~max to ~min) — an accepted characteristic of a full-circle
+  // knob, not a bug to fix here.
   private angleFromPointer(clientX: number, clientY: number): number {
     const rect = this.svgRef().nativeElement.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;

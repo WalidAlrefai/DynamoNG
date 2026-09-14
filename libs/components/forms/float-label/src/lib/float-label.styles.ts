@@ -10,7 +10,7 @@ import { cva } from 'class-variance-authority';
 // wrapper divs) trivially satisfies a bare `:not(:placeholder-shown)`, which
 // would keep the label permanently floated. The projected control also needs
 // a `placeholder` (a single space is fine) for `:placeholder-shown` to
-// resolve, exactly like PrimeNG's FloatLabel.
+// resolve.
 
 export const floatLabelRootStyles = 'group relative block';
 
@@ -26,10 +26,9 @@ const FLOATED_SHARED =
 export const floatLabelTextStyles = cva(
   'pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 origin-left rtl:origin-right ' +
     'text-sm text-text-muted transition-all duration-200 ease-out ' +
-    // Mirrors PrimeNG's `:has(.ng-invalid.ng-dirty) label` rule, but keyed off
-    // the projected control's own `aria-invalid` attribute instead of Angular
-    // Forms CSS classes, since not every projected control is a ReactiveForms
-    // field.
+    // Keyed off the projected control's own `aria-invalid` attribute instead
+    // of Angular Forms CSS classes, since not every projected control is a
+    // ReactiveForms field.
     'group-has-[[aria-invalid="true"]]:text-danger ' +
     FLOATED_SHARED,
   {

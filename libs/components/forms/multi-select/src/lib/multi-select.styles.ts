@@ -61,11 +61,11 @@ export const multiSelectTagRemoveButtonStyles =
   'transition-colors hover:bg-current/10 ' +
   focusRingClass;
 
-// Holds the optional select-all checkbox + filter field in one row —
-// matches PrimeNG's MultiSelect header (a single tri-state checkbox
-// followed by the filter input), not two separate "Select all"/"Clear all"
-// buttons. Same border/padding language as `selectFilterWrapperStyles`,
-// plus `flex` since this row can have two children instead of one.
+// Holds the optional select-all checkbox + filter field in one row: a
+// single tri-state checkbox followed by the filter input, not two separate
+// "Select all"/"Clear all" buttons. Same border/padding language as
+// `selectFilterWrapperStyles`, plus `flex` since this row can have two
+// children instead of one.
 export const multiSelectHeaderRowStyles =
   'flex items-center gap-2 border-b border-border p-2';
 

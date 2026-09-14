@@ -5,10 +5,9 @@ import { avatarGroupRootStyles } from './avatar.styles';
 import type { DynamoAvatarGroupPart } from './avatar.types';
 
 /**
- * A layout helper for a stack of overlapping `<dg-avatar>`s — mirrors
- * PrimeNG's own near-empty `AvatarGroup` (just a content-projecting
- * wrapper; the overlap is CSS, not JS). No inputs beyond the inherited
- * `styleClass`/`unstyled`.
+ * A layout helper for a stack of overlapping `<dg-avatar>`s — a near-empty
+ * wrapper (just content projection; the overlap is CSS, not JS). No inputs
+ * beyond the inherited `styleClass`/`unstyled`.
  */
 @Component({
   selector: 'dg-avatar-group',

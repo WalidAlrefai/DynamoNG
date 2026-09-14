@@ -111,7 +111,7 @@ export class DynamoAutocomplete<TValue = unknown>
   readonly lazy = input(false);
   /** Debounced by `debounceTime`. Only fires in `lazy` mode, once the typed text reaches `minLength`. Named `searchQuery`, not `search`, to avoid colliding with the native DOM `search` event. */
   readonly searchQuery = output<string>();
-  /** Milliseconds to wait after the last keystroke before emitting `searchQuery` — mirrors PrimeNG's own `delay`. */
+  /** Milliseconds to wait after the last keystroke before emitting `searchQuery`. */
   readonly debounceTime = input(300);
   /** Minimum typed length before `searchQuery` fires. Below this, no request is made and no event is emitted. */
   readonly minLength = input(1);

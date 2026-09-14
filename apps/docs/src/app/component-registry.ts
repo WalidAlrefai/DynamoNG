@@ -3,10 +3,10 @@ export interface DocComponentEntry {
   name: string;
   domain: 'forms' | 'overlay' | 'panel' | 'feedback' | 'data';
   /**
-   * PrimeNG-style sidebar/nav grouping — independent of `domain` (which
-   * predates this and stays purely a source-folder/project-tag concern per
-   * the root README). Only categories with at least one member are ever
-   * rendered, so this union can safely grow without every value being used.
+   * Sidebar/nav grouping — independent of `domain` (which predates this and
+   * stays purely a source-folder/project-tag concern per the root README).
+   * Only categories with at least one member are ever rendered, so this
+   * union can safely grow without every value being used.
    */
   category:
     | 'Form'
@@ -324,8 +324,7 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     name: 'Autocomplete',
     domain: 'forms',
     category: 'Form',
-    description:
-      'A text input with filtered, keyboard-navigable suggestions.',
+    description: 'A text input with filtered, keyboard-navigable suggestions.',
   },
   {
     slug: 'color-picker',
@@ -372,7 +371,8 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     name: 'Toolbar',
     domain: 'panel',
     category: 'Panel',
-    description: 'An action bar with start/center/end content-projection slots.',
+    description:
+      'An action bar with start/center/end content-projection slots.',
   },
   {
     slug: 'scroll-top',
@@ -516,7 +516,7 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'forms',
     category: 'Form',
     description:
-      'A bordered, legend\'d form section built on the native <fieldset>/<legend> elements, optionally collapsible.',
+      "A bordered, legend'd form section built on the native <fieldset>/<legend> elements, optionally collapsible.",
   },
   {
     slug: 'input-group',
@@ -556,7 +556,7 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'data',
     category: 'Data',
     description:
-      'A hierarchical table — Tree\'s expand/collapse rows combined with Table\'s columns and sorting — for data like a file system or org chart.',
+      "A hierarchical table — Tree's expand/collapse rows combined with Table's columns and sorting — for data like a file system or org chart.",
   },
   {
     slug: 'virtual-scroll',

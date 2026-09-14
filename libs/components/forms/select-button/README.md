@@ -21,15 +21,15 @@ protected onItemSelect(option: DynamoSelectOption<string>): void { ... }
 
 ## Inputs
 
-| Input        | Type                                      | Default     | Description                                                                                                                                                                                     |
-| ------------ | ----------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `options`    | `DynamoSelectOption<TValue>[]` (required) | —           | The segment list.                                                                                                                                                                               |
-| `value`      | `DynamoSelectButtonValue<TValue>` (model) | `null`      | Two-way bindable; also driven by Angular forms via `writeValue`. Scalar (`TValue \| null`) in single-select mode, `TValue[]` once `multiple` is true.                                           |
-| `multiple`   | `boolean`                                 | `false`     | Switches from radio-group semantics (exactly one selected, clicking the active segment is a no-op) to a multi-toggle group.                                                                     |
-| `size`       | `DynamoSelectButtonSize`                  | `'md'`      |                                                                                                                                                                                                 |
-| `disabled`   | `boolean` (model)                         | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`. Disables every segment.                                                                                                  |
-| `ariaLabel`  | `string \| undefined`                     | `undefined` |                                                                                                                                                                                                 |
-| `allowEmpty` | `boolean`                                 | `false`     | In single-select mode, allows clicking the already-active segment to deselect it back to `null` (matches PrimeNG's own default). Has no effect in `multiple` mode, where toggling always works. |
+| Input        | Type                                      | Default     | Description                                                                                                                                                     |
+| ------------ | ----------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `options`    | `DynamoSelectOption<TValue>[]` (required) | —           | The segment list.                                                                                                                                               |
+| `value`      | `DynamoSelectButtonValue<TValue>` (model) | `null`      | Two-way bindable; also driven by Angular forms via `writeValue`. Scalar (`TValue \| null`) in single-select mode, `TValue[]` once `multiple` is true.           |
+| `multiple`   | `boolean`                                 | `false`     | Switches from radio-group semantics (exactly one selected, clicking the active segment is a no-op) to a multi-toggle group.                                     |
+| `size`       | `DynamoSelectButtonSize`                  | `'md'`      |                                                                                                                                                                 |
+| `disabled`   | `boolean` (model)                         | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`. Disables every segment.                                                                  |
+| `ariaLabel`  | `string \| undefined`                     | `undefined` |                                                                                                                                                                 |
+| `allowEmpty` | `boolean`                                 | `false`     | In single-select mode, allows clicking the already-active segment to deselect it back to `null`. Has no effect in `multiple` mode, where toggling always works. |
 
 ## Outputs
 

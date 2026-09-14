@@ -47,8 +47,7 @@ export class DynamoAvatar extends DynamoBaseComponent<DynamoAvatarPart> {
    * A literal override rendered instead of `name`-derived initials — for
    * content the initials heuristic can't produce (a status glyph, an
    * emoji, "+3", ...). Still ranks below `src`: an image, once loaded,
-   * always wins. Mirrors PrimeNG Avatar's `label`, adapted to sit
-   * alongside `name` rather than replace it.
+   * always wins. Sits alongside `name` rather than replacing it.
    */
   readonly label = input<string | undefined>(undefined);
   /** Overrides the derived alt text (`name`, or `'Avatar'` if neither is set). */

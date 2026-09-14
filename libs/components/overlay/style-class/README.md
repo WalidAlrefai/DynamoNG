@@ -2,9 +2,9 @@
 
 A lightweight structural directive (`[dgStyleClass]`) — not a visible
 component — that mutates CSS classes on another element each time its host
-is clicked. It's the show/hide-by-classlist toggler ported from PrimeNG's
-`pStyleClass`, useful for CSS-driven disclosure (accordions, dropdowns,
-simple panels) without any overlay/portal machinery.
+is clicked. A show/hide-by-classlist toggler, useful for CSS-driven
+disclosure (accordions, dropdowns, simple panels) without any overlay/portal
+machinery.
 
 ## Usage
 

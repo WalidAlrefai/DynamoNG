@@ -53,7 +53,7 @@ works with `formControl`/`ngModel` in addition to `[(value)]`.
   mid-page never hijacks page scroll.
 - v1 is a full 360° sweep only (0% and 100% both sit at 12 o'clock, value
   increases clockwise) — dragging across the 12 o'clock seam is an inherent
-  discontinuity, matching PrimeNG's own full-circle Knob.
+  discontinuity, an accepted characteristic of a full-circle knob.
 
 ## Tier / dependencies
 

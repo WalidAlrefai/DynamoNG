@@ -203,9 +203,9 @@ export default [
   },
   {
     // Exempt the components whose positioning is deliberately physical:
-    // Drawer/Dock expose a `left`/`right` keyed position API (matching
-    // PrimeNG — the consumer names the side), and Tooltip's arrow offsets
-    // must track the (not-yet-RTL-aware) JS placement side.
+    // Drawer/Dock expose a `left`/`right` keyed position API (the consumer
+    // names the side), and Tooltip's arrow offsets must track the
+    // (not-yet-RTL-aware) JS placement side.
     files: [
       '**/drawer/src/lib/*.styles.ts',
       '**/dock/src/lib/*.styles.ts',

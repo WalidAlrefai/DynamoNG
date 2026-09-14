@@ -1,7 +1,7 @@
 # @dynamong/cascade-select
 
 A drill-down dropdown for selecting a leaf from a hierarchy — each branch
-opens a sibling flyout panel, PrimeNG-style, rather than nesting inline.
+opens a sibling flyout panel rather than nesting inline.
 
 ## Usage
 
