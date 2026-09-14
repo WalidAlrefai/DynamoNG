@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /*
  * Workspace-internal relative import: npm workspaces symlink @dynamong/theme
@@ -8,7 +8,7 @@
  * installing the published package uses the bare-specifier import shown in
  * the README instead of this relative path.
  */
-@import "../../../libs/theme/tailwind-preset/src/preset.css";
+@import '../../../libs/theme/tailwind-preset/src/preset.css';
 
 /*
  * Without this, the page canvas stays the browser's default white — which

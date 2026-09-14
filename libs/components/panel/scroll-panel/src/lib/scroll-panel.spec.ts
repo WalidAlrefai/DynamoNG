@@ -628,9 +628,7 @@ describe('DynamoScrollPanel', () => {
 
   describe('imperative scroll API', () => {
     it('scrollToTop scrolls the viewport to the top', async () => {
-      const { fixture } = renderDynamoComponent(
-        ScrollPanelTestHostComponent,
-      );
+      const { fixture } = renderDynamoComponent(ScrollPanelTestHostComponent);
       await settle(fixture);
       const panel = fixture.debugElement.query(
         (node) => node.componentInstance instanceof DynamoScrollPanel,
@@ -654,9 +652,7 @@ describe('DynamoScrollPanel', () => {
     });
 
     it('scrollToBottom scrolls the viewport to scrollHeight - clientHeight', async () => {
-      const { fixture } = renderDynamoComponent(
-        ScrollPanelTestHostComponent,
-      );
+      const { fixture } = renderDynamoComponent(ScrollPanelTestHostComponent);
       await settle(fixture);
       const panel = fixture.debugElement.query(
         (node) => node.componentInstance instanceof DynamoScrollPanel,
@@ -675,9 +671,7 @@ describe('DynamoScrollPanel', () => {
     });
 
     it('scrollToStart and scrollToEnd scroll the horizontal axis', async () => {
-      const { fixture } = renderDynamoComponent(
-        ScrollPanelTestHostComponent,
-      );
+      const { fixture } = renderDynamoComponent(ScrollPanelTestHostComponent);
       await settle(fixture);
       const panel = fixture.debugElement.query(
         (node) => node.componentInstance instanceof DynamoScrollPanel,
@@ -700,9 +694,7 @@ describe('DynamoScrollPanel', () => {
     });
 
     it('scrollTo delegates directly to the native viewport', async () => {
-      const { fixture } = renderDynamoComponent(
-        ScrollPanelTestHostComponent,
-      );
+      const { fixture } = renderDynamoComponent(ScrollPanelTestHostComponent);
       await settle(fixture);
       const panel = fixture.debugElement.query(
         (node) => node.componentInstance instanceof DynamoScrollPanel,

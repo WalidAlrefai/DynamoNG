@@ -64,9 +64,7 @@ describe('App', () => {
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain(
-      'No components match',
-    );
+    expect(fixture.nativeElement.textContent).toContain('No components match');
   });
 
   it('toggles the dark class on the document element', () => {

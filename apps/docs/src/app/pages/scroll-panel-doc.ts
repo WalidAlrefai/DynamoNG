@@ -120,16 +120,14 @@ const LONG_LIST = Array.from({ length: 60 }, (_, i) => `Item ${i + 1}`);
           >/<code class="font-mono">unstyled</code>. Size the panel with
           <code class="font-mono">styleClass</code> (e.g.
           <code class="font-mono">"h-48"</code>); a thumb for an axis renders
-          only once that axis actually overflows. For scrolling from
-          outside, call <code class="font-mono">scrollTo</code>/<code
-            class="font-mono"
+          only once that axis actually overflows. For scrolling from outside,
+          call <code class="font-mono">scrollTo</code>/<code class="font-mono"
             >scrollToTop</code
           >/<code class="font-mono">scrollToBottom</code>/<code
             class="font-mono"
             >scrollToStart</code
           >/<code class="font-mono">scrollToEnd</code> on a
-          <code class="font-mono">viewChild</code> reference to the
-          component.
+          <code class="font-mono">viewChild</code> reference to the component.
         </p>
       </div>
     </docs-examples-layout>
