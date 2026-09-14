@@ -108,6 +108,9 @@
       ],
       "@dynamong/rating": ["./libs/components/forms/rating/src/index.ts"],
       "@dynamong/splitter": ["./libs/components/panel/splitter/src/index.ts"],
+      "@dynamong/scroll-panel": [
+        "./libs/components/panel/scroll-panel/src/index.ts"
+      ],
       "@dynamong/toolbar": ["./libs/components/panel/toolbar/src/index.ts"],
       "@dynamong/scroll-top": [
         "./libs/components/overlay/scroll-top/src/index.ts"

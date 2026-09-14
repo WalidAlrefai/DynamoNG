@@ -230,6 +230,11 @@ export const appRoutes: Route[] = [
       import('./pages/splitter-doc').then((m) => m.SplitterDocPage),
   },
   {
+    path: 'components/scroll-panel',
+    loadComponent: () =>
+      import('./pages/scroll-panel-doc').then((m) => m.ScrollPanelDocPage),
+  },
+  {
     path: 'components/toolbar',
     loadComponent: () =>
       import('./pages/toolbar-doc').then((m) => m.ToolbarDocPage),

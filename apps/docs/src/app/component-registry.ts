@@ -367,6 +367,14 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
       'A resizable multi-pane layout container with draggable dividers.',
   },
   {
+    slug: 'scroll-panel',
+    name: 'Scroll Panel',
+    domain: 'panel',
+    category: 'Panel',
+    description:
+      'A container that gives arbitrary projected content a themed, custom-styled scrollbar in place of the native one.',
+  },
+  {
     slug: 'toolbar',
     name: 'Toolbar',
     domain: 'panel',

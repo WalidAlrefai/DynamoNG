@@ -1,0 +1,35 @@
+<div [class]="rootClasses()" [attr.data-testid]="'DynamoScrollPanel'">
+  <div
+    #viewport
+    [class]="contentClasses"
+    [attr.tabindex]="isScrollable() ? 0 : null"
+    data-testid="dg-scroll-panel-viewport"
+  >
+    <div #content>
+      <ng-content />
+    </div>
+  </div>
+  @if (showVerticalThumb()) {
+  <div
+    [class]="thumbYClasses"
+    [style]="thumbYStyle()"
+    [attr.aria-hidden]="true"
+    data-testid="dg-scroll-panel-thumb-y"
+    (pointerdown)="onThumbYPointerDown($event)"
+    (pointermove)="onThumbYPointerMove($event)"
+    (pointerup)="onThumbYPointerUp()"
+    (pointercancel)="onThumbYPointerUp()"
+  ></div>
+  } @if (showHorizontalThumb()) {
+  <div
+    [class]="thumbXClasses"
+    [style]="thumbXStyle()"
+    [attr.aria-hidden]="true"
+    data-testid="dg-scroll-panel-thumb-x"
+    (pointerdown)="onThumbXPointerDown($event)"
+    (pointermove)="onThumbXPointerMove($event)"
+    (pointerup)="onThumbXPointerUp()"
+    (pointercancel)="onThumbXPointerUp()"
+  ></div>
+  }
+</div>

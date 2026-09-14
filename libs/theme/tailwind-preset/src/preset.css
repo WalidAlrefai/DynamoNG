@@ -154,6 +154,25 @@
 }
 
 /*
+ * Hides the browser's native scrollbar on an `overflow: auto`/`scroll`
+ * element without disabling scrolling itself — DynamoScrollPanel draws its
+ * own themed thumb overlay in its place. No single Tailwind v4 utility (nor
+ * an arbitrary-property utility) can express `::-webkit-scrollbar`'s
+ * pseudo-element rule and Firefox's `scrollbar-width` together, so — same
+ * as the focus-ring/z-index utilities here — this is a real `@utility` with
+ * literal declarations rather than a `@theme` token.
+ */
+@utility dg-scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+/*
  * Named z-index layers — Tailwind v4 has no `@theme` namespace for `z-*`, so
  * these are real utilities. Replaces the single overloaded `z-10` that ~26
  * overlay/panel style files shared with no ordering between them.
