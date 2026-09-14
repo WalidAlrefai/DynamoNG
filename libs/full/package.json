@@ -62,6 +62,7 @@
     "@dynamong/radio": "0.0.1",
     "@dynamong/rating": "0.0.1",
     "@dynamong/ripple": "0.0.1",
+    "@dynamong/scroll-panel": "0.0.1",
     "@dynamong/scroll-top": "0.0.1",
     "@dynamong/select": "0.0.1",
     "@dynamong/select-button": "0.0.1",
