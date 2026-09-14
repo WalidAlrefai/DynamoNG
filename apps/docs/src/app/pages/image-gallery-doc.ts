@@ -33,7 +33,10 @@ const GALLERY_IMAGES: DynamoGalleryImage[] = [
   { src: placeholder('Image 5', '#0ea5e9'), alt: 'Placeholder image 5' },
 ];
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'autoplay', title: 'Autoplay' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'images', type: 'DynamoGalleryImage[] (required)', default: '—' },
@@ -45,6 +48,10 @@ const API: ApiTableRow[] = [
     default: "'video'",
   },
   { name: 'showThumbnails', type: 'boolean', default: 'true' },
+  { name: 'showArrows', type: 'boolean', default: 'true' },
+  { name: 'autoPlay', type: 'boolean', default: 'false' },
+  { name: 'autoPlayInterval', type: 'number', default: '5000' },
+  { name: 'lightboxOpen', type: 'boolean (model)', default: 'false' },
   { name: 'ariaLabel', type: 'string | undefined', default: "'Image gallery'" },
 ];
 
@@ -69,6 +76,25 @@ const API: ApiTableRow[] = [
         </div>
         <div code>
           &lt;dg-image-gallery [images]="images" ariaLabel="Sample photos" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="autoplay"
+        title="Autoplay"
+        description="autoPlay starts an auto-advance timer and reveals a play/pause toggle in the corner; hovering or focusing the gallery pauses it automatically, and it also pauses while the lightbox is open."
+      >
+        <div preview class="max-w-lg">
+          <dg-image-gallery
+            [images]="images"
+            [autoPlay]="true"
+            [autoPlayInterval]="2000"
+            ariaLabel="Sample photos, autoplaying"
+          />
+        </div>
+        <div code>
+          &lt;dg-image-gallery [images]="images" [autoPlay]="true"
+          [autoPlayInterval]="2000" /&gt;
         </div>
       </docs-example>
 

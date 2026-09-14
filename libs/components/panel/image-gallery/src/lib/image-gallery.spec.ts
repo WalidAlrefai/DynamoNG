@@ -1,7 +1,11 @@
 import { Component, model } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
-import { within } from '@testing-library/dom';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
+import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DynamoImageGallery } from './image-gallery';
@@ -18,12 +22,38 @@ const SAMPLE_IMAGES: DynamoGalleryImage[] = [
   selector: 'dg-image-gallery-test-host',
   standalone: true,
   imports: [DynamoImageGallery],
-  template: `<dg-image-gallery [images]="images" [(activeIndex)]="index" [loop]="loop()" />`,
+  template: `<dg-image-gallery
+    [images]="images"
+    [(activeIndex)]="index"
+    [loop]="loop()"
+  />`,
 })
 class ImageGalleryTestHostComponent {
   readonly images = SAMPLE_IMAGES;
   readonly index = model(0);
   readonly loop = model(true);
+}
+
+@Component({
+  selector: 'dg-image-gallery-autoplay-host',
+  standalone: true,
+  imports: [DynamoImageGallery],
+  template: `
+    <dg-image-gallery
+      [images]="images"
+      [(activeIndex)]="index"
+      [(lightboxOpen)]="lightboxOpen"
+      [autoPlay]="autoPlay()"
+      [autoPlayInterval]="autoPlayInterval()"
+    />
+  `,
+})
+class ImageGalleryAutoplayHostComponent {
+  readonly images = SAMPLE_IMAGES;
+  readonly index = model(0);
+  readonly lightboxOpen = model(false);
+  readonly autoPlay = model(false);
+  readonly autoPlayInterval = model(5000);
 }
 
 /** CDK's ConfigurableFocusTrap moves initial focus asynchronously; flush that before asserting on it. */
@@ -42,7 +72,9 @@ describe('DynamoImageGallery', () => {
         inputs: { images: SAMPLE_IMAGES },
       });
 
-      expect(within(container).getByRole('button', { name: /View fullscreen/ })).toBeTruthy();
+      expect(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      ).toBeTruthy();
       expect(thumbnails(container)).toHaveLength(3);
     });
 
@@ -57,12 +89,17 @@ describe('DynamoImageGallery', () => {
 
   describe('default behavior', () => {
     it('starts on the first image', () => {
-      const { container, componentInstance } = renderDynamoComponent(DynamoImageGallery, {
-        inputs: { images: SAMPLE_IMAGES },
-      });
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoImageGallery,
+        {
+          inputs: { images: SAMPLE_IMAGES },
+        },
+      );
 
       expect(componentInstance.activeIndex()).toBe(0);
-      expect(thumbnails(container)[0]?.getAttribute('aria-selected')).toBe('true');
+      expect(thumbnails(container)[0]?.getAttribute('aria-selected')).toBe(
+        'true',
+      );
     });
 
     it('defaults loop and showThumbnails to true', () => {
@@ -81,7 +118,9 @@ describe('DynamoImageGallery', () => {
         ImageGalleryTestHostComponent,
       );
 
-      await userEvent.click(within(container).getByRole('button', { name: 'Next image' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Next image' }),
+      );
 
       expect(componentInstance.index()).toBe(1);
     });
@@ -92,7 +131,9 @@ describe('DynamoImageGallery', () => {
       );
       componentInstance.index.set(1);
 
-      await userEvent.click(within(container).getByRole('button', { name: 'Previous image' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Previous image' }),
+      );
 
       expect(componentInstance.index()).toBe(0);
     });
@@ -103,18 +144,25 @@ describe('DynamoImageGallery', () => {
       );
       componentInstance.index.set(2);
 
-      await userEvent.click(within(container).getByRole('button', { name: 'Next image' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Next image' }),
+      );
 
       expect(componentInstance.index()).toBe(0);
     });
 
     it('does not wrap and disables the next arrow at the last image when loop is false', () => {
-      const { container } = renderDynamoComponent(ImageGalleryTestHostComponent, {
-        inputs: { loop: false, index: 2 },
-      });
+      const { container } = renderDynamoComponent(
+        ImageGalleryTestHostComponent,
+        {
+          inputs: { loop: false, index: 2 },
+        },
+      );
 
       expect(
-        within(container).getByRole('button', { name: 'Next image' }).hasAttribute('disabled'),
+        within(container)
+          .getByRole('button', { name: 'Next image' })
+          .hasAttribute('disabled'),
       ).toBe(true);
     });
 
@@ -134,7 +182,9 @@ describe('DynamoImageGallery', () => {
       const { container, componentInstance } = renderDynamoComponent(
         ImageGalleryTestHostComponent,
       );
-      const main = within(container).getByRole('button', { name: /View fullscreen/ });
+      const main = within(container).getByRole('button', {
+        name: /View fullscreen/,
+      });
       main.focus();
 
       await userEvent.keyboard('{ArrowRight}');
@@ -148,7 +198,9 @@ describe('DynamoImageGallery', () => {
       const { container, componentInstance } = renderDynamoComponent(
         ImageGalleryTestHostComponent,
       );
-      const main = within(container).getByRole('button', { name: /View fullscreen/ });
+      const main = within(container).getByRole('button', {
+        name: /View fullscreen/,
+      });
       main.focus();
 
       await userEvent.keyboard('{End}');
@@ -185,12 +237,111 @@ describe('DynamoImageGallery', () => {
     });
 
     it('only the active thumbnail is a tab stop', () => {
-      const { container } = renderDynamoComponent(ImageGalleryTestHostComponent);
+      const { container } = renderDynamoComponent(
+        ImageGalleryTestHostComponent,
+      );
       const tabs = thumbnails(container);
 
       expect(tabs[0]?.getAttribute('tabindex')).toBe('0');
       expect(tabs[1]?.getAttribute('tabindex')).toBe('-1');
       expect(tabs[2]?.getAttribute('tabindex')).toBe('-1');
+    });
+  });
+
+  describe('showArrows', () => {
+    it('hides the main viewport arrows when showArrows is false', () => {
+      const { container } = renderDynamoComponent(DynamoImageGallery, {
+        inputs: { images: SAMPLE_IMAGES, showArrows: false },
+      });
+
+      expect(
+        container.querySelector('button[aria-label="Next image"]'),
+      ).toBeNull();
+      expect(
+        container.querySelector('button[aria-label="Previous image"]'),
+      ).toBeNull();
+    });
+  });
+
+  describe('autoplay', () => {
+    it('advances automatically on the configured interval', async () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        ImageGalleryAutoplayHostComponent,
+        { inputs: { autoPlay: true, autoPlayInterval: 200 } },
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 260));
+      fixture.detectChanges();
+
+      expect(componentInstance.index()).toBeGreaterThan(0);
+    });
+
+    it('pauses while the pointer hovers the gallery and resumes on leave', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        ImageGalleryAutoplayHostComponent,
+        { inputs: { autoPlay: true, autoPlayInterval: 200 } },
+      );
+      const root = container.querySelector('div') as HTMLElement;
+      fireEvent.pointerEnter(root);
+      fixture.detectChanges();
+      TestBed.flushEffects();
+
+      await new Promise((resolve) => setTimeout(resolve, 260));
+      fixture.detectChanges();
+
+      expect(componentInstance.index()).toBe(0);
+
+      fireEvent.pointerLeave(root);
+      fixture.detectChanges();
+      TestBed.flushEffects();
+      await new Promise((resolve) => setTimeout(resolve, 260));
+      fixture.detectChanges();
+
+      expect(componentInstance.index()).toBeGreaterThan(0);
+    });
+
+    it('stops advancing once paused via the play/pause toggle', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        ImageGalleryAutoplayHostComponent,
+        { inputs: { autoPlay: true, autoPlayInterval: 200 } },
+      );
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Pause' }),
+      );
+      fixture.detectChanges();
+      TestBed.flushEffects();
+      await new Promise((resolve) => setTimeout(resolve, 260));
+      fixture.detectChanges();
+
+      expect(componentInstance.index()).toBe(0);
+    });
+
+    it('pauses while the lightbox is open', async () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        ImageGalleryAutoplayHostComponent,
+        {
+          inputs: { autoPlay: true, autoPlayInterval: 200, lightboxOpen: true },
+        },
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 260));
+      fixture.detectChanges();
+
+      expect(componentInstance.index()).toBe(0);
+    });
+  });
+
+  describe('lightboxOpen (bindable)', () => {
+    it('opens the lightbox when set externally to true', () => {
+      const { container } = renderDynamoComponent(
+        ImageGalleryAutoplayHostComponent,
+        {
+          inputs: { lightboxOpen: true },
+        },
+      );
+
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull();
     });
   });
 
@@ -200,7 +351,9 @@ describe('DynamoImageGallery', () => {
         inputs: { images: SAMPLE_IMAGES },
       });
 
-      await userEvent.click(within(container).getByRole('button', { name: /View fullscreen/ }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      );
 
       expect(container.querySelector('[role="dialog"]')).not.toBeNull();
     });
@@ -209,7 +362,9 @@ describe('DynamoImageGallery', () => {
       const { container } = renderDynamoComponent(DynamoImageGallery, {
         inputs: { images: SAMPLE_IMAGES },
       });
-      within(container).getByRole('button', { name: /View fullscreen/ }).focus();
+      within(container)
+        .getByRole('button', { name: /View fullscreen/ })
+        .focus();
 
       await userEvent.keyboard('{Enter}');
 
@@ -220,7 +375,9 @@ describe('DynamoImageGallery', () => {
       const { container } = renderDynamoComponent(DynamoImageGallery, {
         inputs: { images: SAMPLE_IMAGES },
       });
-      await userEvent.click(within(container).getByRole('button', { name: /View fullscreen/ }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      );
       await flushFocusTrap();
 
       await userEvent.keyboard('{Escape}');
@@ -232,9 +389,13 @@ describe('DynamoImageGallery', () => {
       const { container } = renderDynamoComponent(DynamoImageGallery, {
         inputs: { images: SAMPLE_IMAGES },
       });
-      await userEvent.click(within(container).getByRole('button', { name: /View fullscreen/ }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      );
 
-      await userEvent.click(within(container).getByTestId('image-gallery-lightbox-backdrop'));
+      await userEvent.click(
+        within(container).getByTestId('image-gallery-lightbox-backdrop'),
+      );
 
       expect(container.querySelector('[role="dialog"]')).toBeNull();
     });
@@ -243,9 +404,13 @@ describe('DynamoImageGallery', () => {
       const { container } = renderDynamoComponent(DynamoImageGallery, {
         inputs: { images: SAMPLE_IMAGES },
       });
-      await userEvent.click(within(container).getByRole('button', { name: /View fullscreen/ }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      );
 
-      await userEvent.click(within(container).getByRole('button', { name: 'Close' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Close' }),
+      );
 
       expect(container.querySelector('[role="dialog"]')).toBeNull();
     });
@@ -255,7 +420,9 @@ describe('DynamoImageGallery', () => {
         inputs: { images: SAMPLE_IMAGES },
       });
 
-      await userEvent.click(within(container).getByRole('button', { name: /View fullscreen/ }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      );
       await flushFocusTrap();
 
       const panel = container.querySelector('[role="dialog"]') as HTMLElement;
@@ -275,7 +442,9 @@ describe('DynamoImageGallery', () => {
       await flushFocusTrap();
       expect(document.activeElement).not.toBe(main);
 
-      await userEvent.click(within(container).getByRole('button', { name: 'Close' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Close' }),
+      );
 
       expect(document.activeElement).toBe(main);
     });
@@ -284,14 +453,20 @@ describe('DynamoImageGallery', () => {
       const { container, componentInstance } = renderDynamoComponent(
         ImageGalleryTestHostComponent,
       );
-      await userEvent.click(within(container).getByRole('button', { name: /View fullscreen/ }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      );
       await flushFocusTrap();
 
       await userEvent.keyboard('{ArrowRight}');
-      await userEvent.click(within(container).getByRole('button', { name: 'Close' }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Close' }),
+      );
 
       expect(componentInstance.index()).toBe(1);
-      expect(thumbnails(container)[1]?.getAttribute('aria-selected')).toBe('true');
+      expect(thumbnails(container)[1]?.getAttribute('aria-selected')).toBe(
+        'true',
+      );
     });
 
     it('supports interaction through the DynamoImageGalleryHarness', async () => {
@@ -322,7 +497,9 @@ describe('DynamoImageGallery', () => {
       const { container, fixture } = renderDynamoComponent(DynamoImageGallery, {
         inputs: { images: SAMPLE_IMAGES },
       });
-      const main = within(container).getByRole('button', { name: /View fullscreen/ });
+      const main = within(container).getByRole('button', {
+        name: /View fullscreen/,
+      });
       const img = main.querySelector('img') as HTMLImageElement;
 
       img.dispatchEvent(new Event('error'));
@@ -336,7 +513,9 @@ describe('DynamoImageGallery', () => {
       const { container, fixture } = renderDynamoComponent(DynamoImageGallery, {
         inputs: { images: SAMPLE_IMAGES },
       });
-      const thumbnailImg = thumbnails(container)[1]?.querySelector('img') as HTMLImageElement;
+      const thumbnailImg = thumbnails(container)[1]?.querySelector(
+        'img',
+      ) as HTMLImageElement;
 
       thumbnailImg.dispatchEvent(new Event('error'));
       fixture.detectChanges();
@@ -357,7 +536,9 @@ describe('DynamoImageGallery', () => {
       const { container } = renderDynamoComponent(DynamoImageGallery, {
         inputs: { images: SAMPLE_IMAGES },
       });
-      await userEvent.click(within(container).getByRole('button', { name: /View fullscreen/ }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      );
       await flushFocusTrap();
 
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
@@ -368,7 +549,9 @@ describe('DynamoImageGallery', () => {
         inputs: { images: SAMPLE_IMAGES },
       });
 
-      await userEvent.click(within(container).getByRole('button', { name: /View fullscreen/ }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      );
 
       expect(
         within(container)
@@ -384,7 +567,9 @@ describe('DynamoImageGallery', () => {
         inputs: { images: [SAMPLE_IMAGES[0] as DynamoGalleryImage] },
       });
 
-      expect(container.querySelector('button[aria-label="Next image"]')).toBeNull();
+      expect(
+        container.querySelector('button[aria-label="Next image"]'),
+      ).toBeNull();
       expect(thumbnails(container)).toHaveLength(0);
     });
 
@@ -399,7 +584,9 @@ describe('DynamoImageGallery', () => {
         inputs: { images: [] },
       });
 
-      expect(container.querySelector('button[aria-label^="View fullscreen"]')).toBeNull();
+      expect(
+        container.querySelector('button[aria-label^="View fullscreen"]'),
+      ).toBeNull();
       expect(container.querySelector('[role="dialog"]')).toBeNull();
     });
 
@@ -409,7 +596,9 @@ describe('DynamoImageGallery', () => {
       );
       componentInstance.index.set(1);
 
-      await userEvent.click(within(container).getByRole('button', { name: /View fullscreen/ }));
+      await userEvent.click(
+        within(container).getByRole('button', { name: /View fullscreen/ }),
+      );
 
       expect(container.textContent).toContain('A caption');
     });

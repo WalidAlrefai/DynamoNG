@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DynamoButton } from '@dynamong/button';
 import { DynamoInplace } from '@dynamong/inplace';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DocExample } from '../components/example-block';
@@ -8,13 +9,17 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'prevent-click', title: 'External Trigger' },
+];
 
 @Component({
   selector: 'docs-inplace-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DynamoButton,
     DynamoInplace,
     DynamoInputText,
     FormsModule,
@@ -49,8 +54,34 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
         </div>
         <div code>
           &lt;dg-inplace&gt; &lt;span display&gt;&#123;&#123; name()
-          &#125;&#125;&lt;/span&gt; &lt;dg-input-text editor
-          [(ngModel)]="draft" /&gt; &lt;/dg-inplace&gt;
+          &#125;&#125;&lt;/span&gt; &lt;dg-input-text editor [(ngModel)]="draft"
+          /&gt; &lt;/dg-inplace&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="prevent-click"
+        title="External Trigger"
+        description="preventClick blocks clicking the display region itself; activate active from a separate trigger instead, such as an edit icon elsewhere in a row."
+      >
+        <div preview class="flex items-center gap-2">
+          <dg-inplace [(active)]="externalActive" [preventClick]="true">
+            <span display>{{ name() || 'Untitled project' }}</span>
+            <dg-input-text
+              editor
+              size="sm"
+              [(ngModel)]="draft"
+              ariaLabel="Project name"
+            />
+          </dg-inplace>
+          <dg-button size="sm" (click)="externalActive.set(true)"
+            >Edit</dg-button
+          >
+        </div>
+        <div code>
+          &lt;dg-inplace [(active)]="open" [preventClick]="true"&gt; ...
+          &lt;/dg-inplace&gt; &lt;button
+          (click)="open.set(true)"&gt;Edit&lt;/button&gt;
         </div>
       </docs-example>
 
@@ -80,6 +111,16 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
               <td class="py-2 font-mono">true</td>
             </tr>
             <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">preventClick</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">false</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">closeAriaLabel</td>
+              <td class="py-2 pr-4 font-mono">string | undefined</td>
+              <td class="py-2 font-mono">undefined</td>
+            </tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">[display]</td>
               <td class="py-2 pr-4 font-mono">ng-content slot</td>
               <td class="py-2 font-mono">—</td>
@@ -99,4 +140,5 @@ export class InplaceDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly draft = signal('DynamoNG');
   protected readonly name = this.draft;
+  protected readonly externalActive = signal(false);
 }

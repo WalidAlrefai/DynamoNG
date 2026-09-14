@@ -20,11 +20,13 @@ protected readonly value = signal('Click to edit');
 
 ## Inputs
 
-| Input      | Type              | Default | Description                                                           |
-| ---------- | ----------------- | ------- | --------------------------------------------------------------------- |
-| `active`   | `boolean` (model) | `false` | Two-way bindable; `false` = display mode, `true` = editor mode.       |
-| `disabled` | `boolean`         | `false` | Prevents activating (clicking the display region does nothing).       |
-| `closable` | `boolean`         | `true`  | Shows a "×" close button in editor mode that returns to display mode. |
+| Input            | Type                  | Default     | Description                                                                                                                                                                                                                                                  |
+| ---------------- | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `active`         | `boolean` (model)     | `false`     | Two-way bindable; `false` = display mode, `true` = editor mode.                                                                                                                                                                                              |
+| `disabled`       | `boolean`             | `false`     | Prevents activating (clicking the display region does nothing).                                                                                                                                                                                              |
+| `closable`       | `boolean`             | `true`      | Shows a "×" close button in editor mode that returns to display mode.                                                                                                                                                                                        |
+| `preventClick`   | `boolean`             | `false`     | Clicking the display region does nothing; activate `active` from outside instead (e.g. a separate "Edit" trigger elsewhere on the page). Keyboard activation (Enter/Space on the display button) is also blocked, since it goes through the same click path. |
+| `closeAriaLabel` | `string \| undefined` | `undefined` | Falls back to `'Close editor'` on the close button's `aria-label`.                                                                                                                                                                                           |
 
 Content is projected via two selectors: `[display]` (shown in display mode, wrapped in a `<button>`) and `[editor]` (shown in editor mode).
 
@@ -39,6 +41,12 @@ Content is projected via two selectors: `[display]` (shown in display mode, wrap
 - The display region is a real `<button>`, so it's reachable and activatable by keyboard by default.
 - On activate, focus moves to the first focusable element inside the projected `[editor]` content (falling back to the editor region itself if none is found). On deactivate, focus returns to the display button.
 - `Escape` deactivates from anywhere within the component (bound on the host).
+
+## Design notes
+
+Separate activate/deactivate output events were considered and left out —
+redundant with the `active` model's auto-generated `activeChange`, which
+already fires on every activate/deactivate regardless of cause.
 
 ## Tier / dependencies
 

@@ -1,6 +1,9 @@
 import { Component, model, signal } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoPanelMenu } from './panel-menu';
@@ -47,16 +50,18 @@ function sampleItems(): DynamoPanelMenuItem[] {
 }
 
 function row(container: HTMLElement, label: string): HTMLElement {
-  const rows = Array.from(container.querySelectorAll<HTMLElement>('[data-node-path]'));
+  const rows = Array.from(
+    container.querySelectorAll<HTMLElement>('[data-node-path]'),
+  );
   const el = rows.find((candidate) => candidate.textContent?.trim() === label);
   if (!el) throw new Error(`row not found: ${label}`);
   return el;
 }
 
 function rowLabels(container: HTMLElement): string[] {
-  return Array.from(container.querySelectorAll<HTMLElement>('[data-node-path]')).map(
-    (el) => el.textContent?.trim() ?? '',
-  );
+  return Array.from(
+    container.querySelectorAll<HTMLElement>('[data-node-path]'),
+  ).map((el) => el.textContent?.trim() ?? '');
 }
 
 @Component({
@@ -83,7 +88,12 @@ describe('DynamoPanelMenu', () => {
     it('renders one row per root-level item by default (children collapsed)', () => {
       const { container } = renderDynamoComponent(PanelMenuTestHostComponent);
 
-      expect(rowLabels(container)).toEqual(['Documents', 'Photos', 'Settings', 'Notes']);
+      expect(rowLabels(container)).toEqual([
+        'Documents',
+        'Photos',
+        'Settings',
+        'Notes',
+      ]);
     });
 
     it('renders the root as a nav with the given aria-label', () => {
@@ -96,7 +106,9 @@ describe('DynamoPanelMenu', () => {
 
   describe('default behavior', () => {
     it('starts with nothing expanded', () => {
-      const { componentInstance } = renderDynamoComponent(PanelMenuTestHostComponent);
+      const { componentInstance } = renderDynamoComponent(
+        PanelMenuTestHostComponent,
+      );
 
       expect(componentInstance.expanded()).toEqual([]);
     });
@@ -118,26 +130,63 @@ describe('DynamoPanelMenu', () => {
 
   describe('expand/collapse', () => {
     it('expands a branch and renders its children when clicked', async () => {
-      const { container, componentInstance } = renderDynamoComponent(PanelMenuTestHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        PanelMenuTestHostComponent,
+      );
 
       await userEvent.click(row(container, 'Documents'));
 
       expect(componentInstance.expanded()).toEqual(['0']);
-      expect(rowLabels(container)).toEqual(['Documents', 'Resume', 'Cover Letter', 'Photos', 'Settings', 'Notes']);
+      expect(rowLabels(container)).toEqual([
+        'Documents',
+        'Resume',
+        'Cover Letter',
+        'Photos',
+        'Settings',
+        'Notes',
+      ]);
     });
 
     it('collapses an expanded branch when clicked again', async () => {
-      const { container, componentInstance } = renderDynamoComponent(PanelMenuTestHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        PanelMenuTestHostComponent,
+      );
       await userEvent.click(row(container, 'Documents'));
 
       await userEvent.click(row(container, 'Documents'));
 
       expect(componentInstance.expanded()).toEqual([]);
-      expect(rowLabels(container)).toEqual(['Documents', 'Photos', 'Settings', 'Notes']);
+      expect(rowLabels(container)).toEqual([
+        'Documents',
+        'Photos',
+        'Settings',
+        'Notes',
+      ]);
     });
 
-    it('supports independently expanding multiple branches at once', async () => {
-      const { container } = renderDynamoComponent(PanelMenuTestHostComponent);
+    it('collapses the previously-expanded sibling when opening another (default multiple=false)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        PanelMenuTestHostComponent,
+      );
+
+      await userEvent.click(row(container, 'Documents'));
+      await userEvent.click(row(container, 'Photos'));
+
+      expect(componentInstance.expanded()).toEqual(['1']);
+      expect(rowLabels(container)).toEqual([
+        'Documents',
+        'Photos',
+        'Vacation',
+        'Family',
+        'Settings',
+        'Notes',
+      ]);
+    });
+
+    it('supports independently expanding multiple sibling branches at once when multiple is true', async () => {
+      const { container } = renderDynamoComponent(DynamoPanelMenu, {
+        inputs: { items: sampleItems(), multiple: true },
+      });
 
       await userEvent.click(row(container, 'Documents'));
       await userEvent.click(row(container, 'Photos'));
@@ -223,7 +272,9 @@ describe('DynamoPanelMenu', () => {
       row(container, 'Documents').focus();
 
       await userEvent.keyboard('{ArrowRight}');
-      expect(row(container, 'Documents').getAttribute('aria-expanded')).toBe('true');
+      expect(row(container, 'Documents').getAttribute('aria-expanded')).toBe(
+        'true',
+      );
       expect(document.activeElement).toBe(row(container, 'Documents'));
 
       await userEvent.keyboard('{ArrowRight}');
@@ -240,7 +291,9 @@ describe('DynamoPanelMenu', () => {
       expect(document.activeElement).toBe(row(container, 'Documents'));
 
       await userEvent.keyboard('{ArrowLeft}');
-      expect(row(container, 'Documents').getAttribute('aria-expanded')).toBe('false');
+      expect(row(container, 'Documents').getAttribute('aria-expanded')).toBe(
+        'false',
+      );
     });
 
     it('ArrowRight on a leaf does nothing', async () => {
@@ -262,7 +315,9 @@ describe('DynamoPanelMenu', () => {
     });
 
     it('Enter/Space on a leaf commits (native button click, not the custom keydown handler)', async () => {
-      const { container, componentInstance } = renderDynamoComponent(PanelMenuTestHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        PanelMenuTestHostComponent,
+      );
       row(container, 'Notes').focus();
 
       await userEvent.keyboard('{Enter}');
@@ -273,7 +328,9 @@ describe('DynamoPanelMenu', () => {
 
   describe('disabled items', () => {
     it('a disabled branch does not expand on click', async () => {
-      const { container, componentInstance } = renderDynamoComponent(PanelMenuTestHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        PanelMenuTestHostComponent,
+      );
 
       await userEvent.click(row(container, 'Settings'));
 
@@ -283,7 +340,9 @@ describe('DynamoPanelMenu', () => {
     });
 
     it('a disabled leaf does not commit on click', async () => {
-      const { container, componentInstance } = renderDynamoComponent(PanelMenuTestHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        PanelMenuTestHostComponent,
+      );
       await userEvent.click(row(container, 'Documents'));
 
       await userEvent.click(row(container, 'Cover Letter'));
@@ -304,9 +363,17 @@ describe('DynamoPanelMenu', () => {
   describe('user interactions', () => {
     it('supports interaction through the DynamoPanelMenuHarness', async () => {
       const { fixture } = renderDynamoComponent(PanelMenuTestHostComponent);
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoPanelMenuHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoPanelMenuHarness,
+      );
 
-      expect(await harness.getVisibleLabels()).toEqual(['Documents', 'Photos', 'Settings', 'Notes']);
+      expect(await harness.getVisibleLabels()).toEqual([
+        'Documents',
+        'Photos',
+        'Settings',
+        'Notes',
+      ]);
 
       await harness.selectPath('Photos', 'Vacation', 'Beach');
 
@@ -320,7 +387,9 @@ describe('DynamoPanelMenu', () => {
     it("emits itemSelect and invokes the item's command() on a leaf commit", async () => {
       const command = vi.fn();
       const items: DynamoPanelMenuItem[] = [{ label: 'Save', command }];
-      const { container } = renderDynamoComponent(DynamoPanelMenu, { inputs: { items } });
+      const { container } = renderDynamoComponent(DynamoPanelMenu, {
+        inputs: { items },
+      });
 
       await userEvent.click(row(container, 'Save'));
 
@@ -328,7 +397,9 @@ describe('DynamoPanelMenu', () => {
     });
 
     it('does not emit itemSelect when clicking a branch', async () => {
-      const { container, componentInstance } = renderDynamoComponent(PanelMenuTestHostComponent);
+      const { container, componentInstance } = renderDynamoComponent(
+        PanelMenuTestHostComponent,
+      );
 
       await userEvent.click(row(container, 'Documents'));
 
@@ -375,7 +446,9 @@ describe('DynamoPanelMenu', () => {
 
   describe('edge cases', () => {
     it('renders no rows for an empty items array', () => {
-      const { container } = renderDynamoComponent(DynamoPanelMenu, { inputs: { items: [] } });
+      const { container } = renderDynamoComponent(DynamoPanelMenu, {
+        inputs: { items: [] },
+      });
 
       expect(container.querySelectorAll('[data-node-path]')).toHaveLength(0);
     });
@@ -385,7 +458,9 @@ describe('DynamoPanelMenu', () => {
         inputs: { items: [{ label: 'Empty folder', children: [] }] },
       });
 
-      expect(row(container, 'Empty folder').getAttribute('aria-expanded')).toBeNull();
+      expect(
+        row(container, 'Empty folder').getAttribute('aria-expanded'),
+      ).toBeNull();
     });
 
     it('does not throw when every item is disabled', async () => {
@@ -393,7 +468,9 @@ describe('DynamoPanelMenu', () => {
         { label: 'A', disabled: true },
         { label: 'B', disabled: true },
       ];
-      const { container } = renderDynamoComponent(DynamoPanelMenu, { inputs: { items } });
+      const { container } = renderDynamoComponent(DynamoPanelMenu, {
+        inputs: { items },
+      });
 
       await expect(async () => {
         row(container, 'A').focus();
@@ -409,7 +486,14 @@ describe('DynamoPanelMenu', () => {
         current.children = [child];
         current = child;
       }
-      const allExpanded = ['0', '0-0', '0-0-0', '0-0-0-0', '0-0-0-0-0', '0-0-0-0-0-0'];
+      const allExpanded = [
+        '0',
+        '0-0',
+        '0-0-0',
+        '0-0-0-0',
+        '0-0-0-0-0',
+        '0-0-0-0-0-0',
+      ];
 
       expect(() =>
         renderDynamoComponent(DynamoPanelMenu, {

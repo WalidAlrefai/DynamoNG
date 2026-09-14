@@ -18,6 +18,7 @@ import type { DynamoCardVariant } from './card.types';
     [subheader]="subheader()"
     [variant]="variant()"
   >
+    <img media src="banner.jpg" alt="" />
     {{ body() }}
     <button footer type="button">Action</button>
   </dg-card>`,
@@ -126,6 +127,12 @@ describe('DynamoCard', () => {
       const { container } = renderDynamoComponent(CardTestHostComponent);
 
       expect(container.querySelector('button[footer]')).toBeTruthy();
+    });
+
+    it('projects media content when supplied', () => {
+      const { container } = renderDynamoComponent(CardTestHostComponent);
+
+      expect(container.querySelector('img[media]')).toBeTruthy();
     });
   });
 

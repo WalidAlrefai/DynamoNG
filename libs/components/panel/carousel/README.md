@@ -1,7 +1,9 @@
 # @dynamong/carousel
 
 A slideshow of user-projected slides with prev/next arrows, dot indicators,
-optional autoplay, and swipe/drag support.
+optional autoplay, and swipe/drag support. Shows one or more slides at a
+time (`numVisible`), advancing by one or more at a time (`numScroll`), with
+optional per-breakpoint overrides (`responsiveOptions`).
 
 ## Usage
 
@@ -26,27 +28,68 @@ protected readonly index = signal(0);
 
 ## Inputs
 
-| Input              | Type                  | Default     | Description                                                                                                   |
-| ------------------ | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------- |
-| `activeIndex`      | `number` (model)      | `0`         | Two-way bindable; the currently shown slide's index.                                                          |
-| `loop`             | `boolean`             | `true`      | Whether prev/next wrap around at the ends. When `false`, the arrow buttons disable at the boundaries instead. |
-| `autoPlay`         | `boolean`             | `false`     | Starts an auto-advance timer. Also reveals the play/pause toggle button.                                      |
-| `autoPlayInterval` | `number`              | `5000`      | Milliseconds between auto-advances.                                                                           |
-| `showArrows`       | `boolean`             | `true`      | Shows the prev/next buttons (only when there's more than one slide).                                          |
-| `showIndicators`   | `boolean`             | `true`      | Shows the dot indicators (only when there's more than one slide).                                             |
-| `ariaLabel`        | `string \| undefined` | `undefined` | Falls back to `'Carousel'` on the root `aria-label`.                                                          |
+| Input               | Type                               | Default     | Description                                                                                                   |
+| ------------------- | ---------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------- |
+| `activeIndex`       | `number` (model)                   | `0`         | Two-way bindable; the currently shown slide's index.                                                          |
+| `loop`              | `boolean`                          | `true`      | Whether prev/next wrap around at the ends. When `false`, the arrow buttons disable at the boundaries instead. |
+| `autoPlay`          | `boolean`                          | `false`     | Starts an auto-advance timer. Also reveals the play/pause toggle button.                                      |
+| `autoPlayInterval`  | `number`                           | `5000`      | Milliseconds between auto-advances.                                                                           |
+| `showArrows`        | `boolean`                          | `true`      | Shows the prev/next buttons (only when there's more than one page).                                           |
+| `showIndicators`    | `boolean`                          | `true`      | Shows the dot indicators (only when there's more than one page).                                              |
+| `numVisible`        | `number`                           | `1`         | How many slides are visible in the viewport at once.                                                          |
+| `numScroll`         | `number`                           | `1`         | How many slides `next()`/`prev()` (and a committed drag) advance by.                                          |
+| `responsiveOptions` | `DynamoCarouselResponsiveOption[]` | `[]`        | Overrides `numVisible`/`numScroll` at or below a given viewport width — see below.                            |
+| `ariaLabel`         | `string \| undefined`              | `undefined` | Falls back to `'Carousel'` on the root `aria-label`.                                                          |
 
 `<dg-carousel-slide>` has no inputs of its own — it's a pure content-projection wrapper read via `contentChildren()`.
 
+### Multiple visible slides
+
+With `numVisible` and `numScroll` at their default of `1`, the carousel
+behaves as a classic one-at-a-time slideshow — `activeIndex` is simply "the
+shown slide". With `numVisible > 1`, several slides show at once and
+`activeIndex` becomes "the first slide of the current page"; indicator dots
+render one per **page** (`Math.ceil(count / numScroll)`, clamped so the
+final page never scrolls past the last slide) rather than one per slide.
+
+```html
+<dg-carousel [numVisible]="3" [numScroll]="3">
+  @for (item of items; track item.id) {
+  <dg-carousel-slide
+    ><img [src]="item.image" [alt]="item.title"
+  /></dg-carousel-slide>
+  }
+</dg-carousel>
+```
+
+`responsiveOptions` lets `numVisible`/`numScroll` shrink at narrower
+viewports — provide a `DynamoCarouselResponsiveOption[]`, each entry a
+`{ breakpoint, numVisible, numScroll }` (`breakpoint` in px; the entry
+applies at or below that width). The narrowest matching entry wins; outside
+every entry's range, the plain `numVisible`/`numScroll` inputs apply.
+
+```html
+<dg-carousel
+  [numVisible]="3"
+  [numScroll]="3"
+  [responsiveOptions]="[
+    { breakpoint: 1024, numVisible: 2, numScroll: 2 },
+    { breakpoint: 640, numVisible: 1, numScroll: 1 }
+  ]"
+>
+  ...
+</dg-carousel>
+```
+
 ## Outputs
 
-| Output              | Payload  | Fires when                                                                                                                          |
-| ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `activeIndexChange` | `number` | `activeIndex` changes (auto-generated by `model()`) — from arrows, indicator clicks, keyboard, autoplay, or a completed drag/swipe. |
+| Output              | Payload  | Fires when                                                                                                                                 |
+| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `activeIndexChange` | `number` | `activeIndex` changes (auto-generated by `model()`) — from arrows, indicator (page) clicks, keyboard, autoplay, or a completed drag/swipe. |
 
 ## Accessibility
 
-- Root has `aria-roledescription="carousel"`. Each slide is `role="group"` with `aria-roledescription="slide"` and a `"N of M"` `aria-label`; inactive slides get `inert` so their content is unreachable by tab/screen-reader until active.
+- Root has `aria-roledescription="carousel"`. Each slide is `role="group"` with `aria-roledescription="slide"` and a `"N of M"` `aria-label`; slides outside the current visible window get `inert` so their content is unreachable by tab/screen-reader until scrolled into view.
 - The viewport is focusable (`tabindex="0"`) and handles `ArrowLeft`/`ArrowRight`/`Home`/`End` directly.
 - The indicator dots form a `role="tablist"`/`role="tab"` group with roving tabindex and `ArrowLeft`/`ArrowRight`/`Home`/`End` navigation (automatic activation — moving focus also navigates).
 - Autoplay pauses automatically on pointer hover or focus-within, in addition to the explicit play/pause toggle.

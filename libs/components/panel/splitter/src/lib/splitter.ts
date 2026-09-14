@@ -6,6 +6,7 @@ import {
   contentChildren,
   effect,
   input,
+  output,
   signal,
   untracked,
   viewChild,
@@ -41,6 +42,10 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
   readonly orientation = input<DynamoSplitterOrientation>('horizontal');
   readonly disabled = input(false);
   readonly gutterSize = input(8);
+  /** Percentage points a single keyboard press (arrow key) resizes by. */
+  readonly step = input(5);
+  /** Fires with the full sizes array once a drag or keyboard resize completes. */
+  readonly resizeEnd = output<number[]>();
 
   protected readonly panels = contentChildren(DynamoSplitterPanel);
   private readonly containerRef =
@@ -159,7 +164,10 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
   }
 
   protected onDividerPointerUp(): void {
-    this.dragStart = null;
+    if (this.dragStart) {
+      this.dragStart = null;
+      this.resizeEnd.emit(this.sizes());
+    }
   }
 
   protected onDividerKeydown(index: number, event: KeyboardEvent): void {
@@ -167,7 +175,7 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
       return;
     }
     const horizontal = this.orientation() === 'horizontal';
-    const step = 5;
+    const step = this.step();
     let delta: number | undefined;
     switch (event.key) {
       case 'ArrowLeft':
@@ -197,6 +205,7 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
     event.preventDefault();
     const sizes = this.sizes();
     this.applyDelta(index, delta, [sizes[index] ?? 0, sizes[index + 1] ?? 0]);
+    this.resizeEnd.emit(this.sizes());
   }
 
   // Clamps so neither adjacent panel goes below its own minSize; the pair's
@@ -215,11 +224,12 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
     const combined = startA + startB;
     const minA = panelA.minSize();
     const minB = panelB.minSize();
-    const rawA = deltaPct === Infinity || deltaPct === -Infinity
-      ? deltaPct > 0
-        ? combined - minB
-        : minA
-      : startA + deltaPct;
+    const rawA =
+      deltaPct === Infinity || deltaPct === -Infinity
+        ? deltaPct > 0
+          ? combined - minB
+          : minA
+        : startA + deltaPct;
     const nextA = Math.min(combined - minB, Math.max(minA, rawA));
     const nextB = combined - nextA;
 

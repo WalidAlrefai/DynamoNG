@@ -28,6 +28,9 @@ protected readonly isCollapsed = signal(true);
 | `variant`     | `'elevated' \| 'outlined' \| 'filled'` | `'elevated'` | Visual style of the panel container.                                                    |
 | `collapsible` | `boolean`                              | `false`      | Renders the header as a toggle button and enables collapse/expand.                      |
 | `collapsed`   | `boolean` (model)                      | `false`      | Two-way bindable. Only meaningful when `collapsible` is `true`.                         |
+| `showHeader`  | `boolean`                              | `true`       | Hides the header row entirely, even when `header` or `collapsible` is set.              |
+
+Footer content is projected via `<div footer>` (an element with a `footer` attribute), the same convention as Card.
 
 ## Outputs
 
@@ -40,6 +43,17 @@ protected readonly isCollapsed = signal(true);
 - When `collapsible`, the header is a `<button aria-expanded aria-controls>` toggling the content region.
 - The content region is `role="region"`, labeled via `aria-labelledby` pointing at the header (whenever a header or collapsible toggle is present).
 - Collapse/expand is a pure CSS grid-rows transition (0fr/1fr), the same technique used by Accordion.
+
+## Design notes
+
+An icon-only toggle target (as opposed to the whole header) was considered
+and left out: this codebase's collapsible panel-family components (Panel,
+Accordion) always toggle via the whole header as a single `<button>` —
+introducing an icon-only hit target here would be the first inconsistent
+exception. A configurable transition duration was also left out: no
+collapsible component in this codebase exposes one; each uses one fixed
+grid-rows transition. Separate before/after-toggle events were left out too
+— redundant with the `collapsed` model's auto-generated `collapsedChange`.
 
 ## Tier / dependencies
 

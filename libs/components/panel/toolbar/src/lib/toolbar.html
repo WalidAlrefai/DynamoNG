@@ -2,6 +2,7 @@
   [class]="rootClasses()"
   role="toolbar"
   [attr.aria-label]="ariaLabel() ?? null"
+  [attr.aria-labelledby]="ariaLabelledBy() ?? null"
   [attr.data-testid]="'DynamoToolbar'"
 >
   <div [class]="startClasses" data-testid="DynamoToolbar-start">

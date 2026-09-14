@@ -1,7 +1,10 @@
 import { Component, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -13,9 +16,18 @@ import { DynamoInplaceHarness } from './inplace.harness';
   standalone: true,
   imports: [DynamoInplace],
   template: `
-    <dg-inplace [(active)]="active" [disabled]="disabled()" [closable]="closable()">
+    <dg-inplace
+      [(active)]="active"
+      [disabled]="disabled()"
+      [closable]="closable()"
+    >
       <span display>{{ text() || 'Click to edit' }}</span>
-      <input editor [value]="text()" aria-label="Value" (input)="onInput($event)" />
+      <input
+        editor
+        [value]="text()"
+        aria-label="Value"
+        (input)="onInput($event)"
+      />
     </dg-inplace>
   `,
 })
@@ -52,9 +64,8 @@ describe('DynamoInplace', () => {
 
   describe('activation', () => {
     it('clicking the display swaps to the editor and emits active=true', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(
-        InplaceHostComponent,
-      );
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(InplaceHostComponent);
 
       await userEvent.click(displayBtn(container) as HTMLElement);
       await flush(fixture);
@@ -68,7 +79,8 @@ describe('DynamoInplace', () => {
     });
 
     it('moves focus into the editor on activate', async () => {
-      const { container, fixture } = renderDynamoComponent(InplaceHostComponent);
+      const { container, fixture } =
+        renderDynamoComponent(InplaceHostComponent);
 
       await userEvent.click(displayBtn(container) as HTMLElement);
       await flush(fixture);
@@ -79,9 +91,8 @@ describe('DynamoInplace', () => {
     });
 
     it('does not activate when disabled', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(
-        InplaceHostComponent,
-      );
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(InplaceHostComponent);
       componentInstance.disabled.set(true);
       fixture.detectChanges();
 
@@ -91,18 +102,34 @@ describe('DynamoInplace', () => {
       expect(editor(container)).toBeNull();
       expect(componentInstance.active()).toBe(false);
     });
+
+    it('does not activate on click when preventClick is true, but still activates externally', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoInplace,
+        { inputs: { preventClick: true } },
+      );
+
+      await userEvent.click(displayBtn(container) as HTMLElement);
+      await flush(fixture);
+      expect(componentInstance.active()).toBe(false);
+
+      componentInstance.active.set(true);
+      await flush(fixture);
+      expect(editor(container)).toBeTruthy();
+    });
   });
 
   describe('deactivation', () => {
     it('the close button returns to display mode and re-emits active=false', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(
-        InplaceHostComponent,
-      );
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(InplaceHostComponent);
       await userEvent.click(displayBtn(container) as HTMLElement);
       await flush(fixture);
 
       await userEvent.click(
-        container.querySelector('[data-testid="DynamoInplace-close"]') as HTMLElement,
+        container.querySelector(
+          '[data-testid="DynamoInplace-close"]',
+        ) as HTMLElement,
       );
       await flush(fixture);
 
@@ -112,9 +139,8 @@ describe('DynamoInplace', () => {
     });
 
     it('Escape while editing returns to display mode', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(
-        InplaceHostComponent,
-      );
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(InplaceHostComponent);
       await userEvent.click(displayBtn(container) as HTMLElement);
       await flush(fixture);
 
@@ -126,7 +152,8 @@ describe('DynamoInplace', () => {
     });
 
     it('moves focus back to the display trigger on deactivate', async () => {
-      const { container, fixture } = renderDynamoComponent(InplaceHostComponent);
+      const { container, fixture } =
+        renderDynamoComponent(InplaceHostComponent);
       await userEvent.click(displayBtn(container) as HTMLElement);
       await flush(fixture);
       await userEvent.keyboard('{Escape}');
@@ -136,9 +163,8 @@ describe('DynamoInplace', () => {
     });
 
     it('no close button when closable is false', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(
-        InplaceHostComponent,
-      );
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(InplaceHostComponent);
       componentInstance.closable.set(false);
       fixture.detectChanges();
       await userEvent.click(displayBtn(container) as HTMLElement);
@@ -152,13 +178,38 @@ describe('DynamoInplace', () => {
       await flush(fixture);
       expect(componentInstance.active()).toBe(false);
     });
+
+    it('falls back to "Close editor" for the close button label when closeAriaLabel is unset', async () => {
+      const { container, fixture } =
+        renderDynamoComponent(InplaceHostComponent);
+      await userEvent.click(displayBtn(container) as HTMLElement);
+      await flush(fixture);
+
+      expect(
+        container
+          .querySelector('[data-testid="DynamoInplace-close"]')
+          ?.getAttribute('aria-label'),
+      ).toBe('Close editor');
+    });
+
+    it('uses closeAriaLabel for the close button label when set', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoInplace, {
+        inputs: { active: true, closeAriaLabel: 'Stop editing' },
+      });
+      await flush(fixture);
+
+      expect(
+        container
+          .querySelector('[data-testid="DynamoInplace-close"]')
+          ?.getAttribute('aria-label'),
+      ).toBe('Stop editing');
+    });
   });
 
   describe('two-way [(active)]', () => {
     it('honours an external write to active', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(
-        InplaceHostComponent,
-      );
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(InplaceHostComponent);
       componentInstance.active.set(true);
       await flush(fixture);
       expect(editor(container)).toBeTruthy();
@@ -184,15 +235,16 @@ describe('DynamoInplace', () => {
       const { container } = renderDynamoComponent(UnstyledHost);
       expect(
         (
-          container.querySelector('[data-testid="DynamoInplace"]') as HTMLElement
+          container.querySelector(
+            '[data-testid="DynamoInplace"]',
+          ) as HTMLElement
         ).className,
       ).toBe('mine');
     });
 
     it('Escape while in display mode does nothing', async () => {
-      const { container, fixture, componentInstance } = renderDynamoComponent(
-        InplaceHostComponent,
-      );
+      const { container, fixture, componentInstance } =
+        renderDynamoComponent(InplaceHostComponent);
       (displayBtn(container) as HTMLElement).focus();
       await userEvent.keyboard('{Escape}');
       await flush(fixture);
@@ -200,7 +252,6 @@ describe('DynamoInplace', () => {
       expect(componentInstance.active()).toBe(false);
       expect(editor(container)).toBeNull();
     });
-
   });
 
   describe('harness', () => {
@@ -231,7 +282,8 @@ describe('DynamoInplace', () => {
     });
 
     it('has no axe violations in editor mode', async () => {
-      const { container, fixture } = renderDynamoComponent(InplaceHostComponent);
+      const { container, fixture } =
+        renderDynamoComponent(InplaceHostComponent);
       await userEvent.click(displayBtn(container) as HTMLElement);
       await flush(fixture);
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();

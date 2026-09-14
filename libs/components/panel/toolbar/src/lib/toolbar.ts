@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+} from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -17,6 +22,7 @@ import type { DynamoToolbarPart } from './toolbar.types';
 })
 export class DynamoToolbar extends DynamoBaseComponent<DynamoToolbarPart> {
   readonly ariaLabel = input<string | undefined>(undefined);
+  readonly ariaLabelledBy = input<string | undefined>(undefined);
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()

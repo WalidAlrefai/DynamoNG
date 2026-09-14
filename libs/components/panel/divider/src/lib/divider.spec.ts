@@ -17,6 +17,14 @@ import { DynamoDividerHarness } from './divider.harness';
 })
 class DividerLabeledHostComponent {}
 
+@Component({
+  selector: 'dg-divider-vertical-labeled-host',
+  standalone: true,
+  imports: [DynamoDivider],
+  template: `<dg-divider orientation="vertical">OR</dg-divider>`,
+})
+class DividerVerticalLabeledHostComponent {}
+
 describe('DynamoDivider', () => {
   describe('creation', () => {
     it('renders a role="separator" element', () => {
@@ -70,6 +78,80 @@ describe('DynamoDivider', () => {
 
       expect(within(container).getByRole('separator')).toBeTruthy();
       expect(container.textContent?.trim()).toBe('');
+    });
+
+    it('renders a projected label between two line segments when vertical', () => {
+      const { container } = renderDynamoComponent(
+        DividerVerticalLabeledHostComponent,
+      );
+
+      expect(container.textContent).toContain('OR');
+      expect(container.querySelectorAll('div.flex-1').length).toBe(2);
+    });
+  });
+
+  describe('type (line style)', () => {
+    it.each(['solid', 'dashed', 'dotted'] as const)(
+      'applies the border-%s class for type "%s"',
+      (type) => {
+        const { container } = renderDynamoComponent(DynamoDivider, {
+          inputs: { type },
+        });
+
+        const lines = container.querySelectorAll('[role="separator"] > div');
+        expect(lines[0]?.className).toContain(`border-${type}`);
+        expect(lines[1]?.className).toContain(`border-${type}`);
+      },
+    );
+  });
+
+  describe('align', () => {
+    it('grows both line segments equally for the default "center" align', () => {
+      const { container } = renderDynamoComponent(DynamoDivider);
+
+      const lines = container.querySelectorAll('[role="separator"] > div');
+      expect(lines[0]?.className).toContain('flex-1');
+      expect(lines[1]?.className).toContain('flex-1');
+    });
+
+    it('shrinks the before-line for align "left" (horizontal)', () => {
+      const { container } = renderDynamoComponent(DynamoDivider, {
+        inputs: { align: 'left' },
+      });
+
+      const lines = container.querySelectorAll('[role="separator"] > div');
+      expect(lines[0]?.className).toContain('flex-none');
+      expect(lines[1]?.className).toContain('flex-1');
+    });
+
+    it('shrinks the after-line for align "right" (horizontal)', () => {
+      const { container } = renderDynamoComponent(DynamoDivider, {
+        inputs: { align: 'right' },
+      });
+
+      const lines = container.querySelectorAll('[role="separator"] > div');
+      expect(lines[0]?.className).toContain('flex-1');
+      expect(lines[1]?.className).toContain('flex-none');
+    });
+
+    it('shrinks the before-line for align "top" (vertical)', () => {
+      const { container } = renderDynamoComponent(DynamoDivider, {
+        inputs: { orientation: 'vertical', align: 'top' },
+      });
+
+      const lines = container.querySelectorAll('[role="separator"] > div');
+      expect(lines[0]?.className).toContain('flex-none');
+      expect(lines[1]?.className).toContain('flex-1');
+    });
+
+    it('falls back to "center" when align does not match the orientation', () => {
+      const { container } = renderDynamoComponent(DynamoDivider, {
+        inputs: { orientation: 'horizontal', align: 'top' },
+      });
+
+      const lines = container.querySelectorAll('[role="separator"] > div');
+      expect(lines[0]?.className).toContain('flex-1');
+      expect(lines[1]?.className).toContain('flex-1');
     });
   });
 

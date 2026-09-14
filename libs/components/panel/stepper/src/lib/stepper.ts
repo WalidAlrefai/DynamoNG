@@ -39,6 +39,9 @@ import type { DynamoStepperPart, DynamoStepState } from './stepper.types';
 export class DynamoStepper extends DynamoBaseComponent<DynamoStepperPart> {
   /** Two-way bindable: `<dg-stepper [(value)]="active">`. */
   readonly value = model<string | undefined>(undefined);
+  /** When false, any non-disabled step can be activated directly — the
+   * "completed-or-current steps only" gate is lifted. */
+  readonly linear = input(true);
   readonly ariaLabel = input<string | undefined>(undefined);
   readonly backLabel = input('Back');
   readonly nextLabel = input('Next');
@@ -90,7 +93,8 @@ export class DynamoStepper extends DynamoBaseComponent<DynamoStepperPart> {
         if (current) {
           return;
         }
-        const fallback = stepsArr.find((step) => !step.disabled()) ?? stepsArr[0];
+        const fallback =
+          stepsArr.find((step) => !step.disabled()) ?? stepsArr[0];
         if (fallback && fallback.value() !== this.value()) {
           this.value.set(fallback.value());
         }
@@ -134,9 +138,10 @@ export class DynamoStepper extends DynamoBaseComponent<DynamoStepperPart> {
     this.value.set(step.value());
   }
 
-  /** Completed or current — never a not-yet-reached step. The linear gate. */
+  /** Completed or current — never a not-yet-reached step. The linear gate.
+   * Lifted entirely when `linear` is false. */
   private canActivate(index: number): boolean {
-    return index <= this.activeIndex();
+    return !this.linear() || index <= this.activeIndex();
   }
 
   protected isDisabled(index: number): boolean {

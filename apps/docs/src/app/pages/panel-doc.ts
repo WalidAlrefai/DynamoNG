@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { DynamoButton } from '@dynamong/button';
 import { DynamoPanel } from '@dynamong/panel';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
@@ -10,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'collapsible', title: 'Collapsible' },
   { id: 'static', title: 'Static' },
+  { id: 'footer', title: 'With Footer' },
 ];
 
 const API: ApiTableRow[] = [
@@ -21,13 +23,20 @@ const API: ApiTableRow[] = [
   },
   { name: 'collapsible', type: 'boolean', default: 'false' },
   { name: 'collapsed', type: 'boolean (model)', default: 'false' },
+  { name: 'showHeader', type: 'boolean', default: 'true' },
 ];
 
 @Component({
   selector: 'docs-panel-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoPanel, DocExamplesLayout, DocExample, DocApiTable],
+  imports: [
+    DynamoButton,
+    DynamoPanel,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
     <docs-examples-layout
       name="Panel"
@@ -41,9 +50,7 @@ const API: ApiTableRow[] = [
       >
         <div preview class="max-w-md">
           <dg-panel header="Shipping details" [collapsible]="true">
-            <p class="text-text-primary">
-              Orders ship within 2 business days.
-            </p>
+            <p class="text-text-primary">Orders ship within 2 business days.</p>
           </dg-panel>
         </div>
         <div code>
@@ -65,6 +72,25 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-panel header="Static panel" variant="outlined"&gt; ...
           &lt;/dg-panel&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="footer"
+        title="With Footer"
+        description="Project a [footer] slot for actions below the body, same convention as Card."
+      >
+        <div preview class="max-w-md">
+          <dg-panel header="Outlined" variant="outlined">
+            <p class="text-text-primary">Panel body content.</p>
+            <div footer>
+              <dg-button size="sm">Action</dg-button>
+            </div>
+          </dg-panel>
+        </div>
+        <div code>
+          &lt;dg-panel header="Title"&gt; Body &lt;div footer&gt;&lt;dg-button
+          size="sm"&gt;Action&lt;/dg-button&gt;&lt;/div&gt; &lt;/dg-panel&gt;
         </div>
       </docs-example>
 

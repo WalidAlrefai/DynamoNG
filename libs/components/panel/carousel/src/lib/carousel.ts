@@ -17,6 +17,7 @@ import {
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoButton } from '@dynamong/button';
 import { cn } from '@dynamong/utils/class-merge';
+import { isBrowser } from '@dynamong/utils/dom';
 import { DynamoCarouselSlide } from './carousel-slide';
 import {
   carouselDotStyles,
@@ -31,7 +32,10 @@ import {
   carouselTrackTransitionStyles,
   carouselViewportStyles,
 } from './carousel.styles';
-import type { DynamoCarouselPart } from './carousel.types';
+import type {
+  DynamoCarouselPart,
+  DynamoCarouselResponsiveOption,
+} from './carousel.types';
 
 @Component({
   selector: 'dg-carousel',
@@ -41,13 +45,19 @@ import type { DynamoCarouselPart } from './carousel.types';
   templateUrl: './carousel.html',
 })
 export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
-  /** Two-way bindable: `<dg-carousel [(activeIndex)]="index">`. */
+  /** Two-way bindable: `<dg-carousel [(activeIndex)]="index">`. Always a slide index — the first slide of whichever page is showing. */
   readonly activeIndex = model(0);
   readonly loop = input(true);
   readonly autoPlay = input(false);
   readonly autoPlayInterval = input(5000);
   readonly showArrows = input(true);
   readonly showIndicators = input(true);
+  /** How many slides are visible in the viewport at once. */
+  readonly numVisible = input(1);
+  /** How many slides `next()`/`prev()` (and a committed drag) advance by. */
+  readonly numScroll = input(1);
+  /** Overrides `numVisible`/`numScroll` per viewport width — see `DynamoCarouselResponsiveOption`. */
+  readonly responsiveOptions = input<DynamoCarouselResponsiveOption[]>([]);
   readonly ariaLabel = input<string | undefined>(undefined);
 
   protected readonly slides = contentChildren(DynamoCarouselSlide);
@@ -65,6 +75,80 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
   private readonly hoverPaused = signal(false);
   private readonly playing = computed(
     () => this.autoPlay() && !this.userPaused() && !this.hoverPaused(),
+  );
+
+  private readonly viewportWidth = signal(
+    isBrowser() ? window.innerWidth : Number.POSITIVE_INFINITY,
+  );
+
+  // The narrowest `responsiveOptions` entry whose breakpoint the current
+  // viewport width still fits under — `undefined` when no entry matches
+  // (including when `responsiveOptions` is empty), falling back to the
+  // plain `numVisible`/`numScroll` inputs.
+  private readonly matchingResponsiveOption = computed(() => {
+    const options = this.responsiveOptions();
+    if (options.length === 0) {
+      return undefined;
+    }
+    const width = this.viewportWidth();
+    return [...options]
+      .sort((a, b) => a.breakpoint - b.breakpoint)
+      .find((option) => width <= option.breakpoint);
+  });
+
+  protected readonly effectiveVisible = computed(() =>
+    Math.max(
+      1,
+      this.matchingResponsiveOption()?.numVisible ?? this.numVisible(),
+    ),
+  );
+  protected readonly effectiveScroll = computed(() =>
+    Math.max(1, this.matchingResponsiveOption()?.numScroll ?? this.numScroll()),
+  );
+
+  // Each entry is the slide index a "page" starts at — one page per
+  // indicator dot, one `next()`/`prev()` step apart. The final page is
+  // clamped so it never scrolls past the last slide (and duplicate,
+  // fully-overlapping clamped starts at the tail are collapsed), rather
+  // than leaving a trailing gap of empty slots.
+  protected readonly pageStarts = computed<number[]>(() => {
+    const total = this.slides().length;
+    if (total === 0) {
+      return [0];
+    }
+    const visible = this.effectiveVisible();
+    const scroll = this.effectiveScroll();
+    const starts: number[] = [];
+    let lastStart = -1;
+    for (let start = 0; start < total; start += scroll) {
+      const clamped = Math.min(start, Math.max(0, total - visible));
+      if (clamped !== lastStart) {
+        starts.push(clamped);
+        lastStart = clamped;
+      }
+    }
+    return starts.length > 0 ? starts : [0];
+  });
+
+  // Which page is "current": the last page whose start is at or before the
+  // active slide index — correct even when the active index sits inside a
+  // page's visible window rather than exactly on a page start.
+  protected readonly currentPageIndex = computed(() => {
+    const starts = this.pageStarts();
+    const index = this.activeIndex();
+    let current = 0;
+    for (let i = 0; i < starts.length; i++) {
+      if ((starts[i] ?? 0) <= index) {
+        current = i;
+      } else {
+        break;
+      }
+    }
+    return current;
+  });
+
+  protected readonly slideBasisPercent = computed(
+    () => 100 / this.effectiveVisible(),
   );
 
   private dragStartX = 0;
@@ -93,11 +177,10 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
 
   // Continuous active-index + live-drag-distance offset — can't be expressed
   // as discrete cva variants, so it's bound via [style.transform] instead of
-  // a class. A 4th instance of the established "deliberate inline-style
-  // exception" pattern (Progress's fill-width, Tree's indent-depth,
-  // Skeleton's width/height).
+  // a class. Same "deliberate inline-style exception" pattern as
+  // carousel.styles.ts's other inline bindings.
   protected readonly trackTransform = computed(() => {
-    const base = -this.activeIndex() * 100;
+    const base = -this.activeIndex() * this.slideBasisPercent();
     if (!this.dragging()) {
       return `translateX(${base}%)`;
     }
@@ -109,16 +192,27 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
   constructor() {
     super();
 
-    // Restarts the autoplay timer whenever play state, interval, or slide
+    // Restarts the autoplay timer whenever play state, interval, or page
     // count changes — always clearing any prior timer first so there's never
     // more than one running.
     effect(() => {
-      const shouldPlay = this.playing() && this.slides().length > 1;
+      const shouldPlay = this.playing() && this.pageStarts().length > 1;
       const interval = this.autoPlayInterval();
       this.clearAutoPlayTimer();
       if (shouldPlay) {
         this.intervalId = setInterval(() => this.next(), interval);
       }
+    });
+
+    // Tracks viewport width for `responsiveOptions` — set up once, not
+    // re-run per resize (the listener itself updates the signal).
+    effect((onCleanup) => {
+      if (!isBrowser()) {
+        return;
+      }
+      const onResize = () => this.viewportWidth.set(window.innerWidth);
+      window.addEventListener('resize', onResize);
+      onCleanup(() => window.removeEventListener('resize', onResize));
     });
 
     this.destroyRef.onDestroy(() => this.clearAutoPlayTimer());
@@ -132,36 +226,42 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
   }
 
   protected canPrev(): boolean {
-    return this.loop() || this.activeIndex() > 0;
+    return this.loop() || this.currentPageIndex() > 0;
   }
 
   protected canNext(): boolean {
-    return this.loop() || this.activeIndex() < this.slides().length - 1;
+    return (
+      this.loop() || this.currentPageIndex() < this.pageStarts().length - 1
+    );
   }
 
   protected next(): void {
-    this.goToRelative(1);
+    this.goToPageRelative(1);
   }
 
   protected prev(): void {
-    this.goToRelative(-1);
+    this.goToPageRelative(-1);
   }
 
-  private goToRelative(delta: number): void {
-    const count = this.slides().length;
-    if (count === 0) {
+  private goToPageRelative(delta: number): void {
+    const starts = this.pageStarts();
+    if (starts.length === 0) {
       return;
     }
-    const target = this.activeIndex() + delta;
-    this.goTo(this.loop() ? target : Math.min(Math.max(target, 0), count - 1));
+    const target = this.currentPageIndex() + delta;
+    this.goToPage(
+      this.loop() ? target : Math.min(Math.max(target, 0), starts.length - 1),
+    );
   }
 
-  protected goTo(index: number): void {
-    const count = this.slides().length;
-    if (count === 0) {
+  protected goToPage(pageIndex: number): void {
+    const starts = this.pageStarts();
+    if (starts.length === 0) {
       return;
     }
-    this.activeIndex.set(((index % count) + count) % count);
+    const wrapped =
+      ((pageIndex % starts.length) + starts.length) % starts.length;
+    this.activeIndex.set(starts[wrapped] ?? 0);
   }
 
   protected dotClasses(active: boolean) {
@@ -170,6 +270,11 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
 
   protected slideAriaLabel(index: number): string {
     return `${index + 1} of ${this.slides().length}`;
+  }
+
+  protected isInert(index: number): boolean {
+    const start = this.activeIndex();
+    return index < start || index >= start + this.effectiveVisible();
   }
 
   protected onPointerEnterRoot(): void {
@@ -204,17 +309,17 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
         break;
       case 'Home':
         event.preventDefault();
-        this.goTo(0);
+        this.goToPage(0);
         break;
       case 'End':
         event.preventDefault();
-        this.goTo(this.slides().length - 1);
+        this.goToPage(this.pageStarts().length - 1);
         break;
     }
   }
 
   // A simplified roving-tabindex scan compared to Tabs'/Stepper's
-  // findEnabledIndex: indicator dots have no per-slide "disabled" concept, so
+  // findEnabledIndex: indicator dots have no per-page "disabled" concept, so
   // it's plain wrapping arithmetic rather than a skip-disabled loop. Arrow
   // navigation activates immediately (matching Tabs' automatic-activation
   // mode), since there's no linear gate here the way Stepper has.
@@ -250,7 +355,7 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
       return;
     }
     buttons[nextIndex]?.nativeElement.focus();
-    this.goTo(nextIndex);
+    this.goToPage(nextIndex);
   }
 
   protected onPointerDown(event: PointerEvent): void {

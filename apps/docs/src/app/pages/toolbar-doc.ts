@@ -8,17 +8,31 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'labelled-by', title: 'Labelled By' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
+  {
+    name: 'ariaLabelledBy',
+    type: 'string | undefined',
+    default: 'undefined',
+  },
 ];
 
 @Component({
   selector: 'docs-toolbar-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoToolbar, DynamoButton, DocExamplesLayout, DocExample, DocApiTable],
+  imports: [
+    DynamoToolbar,
+    DynamoButton,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
     <docs-examples-layout
       name="Toolbar"
@@ -44,6 +58,31 @@ const API: ApiTableRow[] = [
           &lt;dg-toolbar ariaLabel="Document actions"&gt; &lt;span start&gt;My
           Document&lt;/span&gt; &lt;span center&gt;Autosaved&lt;/span&gt;
           &lt;dg-button end&gt;Save&lt;/dg-button&gt; &lt;/dg-toolbar&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="labelled-by"
+        title="Labelled By"
+        description="ariaLabelledBy references an external element's id for the accessible name instead of a literal ariaLabel string — useful when a visible heading already names the toolbar."
+      >
+        <div
+          preview
+          class="w-full space-y-2 rounded-md border border-border p-2"
+        >
+          <h3 id="toolbar-doc-heading" class="font-semibold text-text-primary">
+            My Document
+          </h3>
+          <dg-toolbar ariaLabelledBy="toolbar-doc-heading">
+            <span start class="text-sm text-text-muted">Autosaved</span>
+            <div end class="flex gap-2">
+              <dg-button size="sm">Save</dg-button>
+            </div>
+          </dg-toolbar>
+        </div>
+        <div code>
+          &lt;h3 id="doc-heading"&gt;My Document&lt;/h3&gt; &lt;dg-toolbar
+          ariaLabelledBy="doc-heading"&gt; ... &lt;/dg-toolbar&gt;
         </div>
       </docs-example>
 

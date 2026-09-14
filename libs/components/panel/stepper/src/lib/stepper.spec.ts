@@ -18,6 +18,7 @@ import { DynamoStepperHarness } from './stepper.harness';
   template: `
     <dg-stepper
       [(value)]="active"
+      [linear]="linear()"
       ariaLabel="Checkout"
       (finish)="finished.set(true)"
     >
@@ -41,6 +42,7 @@ class StepperTestHostComponent {
   readonly active = model<string | undefined>(undefined);
   readonly preferencesDisabled = signal(false);
   readonly finished = signal(false);
+  readonly linear = signal(true);
 }
 
 @Component({
@@ -79,9 +81,9 @@ describe('DynamoStepper', () => {
         StepperTestHostComponent,
       );
 
-      expect(stepButton(container, 'Account').getAttribute('aria-current')).toBe(
-        'step',
-      );
+      expect(
+        stepButton(container, 'Account').getAttribute('aria-current'),
+      ).toBe('step');
       expect(componentInstance.active()).toBe('account');
     });
 
@@ -217,6 +219,33 @@ describe('DynamoStepper', () => {
       await userEvent.click(stepButton(container, 'Preferences'));
 
       expect(componentInstance.active()).toBe('confirm');
+    });
+  });
+
+  describe('linear=false (free navigation)', () => {
+    it('activates an upcoming (not-yet-reached) step directly when clicked', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        StepperTestHostComponent,
+      );
+      fixture.componentInstance.linear.set(false);
+      fixture.detectChanges();
+
+      await userEvent.click(stepButton(container, 'Confirm'));
+
+      expect(componentInstance.active()).toBe('confirm');
+    });
+
+    it('still refuses to activate a disabled step', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        StepperTestHostComponent,
+      );
+      fixture.componentInstance.linear.set(false);
+      fixture.componentInstance.preferencesDisabled.set(true);
+      fixture.detectChanges();
+
+      await userEvent.click(stepButton(container, 'Preferences'));
+
+      expect(componentInstance.active()).toBe('account');
     });
   });
 

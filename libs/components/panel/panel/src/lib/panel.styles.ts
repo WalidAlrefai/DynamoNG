@@ -43,6 +43,11 @@ export const panelContentWrapperStyles = cva(
 export const panelContentInnerStyles = 'overflow-hidden min-h-0';
 export const panelContentBodyStyles = 'p-4';
 
+// Same shape as cardFooterStyles — Panel and Card share the same
+// content-container family, differing only in the collapse toggle.
+export const panelFooterStyles =
+  'flex items-center gap-2 border-t border-border px-4 py-3';
+
 // Copied from accordionChevronStyles.
 export const panelChevronStyles = cva(
   'shrink-0 transition-transform duration-200 ease-out',

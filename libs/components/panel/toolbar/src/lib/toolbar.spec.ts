@@ -99,6 +99,24 @@ describe('DynamoToolbar', () => {
         within(container).getByRole('toolbar').getAttribute('aria-label'),
       ).toBe('Document actions');
     });
+
+    it('falls back aria-labelledby to null when unset', () => {
+      const { container } = renderDynamoComponent(DynamoToolbar);
+
+      expect(
+        within(container).getByRole('toolbar').getAttribute('aria-labelledby'),
+      ).toBeNull();
+    });
+
+    it('reflects the provided ariaLabelledBy', () => {
+      const { container } = renderDynamoComponent(DynamoToolbar, {
+        inputs: { ariaLabelledBy: 'doc-title' },
+      });
+
+      expect(
+        within(container).getByRole('toolbar').getAttribute('aria-labelledby'),
+      ).toBe('doc-title');
+    });
   });
 
   describe('accessibility', () => {

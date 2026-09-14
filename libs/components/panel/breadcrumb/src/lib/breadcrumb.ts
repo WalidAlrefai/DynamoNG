@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+} from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -9,7 +14,10 @@ import {
   breadcrumbPlainStyles,
   breadcrumbSeparatorStyles,
 } from './breadcrumb.styles';
-import type { DynamoBreadcrumbItem, DynamoBreadcrumbPart } from './breadcrumb.types';
+import type {
+  DynamoBreadcrumbItem,
+  DynamoBreadcrumbPart,
+} from './breadcrumb.types';
 
 @Component({
   selector: 'dg-breadcrumb',
@@ -17,6 +25,9 @@ import type { DynamoBreadcrumbItem, DynamoBreadcrumbPart } from './breadcrumb.ty
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './breadcrumb.html',
 })
+// A dedicated `home`/`homeAriaLabel` (an icon-only leading crumb) is
+// intentionally not offered: no crumb here has icon support, so it would
+// just be a same-shape entry — prepend one to `items` instead. See README.
 export class DynamoBreadcrumb extends DynamoBaseComponent<DynamoBreadcrumbPart> {
   readonly items = input.required<DynamoBreadcrumbItem[]>();
   readonly ariaLabel = input<string | undefined>(undefined);

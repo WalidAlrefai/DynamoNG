@@ -6,7 +6,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'align', title: 'Align' },
+];
 
 @Component({
   selector: 'docs-timeline-page',
@@ -47,7 +50,30 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
         <div code>
           &lt;dg-timeline&gt; &lt;dg-timeline-item severity="success"&gt;Order
           placed&lt;/dg-timeline-item&gt; &lt;dg-timeline-item
-          severity="info"&gt;Shipped&lt;/dg-timeline-item&gt; &lt;/dg-timeline&gt;
+          severity="info"&gt;Shipped&lt;/dg-timeline-item&gt;
+          &lt;/dg-timeline&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="align"
+        title="Align"
+        description='align="right" flips every item&apos;s content to the other side of the connector line, uniformly.'
+      >
+        <div preview class="max-w-md">
+          <dg-timeline align="right" ariaLabel="Order status, right-aligned">
+            <dg-timeline-item severity="success">
+              <p class="font-medium text-text-primary">Order placed</p>
+              <p class="text-sm text-text-muted">Jan 1, 9:02 AM</p>
+            </dg-timeline-item>
+            <dg-timeline-item severity="primary">
+              <p class="font-medium text-text-primary">Shipped</p>
+              <p class="text-sm text-text-muted">Jan 2, 4:45 PM</p>
+            </dg-timeline-item>
+          </dg-timeline>
+        </div>
+        <div code>
+          &lt;dg-timeline align="right"&gt; ... &lt;/dg-timeline&gt;
         </div>
       </docs-example>
 
@@ -65,6 +91,11 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
               <td class="py-2 pr-4 font-mono">ariaLabel</td>
               <td class="py-2 pr-4 font-mono">DynamoTimeline</td>
               <td class="py-2 font-mono">undefined</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">align</td>
+              <td class="py-2 pr-4 font-mono">DynamoTimeline</td>
+              <td class="py-2 font-mono">'left'</td>
             </tr>
             <tr>
               <td class="py-2 pr-4 font-mono">severity</td>

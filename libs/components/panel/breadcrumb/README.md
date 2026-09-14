@@ -32,6 +32,15 @@ None — a breadcrumb navigates via its items' own `href`s; there's no selection
 - `<nav [aria-label]>` wrapping an `<ol>` of items. The last item is a `<span aria-current="page">`; earlier items are `<a>` (when `href` is set) or plain `<span>`.
 - Separators between items are decorative (`aria-hidden="true"`) text, not part of the list semantics.
 
+## Design notes
+
+A dedicated icon-only "home" crumb was considered and deliberately left out:
+no crumb in this component (first or otherwise) has icon support today —
+`items` already accepts a leading `{ label, href }` entry that covers the
+same navigational need. Adding icon-only rendering for just one slot would
+be inconsistent without a broader icon-support pass across all items, which
+is out of scope here.
+
 ## Tier / dependencies
 
 - `tier:0`. Peer dependencies: `@dynamong/core`, `@dynamong/utils` (plus Angular core/CDK).

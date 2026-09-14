@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
@@ -29,6 +30,7 @@ import {
   imageGalleryMainButtonStyles,
   imageGalleryMainImageStyles,
   imageGalleryNextArrowStyles,
+  imageGalleryPlayToggleStyles,
   imageGalleryPrevArrowStyles,
   imageGalleryRootStyles,
   imageGalleryThumbnailImageStyles,
@@ -68,6 +70,9 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
   readonly loop = input(true);
   readonly aspectRatio = input<DynamoImageGalleryAspectRatio>('video');
   readonly showThumbnails = input(true);
+  readonly showArrows = input(true);
+  readonly autoPlay = input(false);
+  readonly autoPlayInterval = input(5000);
   readonly ariaLabel = input<string | undefined>(undefined);
 
   private readonly thumbnailButtons =
@@ -83,12 +88,29 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
    * `imageFailed` idiom, generalized to a collection since a gallery has
    * many images rather than one. */
   private readonly failedIndices = signal<ReadonlySet<number>>(new Set());
-  protected readonly lightboxOpen = signal(false);
+  /** Two-way bindable: `<dg-image-gallery [(lightboxOpen)]="open">`. */
+  readonly lightboxOpen = model(false);
 
-  protected readonly activeImage = computed(() => this.images()[this.activeIndex()]);
+  /** Explicit user pause via the play/pause toggle — distinct from the transient hover/focus pause below. */
+  protected readonly userPaused = signal(false);
+  private readonly hoverPaused = signal(false);
+  private readonly playing = computed(
+    () =>
+      this.autoPlay() &&
+      !this.userPaused() &&
+      !this.hoverPaused() &&
+      !this.lightboxOpen(),
+  );
+  private intervalId: ReturnType<typeof setInterval> | null = null;
+
+  protected readonly activeImage = computed(
+    () => this.images()[this.activeIndex()],
+  );
 
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(imageGalleryRootStyles, this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(imageGalleryRootStyles, this.styleClass()),
   );
   protected readonly viewportClasses = computed(() =>
     imageGalleryViewportStyles({ aspectRatio: this.aspectRatio() }),
@@ -100,13 +122,20 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
   protected readonly thumbnailsClasses = imageGalleryThumbnailsStyles;
   protected readonly thumbnailImageClasses = imageGalleryThumbnailImageStyles;
   protected readonly fallbackClasses = imageGalleryFallbackStyles;
-  protected readonly lightboxBackdropClasses = imageGalleryLightboxBackdropStyles;
+  protected readonly lightboxBackdropClasses =
+    imageGalleryLightboxBackdropStyles;
   protected readonly lightboxPanelClasses = imageGalleryLightboxPanelStyles;
   protected readonly lightboxImageClasses = imageGalleryLightboxImageStyles;
   protected readonly lightboxCaptionClasses = imageGalleryLightboxCaptionStyles;
-  protected readonly lightboxCloseButtonClasses = imageGalleryLightboxCloseButtonStyles;
-  protected readonly lightboxPrevArrowClasses = imageGalleryLightboxPrevArrowStyles;
-  protected readonly lightboxNextArrowClasses = imageGalleryLightboxNextArrowStyles;
+  protected readonly lightboxCloseButtonClasses =
+    imageGalleryLightboxCloseButtonStyles;
+  protected readonly lightboxPrevArrowClasses =
+    imageGalleryLightboxPrevArrowStyles;
+  protected readonly lightboxNextArrowClasses =
+    imageGalleryLightboxNextArrowStyles;
+  protected readonly playToggleClasses = imageGalleryPlayToggleStyles;
+
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
     super();
@@ -118,6 +147,46 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
         this.releaseFocusTrap();
       }
     });
+
+    // Same restart-on-any-change idiom as Carousel's autoplay timer: always
+    // clears any prior timer first so there's never more than one running.
+    effect(() => {
+      const shouldPlay = this.playing() && this.images().length > 1;
+      const interval = this.autoPlayInterval();
+      this.clearAutoPlayTimer();
+      if (shouldPlay) {
+        this.intervalId = setInterval(() => this.next(), interval);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => this.clearAutoPlayTimer());
+  }
+
+  private clearAutoPlayTimer(): void {
+    if (this.intervalId !== null) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+  }
+
+  protected toggleAutoPlay(): void {
+    this.userPaused.update((value) => !value);
+  }
+
+  protected onPointerEnterRoot(): void {
+    this.hoverPaused.set(true);
+  }
+
+  protected onPointerLeaveRoot(): void {
+    this.hoverPaused.set(false);
+  }
+
+  protected onFocusIn(): void {
+    this.hoverPaused.set(true);
+  }
+
+  protected onFocusOut(): void {
+    this.hoverPaused.set(false);
   }
 
   protected thumbnailClasses(active: boolean) {
@@ -212,7 +281,9 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
   protected onThumbnailKeydown(event: KeyboardEvent): void {
     const buttons = this.thumbnailButtons();
     const count = buttons.length;
-    const currentIndex = buttons.findIndex((ref) => ref.nativeElement === event.target);
+    const currentIndex = buttons.findIndex(
+      (ref) => ref.nativeElement === event.target,
+    );
     if (currentIndex === -1 || count === 0) {
       return;
     }
@@ -247,7 +318,8 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
       return;
     }
     if (isBrowser()) {
-      this.previouslyFocusedElement = document.activeElement as HTMLElement | null;
+      this.previouslyFocusedElement =
+        document.activeElement as HTMLElement | null;
     }
     this.focusTrap = this.focusTrapService.create(panel);
     // Same reasoning as Dialog: the focus trap's own initial-focus routine
