@@ -4,7 +4,6 @@ import type { DynamoKeyFilterPreset } from './key-filter.types';
  * Each preset is a regex the *candidate full value* must match for a
  * keystroke / paste to be accepted. They allow the empty string and partial
  * input (e.g. a lone `-` or `.`) so the field can be typed into progressively.
- * Names and shapes mirror PrimeNG's own `KeyFilter` preset set.
  */
 export const KEY_FILTER_PATTERNS: Record<DynamoKeyFilterPreset, RegExp> = {
   int: /^-?\d*$/,

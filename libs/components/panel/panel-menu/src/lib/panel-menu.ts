@@ -13,7 +13,10 @@ import { cn } from '@dynamong/utils/class-merge';
 import { DynamoPanelMenuNode } from './panel-menu-node';
 import { DynamoPanelMenuState } from './panel-menu-state';
 import { panelMenuRootStyles } from './panel-menu.styles';
-import type { DynamoPanelMenuItem, DynamoPanelMenuPart } from './panel-menu.types';
+import type {
+  DynamoPanelMenuItem,
+  DynamoPanelMenuPart,
+} from './panel-menu.types';
 
 interface DynamoPanelMenuEntry {
   item: DynamoPanelMenuItem;
@@ -72,6 +75,10 @@ export class DynamoPanelMenu extends DynamoBaseComponent<DynamoPanelMenuPart> {
   readonly items = input.required<DynamoPanelMenuItem[]>();
   /** Two-way bindable: which node paths (dash-joined child-index chains, e.g. "0-2-1") are currently expanded. */
   readonly expandedPaths = model<string[]>([]);
+  /** When false (default, matching Accordion's own `multiple`), expanding a
+   * branch collapses its already-expanded siblings at the same level —
+   * ancestors and other branches elsewhere in the tree are unaffected. */
+  readonly multiple = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
   readonly itemSelect = output<DynamoPanelMenuItem>();
 
@@ -81,7 +88,9 @@ export class DynamoPanelMenu extends DynamoBaseComponent<DynamoPanelMenuPart> {
   protected readonly menuId = this.idGenerator.next('dg-panel-menu');
 
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(panelMenuRootStyles, this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(panelMenuRootStyles, this.styleClass()),
   );
 
   // Depth-first, skipping children of collapsed items — a pure data walk,
@@ -91,9 +100,14 @@ export class DynamoPanelMenu extends DynamoBaseComponent<DynamoPanelMenuPart> {
   protected readonly visibleEntries = computed<DynamoPanelMenuEntry[]>(() => {
     const result: DynamoPanelMenuEntry[] = [];
     const expanded = new Set(this.expandedPaths());
-    const walk = (items: DynamoPanelMenuItem[], depth: number, parentPath: string | undefined) => {
+    const walk = (
+      items: DynamoPanelMenuItem[],
+      depth: number,
+      parentPath: string | undefined,
+    ) => {
       items.forEach((item, index) => {
-        const path = parentPath === undefined ? `${index}` : `${parentPath}-${index}`;
+        const path =
+          parentPath === undefined ? `${index}` : `${parentPath}-${index}`;
         result.push({ item, path, depth, parentPath });
         if (item.children?.length && expanded.has(path)) {
           walk(item.children, depth + 1, path);
@@ -111,7 +125,10 @@ export class DynamoPanelMenu extends DynamoBaseComponent<DynamoPanelMenuPart> {
     const entries = this.visibleEntries();
     if (entries.length === 0) return undefined;
     const explicit = this.activePathSignal();
-    if (explicit !== undefined && entries.some((entry) => entry.path === explicit && !entry.item.disabled)) {
+    if (
+      explicit !== undefined &&
+      entries.some((entry) => entry.path === explicit && !entry.item.disabled)
+    ) {
       return explicit;
     }
     const index = entries.findIndex((entry) => !entry.item.disabled);
@@ -140,7 +157,9 @@ export class DynamoPanelMenu extends DynamoBaseComponent<DynamoPanelMenuPart> {
     if (entries.length === 0) return;
     const currentPath = this.activeEntryPath();
     const currentIndex =
-      currentPath === undefined ? -1 : entries.findIndex((entry) => entry.path === currentPath);
+      currentPath === undefined
+        ? -1
+        : entries.findIndex((entry) => entry.path === currentPath);
 
     switch (event.key) {
       case 'ArrowDown':
@@ -186,7 +205,9 @@ export class DynamoPanelMenu extends DynamoBaseComponent<DynamoPanelMenuPart> {
         if (hasChildren && isExpanded) {
           this.toggleExpanded(entry.path);
         } else if (entry.parentPath !== undefined) {
-          const parentIndex = entries.findIndex((candidate) => candidate.path === entry.parentPath);
+          const parentIndex = entries.findIndex(
+            (candidate) => candidate.path === entry.parentPath,
+          );
           this.moveActive(parentIndex === -1 ? null : parentIndex);
         }
         return;
@@ -218,9 +239,26 @@ export class DynamoPanelMenu extends DynamoBaseComponent<DynamoPanelMenuPart> {
 
   private toggleExpanded(path: string): void {
     const current = this.expandedPaths();
-    this.expandedPaths.set(
-      current.includes(path) ? current.filter((existing) => existing !== path) : [...current, path],
+    if (current.includes(path)) {
+      this.expandedPaths.set(current.filter((existing) => existing !== path));
+      return;
+    }
+    if (this.multiple()) {
+      this.expandedPaths.set([...current, path]);
+      return;
+    }
+    // Single-expand mode: collapse siblings at the same level (same parent
+    // path) when opening a new branch. Ancestors and other branches
+    // elsewhere in the tree — which never share this parent — are untouched.
+    const parentOf = (candidate: string): string | undefined =>
+      candidate.includes('-')
+        ? candidate.slice(0, candidate.lastIndexOf('-'))
+        : undefined;
+    const parent = parentOf(path);
+    const withoutSiblings = current.filter(
+      (existing) => parentOf(existing) !== parent,
     );
+    this.expandedPaths.set([...withoutSiblings, path]);
   }
 
   private commit(item: DynamoPanelMenuItem): void {

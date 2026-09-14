@@ -17,11 +17,13 @@ child `<dg-tab>` content rather than an `items` input.
 
 ## Inputs
 
-| Input        | Type                          | Default     | Description                                                                                                                             |
-| ------------ | ----------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`      | `string \| undefined` (model) | `undefined` | Two-way bindable: `<dg-tabs [(value)]="active">`.                                                                                       |
-| `activation` | `DynamoTabsActivation`        | `'manual'`  | `'manual'`: arrow keys move focus only, `Enter`/`Space`/click activates. `'automatic'`: arrow-key focus movement activates immediately. |
-| `ariaLabel`  | `string \| undefined`         | `undefined` |                                                                                                                                         |
+| Input            | Type                          | Default     | Description                                                                                                                             |
+| ---------------- | ----------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`          | `string \| undefined` (model) | `undefined` | Two-way bindable: `<dg-tabs [(value)]="active">`.                                                                                       |
+| `activation`     | `DynamoTabsActivation`        | `'manual'`  | `'manual'`: arrow keys move focus only, `Enter`/`Space`/click activates. `'automatic'`: arrow-key focus movement activates immediately. |
+| `scrollable`     | `boolean`                     | `false`     | Lets the tablist scroll horizontally instead of wrapping — for more tabs than fit on one line.                                          |
+| `showNavigators` | `boolean`                     | `true`      | Shows prev/next scroll buttons flanking the tablist. Only rendered when `scrollable` is true.                                           |
+| `ariaLabel`      | `string \| undefined`         | `undefined` |                                                                                                                                         |
 
 ### `<dg-tab>` inputs
 
@@ -41,6 +43,17 @@ child `<dg-tab>` content rather than an `items` input.
 
 - `role="tablist"` with `role="tab"` buttons (`aria-selected`, `aria-controls`, `aria-disabled`, roving `tabindex`) and `role="tabpanel"` content regions (`aria-labelledby`), mounted lazily on first activation and kept mounted (hidden, not destroyed) afterward.
 - Keyboard: `ArrowLeft`/`ArrowRight` move focus (wrapping, skipping disabled tabs), `Home`/`End` jump to the first/last enabled tab. In `'automatic'` mode, arrow-key focus movement also activates the newly focused tab; in `'manual'` mode (the default), activation requires `Enter`/`Space`/click.
+
+## Design notes
+
+`scrollable`/`showNavigators` let the tablist scroll horizontally instead of
+wrapping. The scroll-nav buttons are plain native `<button>`s, not
+`dg-button`: Tabs is `tier:0` and can't take on a `tier:1` dependency just
+for two scroll buttons. A separate "select on focus" mode was considered
+and left out — already covered by this component's own `activation` input
+(`'automatic'` mode is the same "focus activates" behavior). A separate
+lazy-mount opt-in was also left out: this component already always
+lazy-mounts panels on first activation.
 
 ## Tier / dependencies
 

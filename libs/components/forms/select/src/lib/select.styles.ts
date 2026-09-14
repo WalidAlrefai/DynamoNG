@@ -106,8 +106,7 @@ export const selectListboxStyles = 'py-1';
 export const selectFilterWrapperStyles = 'border-b border-border p-2';
 
 // Wraps `<dg-input-text>` so the trailing search icon (below) can be
-// absolutely positioned against it — matches PrimeNG's MultiSelect/Select
-// filter box, which docks its search icon at the input's trailing edge.
+// absolutely positioned against it, docked at the input's trailing edge.
 // `flex-1 min-w-0` is required in `DynamoMultiSelect`'s header row (a flex
 // container alongside the select-all checkbox): a plain block div with no
 // explicit width shrinks to its min-content size as a flex item, which —

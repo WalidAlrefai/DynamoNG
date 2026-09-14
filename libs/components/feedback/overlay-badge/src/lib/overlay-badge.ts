@@ -42,7 +42,7 @@ export class DynamoOverlayBadge extends DynamoBaseComponent<DynamoOverlayBadgePa
   readonly position = input<DynamoOverlayBadgePosition>('top-right');
   /** Size of the overlaid `dg-badge` (the count variant only — the bare dot has a fixed size). */
   readonly badgeSize = input<DynamoSize>('sm');
-  /** Suppresses the badge/dot marker entirely while still rendering the wrapped content — mirrors PrimeNG's `badgeDisabled`. */
+  /** Suppresses the badge/dot marker entirely while still rendering the wrapped content. */
   readonly hidden = input(false);
 
   protected readonly rootClasses = computed(() =>

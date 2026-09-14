@@ -6,7 +6,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'scrollable', title: 'Scrollable' },
+];
 
 @Component({
   selector: 'docs-tabs-page',
@@ -22,7 +25,7 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Each <dg-tab> has a value and label; [(value)] is the active tab. activation=&quot;automatic&quot; selects on arrow-key focus."
+        description='Each <dg-tab> has a value and label; [(value)] is the active tab. activation="automatic" selects on arrow-key focus.'
       >
         <div preview>
           <dg-tabs [(value)]="activeTab">
@@ -46,6 +49,26 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
         <div code>
           &lt;dg-tabs [(value)]="active"&gt; &lt;dg-tab value="profile"
           label="Profile"&gt;...&lt;/dg-tab&gt; &lt;/dg-tabs&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="scrollable"
+        title="Scrollable"
+        description="scrollable lets the tablist scroll horizontally instead of wrapping when there are more tabs than fit on one line; showNavigators (on by default) adds prev/next scroll buttons."
+      >
+        <div preview class="max-w-xs">
+          <dg-tabs [(value)]="scrollableTab" [scrollable]="true">
+            @for (item of manyTabs; track item) {
+              <dg-tab [value]="item" [label]="item">
+                <p class="text-text-primary">{{ item }} content.</p>
+              </dg-tab>
+            }
+          </dg-tabs>
+        </div>
+        <div code>
+          &lt;dg-tabs [(value)]="active" [scrollable]="true"&gt; ...
+          &lt;/dg-tabs&gt;
         </div>
       </docs-example>
 
@@ -73,6 +96,18 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
               <td class="py-2 font-mono">'manual'</td>
             </tr>
             <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">dg-tabs</td>
+              <td class="py-2 pr-4 font-mono">scrollable</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">false</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">dg-tabs</td>
+              <td class="py-2 pr-4 font-mono">showNavigators</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">true</td>
+            </tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">dg-tab</td>
               <td class="py-2 pr-4 font-mono">value / label</td>
               <td class="py-2 pr-4 font-mono">string (required)</td>
@@ -93,4 +128,9 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
 export class TabsDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly activeTab = signal<string | undefined>('profile');
+  protected readonly scrollableTab = signal<string | undefined>('Tab 1');
+  protected readonly manyTabs = Array.from(
+    { length: 10 },
+    (_, i) => `Tab ${i + 1}`,
+  );
 }

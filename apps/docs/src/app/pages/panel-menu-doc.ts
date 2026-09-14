@@ -8,11 +8,15 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'multiple', title: 'Multiple' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'items', type: 'DynamoPanelMenuItem[] (required)', default: '—' },
   { name: 'expandedPaths', type: 'string[] (model)', default: '[]' },
+  { name: 'multiple', type: 'boolean', default: 'false' },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
 ];
 
@@ -30,7 +34,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Pass a nested items tree; branches expand in place, indenting their children. expandedPaths tracks open branches by structural position."
+        description="Pass a nested items tree; branches expand in place, indenting their children. expandedPaths tracks open branches by structural position. By default, opening a branch collapses its already-open siblings at the same level."
       >
         <div preview class="w-64 rounded-md border border-border p-2">
           <dg-panel-menu
@@ -48,6 +52,25 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-panel-menu [items]="items" [(expandedPaths)]="expanded"
           (itemSelect)="onSelect($event)" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="multiple"
+        title="Multiple"
+        description="multiple allows any number of sibling branches to stay open at once, instead of the default accordion-style single-open-per-level behavior."
+      >
+        <div preview class="w-64 rounded-md border border-border p-2">
+          <dg-panel-menu
+            [items]="items"
+            [(expandedPaths)]="multipleExpanded"
+            [multiple]="true"
+            ariaLabel="Documentation, multiple expand"
+          />
+        </div>
+        <div code>
+          &lt;dg-panel-menu [items]="items" [(expandedPaths)]="expanded"
+          [multiple]="true" /&gt;
         </div>
       </docs-example>
 
@@ -71,6 +94,7 @@ export class PanelMenuDocPage {
   protected readonly apiRows = API;
   protected readonly lastSelected = signal<string | null>(null);
   protected readonly expanded = signal<string[]>(['0']);
+  protected readonly multipleExpanded = signal<string[]>(['0', '1']);
   protected readonly items: DynamoPanelMenuItem[] = [
     {
       label: 'Getting Started',
@@ -87,7 +111,11 @@ export class PanelMenuDocPage {
       label: 'Components',
       children: [{ label: 'Forms' }, { label: 'Overlay' }, { label: 'Data' }],
     },
-    { label: 'Deprecated', disabled: true, children: [{ label: 'Legacy API' }] },
+    {
+      label: 'Deprecated',
+      disabled: true,
+      children: [{ label: 'Legacy API' }],
+    },
     { label: 'Changelog' },
   ];
 }

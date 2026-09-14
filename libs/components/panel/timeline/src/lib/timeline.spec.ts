@@ -31,6 +31,32 @@ import { DynamoTimelineHarness } from './timeline.harness';
 class TimelineTestHostComponent {}
 
 @Component({
+  selector: 'dg-timeline-right-aligned-host',
+  standalone: true,
+  imports: [DynamoTimeline, DynamoTimelineItem],
+  template: `
+    <dg-timeline align="right">
+      <dg-timeline-item>
+        <p data-testid="item-0">Placed</p>
+      </dg-timeline-item>
+    </dg-timeline>
+  `,
+})
+class TimelineRightAlignedHostComponent {}
+
+@Component({
+  selector: 'dg-timeline-item-standalone-host',
+  standalone: true,
+  imports: [DynamoTimelineItem],
+  template: `
+    <dg-timeline-item>
+      <p data-testid="standalone-item">Standalone</p>
+    </dg-timeline-item>
+  `,
+})
+class TimelineItemStandaloneHostComponent {}
+
+@Component({
   selector: 'dg-timeline-single-item-host',
   standalone: true,
   imports: [DynamoTimeline, DynamoTimelineItem],
@@ -131,6 +157,34 @@ describe('DynamoTimeline', () => {
 
       expect(contents[2]?.className).toContain('custom-content');
       expect(markers[2]?.className).not.toContain('custom-content');
+    });
+  });
+
+  describe('align', () => {
+    it('defaults to left: no flex-row-reverse on the item host', () => {
+      const { container } = renderDynamoComponent(TimelineTestHostComponent);
+      const item = container.querySelector('dg-timeline-item');
+
+      expect(item?.className).not.toContain('flex-row-reverse');
+    });
+
+    it('applies flex-row-reverse to every item host when align="right"', () => {
+      const { container } = renderDynamoComponent(
+        TimelineRightAlignedHostComponent,
+      );
+      const item = container.querySelector('dg-timeline-item');
+
+      expect(item?.className).toContain('flex-row-reverse');
+    });
+
+    it('renders correctly (defaulting to left) when used outside a dg-timeline', () => {
+      const { container } = renderDynamoComponent(
+        TimelineItemStandaloneHostComponent,
+      );
+      const item = container.querySelector('dg-timeline-item');
+
+      expect(item?.className).not.toContain('flex-row-reverse');
+      expect(within(container).getByTestId('standalone-item')).toBeTruthy();
     });
   });
 

@@ -26,9 +26,10 @@ center, and end — for grouping buttons and other controls.
 
 ## Inputs
 
-| Input       | Type                  | Default     | Description |
-| ----------- | --------------------- | ----------- | ----------- |
-| `ariaLabel` | `string \| undefined` | `undefined` |             |
+| Input            | Type                  | Default     | Description                                                                                                |
+| ---------------- | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
+| `ariaLabel`      | `string \| undefined` | `undefined` |                                                                                                            |
+| `ariaLabelledBy` | `string \| undefined` | `undefined` | References an external element's `id` for the toolbar's accessible name, as an alternative to `ariaLabel`. |
 
 Content is projected via three selectors: `[start]`, `[center]`, `[end]`.
 
@@ -38,7 +39,7 @@ None — Toolbar has no state of its own; interaction is entirely delegated to w
 
 ## Accessibility
 
-- Root is `role="toolbar"` with `aria-label`. Keyboard navigation between the projected controls (e.g. roving tabindex, arrow-key movement) is the responsibility of whatever component is projected in — Toolbar itself imposes no navigation model beyond the standard tab order.
+- Root is `role="toolbar"` with `aria-label`/`aria-labelledby`. Keyboard navigation between the projected controls (e.g. roving tabindex, arrow-key movement) is the responsibility of whatever component is projected in — Toolbar itself imposes no navigation model beyond the standard tab order.
 
 ## Tier / dependencies
 

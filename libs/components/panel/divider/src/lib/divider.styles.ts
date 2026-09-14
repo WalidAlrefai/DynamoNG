@@ -5,11 +5,36 @@ import { cva } from 'class-variance-authority';
 export const dividerLineStyles = cva('border-border', {
   variants: {
     orientation: {
-      horizontal: 'border-t flex-1',
-      vertical: 'border-s self-stretch',
+      horizontal: 'border-t',
+      vertical: 'border-s',
+    },
+    lineStyle: {
+      solid: 'border-solid',
+      dashed: 'border-dashed',
+      dotted: 'border-dotted',
+    },
+    grow: {
+      true: 'flex-1',
+      false: '',
+    },
+  },
+  compoundVariants: [
+    { orientation: 'horizontal', grow: false, class: 'w-3 flex-none' },
+    { orientation: 'vertical', grow: false, class: 'h-3 flex-none' },
+  ],
+  defaultVariants: {
+    orientation: 'horizontal',
+    lineStyle: 'solid',
+    grow: true,
+  },
+});
+
+export const dividerLabelStyles = cva('text-sm text-text-muted', {
+  variants: {
+    orientation: {
+      horizontal: 'px-3',
+      vertical: 'py-3',
     },
   },
   defaultVariants: { orientation: 'horizontal' },
 });
-
-export const dividerLabelStyles = 'px-3 text-sm text-text-muted';

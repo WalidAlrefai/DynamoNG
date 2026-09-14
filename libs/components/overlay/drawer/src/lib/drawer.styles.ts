@@ -10,9 +10,9 @@ import { focusRingClass } from '@dynamong/utils/styles';
 // slide transform per edge — see drawer.ts's animation state machine for
 // why the class flip is deferred a frame rather than applied immediately.
 //
-// The `position` variants are deliberately physical (`left`/`right` keyed,
-// matching PrimeNG's Drawer API — the consumer names the side explicitly),
-// so this file is exempted from the logical-utilities lint rule.
+// The `position` variants are deliberately physical (`left`/`right` keyed —
+// the consumer names the side explicitly), so this file is exempted from
+// the logical-utilities lint rule.
 export const drawerPanelStyles = cva(
   'fixed z-drawer flex flex-col overflow-y-auto border-border bg-surface-0 p-6 shadow-lg ' +
     'transition-transform duration-200 motion-reduce:transition-none focus:outline-none',

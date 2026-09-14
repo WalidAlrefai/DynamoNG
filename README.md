@@ -67,7 +67,7 @@ purely organizational (source-folder grouping, project naming) — they no longe
 | Input Text   | `@dynamong/input-text`   | `ControlValueAccessor` / reactive forms                                                                    |
 | Select       | `@dynamong/select`       | Composite combobox pattern, CDK Overlay, filtering, full keyboard nav, CVA                                 |
 | Multi Select | `@dynamong/multi-select` | Tag-based multi-select, shares `DynamoListboxBase` with Select, select all/clear all, grouping             |
-| Pagination   | `@dynamong/pagination`   | Composes `DynamoButton`/`DynamoSelect` across a real cross-library boundary; PrimeNG-grounded windowing    |
+| Pagination   | `@dynamong/pagination`   | Composes `DynamoButton`/`DynamoSelect` across a real cross-library boundary; page-window truncation logic  |
 | Dialog       | `@dynamong/dialog`       | CDK focus trapping, modal semantics                                                                        |
 | Spinner      | `@dynamong/spinner`      | Decorative-vs-announced dual mode via one optional `label` input; consumed by `DynamoButton` to dedupe     |
 
@@ -157,7 +157,7 @@ gap:
   larger component surface is now a repetitive, well-defined task, not an architectural unknown.
 - **`@dynamong/icons` has exactly one icon** (the checkmark, migrated out of `DynamoCheckbox`'s previously
   inline `<svg>`) — proves the library's shared-icon pattern (`DynamoIconBase` + per-icon component) is
-  integrated, but PrimeNG's ~55-icon set has not been ported.
+  integrated, but a full ~55-icon set has not been ported.
 - **Visual regression testing is scaffolded, not yet a working gate**: `apps/docs` has a Playwright `e2e`
   target that screenshots each component page's examples, but baseline images must come from an actual
   `ubuntu-latest` CI run (the `Update Visual Baselines` workflow, `--update-snapshots`), not this/any
@@ -348,8 +348,8 @@ type="search">`, wired via `[ngModel]`/`(ngModelChange)` since `DynamoInputText`
   listbox's single-tab-stop/virtual-focus model — instead it's a decorative-only box mirroring
   `checkboxBoxStyles`'s visual, rendered with the real (non-focusable) `DynamoCheckIcon`. Ships all
   four scoped features: **select-all** (a single tri-state `DynamoCheckbox` in the panel header,
-  before the filter input — mirroring PrimeNG's MultiSelect header rather than two separate
-  select-all/clear-all buttons, after live UI review; toggling it selects/clears the current
+  before the filter input — a single tri-state control rather than two separate select-all/clear-all
+  buttons, after live UI review; toggling it selects/clears the current
   filtered/visible option set — "select all across a filter" and "select all across every filter" are
   different features, only the former is implemented); **`maxSelected`** (an optional cap — remaining
   unselected options become synthetically `disabled` once reached, never mutating the real `options()`
@@ -368,7 +368,7 @@ type="search">`, wired via `[ngModel]`/`(ngModelChange)` since `DynamoInputText`
   `DynamoTable` v4 entry above covers the later reconciliation — Table now renders a real
   `<dg-pagination>` internally instead of its own hand-rolled footer.
   Page-number windowing (always show page 1 and the last page, a run centered on the current page, a
-  single `…` for any collapsed gap) is grounded in PrimeNG Paginator's `pageLinkSize` truncation — a
+  single `…` for any collapsed gap) is a soft-target truncation scheme implemented as a
   pure, independently-tested function (`buildPaginationRange`, `pagination-range.ts`), not inlined into
   the component. `page`/`pageSize` are both two-way `model()`s (mirroring `DynamoTable`'s own `page`
   convention: `page()`'s _read_ is clamped by `currentPage`, never corrected by a computed); changing

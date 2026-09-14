@@ -338,7 +338,7 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
     if (!item || item.disabled) return;
     if (item.children?.length) {
       // Always drills in on click regardless of `autoDisplay` — that input
-      // only gates hover-driven opening, matching PrimeNG's own semantics.
+      // only gates hover-driven opening.
       this.activeLevelIndex.set(levelIndex);
       this.drillInto(levelIndex, index);
     } else {

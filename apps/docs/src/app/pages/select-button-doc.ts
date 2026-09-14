@@ -93,7 +93,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="allow-empty"
         title="Allow Empty"
-        description="allowEmpty lets clicking the active segment deselect it back to null, matching PrimeNG's own default."
+        description="allowEmpty lets clicking the active segment deselect it back to null."
       >
         <div preview>
           <dg-select-button

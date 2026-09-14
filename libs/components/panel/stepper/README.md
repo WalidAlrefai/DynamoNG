@@ -1,9 +1,10 @@
 # @dynamong/stepper
 
-A linear, gated wizard — a horizontal row of numbered steps with Back/Next
-controls, where a step can only be reached once every step before it has
-been visited (or explicitly marked optional). Steps are declared as child
-`<dg-step>` content rather than an `items` input.
+A horizontal row of numbered steps with Back/Next controls. By default
+(`linear`, the gated wizard mode) a step can only be reached once every step
+before it has been visited (or explicitly marked optional); set
+`[linear]="false"` for free navigation between any non-disabled step. Steps
+are declared as child `<dg-step>` content rather than an `items` input.
 
 ## Usage
 
@@ -23,13 +24,14 @@ protected onFinish(): void { ... }
 
 ## Inputs
 
-| Input         | Type                          | Default     | Description                                                              |
-| ------------- | ----------------------------- | ----------- | ------------------------------------------------------------------------ |
-| `value`       | `string \| undefined` (model) | `undefined` | Two-way bindable: `<dg-stepper [(value)]="active">`.                     |
-| `ariaLabel`   | `string \| undefined`         | `undefined` |                                                                          |
-| `backLabel`   | `string`                      | `'Back'`    |                                                                          |
-| `nextLabel`   | `string`                      | `'Next'`    |                                                                          |
-| `finishLabel` | `string`                      | `'Finish'`  | Shown on the Next button in place of `nextLabel` while on the last step. |
+| Input         | Type                          | Default     | Description                                                                                                                          |
+| ------------- | ----------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`       | `string \| undefined` (model) | `undefined` | Two-way bindable: `<dg-stepper [(value)]="active">`.                                                                                 |
+| `linear`      | `boolean`                     | `true`      | When `false`, any non-disabled step can be activated directly by clicking it — the "completed-or-current steps only" gate is lifted. |
+| `ariaLabel`   | `string \| undefined`         | `undefined` |                                                                                                                                      |
+| `backLabel`   | `string`                      | `'Back'`    |                                                                                                                                      |
+| `nextLabel`   | `string`                      | `'Next'`    |                                                                                                                                      |
+| `finishLabel` | `string`                      | `'Finish'`  | Shown on the Next button in place of `nextLabel` while on the last step.                                                             |
 
 ### `<dg-step>` inputs
 
@@ -51,6 +53,17 @@ protected onFinish(): void { ... }
 - `<nav [aria-label]>` wrapping an `<ol>` of step buttons; each is a real `<button>` with `aria-current="step"` on the active one and `aria-disabled` when gated or skippable. Panels carry `aria-labelledby` pointing at their step button, are mounted lazily on first activation, and stay mounted (hidden) afterward.
 - Keyboard on the step list: `ArrowLeft`/`ArrowRight` move focus (wrapping) between step buttons — unrestricted, so any step's label can be inspected — and `Home`/`End` jump to the first/last enabled step. Only `Enter`/`Space` (native button activation) enforces the "completed-or-current steps only" gate; arrow-key focus movement never skips ahead of it.
 - Back is disabled on the first step; Next advances to the next non-disabled step, or emits `finish` from the last one.
+
+## Design notes
+
+`linear` defaults to `true` to preserve this component's original gated
+behavior, matching its "linear, gated wizard" design; set it to `false` for
+free navigation. A vertical orientation was considered and left out: a
+vertical layout typically interleaves each step's content directly under
+its own header, but this component renders one shared content panel below
+the whole step row — supporting vertical would mean restructuring that
+shared-panel layout into a per-step one, a disproportionate redesign with
+no existing precedent.
 
 ## Tier / dependencies
 

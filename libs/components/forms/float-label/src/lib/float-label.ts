@@ -22,9 +22,9 @@ import type {
  * *inside* the `<label>` element — so no `for`/`id` wiring is needed.
  *
  * The projected control must carry a `placeholder` attribute (a single space
- * is fine) so the filled state can be detected via `:placeholder-shown`, the
- * same requirement PrimeNG's FloatLabel documents. The float itself is pure
- * CSS (see `float-label.styles.ts`); this component holds no state.
+ * is fine) so the filled state can be detected via `:placeholder-shown`. The
+ * float itself is pure CSS (see `float-label.styles.ts`); this component
+ * holds no state.
  */
 @Component({
   selector: 'dg-float-label',

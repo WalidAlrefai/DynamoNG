@@ -42,6 +42,10 @@ export class DynamoInplace extends DynamoBaseComponent<DynamoInplacePart> {
   readonly disabled = input(false);
   /** Show a "×" button in editor mode that returns to display. */
   readonly closable = input(true);
+  /** When true, clicking the display region does nothing — activation must
+   * come from outside (e.g. a separate trigger two-way-bound to `active`). */
+  readonly preventClick = input(false);
+  readonly closeAriaLabel = input<string | undefined>(undefined);
 
   private readonly displayEl =
     viewChild<ElementRef<HTMLButtonElement>>('displayEl');
@@ -58,6 +62,11 @@ export class DynamoInplace extends DynamoBaseComponent<DynamoInplacePart> {
   protected readonly editorClasses = inplaceEditorStyles;
   protected readonly editorBodyClasses = inplaceEditorBodyStyles;
   protected readonly closeButtonClasses = inplaceCloseButtonStyles;
+
+  protected onDisplayClick(): void {
+    if (this.preventClick()) return;
+    this.activate();
+  }
 
   protected activate(): void {
     if (this.disabled() || this.active()) return;

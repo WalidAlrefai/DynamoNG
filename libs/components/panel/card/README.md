@@ -1,12 +1,13 @@
 # @dynamong/card
 
-A simple content container with an optional header/subheader and a footer
-content-projection slot, in three visual variants.
+A simple content container with an optional header/subheader, a media slot,
+and a footer content-projection slot, in three visual variants.
 
 ## Usage
 
 ```html
 <dg-card header="Team members" subheader="12 active" variant="outlined">
+  <img media src="banner.jpg" alt="" />
   Card body content goes here.
   <div footer>
     <dg-button>View all</dg-button>
@@ -22,7 +23,11 @@ content-projection slot, in three visual variants.
 | `subheader` | `string`            | `''`         | Subtitle text shown below the header.                                          |
 | `variant`   | `DynamoCardVariant` | `'elevated'` | `'elevated' \| 'outlined' \| 'filled'`.                                        |
 
-Body content is projected via the default slot; footer content via `<div footer>` (an element with a `footer` attribute), projected into a dedicated footer region.
+Body content is projected via the default slot; media content (e.g. a banner
+image) via `<... media>` (an element with a `media` attribute), rendered
+full-bleed above the header/subheader block; footer content via `<div
+footer>` (an element with a `footer` attribute), projected into a dedicated
+footer region.
 
 ## Outputs
 

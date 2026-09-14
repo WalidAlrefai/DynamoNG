@@ -55,7 +55,7 @@ export class DynamoInputMask
    *  does not remove the control from the tab order or dim its appearance. */
   readonly readOnly = input(false);
   /** Placeholder character shown for each not-yet-filled slot while the
-   *  field is focused (e.g. `"(555) ___-____"`), matching PrimeNG's default. */
+   *  field is focused (e.g. `"(555) ___-____"`). */
   readonly slotChar = input('_');
   /** Reverts an incomplete value back to empty on blur, so a half-filled
    *  mask never gets submitted as if it were meaningful data. */
@@ -90,7 +90,9 @@ export class DynamoInputMask
   // reads `.value` without focusing first (writeValue, programmatic sets)
   // keeps seeing the plain matched string, not slot-char noise.
   protected readonly displayValue = computed(() =>
-    this.focused() ? this.bufferedDisplay(this.value(), this.tokens()) : this.value(),
+    this.focused()
+      ? this.bufferedDisplay(this.value(), this.tokens())
+      : this.value(),
   );
 
   // `value[i]` and `slots[i]` are always index-aligned (see applyMask), so

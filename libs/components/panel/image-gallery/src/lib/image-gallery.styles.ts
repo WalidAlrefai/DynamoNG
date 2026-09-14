@@ -36,6 +36,12 @@ export const imageGalleryNextArrowStyles =
   'absolute end-2 top-1/2 z-10 -translate-y-1/2 h-8 w-8 rounded-full p-0 shadow-md ' +
   'opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100';
 
+// Same fade-in-on-hover/focus scrim as the prev/next arrows, tucked in the
+// opposite corner (bottom-end) so it never collides with them.
+export const imageGalleryPlayToggleStyles =
+  'absolute bottom-2 end-2 z-10 h-8 w-8 rounded-full p-0 shadow-md ' +
+  'opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100';
+
 export const imageGalleryThumbnailsStyles = 'flex gap-2 overflow-x-auto pb-1';
 
 // The two states here are a real visual variant axis, same shape as Editor's

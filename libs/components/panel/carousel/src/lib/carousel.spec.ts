@@ -1,4 +1,4 @@
-import { Component, model } from '@angular/core';
+import { Component, model, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
@@ -7,10 +7,11 @@ import {
 } from '@dynamong/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { DynamoCarousel } from './carousel';
 import { DynamoCarouselSlide } from './carousel-slide';
 import { DynamoCarouselHarness } from './carousel.harness';
+import type { DynamoCarouselResponsiveOption } from './carousel.types';
 
 @Component({
   selector: 'dg-carousel-test-host',
@@ -23,9 +24,15 @@ import { DynamoCarouselHarness } from './carousel.harness';
       [autoPlay]="autoPlay()"
       [autoPlayInterval]="autoPlayInterval()"
     >
-      <dg-carousel-slide><p data-testid="slide-0">Slide 0</p></dg-carousel-slide>
-      <dg-carousel-slide><p data-testid="slide-1">Slide 1</p></dg-carousel-slide>
-      <dg-carousel-slide><p data-testid="slide-2">Slide 2</p></dg-carousel-slide>
+      <dg-carousel-slide
+        ><p data-testid="slide-0">Slide 0</p></dg-carousel-slide
+      >
+      <dg-carousel-slide
+        ><p data-testid="slide-1">Slide 1</p></dg-carousel-slide
+      >
+      <dg-carousel-slide
+        ><p data-testid="slide-2">Slide 2</p></dg-carousel-slide
+      >
     </dg-carousel>
   `,
 })
@@ -34,6 +41,36 @@ class CarouselTestHostComponent {
   readonly loop = model(true);
   readonly autoPlay = model(false);
   readonly autoPlayInterval = model(5000);
+}
+
+@Component({
+  selector: 'dg-carousel-multi-host',
+  standalone: true,
+  imports: [DynamoCarousel, DynamoCarouselSlide],
+  template: `
+    <dg-carousel
+      [(activeIndex)]="index"
+      [loop]="loop()"
+      [numVisible]="numVisible()"
+      [numScroll]="numScroll()"
+      [responsiveOptions]="responsiveOptions()"
+    >
+      @for (n of [0, 1, 2, 3, 4]; track n) {
+        <dg-carousel-slide
+          ><p [attr.data-testid]="'slide-' + n">
+            Slide {{ n }}
+          </p></dg-carousel-slide
+        >
+      }
+    </dg-carousel>
+  `,
+})
+class CarouselMultiHostComponent {
+  readonly index = model(0);
+  readonly loop = model(true);
+  readonly numVisible = signal(1);
+  readonly numScroll = signal(1);
+  readonly responsiveOptions = signal<DynamoCarouselResponsiveOption[]>([]);
 }
 
 @Component({
@@ -264,6 +301,139 @@ describe('DynamoCarousel', () => {
       expect(componentInstance.index()).toBe(2);
       await harness.prev();
       expect(componentInstance.index()).toBe(1);
+    });
+  });
+
+  describe('numVisible / numScroll', () => {
+    it('sizes each slide to 100/numVisible% of the viewport', () => {
+      const { container, fixture } = renderDynamoComponent(
+        CarouselMultiHostComponent,
+      );
+      fixture.componentInstance.numVisible.set(2);
+      fixture.detectChanges();
+
+      const slide = container.querySelector('[role="group"]') as HTMLElement;
+      expect(slide.style.flex).toBe('0 0 50%');
+    });
+
+    it('renders one indicator dot per clamped page instead of one per slide', () => {
+      const { container, fixture } = renderDynamoComponent(
+        CarouselMultiHostComponent,
+      );
+      fixture.componentInstance.numScroll.set(2);
+      fixture.detectChanges();
+
+      // 5 slides, numVisible=1, numScroll=2 -> page starts [0, 2, 4].
+      expect(dots(container)).toHaveLength(3);
+    });
+
+    it('advances by numScroll on next()', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        CarouselMultiHostComponent,
+      );
+      fixture.componentInstance.numScroll.set(2);
+      fixture.detectChanges();
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Next slide' }),
+      );
+
+      expect(componentInstance.index()).toBe(2);
+    });
+
+    it('clamps the final page so it never scrolls past the last slide', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        CarouselMultiHostComponent,
+      );
+      fixture.componentInstance.numVisible.set(3);
+      fixture.componentInstance.numScroll.set(3);
+      fixture.detectChanges();
+
+      // 5 slides, numVisible=3, numScroll=3 -> page starts [0, 2] (not [0, 3],
+      // which would leave only 2 slides in the final window).
+      expect(dots(container)).toHaveLength(2);
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Next slide' }),
+      );
+
+      expect(componentInstance.index()).toBe(2);
+    });
+
+    it('marks every visible slide (not just the first) as non-inert', () => {
+      const { container, fixture } = renderDynamoComponent(
+        CarouselMultiHostComponent,
+      );
+      fixture.componentInstance.numVisible.set(2);
+      fixture.detectChanges();
+
+      const groups = Array.from(
+        container.querySelectorAll('[role="group"]'),
+      ) as HTMLElement[];
+      expect(groups.map((el) => el.hasAttribute('inert'))).toEqual([
+        false,
+        false,
+        true,
+        true,
+        true,
+      ]);
+    });
+
+    it('defaults to numVisible=1/numScroll=1, matching the original single-slide behavior', () => {
+      const { container } = renderDynamoComponent(CarouselMultiHostComponent);
+
+      expect(dots(container)).toHaveLength(5);
+      const slide = container.querySelector('[role="group"]') as HTMLElement;
+      expect(slide.style.flex).toBe('0 0 100%');
+    });
+  });
+
+  describe('responsiveOptions', () => {
+    const originalInnerWidth = window.innerWidth;
+
+    afterEach(() => {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    });
+
+    function mockViewportInnerWidth(width: number): void {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        value: width,
+      });
+    }
+
+    it('applies the narrowest matching breakpoint override', () => {
+      mockViewportInnerWidth(500);
+      const { container, fixture } = renderDynamoComponent(
+        CarouselMultiHostComponent,
+      );
+      fixture.componentInstance.numVisible.set(3);
+      fixture.componentInstance.responsiveOptions.set([
+        { breakpoint: 768, numVisible: 1, numScroll: 1 },
+        { breakpoint: 1200, numVisible: 2, numScroll: 2 },
+      ]);
+      fixture.detectChanges();
+
+      const slide = container.querySelector('[role="group"]') as HTMLElement;
+      expect(slide.style.flex).toBe('0 0 100%');
+    });
+
+    it('falls back to numVisible/numScroll when the viewport is wider than every breakpoint', () => {
+      mockViewportInnerWidth(1400);
+      const { container, fixture } = renderDynamoComponent(
+        CarouselMultiHostComponent,
+      );
+      fixture.componentInstance.numVisible.set(3);
+      fixture.componentInstance.responsiveOptions.set([
+        { breakpoint: 768, numVisible: 1, numScroll: 1 },
+      ]);
+      fixture.detectChanges();
+
+      const slide = container.querySelector('[role="group"]') as HTMLElement;
+      expect(slide.style.flex).toBe('0 0 33.333333333333336%');
     });
   });
 

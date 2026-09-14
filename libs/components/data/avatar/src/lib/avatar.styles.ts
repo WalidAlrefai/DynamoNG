@@ -28,6 +28,6 @@ export const avatarRootStyles = cva(
 // overlap reads as distinct circles/squares rather than a solid blob.
 // Purely a layout helper around projected `<dg-avatar>` children: no
 // props of its own beyond styleClass/unstyled (already on the base
-// component), mirroring PrimeNG's own near-empty AvatarGroup.
+// component).
 export const avatarGroupRootStyles =
   'inline-flex items-center [&>*]:ring-2 [&>*]:ring-surface-0 [&>*:not(:first-child)]:-ms-3';

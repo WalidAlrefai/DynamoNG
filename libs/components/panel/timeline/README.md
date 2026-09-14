@@ -24,9 +24,10 @@ connecting line to the next event, and projected content.
 
 ### `dg-timeline`
 
-| Input       | Type                  | Default     | Description |
-| ----------- | --------------------- | ----------- | ----------- |
-| `ariaLabel` | `string \| undefined` | `undefined` |             |
+| Input       | Type                  | Default     | Description                                                                                                                                                                                                                 |
+| ----------- | --------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ariaLabel` | `string \| undefined` | `undefined` |                                                                                                                                                                                                                             |
+| `align`     | `'left' \| 'right'`   | `'left'`    | Which side of the connector line every item's content renders on. Read by each `dg-timeline-item` via a direct (optional) DI lookup of `DynamoTimeline` — a standalone item outside a `dg-timeline` falls back to `'left'`. |
 
 ### `dg-timeline-item`
 
@@ -42,6 +43,18 @@ None — both components are static, presentational content containers with no i
 
 - The root is `role="list"`; each `dg-timeline-item` sets `role="listitem"` on its own host element (required there rather than in its template, since a template can only style descendants of its own root, never the host itself).
 - No keyboard interaction or focus management beyond whatever the projected content itself provides.
+
+## Design notes
+
+`align` is uniform across all items (`'left' | 'right'`) — a per-item
+alternating layout was considered and left out: alternating sides needs each
+item to know its own index among siblings, which would mean
+`DynamoTimeline` starting to query its items via `contentChildren()` (it's
+currently a pure `<ng-content />` passthrough). That's a real feature, but a
+larger, separate piece of work from this single-signal `align` addition.
+Also left out: a secondary content-projection slot on the far side of the
+marker — no existing need, and `align` alone already covers the common
+"flip which side content sits on" request.
 
 ## Tier / dependencies
 

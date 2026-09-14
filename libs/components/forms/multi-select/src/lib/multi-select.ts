@@ -135,7 +135,7 @@ export class DynamoMultiSelect<TValue = unknown>
   readonly maxSelected = input<number | undefined>(undefined);
   readonly maxSelectedMessage = input('Maximum selections reached');
   readonly showSelectAll = input(true);
-  /** Accessible name for the header select-all/clear-all checkbox (it's icon-only on screen, matching PrimeNG). */
+  /** Accessible name for the header select-all/clear-all checkbox (it's icon-only on screen). */
   readonly selectAllLabel = input('Select all');
   /** Collapses the trigger's tag list to the first N plus a "+N more" summary once exceeded. Unset shows every tag. */
   readonly maxVisibleTags = input<number | undefined>(undefined);
@@ -437,7 +437,7 @@ export class DynamoMultiSelect<TValue = unknown>
     this.onChangeFn(next);
   }
 
-  /** Wired to the header checkbox's `(checkedChange)` — one tri-state control standing in for separate select-all/clear-all buttons, matching PrimeNG's MultiSelect. */
+  /** Wired to the header checkbox's `(checkedChange)` — one tri-state control standing in for separate select-all/clear-all buttons. */
   protected onSelectAllToggle(checked: boolean): void {
     if (checked) {
       this.selectAll();

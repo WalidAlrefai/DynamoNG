@@ -2,11 +2,12 @@ import { cva } from 'class-variance-authority';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — carousel.html only ever binds `[class]="...Classes()"`, except
-// the track's `[style.transform]` (see carousel.ts), a 4th instance of the
-// established "deliberate inline-style exception" pattern (Progress's
-// fill-width, Tree's indent-depth, Skeleton's width/height): a continuous
-// active-index + live-drag-distance offset that can't be expressed as
-// discrete cva variants.
+// the track's `[style.transform]` and each slide's `[style.flex]` (see
+// carousel.ts): a continuous active-index + live-drag-distance offset, and a
+// per-instance slide width driven by `numVisible`, neither of which can be
+// expressed as discrete cva variants — the same "deliberate inline-style
+// exception" pattern used by Progress's fill-width, Tree's indent-depth, and
+// Skeleton's width/height.
 export const carouselRootStyles = 'relative w-full';
 export const carouselViewportStyles =
   'relative overflow-hidden rounded-lg touch-pan-y focus-visible:outline-none';
@@ -14,7 +15,10 @@ export const carouselTrackBaseStyles = 'flex';
 export const carouselTrackTransitionStyles =
   'transition-transform duration-300 ease-in-out motion-reduce:transition-none';
 export const carouselTrackNoTransitionStyles = 'transition-none';
-export const carouselSlideStyles = 'w-full flex-shrink-0';
+// `min-w-0` prevents a slide's own content from forcing it wider than its
+// `[style.flex]`-driven basis — width/shrink themselves are set inline, per
+// instance, so they can't live here as a static class.
+export const carouselSlideStyles = 'min-w-0';
 // A filled, circular scrim rather than dg-button's default rectangular
 // "text" shape — these controls float over arbitrary consumer-supplied
 // slide content (unlike e.g. Pagination's identical text-variant arrows,

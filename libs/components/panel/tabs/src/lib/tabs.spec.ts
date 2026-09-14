@@ -495,4 +495,54 @@ describe('DynamoTabs', () => {
       expect(componentInstance.activeTab()).toBe('a');
     });
   });
+
+  describe('scrollable', () => {
+    it('does not render scroll-nav buttons by default', () => {
+      const { container } = renderDynamoComponent(TabsTestHostComponent);
+
+      expect(
+        container.querySelector('button[aria-label="Scroll tabs left"]'),
+      ).toBeNull();
+      expect(
+        container.querySelector('button[aria-label="Scroll tabs right"]'),
+      ).toBeNull();
+    });
+
+    it('renders scroll-nav buttons when scrollable and showNavigators are both true', () => {
+      const { container } = renderDynamoComponent(DynamoTabs, {
+        inputs: { scrollable: true },
+      });
+
+      expect(
+        container.querySelector('button[aria-label="Scroll tabs left"]'),
+      ).toBeTruthy();
+      expect(
+        container.querySelector('button[aria-label="Scroll tabs right"]'),
+      ).toBeTruthy();
+    });
+
+    it('hides scroll-nav buttons when showNavigators is false, even if scrollable', () => {
+      const { container } = renderDynamoComponent(DynamoTabs, {
+        inputs: { scrollable: true, showNavigators: false },
+      });
+
+      expect(
+        container.querySelector('button[aria-label="Scroll tabs left"]'),
+      ).toBeNull();
+    });
+
+    it('does not throw when a scroll-nav button is clicked', async () => {
+      const { container } = renderDynamoComponent(DynamoTabs, {
+        inputs: { scrollable: true },
+      });
+
+      await expect(
+        userEvent.click(
+          container.querySelector(
+            'button[aria-label="Scroll tabs right"]',
+          ) as HTMLElement,
+        ),
+      ).resolves.not.toThrow();
+    });
+  });
 });

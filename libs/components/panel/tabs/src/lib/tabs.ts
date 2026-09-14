@@ -8,6 +8,7 @@ import {
   effect,
   input,
   model,
+  viewChild,
   viewChildren,
 } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
@@ -16,6 +17,8 @@ import { DynamoTab } from './tab';
 import {
   tabsPanelStyles,
   tabsRootStyles,
+  tabsScrollNavButtonStyles,
+  tabsTablistRowStyles,
   tabsTablistStyles,
   tabsTabStyles,
 } from './tabs.styles';
@@ -33,11 +36,16 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
   readonly value = model<string | undefined>(undefined);
   /** `'manual'` (default): arrow keys move focus only, Enter/Space/click activates. `'automatic'`: arrow-key focus movement activates immediately. */
   readonly activation = input<DynamoTabsActivation>('manual');
+  /** Lets the tablist scroll horizontally instead of wrapping — for more tabs than fit on one line. */
+  readonly scrollable = input(false);
+  /** Prev/next scroll buttons, shown only when `scrollable` is true. */
+  readonly showNavigators = input(true);
   readonly ariaLabel = input<string | undefined>(undefined);
 
   protected readonly tabs = contentChildren(DynamoTab);
   private readonly tabButtons =
     viewChildren<ElementRef<HTMLElement>>('tabButton');
+  private readonly tablistRef = viewChild<ElementRef<HTMLElement>>('tablist');
 
   protected readonly tabsId = this.idGenerator.next('dg-tabs');
 
@@ -58,8 +66,12 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
   protected readonly rootClasses = computed(() =>
     this.unstyled() ? this.styleClass() : cn(tabsRootStyles, this.styleClass()),
   );
-  protected readonly tablistClasses = tabsTablistStyles;
+  protected readonly tablistRowClasses = tabsTablistRowStyles;
+  protected readonly tablistClasses = computed(() =>
+    tabsTablistStyles({ scrollable: this.scrollable() }),
+  );
   protected readonly panelClasses = tabsPanelStyles;
+  protected readonly scrollNavButtonClasses = tabsScrollNavButtonStyles;
 
   constructor() {
     super();
@@ -179,5 +191,17 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
       }
     }
     return null;
+  }
+
+  // Not implemented in jsdom (guarded rather than assumed, same defensiveness
+  // as any other real-only browser API used in this codebase) — and plain
+  // 'auto' rather than 'smooth', matching the docs-app scroll-spy's own
+  // finding that `behavior: 'smooth'` can silently no-op in some automated/
+  // nested-scroller contexts.
+  protected scrollTablist(direction: -1 | 1): void {
+    this.tablistRef()?.nativeElement.scrollBy?.({
+      left: direction * 160,
+      behavior: 'auto',
+    });
   }
 }

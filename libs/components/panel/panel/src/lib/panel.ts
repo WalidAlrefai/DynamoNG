@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  model,
+} from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -6,6 +12,7 @@ import {
   panelContentBodyStyles,
   panelContentInnerStyles,
   panelContentWrapperStyles,
+  panelFooterStyles,
   panelHeaderButtonStyles,
   panelHeaderStyles,
   panelStyles,
@@ -30,27 +37,36 @@ export class DynamoPanel extends DynamoBaseComponent<DynamoPanelPart> {
   readonly header = input('');
   readonly variant = input<DynamoPanelVariant>('elevated');
   readonly collapsible = input(false);
+  /** Hides the header row entirely, even when `header` or `collapsible` is set. */
+  readonly showHeader = input(true);
   /** Two-way bindable: `<dg-panel [(collapsed)]="isCollapsed">`. Only meaningful when collapsible. */
   readonly collapsed = model(false);
 
   protected readonly headerId = this.idGenerator.next('dg-panel-header');
   protected readonly contentId = this.idGenerator.next('dg-panel-content');
 
-  protected readonly expanded = computed(() => !this.collapsible() || !this.collapsed());
+  protected readonly expanded = computed(
+    () => !this.collapsible() || !this.collapsed(),
+  );
 
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(panelStyles({ variant: this.variant() }), this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(panelStyles({ variant: this.variant() }), this.styleClass()),
   );
   protected readonly headerClasses = panelHeaderStyles;
   protected readonly headerButtonClasses = panelHeaderButtonStyles;
   protected readonly titleClasses = panelTitleStyles;
   protected readonly contentInnerClasses = panelContentInnerStyles;
   protected readonly contentBodyClasses = panelContentBodyStyles;
+  protected readonly footerClasses = panelFooterStyles;
 
   protected readonly contentWrapperClasses = computed(() =>
     panelContentWrapperStyles({ expanded: this.expanded() }),
   );
-  protected readonly chevronClasses = computed(() => panelChevronStyles({ expanded: this.expanded() }));
+  protected readonly chevronClasses = computed(() =>
+    panelChevronStyles({ expanded: this.expanded() }),
+  );
 
   protected toggle(): void {
     this.collapsed.update((value) => !value);

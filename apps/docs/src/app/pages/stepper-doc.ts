@@ -6,7 +6,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'non-linear', title: 'Non-Linear' },
+];
 
 @Component({
   selector: 'docs-stepper-page',
@@ -43,6 +46,34 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="non-linear"
+        title="Non-Linear"
+        description='linear="false" lifts the completed-or-current gate — click any non-disabled step to jump straight to it, in either direction.'
+      >
+        <div preview>
+          <dg-stepper
+            [(value)]="freeActiveStep"
+            [linear]="false"
+            ariaLabel="Checkout, non-linear"
+          >
+            <dg-step value="account" label="Account">
+              <p class="text-text-primary">Create your account details.</p>
+            </dg-step>
+            <dg-step value="preferences" label="Preferences">
+              <p class="text-text-primary">Set your preferences.</p>
+            </dg-step>
+            <dg-step value="confirm" label="Confirm">
+              <p class="text-text-primary">Review and confirm.</p>
+            </dg-step>
+          </dg-stepper>
+        </div>
+        <div code>
+          &lt;dg-stepper [(value)]="active" [linear]="false"&gt; ...
+          &lt;/dg-stepper&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <table class="w-full border-collapse text-sm">
           <thead>
@@ -69,6 +100,12 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
               <td class="py-2 font-mono">'Back' / 'Next' / 'Finish'</td>
             </tr>
             <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">dg-stepper</td>
+              <td class="py-2 pr-4 font-mono">linear</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">true</td>
+            </tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">dg-step</td>
               <td class="py-2 pr-4 font-mono">value / label</td>
               <td class="py-2 pr-4 font-mono">string (required)</td>
@@ -89,4 +126,5 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
 export class StepperDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly activeStep = signal<string | undefined>('account');
+  protected readonly freeActiveStep = signal<string | undefined>('account');
 }

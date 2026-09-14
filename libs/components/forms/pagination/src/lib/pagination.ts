@@ -51,7 +51,7 @@ export class DynamoPagination extends DynamoBaseComponent<DynamoPaginationPart> 
   readonly showPageSizeSelector = input(true);
   /** Also renders "first page" / "last page" jump buttons flanking prev/next. */
   readonly showFirstLastButtons = input(false);
-  /** Renders nothing at all once there's only one page (or none) — the default (`false`) always shows the paginator, matching PrimeNG's `alwaysShow`. */
+  /** Renders nothing at all once there's only one page (or none) — the default (`false`) always shows the paginator. */
   readonly hideOnSinglePage = input(false);
   /** Soft target for how many page-number buttons show before collapsing to an ellipsis — see `buildPaginationRange`. */
   readonly maxVisiblePages = input(5);

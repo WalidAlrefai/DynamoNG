@@ -133,7 +133,7 @@ export class DynamoSelectButton<TValue = string>
     } else {
       // Clicking the already-active segment is a no-op re-set by default —
       // a select button conventionally always has exactly one thing
-      // selected. `allowEmpty` opts into PrimeNG's own default instead.
+      // selected. `allowEmpty` opts into deselect-to-null behavior instead.
       this.value.set(option.value);
       this.onChangeFn(option.value);
     }

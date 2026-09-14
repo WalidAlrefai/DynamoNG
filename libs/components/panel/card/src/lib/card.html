@@ -1,4 +1,5 @@
 <div [class]="classes()" [attr.data-testid]="'DynamoCard'">
+  <ng-content select="[media]" />
   @if (header() || subheader()) {
   <div [class]="headerClasses()">
     @if (header()) {

@@ -3,8 +3,7 @@ export type DynamoPaginationRangeItem = number | 'ellipsis';
 /**
  * Windowed page-number list for the pager row: always includes page 1 and
  * `total`, plus a run of pages centered on `current`, collapsing any gap to
- * a single `'ellipsis'` entry — the same truncation PrimeNG's Paginator
- * applies via its `pageLinkSize`. `maxVisible` is a soft target (the
+ * a single `'ellipsis'` entry. `maxVisible` is a soft target (the
  * minimum useful window is 1 + gap + 3 + gap + 1, so it's floored at 5)
  * rather than a hard cap enforced by trimming the window further.
  */

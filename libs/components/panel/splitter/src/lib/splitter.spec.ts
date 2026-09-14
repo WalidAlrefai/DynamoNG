@@ -47,7 +47,12 @@ function mockContainerRect(
   standalone: true,
   imports: [DynamoSplitter, DynamoSplitterPanel],
   template: `
-    <dg-splitter [orientation]="orientation()" [disabled]="disabled()">
+    <dg-splitter
+      [orientation]="orientation()"
+      [disabled]="disabled()"
+      [step]="step()"
+      (resizeEnd)="resizeEndSizes.set($event)"
+    >
       <dg-splitter-panel [minSize]="minSizeA()">
         <p data-testid="panel-a">Panel A</p>
       </dg-splitter-panel>
@@ -65,6 +70,8 @@ class SplitterTestHostComponent {
   readonly disabled = signal(false);
   readonly minSizeA = signal(0);
   readonly minSizeB = signal(0);
+  readonly step = signal(5);
+  readonly resizeEndSizes = signal<number[] | null>(null);
 }
 
 @Component({
@@ -100,7 +107,7 @@ class SplitterInitialSizeHostComponent {}
 
 describe('DynamoSplitter', () => {
   describe('creation', () => {
-    it('renders each panel\'s projected content and N-1 separators', () => {
+    it("renders each panel's projected content and N-1 separators", () => {
       const { container } = renderDynamoComponent(SplitterTestHostComponent);
 
       expect(within(container).getByTestId('panel-a')).toBeTruthy();
@@ -152,7 +159,7 @@ describe('DynamoSplitter', () => {
       ).toBeCloseTo(43.33, 1);
     });
 
-    it('clamps at the neighboring panel\'s minSize', () => {
+    it("clamps at the neighboring panel's minSize", () => {
       const { fixture, container } = renderDynamoComponent(
         SplitterTestHostComponent,
       );
@@ -170,6 +177,34 @@ describe('DynamoSplitter', () => {
       expect(
         Number(separator(container, 0).getAttribute('aria-valuenow')),
       ).toBeCloseTo(46.67, 1);
+    });
+
+    it('emits resizeEnd with the full sizes array on pointerup after a drag', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      mockContainerRect(container, 300, 0);
+      const divider = separator(container, 0);
+
+      fireEvent.pointerDown(divider, { clientX: 100 });
+      fireEvent.pointerMove(divider, { clientX: 130 });
+      fireEvent.pointerUp(divider);
+      fixture.detectChanges();
+
+      const sizes = fixture.componentInstance.resizeEndSizes();
+      expect(sizes?.[0]).toBeCloseTo(43.33, 1);
+    });
+
+    it('does not emit resizeEnd from a pointerup with no preceding drag', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      const divider = separator(container, 0);
+
+      fireEvent.pointerUp(divider);
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.resizeEndSizes()).toBeNull();
     });
 
     it('stops responding to pointermove after pointerup', () => {
@@ -219,9 +254,10 @@ describe('DynamoSplitter', () => {
       fireEvent.keyDown(divider, { key: 'ArrowRight' });
       fixture.detectChanges();
 
-      expect(
-        Number(divider.getAttribute('aria-valuenow')),
-      ).toBeCloseTo(38.33, 1);
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        38.33,
+        1,
+      );
     });
 
     it('resizes by a fixed step with ArrowUp/ArrowDown (vertical)', () => {
@@ -236,9 +272,10 @@ describe('DynamoSplitter', () => {
       fireEvent.keyDown(divider, { key: 'ArrowDown' });
       fixture.detectChanges();
 
-      expect(
-        Number(divider.getAttribute('aria-valuenow')),
-      ).toBeCloseTo(38.33, 1);
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        38.33,
+        1,
+      );
     });
 
     it('ignores the orthogonal arrow keys for the current orientation', () => {
@@ -251,9 +288,10 @@ describe('DynamoSplitter', () => {
       fireEvent.keyDown(divider, { key: 'ArrowUp' });
       fixture.detectChanges();
 
-      expect(
-        Number(divider.getAttribute('aria-valuenow')),
-      ).toBeCloseTo(33.33, 1);
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        33.33,
+        1,
+      );
     });
 
     it('snaps to the extremes with Home/End', () => {
@@ -285,9 +323,10 @@ describe('DynamoSplitter', () => {
       fireEvent.keyDown(divider, { key: 'a' });
       fixture.detectChanges();
 
-      expect(
-        Number(divider.getAttribute('aria-valuenow')),
-      ).toBeCloseTo(33.33, 1);
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        33.33,
+        1,
+      );
     });
 
     it('ignores ArrowLeft/ArrowRight while vertical', () => {
@@ -302,9 +341,10 @@ describe('DynamoSplitter', () => {
       fireEvent.keyDown(divider, { key: 'ArrowRight' });
       fixture.detectChanges();
 
-      expect(
-        Number(divider.getAttribute('aria-valuenow')),
-      ).toBeCloseTo(33.33, 1);
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        33.33,
+        1,
+      );
     });
 
     it('ignores keyboard resizing while disabled', () => {
@@ -318,9 +358,56 @@ describe('DynamoSplitter', () => {
       fireEvent.keyDown(divider, { key: 'ArrowRight' });
       fixture.detectChanges();
 
-      expect(
-        Number(divider.getAttribute('aria-valuenow')),
-      ).toBeCloseTo(33.33, 1);
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        33.33,
+        1,
+      );
+    });
+
+    it('resizes by a custom step when set', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      fixture.componentInstance.step.set(10);
+      fixture.detectChanges();
+      const divider = separator(container, 0);
+      divider.focus();
+
+      fireEvent.keyDown(divider, { key: 'ArrowRight' });
+      fixture.detectChanges();
+
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        43.33,
+        1,
+      );
+    });
+
+    it('emits resizeEnd with the full sizes array after a keyboard resize', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      const divider = separator(container, 0);
+      divider.focus();
+
+      fireEvent.keyDown(divider, { key: 'ArrowRight' });
+      fixture.detectChanges();
+
+      const sizes = fixture.componentInstance.resizeEndSizes();
+      expect(sizes?.[0]).toBeCloseTo(38.33, 1);
+    });
+
+    it('does not emit resizeEnd for an unrecognized or disabled keydown', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      fixture.componentInstance.disabled.set(true);
+      fixture.detectChanges();
+      const divider = separator(container, 0);
+
+      fireEvent.keyDown(divider, { key: 'ArrowRight' });
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.resizeEndSizes()).toBeNull();
     });
 
     it('supports interaction through the DynamoSplitterHarness', async () => {
@@ -366,12 +453,13 @@ describe('DynamoSplitter', () => {
       // Max is this pair's combined size (~66.67, panels 0+1 of an even
       // 3-way split) minus panel 1's minSize, not a flat 100 — panel 2's
       // share isn't reachable by this divider (see dividerMax's doc comment).
-      expect(
-        Number(divider.getAttribute('aria-valuemax')),
-      ).toBeCloseTo(66.67, 1);
+      expect(Number(divider.getAttribute('aria-valuemax'))).toBeCloseTo(
+        66.67,
+        1,
+      );
     });
 
-    it('shrinks aria-valuemax to the neighboring panel\'s minSize headroom', () => {
+    it("shrinks aria-valuemax to the neighboring panel's minSize headroom", () => {
       const { fixture, container } = renderDynamoComponent(
         SplitterTestHostComponent,
       );
@@ -379,9 +467,10 @@ describe('DynamoSplitter', () => {
       fixture.detectChanges();
 
       const divider = separator(container, 0);
-      expect(
-        Number(divider.getAttribute('aria-valuemax')),
-      ).toBeCloseTo(46.67, 1);
+      expect(Number(divider.getAttribute('aria-valuemax'))).toBeCloseTo(
+        46.67,
+        1,
+      );
     });
 
     it('has no axe violations', async () => {

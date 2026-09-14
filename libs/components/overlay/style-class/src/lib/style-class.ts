@@ -11,7 +11,7 @@ type TargetKeyword = '@next' | '@prev' | '@parent' | '@grandparent';
 
 /**
  * On each click of the host, mutates CSS classes on a resolved target
- * element — the lightweight animation/visibility toggler from PrimeNG.
+ * element — a lightweight animation/visibility toggler.
  *
  * The target selector (`dgStyleClass`) is a CSS selector, or one of the
  * relative keywords `@next` / `@prev` / `@parent` / `@grandparent`.

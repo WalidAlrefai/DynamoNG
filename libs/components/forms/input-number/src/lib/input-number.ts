@@ -58,8 +58,8 @@ export class DynamoInputNumber
   readonly minFractionDigits = input<number | undefined>(undefined);
   readonly maxFractionDigits = input<number | undefined>(undefined);
   /** Literal text shown flush against the input, outside the editable value
-   *  (e.g. a unit label) — never part of the parsed number, unlike PrimeNG's
-   *  in-text prefix/suffix, matching how `dg-input-group` keeps chrome on the
+   *  (e.g. a unit label) — never part of the parsed number, not an in-text
+   *  prefix/suffix, matching how `dg-input-group` keeps chrome on the
    *  wrapper rather than baked into the field's own text. */
   readonly prefix = input<string | undefined>(undefined);
   readonly suffix = input<string | undefined>(undefined);
