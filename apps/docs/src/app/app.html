@@ -1,15 +1,78 @@
-<div class="mx-auto flex h-screen max-w-7xl gap-8 p-8">
-  <nav class="flex w-48 shrink-0 flex-col">
-    <a
-      routerLink="/"
-      class="mb-4 block shrink-0 text-lg font-bold text-text-primary"
-      >DynamoNG</a
-    >
+<div
+  class="mx-auto flex h-screen max-w-7xl flex-col lg:flex-row lg:gap-8 lg:p-8"
+>
+  <div
+    class="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3 lg:hidden"
+  >
+    <a routerLink="/" class="text-lg font-bold text-text-primary">DynamoNG</a>
+    <div class="flex items-center gap-1">
+      <button
+        type="button"
+        class="rounded-md p-2 text-text-primary hover:bg-surface-100"
+        [attr.aria-label]="
+          darkMode() ? 'Switch to light theme' : 'Switch to dark theme'
+        "
+        (click)="toggleDarkMode()"
+      >
+        {{ darkMode() ? '☀️' : '🌙' }}
+      </button>
+      <button
+        type="button"
+        class="rounded-md p-2 text-text-primary hover:bg-surface-100"
+        aria-label="Open navigation"
+        (click)="mobileNavOpen.set(true)"
+      >
+        <svg
+          viewBox="0 0 16 16"
+          class="h-4 w-4 fill-current"
+          [attr.aria-hidden]="true"
+        >
+          <path d="M1 3h14v1.5H1zM1 7.25h14v1.5H1zM1 11.5h14V13H1z" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <nav
+    data-testid="dg-docs-primary-nav"
+    class="hidden w-48 shrink-0 flex-col lg:flex"
+  >
+    <div class="mb-4 flex shrink-0 items-center justify-between">
+      <a routerLink="/" class="text-lg font-bold text-text-primary"
+        >DynamoNG</a
+      >
+      <button
+        type="button"
+        class="rounded-md p-1.5 text-text-primary hover:bg-surface-100"
+        [attr.aria-label]="
+          darkMode() ? 'Switch to light theme' : 'Switch to dark theme'
+        "
+        (click)="toggleDarkMode()"
+      >
+        {{ darkMode() ? '☀️' : '🌙' }}
+      </button>
+    </div>
+    <ng-container [ngTemplateOutlet]="navLinks" />
+  </nav>
+
+  <dg-drawer
+    [(open)]="mobileNavOpen"
+    position="left"
+    size="sm"
+    ariaLabel="Component navigation"
+  >
+    <nav class="flex h-full flex-col">
+      <ng-container [ngTemplateOutlet]="navLinks" />
+    </nav>
+  </dg-drawer>
+
+  <ng-template #navLinks>
     <div class="mb-4 shrink-0 space-y-1">
       <a
         routerLink="/components"
         routerLinkActive="bg-surface-100 text-primary"
         class="block rounded-md px-3 py-1.5 text-sm text-text-primary hover:bg-surface-100"
+        (click)="closeMobileNav()"
       >
         Components
       </a>
@@ -17,6 +80,7 @@
         routerLink="/templates"
         routerLinkActive="bg-surface-100 text-primary"
         class="block rounded-md px-3 py-1.5 text-sm text-text-primary hover:bg-surface-100"
+        (click)="closeMobileNav()"
       >
         Templates
       </a>
@@ -24,34 +88,52 @@
         routerLink="/foundations"
         routerLinkActive="bg-surface-100 text-primary"
         class="block rounded-md px-3 py-1.5 text-sm text-text-primary hover:bg-surface-100"
+        (click)="closeMobileNav()"
       >
         Foundations
       </a>
     </div>
+    <div class="mb-3 shrink-0">
+      <input
+        type="search"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+        placeholder="Search components"
+        aria-label="Search components"
+        class="w-full rounded-md border border-border bg-surface-0 px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary"
+      />
+    </div>
     <div class="min-h-0 flex-1 overflow-y-auto">
-      @for (group of groupedComponents; track group.category) {
-      <h3
-        class="mb-1 mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-text-muted first:mt-0"
-      >
-        {{ group.category }}
-      </h3>
-      <ul class="space-y-1">
-        @for (entry of group.entries; track entry.slug) {
-        <li>
-          <a
-            [routerLink]="['/components', entry.slug]"
-            routerLinkActive="bg-surface-100 text-primary"
-            class="block rounded-md px-3 py-1.5 text-sm text-text-primary hover:bg-surface-100"
-          >
-            {{ entry.name }}
-          </a>
-        </li>
-        }
-      </ul>
+      @if (hasNoResults()) {
+        <p class="px-3 py-2 text-sm text-text-muted">
+          No components match "{{ searchQuery() }}".
+        </p>
+      }
+      @for (group of groupedComponents(); track group.category) {
+        <h3
+          class="mb-1 mt-4 px-3 text-xs font-semibold uppercase tracking-wide text-text-muted first:mt-0"
+        >
+          {{ group.category }}
+        </h3>
+        <ul class="space-y-1">
+          @for (entry of group.entries; track entry.slug) {
+            <li>
+              <a
+                [routerLink]="['/components', entry.slug]"
+                routerLinkActive="bg-surface-100 text-primary"
+                class="block rounded-md px-3 py-1.5 text-sm text-text-primary hover:bg-surface-100"
+                (click)="closeMobileNav()"
+              >
+                {{ entry.name }}
+              </a>
+            </li>
+          }
+        </ul>
       }
     </div>
-  </nav>
-  <div class="min-w-0 flex-1 overflow-y-auto">
+  </ng-template>
+
+  <div class="min-w-0 flex-1 overflow-y-auto p-4 lg:p-0">
     <router-outlet />
   </div>
 </div>

@@ -687,3 +687,19 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
       'dgAnimateOnScroll — adds an animation class when the element scrolls into view (IntersectionObserver); optional enter/leave with once=false.',
   },
 ];
+
+/**
+ * Filters the registry by name, matching the codebase's established
+ * filter pattern (e.g. DynamoSelect's `filterSelectOptions`) — trim +
+ * lowercase, return the original array reference when the query is blank.
+ */
+export function filterComponentRegistry(
+  entries: DocComponentEntry[],
+  query: string,
+): DocComponentEntry[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) {
+    return entries;
+  }
+  return entries.filter((entry) => entry.name.toLowerCase().includes(trimmed));
+}
