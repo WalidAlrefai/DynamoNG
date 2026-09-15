@@ -19,6 +19,14 @@
  * namespace for (z-index layers) or that need real declarations (the focus ring).
  */
 
+/*
+ * Tailwind v4 defaults `dark:` to the `prefers-color-scheme` media query.
+ * Every `--dg-*` token already keys off a manually-toggled `.dark` class
+ * (see the theme presets' dark overrides) — this makes `dark:` utilities
+ * follow that same class instead of silently binding to the OS preference.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: var(--dg-color-primary);
   --color-primary-hover: var(--dg-color-primary-hover);

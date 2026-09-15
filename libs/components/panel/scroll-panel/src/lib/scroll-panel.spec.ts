@@ -7,6 +7,10 @@ import {
 } from '@dynamong/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  buildFadeGradient,
+  computeThumbGeometry,
+} from './scroll-panel-geometry';
 import { DynamoScrollPanel } from './scroll-panel';
 import { DynamoScrollPanelHarness } from './scroll-panel.harness';
 import type { DynamoScrollPanelMetrics } from './scroll-panel.types';
@@ -21,10 +25,40 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   fixture.detectChanges();
 }
 
+// The scroll listener now batches metrics recomputation to at most once per
+// animation frame (see scroll-panel.ts's scheduleRecompute) — every test
+// that fires a native `scroll` event must flush a real animation frame
+// before asserting on the resulting metrics-derived state.
+async function scrollAndFlush(
+  viewport: HTMLElement,
+  fixture: ComponentFixture<unknown>,
+): Promise<void> {
+  fireEvent.scroll(viewport);
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  fixture.detectChanges();
+}
+
 function viewportEl(container: HTMLElement): HTMLElement {
   return container.querySelector(
     '[data-testid="dg-scroll-panel-viewport"]',
   ) as HTMLElement;
+}
+
+// jsdom's getBoundingClientRect() always returns all-zero — same limitation
+// mockScrollMetrics works around for scroll/client dimensions — so track
+// click tests need their own rect stub to give the click a non-zero origin.
+function mockRect(el: HTMLElement, rect: Partial<DOMRect>): void {
+  el.getBoundingClientRect = () => rect as DOMRect;
+}
+
+// Element.scrollTo's real signature is overloaded ((options?) | (x, y)),
+// which TS can't narrow a plain options-only stub against directly.
+function stubScrollTo(
+  el: HTMLElement,
+  handler: (options: ScrollToOptions) => void,
+): void {
+  (el as unknown as { scrollTo: (options: ScrollToOptions) => void }).scrollTo =
+    handler;
 }
 
 // jsdom has no layout engine — scrollHeight/clientHeight/scrollWidth/
@@ -97,8 +131,7 @@ describe('DynamoScrollPanel', () => {
         scrollWidth: 100,
         clientWidth: 100,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       expect(
         container.querySelector('[data-testid="dg-scroll-panel-thumb-y"]'),
@@ -120,8 +153,7 @@ describe('DynamoScrollPanel', () => {
         scrollWidth: 200,
         clientWidth: 100,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       expect(
         container.querySelector('[data-testid="dg-scroll-panel-thumb-x"]'),
@@ -143,8 +175,7 @@ describe('DynamoScrollPanel', () => {
         scrollWidth: 200,
         clientWidth: 100,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       expect(
         container.querySelector('[data-testid="dg-scroll-panel-thumb-y"]'),
@@ -167,8 +198,7 @@ describe('DynamoScrollPanel', () => {
         clientHeight: 100,
         scrollTop: 50,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       const thumbY = container.querySelector(
         '[data-testid="dg-scroll-panel-thumb-y"]',
@@ -190,8 +220,7 @@ describe('DynamoScrollPanel', () => {
         clientWidth: 100,
         scrollLeft: 50,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       const thumbX = container.querySelector(
         '[data-testid="dg-scroll-panel-thumb-x"]',
@@ -211,16 +240,14 @@ describe('DynamoScrollPanel', () => {
         clientHeight: 100,
         scrollTop: 0,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
       const thumbY = container.querySelector(
         '[data-testid="dg-scroll-panel-thumb-y"]',
       ) as HTMLElement;
       expect(thumbY.style.top).toBe('0%');
 
       mockScrollMetrics(viewport, { scrollTop: 100 });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       expect(thumbY.style.top).toBe('50%');
     });
@@ -238,8 +265,7 @@ describe('DynamoScrollPanel', () => {
         clientHeight: 100,
         scrollTop: 0,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
       const thumbY = container.querySelector(
         '[data-testid="dg-scroll-panel-thumb-y"]',
       ) as HTMLElement;
@@ -263,8 +289,7 @@ describe('DynamoScrollPanel', () => {
         clientWidth: 100,
         scrollLeft: 0,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
       const thumbX = container.querySelector(
         '[data-testid="dg-scroll-panel-thumb-x"]',
       ) as HTMLElement;
@@ -286,8 +311,7 @@ describe('DynamoScrollPanel', () => {
         clientHeight: 100,
         scrollTop: 0,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
       const thumbY = container.querySelector(
         '[data-testid="dg-scroll-panel-thumb-y"]',
       ) as HTMLElement;
@@ -310,8 +334,7 @@ describe('DynamoScrollPanel', () => {
         clientWidth: 100,
         scrollLeft: 0,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
       const thumbX = container.querySelector(
         '[data-testid="dg-scroll-panel-thumb-x"]',
       ) as HTMLElement;
@@ -368,8 +391,7 @@ describe('DynamoScrollPanel', () => {
       await settle(fixture);
       const viewport = viewportEl(container);
       mockScrollMetrics(viewport, { scrollHeight: 200, clientHeight: 100 });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       expect(viewport.getAttribute('tabindex')).toBe('0');
     });
@@ -386,8 +408,7 @@ describe('DynamoScrollPanel', () => {
         scrollWidth: 200,
         clientWidth: 100,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       expect(
         container
@@ -421,8 +442,7 @@ describe('DynamoScrollPanel', () => {
         scrollWidth: 200,
         clientWidth: 100,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       await expectNoA11yViolations(container);
     });
@@ -440,8 +460,7 @@ describe('DynamoScrollPanel', () => {
         clientHeight: 100,
         scrollTop: 40,
       });
-      fireEvent.scroll(viewport);
-      fixture.detectChanges();
+      await scrollAndFlush(viewport, fixture);
 
       const harness = await TestbedHarnessEnvironment.harnessForFixture(
         fixture,
@@ -452,6 +471,356 @@ describe('DynamoScrollPanel', () => {
       expect(await harness.getScrollLeft()).toBe(0);
       expect(await harness.hasVerticalThumb()).toBe(true);
       expect(await harness.hasHorizontalThumb()).toBe(false);
+    });
+  });
+
+  describe('minimum thumb size clamp', () => {
+    it('does not clamp a thumb that is already above the minimum', () => {
+      const geometry = computeThumbGeometry(100, 50, 100, 0, 24);
+      expect(geometry.sizePx).toBe(50);
+    });
+
+    it('clamps a thumb that would otherwise shrink below the minimum', () => {
+      // Without a clamp: (10/1000)*100 = 1px, far below the 24px floor.
+      const geometry = computeThumbGeometry(100, 10, 1000, 0, 24);
+      expect(geometry.sizePx).toBe(24);
+      expect(geometry.sizePct).toBe(24);
+    });
+
+    it('renders a visually clamped thumb at the minimum size', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+      const viewport = viewportEl(container);
+      mockScrollMetrics(viewport, {
+        scrollHeight: 10000,
+        clientHeight: 100,
+        scrollTop: 0,
+      });
+      await scrollAndFlush(viewport, fixture);
+
+      const thumbY = container.querySelector(
+        '[data-testid="dg-scroll-panel-thumb-y"]',
+      ) as HTMLElement;
+      // Raw ratio would be (100/10000)*100 = 1%; clamped to 24px of a
+      // 100px track = 24%.
+      expect(thumbY.style.height).toBe('24%');
+    });
+
+    it('drags proportionally to the clamped thumb size, not the raw ratio', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+      const viewport = viewportEl(container);
+      mockScrollMetrics(viewport, {
+        scrollHeight: 10000,
+        clientHeight: 100,
+        scrollTop: 0,
+      });
+      await scrollAndFlush(viewport, fixture);
+      const thumbY = container.querySelector(
+        '[data-testid="dg-scroll-panel-thumb-y"]',
+      ) as HTMLElement;
+
+      // thumbLengthPx clamped to 24; travelPx = 100-24 = 76;
+      // maxScrollTop = 9900; deltaPx = 76 -> deltaScrollTop = 9900.
+      fireEvent.pointerDown(thumbY, { clientY: 0 });
+      fireEvent.pointerMove(thumbY, { clientY: 76 });
+
+      expect(viewport.scrollTop).toBe(9900);
+    });
+  });
+
+  describe('click-on-track paging', () => {
+    it('pages down when the vertical track is clicked below the thumb', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+      const viewport = viewportEl(container);
+      mockScrollMetrics(viewport, {
+        scrollHeight: 400,
+        clientHeight: 100,
+        scrollTop: 0,
+      });
+      await scrollAndFlush(viewport, fixture);
+      const trackY = container.querySelector(
+        '[data-testid="dg-scroll-panel-track-y"]',
+      ) as HTMLElement;
+      mockRect(trackY, { top: 0, left: 0 } as DOMRect);
+      // thumb: size=(100/400)*100=25px, top=0 -> centered at 12.5px.
+      // A click well below it should page forward one clientHeight.
+      fireEvent.pointerDown(trackY, { clientY: 90 });
+
+      expect(viewport.scrollTop).toBe(100);
+    });
+
+    it('pages up when the vertical track is clicked above the thumb', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+      const viewport = viewportEl(container);
+      mockScrollMetrics(viewport, {
+        scrollHeight: 400,
+        clientHeight: 100,
+        scrollTop: 300,
+      });
+      await scrollAndFlush(viewport, fixture);
+      const trackY = container.querySelector(
+        '[data-testid="dg-scroll-panel-track-y"]',
+      ) as HTMLElement;
+      mockRect(trackY, { top: 0, left: 0 } as DOMRect);
+      // thumb is now pinned at the bottom; a click near the top should
+      // page backward one clientHeight.
+      fireEvent.pointerDown(trackY, { clientY: 5 });
+
+      expect(viewport.scrollTop).toBe(200);
+    });
+
+    it('pages the horizontal track toward the click', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+      const viewport = viewportEl(container);
+      mockScrollMetrics(viewport, {
+        scrollWidth: 400,
+        clientWidth: 100,
+        scrollLeft: 0,
+      });
+      await scrollAndFlush(viewport, fixture);
+      const trackX = container.querySelector(
+        '[data-testid="dg-scroll-panel-track-x"]',
+      ) as HTMLElement;
+      mockRect(trackX, { top: 0, left: 0 } as DOMRect);
+      fireEvent.pointerDown(trackX, { clientX: 90 });
+
+      expect(viewport.scrollLeft).toBe(100);
+    });
+
+    it('pressing down on the thumb itself does not page the track', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+      const viewport = viewportEl(container);
+      mockScrollMetrics(viewport, {
+        scrollHeight: 400,
+        clientHeight: 100,
+        scrollTop: 0,
+      });
+      await scrollAndFlush(viewport, fixture);
+      const thumbY = container.querySelector(
+        '[data-testid="dg-scroll-panel-thumb-y"]',
+      ) as HTMLElement;
+
+      // The thumb and track are separate sibling elements, so a pointerdown
+      // that hits the (topmost) thumb never reaches the track underneath —
+      // this only starts a drag (handled elsewhere), never a page.
+      fireEvent.pointerDown(thumbY, { clientY: 5 });
+
+      expect(viewport.scrollTop).toBe(0);
+    });
+  });
+
+  describe('imperative scroll API', () => {
+    it('scrollToTop scrolls the viewport to the top', async () => {
+      const { fixture } = renderDynamoComponent(ScrollPanelTestHostComponent);
+      await settle(fixture);
+      const panel = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoScrollPanel,
+      ).componentInstance as DynamoScrollPanel;
+      const viewport = viewportEl(fixture.nativeElement);
+      mockScrollMetrics(viewport, {
+        scrollHeight: 400,
+        clientHeight: 100,
+        scrollTop: 200,
+      });
+      stubScrollTo(viewport, ({ top }) => {
+        Object.defineProperty(viewport, 'scrollTop', {
+          value: top,
+          configurable: true,
+        });
+      });
+
+      panel.scrollToTop();
+
+      expect(viewport.scrollTop).toBe(0);
+    });
+
+    it('scrollToBottom scrolls the viewport to scrollHeight - clientHeight', async () => {
+      const { fixture } = renderDynamoComponent(ScrollPanelTestHostComponent);
+      await settle(fixture);
+      const panel = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoScrollPanel,
+      ).componentInstance as DynamoScrollPanel;
+      const viewport = viewportEl(fixture.nativeElement);
+      mockScrollMetrics(viewport, { scrollHeight: 400, clientHeight: 100 });
+      await scrollAndFlush(viewport, fixture);
+      let scrolledTo: ScrollToOptions | undefined;
+      stubScrollTo(viewport, (options) => {
+        scrolledTo = options;
+      });
+
+      panel.scrollToBottom();
+
+      expect(scrolledTo).toEqual({ top: 300, behavior: 'auto' });
+    });
+
+    it('scrollToStart and scrollToEnd scroll the horizontal axis', async () => {
+      const { fixture } = renderDynamoComponent(ScrollPanelTestHostComponent);
+      await settle(fixture);
+      const panel = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoScrollPanel,
+      ).componentInstance as DynamoScrollPanel;
+      const viewport = viewportEl(fixture.nativeElement);
+      mockScrollMetrics(viewport, { scrollWidth: 400, clientWidth: 100 });
+      await scrollAndFlush(viewport, fixture);
+      const calls: ScrollToOptions[] = [];
+      stubScrollTo(viewport, (options) => {
+        calls.push(options);
+      });
+
+      panel.scrollToStart();
+      panel.scrollToEnd();
+
+      expect(calls).toEqual([
+        { left: 0, behavior: 'auto' },
+        { left: 300, behavior: 'auto' },
+      ]);
+    });
+
+    it('scrollTo delegates directly to the native viewport', async () => {
+      const { fixture } = renderDynamoComponent(ScrollPanelTestHostComponent);
+      await settle(fixture);
+      const panel = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoScrollPanel,
+      ).componentInstance as DynamoScrollPanel;
+      const viewport = viewportEl(fixture.nativeElement);
+      let scrolledTo: ScrollToOptions | undefined;
+      stubScrollTo(viewport, (options) => {
+        scrolledTo = options;
+      });
+
+      panel.scrollTo({ top: 42, behavior: 'smooth' });
+
+      expect(scrolledTo).toEqual({ top: 42, behavior: 'smooth' });
+    });
+  });
+
+  describe('edge fade hint', () => {
+    it('builds no gradient when neither edge needs a fade', () => {
+      expect(buildFadeGradient(false, false, 'to bottom')).toBeNull();
+    });
+
+    it('fades only the trailing edge when scrolled to the start', () => {
+      const gradient = buildFadeGradient(false, true, 'to bottom', 24);
+      expect(gradient).toBe(
+        'linear-gradient(to bottom, black 0, black calc(100% - 24px), transparent 100%)',
+      );
+    });
+
+    it('fades both edges once scrolled past the start and short of the end', () => {
+      const gradient = buildFadeGradient(true, true, 'to bottom', 24);
+      expect(gradient).toBe(
+        'linear-gradient(to bottom, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)',
+      );
+    });
+
+    it('applies no mask when content does not overflow', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+
+      expect(viewportEl(container).style.maskImage).toBe('');
+    });
+
+    it('fades the top edge once scrolled past the start', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+      const viewport = viewportEl(container);
+      mockScrollMetrics(viewport, {
+        scrollHeight: 400,
+        clientHeight: 100,
+        scrollTop: 50,
+      });
+      await scrollAndFlush(viewport, fixture);
+
+      expect(viewport.style.maskImage).toContain('transparent 0');
+      expect(viewport.style.maskImage).toContain('to bottom');
+    });
+
+    it('fades the left edge once scrolled past the start horizontally', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+      const viewport = viewportEl(container);
+      mockScrollMetrics(viewport, {
+        scrollWidth: 400,
+        clientWidth: 100,
+        scrollLeft: 50,
+      });
+      await scrollAndFlush(viewport, fixture);
+
+      expect(viewport.style.maskImage).toContain('to right');
+    });
+  });
+
+  describe('scroll performance', () => {
+    it('coalesces multiple scroll events into a single recompute per animation frame', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ScrollPanelTestHostComponent,
+      );
+      await settle(fixture);
+      const viewport = viewportEl(container);
+
+      mockScrollMetrics(viewport, {
+        scrollHeight: 200,
+        clientHeight: 100,
+        scrollTop: 10,
+      });
+      fireEvent.scroll(viewport);
+      mockScrollMetrics(viewport, { scrollTop: 20 });
+      fireEvent.scroll(viewport);
+      mockScrollMetrics(viewport, { scrollTop: 30 });
+      fireEvent.scroll(viewport);
+      fixture.detectChanges();
+
+      // The batched recompute hasn't run yet — metrics (and therefore the
+      // thumb) still reflect the pre-scroll, non-overflowing state.
+      expect(
+        container.querySelector('[data-testid="dg-scroll-panel-thumb-y"]'),
+      ).toBeNull();
+
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+      fixture.detectChanges();
+
+      const thumbY = container.querySelector(
+        '[data-testid="dg-scroll-panel-thumb-y"]',
+      ) as HTMLElement;
+      expect(thumbY).toBeTruthy();
+      // Only the latest (scrollTop=30) value should have taken effect:
+      // maxScrollTop=100; posPct=(30/100)*(100-50)=15.
+      expect(thumbY.style.top).toBe('15%');
+    });
+
+    it('cancels a pending frame on destroy without throwing', async () => {
+      const { fixture } = renderDynamoComponent(ScrollPanelTestHostComponent);
+      await settle(fixture);
+      const viewport = viewportEl(fixture.nativeElement);
+      mockScrollMetrics(viewport, { scrollHeight: 200, clientHeight: 100 });
+      fireEvent.scroll(viewport);
+
+      expect(() => fixture.destroy()).not.toThrow();
     });
   });
 

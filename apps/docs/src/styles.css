@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /*
  * Workspace-internal relative import: npm workspaces symlink @dynamong/theme
@@ -8,4 +8,31 @@
  * installing the published package uses the bare-specifier import shown in
  * the README instead of this relative path.
  */
-@import "../../../libs/theme/tailwind-preset/src/preset.css";
+@import '../../../libs/theme/tailwind-preset/src/preset.css';
+
+/*
+ * Without this, the page canvas stays the browser's default white — which
+ * happens to match light mode's surface-0 by coincidence, but breaks
+ * completely under `.dark` (text flips to near-white while the canvas
+ * never themes). Every other `--dg-*` consumer already keys off `.dark`
+ * automatically; this is the one spot nothing did.
+ */
+html,
+body {
+  background-color: var(--dg-color-surface-0);
+  color: var(--dg-color-text-primary);
+}
+
+/*
+ * `scrollbar-color`/`scrollbar-width` are inherited, so setting them once
+ * here covers every native scrollbar in the app (nav list, doc content,
+ * the "on this page" TOC) — without this they stay at the browser's
+ * unstyled default (a light-gray scrollbar), which looks out of place
+ * against a dark canvas. This is the app shell's own native scroll UI;
+ * DynamoScrollPanel is unrelated — it hides its native scrollbar entirely
+ * and draws its own themed thumb instead (see `dg-scrollbar-hidden`).
+ */
+html {
+  scrollbar-color: var(--dg-color-border) transparent;
+  scrollbar-width: thin;
+}

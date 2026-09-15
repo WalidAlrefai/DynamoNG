@@ -23,6 +23,24 @@ See Design notes for why there's no dedicated size input.
 None — scroll position is native, uncontrolled browser state; there is no
 bindable model for it.
 
+## Imperative API
+
+Still no inputs/outputs (see Outputs above) — but for cases that need to
+move the scroll position from outside (e.g. "jump to top" after loading
+more items), grab the component instance via `viewChild()` and call one of:
+
+```ts
+scrollTo(options: ScrollToOptions): void
+scrollToTop(behavior?: ScrollBehavior): void
+scrollToBottom(behavior?: ScrollBehavior): void
+scrollToStart(behavior?: ScrollBehavior): void
+scrollToEnd(behavior?: ScrollBehavior): void
+```
+
+`scrollToTop`/`scrollToBottom`/`scrollToStart`/`scrollToEnd` all default to
+`behavior: 'auto'` (instant) and compute their target from the panel's
+current metrics, so they stay correct as content changes size.
+
 ## Accessibility
 
 - The scrollable viewport gets `tabindex="0"` only while it actually
@@ -33,8 +51,13 @@ bindable model for it.
   `overflow: auto` element.
 - Each thumb is `aria-hidden="true"` and outside the tab order — real
   scrollbars aren't keyboard targets either; the underlying viewport
-  already provides keyboard scrolling on its own.
-- Thumbs support pointer drag (mouse and touch).
+  already provides keyboard scrolling on its own. The invisible track
+  behind each thumb (see Design notes) is the same: it's a pointer-only
+  affordance, since keyboard users already have Page Up/Down on the
+  viewport itself.
+- Thumbs support pointer drag (mouse and touch), and the track behind each
+  thumb pages one viewport-length toward a click, like a native OS
+  scrollbar track.
 
 ## Design notes
 
@@ -59,6 +82,31 @@ well for v1.
 thumb renders only for whichever axis actually overflows, the same way a
 native scrollbar would. This differs from `Splitter`, whose entire layout
 (not just a thumb) depends on a single axis.
+
+**Minimum thumb size.** A thumb's raw size (visible/total ratio) is
+clamped to a 24px floor (`MIN_THUMB_PX` in `scroll-panel-geometry.ts`) so
+very long content never shrinks it to an ungrabbable sliver. Drag math uses
+the same clamped size, so position and size always agree.
+
+**Click-on-track paging.** An invisible, slightly-wider-than-the-thumb
+track element sits behind each thumb (same axis, full length) and pages
+the viewport by one `clientHeight`/`clientWidth` toward a click, like a
+native scrollbar track. It's bound to `(pointerdown)`, not `(click)` —
+functionally the same for this use case, and it sidesteps needing keyboard
+equivalents for a click handler (see Accessibility).
+
+**Edge fade hint.** The viewport's `mask-image` fades whichever edges have
+more content beyond them, derived straight from scroll metrics — no extra
+DOM. When both axes need a fade simultaneously, the two gradients are
+combined with `mask-composite: intersect`; there's no vendor-prefixed
+equivalent set, so a pre-`mask-composite` Safari falls back to showing only
+the vertical fade in that corner. Accepted v1 gap — the fades still degrade
+to "on" rather than visually breaking.
+
+**Scroll performance.** The native `scroll` listener batches metrics
+recomputation to at most once per animation frame (via
+`requestAnimationFrame`), so a fast/flick scroll burst triggers one signal
+write per frame instead of one per event.
 
 ## Tier / dependencies
 

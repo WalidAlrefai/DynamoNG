@@ -103,6 +103,17 @@ describe('auraDarkTokens', () => {
       }
     }
   });
+
+  // `color` is the group every component actually renders with — unlike
+  // radius/spacing/typography/motion/zIndex (documented as intentionally
+  // theme-agnostic no-ops), every light color token needs a dark
+  // counterpart or that token silently keeps its light-mode value under
+  // `.dark`.
+  it('overrides every light-mode color token', () => {
+    for (const name of Object.keys(auraLightTokens.color)) {
+      expect(auraDarkTokens.color, 'color').toHaveProperty(name);
+    }
+  });
 });
 
 describe('AURA_THEME_CSS', () => {
