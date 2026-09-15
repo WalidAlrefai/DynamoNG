@@ -48,16 +48,35 @@ protected readonly selectedDate = signal<Date | null>(null);
 | `disabledChange` | `boolean`      | `disabled` changes.                                                                                        |
 | `openChange`     | `boolean`      | `open` changes — either the panel opening/closing via user interaction, or a programmatic write to `open`. |
 
+## Month/year quick-jump
+
+Clicking the month/year header label swaps the day grid for a compact
+month-button grid with a year stepper, for jumping several months/years
+away faster than repeated `PageUp`/`PageDown`. `Escape` closes the
+quick-jump grid first (a second `Escape` then closes the whole panel).
+
 ## Accessibility
 
 - Trigger is a native `<button>` with `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`, `aria-invalid`, `aria-readonly`.
-- Panel is `role="dialog"` (`aria-modal="false"`) containing a `role="grid"` calendar (`role="row"`/`role="columnheader"`/`role="gridcell"`), with the selected cell marked `aria-selected` and today's day button marked `aria-current="date"`.
+- Panel is `role="dialog"` (`aria-modal="false"`) containing a `role="grid"` calendar (`role="row"`/`role="columnheader"`/`role="gridcell"`), with the selected cell marked `aria-selected` and today's day button marked `aria-current="date"`. Each day button also carries a full formatted-date `aria-label` (e.g. "August 19, 2026") — the visible text is just the bare day number.
+- A visually-hidden `aria-live="polite"` region announces the visible month whenever it changes (prev/next, `PageUp`/`PageDown`, `Shift+PageUp`/`Shift+PageDown`, or quick-jump), so screen-reader users don't have to re-discover the new month by re-reading the grid.
 - Keyboard on the trigger: `ArrowDown`/`Enter`/`Space` opens the panel, `Escape` closes it.
 - Keyboard inside the panel (roving focus over day buttons): `ArrowRight`/`ArrowLeft`/`ArrowDown`/`ArrowUp` move by day/week, `Home`/`End` jump to the start/end of the focused week, `PageUp`/`PageDown` change month (`Shift+PageUp`/`Shift+PageDown` change year), `Escape` closes and refocuses the trigger.
+
+## Design notes
+
+**`Intl.DateTimeFormat` caching.** The trigger/month/weekday/day-`aria-label`
+formatters are all built through `getCachedDateTimeFormat()`
+(`date-format-cache.ts`, exported from this package) instead of
+constructing a fresh `Intl.DateTimeFormat` on every `computed()` recompute
+— a formatter is stateless once built, so it's safely memoized and shared
+module-wide (including across `@dynamong/date-range-picker` instances,
+which reuse this same helper).
 
 ## Tier / dependencies
 
 - `tier:2`. Peer dependencies: `@dynamong/select` (shares its CDK Overlay open/close lifecycle via `DynamoListboxBase`).
+- `date-picker.calendar.ts`'s pure grid/range helpers and `date-format-cache.ts` are also part of this package's public API (`buildCalendarGrid`, `clampToRange`, `isDateDisabled`, `getCachedDateTimeFormat`), so `@dynamong/date-range-picker` (`tier:3`) can reuse them rather than duplicating — the same "sibling depends on a peer's shared internals" precedent `DynamoMultiSelect` already sets with `DynamoListboxBase`.
 
 ## Running unit tests
 

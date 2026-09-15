@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoDatePicker } from '@dynamong/date-picker';
+import {
+  DynamoDateRangePicker,
+  type DynamoDateRange,
+} from '@dynamong/date-range-picker';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
 import {
@@ -13,6 +17,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'disabled-days', title: 'Disabled Dates & Weekdays' },
   { id: 'clearable', title: 'Clearable' },
   { id: 'inline', title: 'Inline' },
+  { id: 'range', title: 'Range Selection' },
 ];
 
 const API: ApiTableRow[] = [
@@ -27,15 +32,23 @@ const API: ApiTableRow[] = [
   { name: 'inline', type: 'boolean', default: 'false' },
 ];
 
+const EMPTY_RANGE: DynamoDateRange = { start: null, end: null };
+
 @Component({
   selector: 'docs-date-picker-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoDatePicker, DocExamplesLayout, DocExample, DocApiTable],
+  imports: [
+    DynamoDatePicker,
+    DynamoDateRangePicker,
+    DocExamplesLayout,
+    DocExample,
+    DocApiTable,
+  ],
   template: `
     <docs-examples-layout
       name="Date Picker"
-      description="A single-date picker with a month-grid calendar dialog, full keyboard navigation, and ARIA grid semantics."
+      description="A single-date picker with a month-grid calendar dialog, full keyboard navigation, and ARIA grid semantics — plus a two-date range variant (dg-date-range-picker) built on the same calendar."
       [examples]="examples"
     >
       <docs-example
@@ -127,6 +140,28 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="range"
+        title="Range Selection"
+        description="dg-date-range-picker (@dynamong/date-range-picker) shares this exact input surface with dg-date-picker above — min/max, disabledDates/disabledDays, clearable, and inline all work identically. Only value differs: a DynamoDateRange ({{
+          '{'
+        }} start: Date | null; end: Date | null {{
+          '}'
+        }}) instead of a single Date. Click a start date, then an end date — clicking before the current start redefines the range rather than resetting it."
+      >
+        <div preview class="max-w-sm">
+          <dg-date-range-picker
+            [(value)]="range"
+            ariaLabel="Date range"
+            placeholder="Choose a date range"
+          />
+        </div>
+        <div code>
+          &lt;dg-date-range-picker [(value)]="range" ariaLabel="Date range"
+          /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -141,4 +176,5 @@ export class DatePickerDocPage {
   protected readonly weekdayOnly = signal<Date | null>(null);
   protected readonly clearableDate = signal<Date | null>(new Date());
   protected readonly inlineDate = signal<Date | null>(null);
+  protected readonly range = signal<DynamoDateRange>(EMPTY_RANGE);
 }

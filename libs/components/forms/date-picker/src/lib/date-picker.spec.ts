@@ -566,6 +566,160 @@ describe('DynamoDatePicker', () => {
         getDialog()?.querySelectorAll('[role="columnheader"]'),
       ).toHaveLength(7);
     });
+
+    it('gives each day button a full formatted-date aria-label', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Choose a date',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const day = getDayButtonByText('19');
+      expect(day.getAttribute('aria-label')).toBe(
+        new Intl.DateTimeFormat('en', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }).format(new Date(2026, 7, 19)),
+      );
+    });
+
+    it('announces the visible month via a live region on navigation', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Choose a date',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const liveRegion = getDialog()?.querySelector('[aria-live="polite"]');
+      expect(liveRegion?.textContent).toBe('August 2026');
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Next month',
+        }),
+      );
+      fixture.detectChanges();
+
+      expect(liveRegion?.textContent).toBe('September 2026');
+    });
+  });
+
+  describe('month/year quick-jump', () => {
+    async function openQuickJump(
+      container: HTMLElement,
+      fixture: ComponentFixture<unknown>,
+    ): Promise<void> {
+      const trigger = within(container).getByRole('button', {
+        name: 'Choose a date',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'August 2026',
+        }),
+      );
+      fixture.detectChanges();
+    }
+
+    it('swaps the day grid for a 12-month grid when the header is clicked', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerTestHostComponent,
+      );
+      await openQuickJump(container, fixture);
+
+      expect(getDialog()?.querySelector('table[role="grid"]')).toBeNull();
+      expect(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Aug',
+        }),
+      ).toBeTruthy();
+    });
+
+    it('jumps to the selected month and closes the quick-jump grid', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerTestHostComponent,
+      );
+      await openQuickJump(container, fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Dec',
+        }),
+      );
+      fixture.detectChanges();
+
+      expect(getDialog()?.querySelector('table[role="grid"]')).toBeTruthy();
+      expect(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'December 2026',
+        }),
+      ).toBeTruthy();
+    });
+
+    it('steps the quick-jump year independently of the visible month', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerTestHostComponent,
+      );
+      await openQuickJump(container, fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Next year',
+        }),
+      );
+      fixture.detectChanges();
+
+      expect(within(getDialog() as HTMLElement).getByText('2027')).toBeTruthy();
+    });
+
+    it('disables a quick-jump month that falls entirely outside min/max', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          min: new Date(2026, 6, 1),
+          max: new Date(2026, 8, 30),
+        },
+      });
+      await openQuickJump(container, fixture);
+
+      expect(
+        (
+          within(getDialog() as HTMLElement).getByRole('button', {
+            name: 'Jun',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      expect(
+        (
+          within(getDialog() as HTMLElement).getByRole('button', {
+            name: 'Aug',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(false);
+    });
+
+    it('closes only the quick-jump grid on the first Escape, then the panel on the second', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerTestHostComponent,
+      );
+      await openQuickJump(container, fixture);
+
+      await userEvent.keyboard('{Escape}');
+      fixture.detectChanges();
+      expect(getDialog()?.querySelector('table[role="grid"]')).toBeTruthy();
+
+      await userEvent.keyboard('{Escape}');
+      await settle(fixture);
+      expect(getDialog()).toBeNull();
+    });
   });
 
   describe('readOnly', () => {
@@ -795,6 +949,27 @@ describe('DynamoDatePicker', () => {
       });
       await userEvent.click(trigger);
       await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations with the quick-jump grid open', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Choose a date',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'August 2026',
+        }),
+      );
+      fixture.detectChanges();
 
       await expect(
         expectNoA11yViolations(getOverlayContainer()),

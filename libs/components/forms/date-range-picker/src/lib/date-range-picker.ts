@@ -16,11 +16,19 @@ import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { NgTemplateOutlet } from '@angular/common';
 import { DynamoListboxBase, selectClearButtonStyles } from '@dynamong/select';
+import {
+  buildCalendarGrid,
+  clampToRange,
+  getCachedDateTimeFormat,
+  isDateDisabled,
+  type DynamoDatePickerWeekday,
+} from '@dynamong/date-picker';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   addDays,
   addMonths,
   addYears,
+  isAfter,
   isBefore,
   isSameDay,
   isSameMonth,
@@ -30,29 +38,23 @@ import {
   startOfWeek,
 } from 'date-fns';
 import {
-  buildCalendarGrid,
-  clampToRange,
-  isDateDisabled,
-  type DynamoDatePickerWeekday,
-} from './date-picker.calendar';
-import { getCachedDateTimeFormat } from './date-format-cache';
-import {
-  datePickerDayStyles,
-  datePickerHeaderButtonStyles,
-  datePickerMonthGridButtonStyles,
-  datePickerPanelStyles,
-  datePickerQuickJumpButtonStyles,
-  datePickerTriggerStyles,
-  datePickerWeekdayStyles,
-} from './date-picker.styles';
+  dateRangePickerCellStyles,
+  dateRangePickerDayStyles,
+  dateRangePickerHeaderButtonStyles,
+  dateRangePickerMonthGridButtonStyles,
+  dateRangePickerPanelStyles,
+  dateRangePickerQuickJumpButtonStyles,
+  dateRangePickerTriggerStyles,
+  dateRangePickerWeekdayStyles,
+} from './date-range-picker.styles';
 import type {
-  DynamoDatePickerPart,
-  DynamoDatePickerSize,
-} from './date-picker.types';
+  DynamoDateRange,
+  DynamoDateRangePickerPart,
+  DynamoDateRangePickerSize,
+} from './date-range-picker.types';
 
-// Preferred corner first (bottom-start), the other three as CDK collision
-// fallbacks — same shape as DynamoMenu's position list, but DatePicker has
-// no `position` input in v1, so it's a single hardcoded array.
+// Same shape as DynamoDatePicker's own position list — kept as a separate
+// array (not re-exported/shared) since it's a trivial literal, not logic.
 const POSITIONS: ConnectedPosition[] = [
   {
     originX: 'start',
@@ -84,52 +86,53 @@ const POSITIONS: ConnectedPosition[] = [
   },
 ];
 
-/** The 12 month indices (0 = January), for rendering the quick-jump month grid. */
 const MONTH_INDICES = Array.from({ length: 12 }, (_, i) => i);
+const EMPTY_RANGE: DynamoDateRange = { start: null, end: null };
 
+/**
+ * A two-date range picker built on the same month-grid calendar as
+ * DynamoDatePicker (`buildCalendarGrid`/`clampToRange`/`isDateDisabled`,
+ * imported from `@dynamong/date-picker` rather than duplicated — see that
+ * package's README). Kept as a separate component rather than a `mode`
+ * flag on DynamoDatePicker, matching the DynamoSelect/DynamoMultiSelect
+ * precedent (separate component per selection cardinality) and keeping
+ * DynamoDatePicker's `Date | null` value type unchanged.
+ */
 @Component({
-  selector: 'dg-date-picker',
+  selector: 'dg-date-range-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgTemplateOutlet],
-  templateUrl: './date-picker.html',
+  templateUrl: './date-range-picker.html',
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => DynamoDatePicker),
+      useExisting: forwardRef(() => DynamoDateRangePicker),
       multi: true,
     },
   ],
 })
-export class DynamoDatePicker
-  extends DynamoListboxBase<DynamoDatePickerPart>
+export class DynamoDateRangePicker
+  extends DynamoListboxBase<DynamoDateRangePickerPart>
   implements ControlValueAccessor
 {
-  readonly placeholder = input('Select a date');
-  readonly size = input<DynamoDatePickerSize>('md');
+  readonly placeholder = input('Select a date range');
+  readonly size = input<DynamoDateRangePickerSize>('md');
   readonly ariaLabel = input<string | undefined>(undefined);
   readonly min = input<Date | undefined>(undefined);
   readonly max = input<Date | undefined>(undefined);
   readonly weekStartsOn = input<DynamoDatePickerWeekday>(0);
   readonly invalid = input(false);
-  /** HTML `readonly` semantics: the trigger and calendar stay fully browsable
-   *  (open, navigate months, roving focus), but selecting a day is blocked.
-   *  Unlike `disabled`, does not remove the control from the tab order or
-   *  dim its appearance. */
   readonly readOnly = input(false);
-  /** Individual dates disabled beyond the `min`/`max` range — e.g. holidays. Only blocks selection, not keyboard navigation onto them (same posture as `min`/`max`). */
   readonly disabledDates = input<Date[]>([]);
-  /** Weekdays disabled beyond the `min`/`max` range — e.g. `[0, 6]` for weekends. `0` is Sunday, matching `date-fns`. */
   readonly disabledDays = input<number[]>([]);
-  /** Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoSelect`'s own `clearable`. Ignored when `inline`, which has no trigger to attach it to. */
   readonly clearable = input(false);
-  /** Renders the calendar directly in the page, with no trigger button or overlay — for embedding the picker permanently rather than behind a popup. */
   readonly inline = input(false);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
-  readonly value = model<Date | null>(null);
+  readonly value = model<DynamoDateRange>(EMPTY_RANGE);
   readonly disabled = model(false);
-  /** Two-way bindable: `<dg-date-picker [(open)]="isOpen">`. */
+  /** Two-way bindable: `<dg-date-range-picker [(open)]="isOpen">`. */
   readonly open = model(false);
 
   private readonly triggerEl =
@@ -140,9 +143,11 @@ export class DynamoDatePicker
     viewChildren<ElementRef<HTMLButtonElement>>('dayButton');
 
   protected readonly triggerId = this.idGenerator.next(
-    'dg-date-picker-trigger',
+    'dg-date-range-picker-trigger',
   );
-  protected readonly dialogId = this.idGenerator.next('dg-date-picker-dialog');
+  protected readonly dialogId = this.idGenerator.next(
+    'dg-date-range-picker-dialog',
+  );
   protected readonly monthLabelId = `${this.dialogId}-month-label`;
 
   /** Sole source of truth for both the visible month and the roving-focus cursor. */
@@ -160,13 +165,36 @@ export class DynamoDatePicker
     );
   });
 
+  /** Which end of the range the next click/commit sets. Resets to 'start' once a range is fully committed. */
+  protected readonly selectionPhase = signal<'start' | 'end'>('start');
+  /** Live pointer position while picking the end date, for the in-progress range preview. */
+  protected readonly hoverDate = signal<Date | null>(null);
+
+  private readonly previewEnd = computed(() =>
+    this.selectionPhase() === 'end'
+      ? (this.hoverDate() ?? this.focusedDate())
+      : null,
+  );
+
+  /** The range currently shown in the grid — the committed range, or the committed start plus a live preview end while mid-selection. */
+  protected readonly displayRange = computed(() => {
+    const { start, end } = this.value();
+    const effectiveEnd = end ?? this.previewEnd();
+    if (!start) return null;
+    if (!effectiveEnd) return { from: start, to: start };
+    return isBefore(effectiveEnd, start)
+      ? { from: effectiveEnd, to: start }
+      : { from: start, to: effectiveEnd };
+  });
+
   protected readonly triggerLabel = computed(() => {
-    const value = this.value();
-    return value
-      ? getCachedDateTimeFormat(this.config.locale, {
-          dateStyle: 'medium',
-        }).format(value)
-      : this.placeholder();
+    const { start, end } = this.value();
+    if (!start) return this.placeholder();
+    const format = (date: Date) =>
+      getCachedDateTimeFormat(this.config.locale, {
+        dateStyle: 'medium',
+      }).format(date);
+    return end ? `${format(start)} – ${format(end)}` : `${format(start)} – …`;
   });
   protected readonly monthLabel = computed(() =>
     getCachedDateTimeFormat(this.config.locale, {
@@ -187,21 +215,23 @@ export class DynamoDatePicker
     this.unstyled()
       ? this.styleClass()
       : cn(
-          datePickerTriggerStyles({
+          dateRangePickerTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
           }),
           this.styleClass(),
         ),
   );
-  protected readonly panelClasses = datePickerPanelStyles;
-  protected readonly headerButtonClasses = datePickerHeaderButtonStyles;
-  protected readonly weekdayClasses = datePickerWeekdayStyles;
+  protected readonly panelClasses = dateRangePickerPanelStyles;
+  protected readonly headerButtonClasses = dateRangePickerHeaderButtonStyles;
+  protected readonly weekdayClasses = dateRangePickerWeekdayStyles;
   protected readonly clearButtonClasses = selectClearButtonStyles;
-  protected readonly quickJumpButtonClasses = datePickerQuickJumpButtonStyles;
-  protected readonly monthGridButtonClasses = datePickerMonthGridButtonStyles;
+  protected readonly quickJumpButtonClasses =
+    dateRangePickerQuickJumpButtonStyles;
+  protected readonly monthGridButtonClasses =
+    dateRangePickerMonthGridButtonStyles;
 
-  /** Swaps the day grid for a month/year quick-jump grid, replacing the plain prev/next-only navigation. */
+  /** Swaps the day grid for a month/year quick-jump grid — identical mechanics to DynamoDatePicker's. */
   protected readonly quickJumpOpen = signal(false);
   protected readonly quickJumpYear = signal(new Date().getFullYear());
   protected readonly monthIndices = MONTH_INDICES;
@@ -209,7 +239,7 @@ export class DynamoDatePicker
   /** First effect run while `inline` is true is skipped — see the constructor's day-focus effect doc comment for why. */
   private inlineFocusReady = false;
 
-  private onChangeFn: (value: Date | null) => void = () => {
+  private onChangeFn: (value: DynamoDateRange) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
   };
   private onTouchedFn: () => void = () => {
@@ -227,20 +257,8 @@ export class DynamoDatePicker
       }
     });
 
-    // Waits for the async-attached portal's day buttons to exist before
-    // focusing, then reruns on every focusedDate change (arrow-key nav,
-    // Home/End/PageUp/PageDown, or a header nav click) — the effect covers
-    // in-month navigation (same 42 buttons) and month/year changes (a fresh
-    // set of 42 buttons) with the same lookup.
-    //
-    // `inline` also keeps this effect live (the calendar has no `open()`
-    // moment of its own to gate on), but its very first run is skipped —
-    // otherwise an always-visible inline calendar would steal focus from
-    // wherever it legitimately was on the page the instant it mounts. Every
-    // run after that first one is safe to focus unconditionally: `focusedDate`
-    // only changes afterward via `moveFocus()`/`selectDay()`, both of which
-    // are only reachable from a keydown/click that already has a day button
-    // focused.
+    // See DynamoDatePicker's identical effect for the full rationale — same
+    // mechanics apply unchanged here.
     effect(() => {
       const visible = this.open() || this.inline();
       if (!visible) return;
@@ -255,12 +273,9 @@ export class DynamoDatePicker
       buttons[index]?.nativeElement.focus();
     });
 
-    // Keeps the visible month in sync with `value` for `inline` mode, which
-    // has no `openPanel()` moment of its own to re-anchor `focusedDate` from
-    // the current value the way opening the popup does.
     effect(() => {
       if (!this.inline()) return;
-      const anchor = this.value() ?? startOfDay(new Date());
+      const anchor = this.value().start ?? startOfDay(new Date());
       this.focusedDate.set(clampToRange(anchor, this.min(), this.max()));
     });
 
@@ -268,25 +283,37 @@ export class DynamoDatePicker
   }
 
   protected dayClasses(day: Date): string {
-    return datePickerDayStyles({
-      selected: this.isSelected(day),
+    const state = this.dayRangeState(day);
+    return dateRangePickerDayStyles({
+      endpoint: state.isStart || state.isEnd,
       outsideMonth: !isSameMonth(day, this.visibleMonth()),
       today: this.isToday(day),
     });
   }
 
-  /** Full formatted date for screen readers — the visible button text is just the bare day number. */
-  protected dayAriaLabel(day: Date): string {
-    return getCachedDateTimeFormat(this.config.locale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }).format(day);
+  protected cellClasses(day: Date): string {
+    return dateRangePickerCellStyles({
+      inRange: this.dayRangeState(day).inRange,
+    });
   }
 
-  protected isSelected(day: Date): boolean {
-    const value = this.value();
-    return value !== null && isSameDay(day, value);
+  protected dayRangeState(day: Date): {
+    isStart: boolean;
+    isEnd: boolean;
+    inRange: boolean;
+  } {
+    const range = this.displayRange();
+    if (!range) return { isStart: false, isEnd: false, inRange: false };
+    const isStart = isSameDay(day, range.from);
+    const isEnd = isSameDay(day, range.to);
+    return {
+      isStart,
+      isEnd,
+      inRange:
+        !isSameDay(range.from, range.to) &&
+        isAfter(day, range.from) &&
+        isBefore(day, range.to),
+    };
   }
 
   protected isToday(day: Date): boolean {
@@ -307,6 +334,28 @@ export class DynamoDatePicker
     return isSameDay(day, this.focusedDate());
   }
 
+  /** Full formatted date for screen readers, with a range-position suffix — the visible button text is just the bare day number. */
+  protected dayAriaLabel(day: Date): string {
+    const formatted = getCachedDateTimeFormat(this.config.locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(day);
+    const state = this.dayRangeState(day);
+    if (state.isStart && state.isEnd) return formatted;
+    if (state.isStart) return `${formatted}, start of range`;
+    if (state.isEnd) return `${formatted}, end of range`;
+    return formatted;
+  }
+
+  protected onDayHover(day: Date): void {
+    this.hoverDate.set(day);
+  }
+
+  protected onGridLeave(): void {
+    this.hoverDate.set(null);
+  }
+
   protected toggle(): void {
     if (this.open()) {
       this.close();
@@ -317,7 +366,7 @@ export class DynamoDatePicker
 
   protected openPanel(): void {
     if (this.disabled()) return;
-    const anchor = this.value() ?? startOfDay(new Date());
+    const anchor = this.value().start ?? startOfDay(new Date());
     this.focusedDate.set(clampToRange(anchor, this.min(), this.max()));
     this.open.set(true);
   }
@@ -330,7 +379,32 @@ export class DynamoDatePicker
   protected selectDay(day: Date): void {
     if (this.readOnly() || this.isDisabled(day)) return;
     this.focusedDate.set(day);
-    this.commit(day);
+
+    if (this.selectionPhase() === 'start') {
+      this.value.set({ start: startOfDay(day), end: null });
+      this.onChangeFn(this.value());
+      this.selectionPhase.set('end');
+      return;
+    }
+
+    // A click before the current start redefines the range (the click
+    // becomes the new, earlier boundary) rather than resetting or erroring
+    // — standard range-picker UX. A same-day second click yields a valid
+    // 1-day range (start === end), not specially handled.
+    const start = this.value().start as Date;
+    const day0 = startOfDay(day);
+    this.value.set(
+      isBefore(day0, start)
+        ? { start: day0, end: start }
+        : { start, end: day0 },
+    );
+    this.onChangeFn(this.value());
+    this.selectionPhase.set('start');
+    this.hoverDate.set(null);
+    this.close();
+    if (!this.inline()) {
+      this.triggerEl().nativeElement.focus();
+    }
   }
 
   protected navigateMonth(delta: number): void {
@@ -365,14 +439,14 @@ export class DynamoDatePicker
   }
 
   protected quickJumpMonthClasses(monthIndex: number): string {
-    return datePickerMonthGridButtonStyles({
+    return dateRangePickerMonthGridButtonStyles({
       current:
         this.quickJumpYear() === this.visibleMonth().getFullYear() &&
         monthIndex === this.visibleMonth().getMonth(),
     });
   }
 
-  /** True only when the *entire* month falls outside [min, max] — a month that partially overlaps the allowed range stays selectable (day-level clamping still applies once inside it). */
+  /** True only when the *entire* month falls outside [min, max] — a month that partially overlaps the allowed range stays selectable. */
   protected isQuickJumpMonthDisabled(monthIndex: number): boolean {
     const min = this.min();
     const max = this.max();
@@ -404,9 +478,6 @@ export class DynamoDatePicker
   }
 
   protected onPanelKeydown(event: KeyboardEvent): void {
-    // Escape closes the quick-jump grid first, not the whole dialog — a
-    // second Escape (now that quick-jump is closed) falls through to the
-    // normal case below and closes the panel.
     if (event.key === 'Escape' && this.quickJumpOpen()) {
       this.quickJumpOpen.set(false);
       event.preventDefault();
@@ -446,7 +517,7 @@ export class DynamoDatePicker
         );
         break;
       case 'Escape':
-        if (this.inline()) return; // nothing to escape from — no popup to close
+        if (this.inline()) return;
         this.close();
         this.triggerEl().nativeElement.focus();
         return;
@@ -456,31 +527,18 @@ export class DynamoDatePicker
     event.preventDefault();
   }
 
-  // Every navigation path goes through here. v1's only disabling is a
-  // contiguous min/max range (no scattered `disabledDate` predicate), so
-  // clamping to the boundary is sufficient — no scan-and-skip loop like
-  // DynamoSelect/DynamoMenu's `findEnabledIndex` is needed.
   private moveFocus(next: (date: Date) => Date): void {
     this.focusedDate.set(
       clampToRange(next(this.focusedDate()), this.min(), this.max()),
     );
   }
 
-  private commit(day: Date): void {
-    const normalized = startOfDay(day);
-    this.value.set(normalized);
-    this.onChangeFn(normalized);
-    this.close();
-    if (!this.inline()) {
-      this.triggerEl().nativeElement.focus();
-    }
-  }
-
   protected clearValue(event: MouseEvent): void {
     event.stopPropagation();
     if (this.disabled()) return;
-    this.value.set(null);
-    this.onChangeFn(null);
+    this.value.set(EMPTY_RANGE);
+    this.onChangeFn(EMPTY_RANGE);
+    this.selectionPhase.set('start');
   }
 
   protected triggerElRef(): ElementRef<HTMLElement> {
@@ -495,11 +553,12 @@ export class DynamoDatePicker
     return POSITIONS;
   }
 
-  writeValue(value: Date | null): void {
-    this.value.set(value);
+  writeValue(value: DynamoDateRange | null): void {
+    this.value.set(value ?? EMPTY_RANGE);
+    this.selectionPhase.set(value?.start && !value.end ? 'end' : 'start');
   }
 
-  registerOnChange(fn: (value: Date | null) => void): void {
+  registerOnChange(fn: (value: DynamoDateRange) => void): void {
     this.onChangeFn = fn;
   }
 

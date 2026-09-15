@@ -99,7 +99,7 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'forms',
     category: 'Form',
     description:
-      'A single-date picker with a month-grid calendar dialog, full keyboard navigation, and ARIA grid semantics.',
+      'A single-date picker with a month-grid calendar dialog, full keyboard navigation, and ARIA grid semantics — plus a two-date range variant built on the same calendar.',
   },
   {
     slug: 'pagination',
