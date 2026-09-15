@@ -25,6 +25,7 @@
     "@dynamong/context-menu": "0.0.1",
     "@dynamong/data-view": "0.0.1",
     "@dynamong/date-picker": "0.0.1",
+    "@dynamong/date-range-picker": "0.0.1",
     "@dynamong/dialog": "0.0.1",
     "@dynamong/divider": "0.0.1",
     "@dynamong/dock": "0.0.1",

@@ -39,7 +39,7 @@
     />
   </svg>
 </button>
-@if (clearable() && value()) {
+@if (clearable() && value().start) {
 <button
   type="button"
   [class]="clearButtonClasses"
@@ -183,13 +183,18 @@
           }
         </tr>
       </thead>
-      <tbody>
+      <tbody (mouseleave)="onGridLeave()">
         @for (week of weeks(); track $index) {
         <tr role="row">
           @for (day of week; track day.getTime()) {
           <td
             role="gridcell"
-            [attr.aria-selected]="isSelected(day) ? 'true' : null"
+            [class]="cellClasses(day)"
+            [attr.aria-selected]="
+              dayRangeState(day).isStart || dayRangeState(day).isEnd
+                ? 'true'
+                : null
+            "
           >
             <button
               #dayButton
@@ -200,6 +205,7 @@
               [disabled]="isDisabled(day)"
               [class]="dayClasses(day)"
               (click)="selectDay(day)"
+              (mouseenter)="onDayHover(day)"
             >
               {{ day.getDate() }}
             </button>
