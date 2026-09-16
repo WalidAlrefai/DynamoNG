@@ -288,7 +288,9 @@ export class DynamoTable<TRow = unknown>
    */
   protected readonly virtualGridTemplate = computed(() => {
     const tracks = this.columns().map(() => 'minmax(0, 1fr)');
-    return this.selectable() ? ['2.5rem', ...tracks].join(' ') : tracks.join(' ');
+    return this.selectable()
+      ? ['2.5rem', ...tracks].join(' ')
+      : tracks.join(' ');
   });
 
   protected readonly headerCellClasses = computed(() =>

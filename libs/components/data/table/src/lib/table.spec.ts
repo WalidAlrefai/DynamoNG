@@ -1616,15 +1616,16 @@ describe('DynamoTable', () => {
       });
 
       it('toggles row selection identically to the native-table path', async () => {
-        const { container, fixture, componentInstance } =
-          renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
-            inputs: {
-              columns: SORTABLE_COLUMNS,
-              data: MANY_PEOPLE,
-              virtualScroll: true,
-              selectable: true,
-            },
-          });
+        const { container, fixture, componentInstance } = renderDynamoComponent<
+          DynamoTable<Person>
+        >(DynamoTable, {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+            selectable: true,
+          },
+        });
         await settle(fixture);
 
         // Scoped to `role="cell"` (body), not `role="row"` broadly — the
@@ -1792,5 +1793,4 @@ describe('DynamoTable', () => {
       warn.mockRestore();
     });
   });
-
 });

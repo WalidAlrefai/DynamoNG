@@ -48,7 +48,7 @@ protected onItemSelect(row: Person): void { ... }
 | `filterPlaceholder`     | `string`                                               | `'Search...'`        |                                                                                                                                                                                                                              |
 | `filterText`            | `string` (model)                                       | `''`                 | Case-insensitive substring match; blank matches every row.                                                                                                                                                                   |
 | `noMatchesMessage`      | `string`                                               | `'No matching rows'` | Shown instead of `emptyMessage` when `data` has rows but the active filter matched none.                                                                                                                                     |
-| `virtualScroll`         | `boolean`                                              | `false`              | Renders the body through `@dynamong/virtual-scroll`. Not supported together with `pageSize` (a deliberate, permanent exclusion — see Design notes). `selectable` IS supported here. |
+| `virtualScroll`         | `boolean`                                              | `false`              | Renders the body through `@dynamong/virtual-scroll`. Not supported together with `pageSize` (a deliberate, permanent exclusion — see Design notes). `selectable` IS supported here.                                          |
 | `virtualScrollItemSize` | `number`                                               | `40`                 |                                                                                                                                                                                                                              |
 | `virtualScrollHeight`   | `number`                                               | `400`                |                                                                                                                                                                                                                              |
 
@@ -69,7 +69,7 @@ protected onItemSelect(row: Person): void { ... }
 
 ## Design notes
 
-**Page-out-of-range clamping.** `page`'s *read* is clamped into
+**Page-out-of-range clamping.** `page`'s _read_ is clamped into
 `[1, pageCount]` without ever writing back to `page` itself — if an
 externally-bound `page` is left out of range (e.g. `data` shrank while
 the consumer's own signal still pointed at page 3), the table silently

@@ -38,11 +38,19 @@ const EXAMPLES: DocExampleRef[] = [
 ];
 
 const API: ApiTableRow[] = [
-  { name: 'columns', type: 'DynamoTableColumn<TRow>[] (required)', default: '—' },
+  {
+    name: 'columns',
+    type: 'DynamoTableColumn<TRow>[] (required)',
+    default: '—',
+  },
   { name: 'data', type: 'readonly TRow[] (required)', default: '—' },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'emptyMessage', type: 'string', default: "'No data'" },
-  { name: 'pageSize', type: 'number | undefined (model)', default: 'undefined' },
+  {
+    name: 'pageSize',
+    type: 'number | undefined (model)',
+    default: 'undefined',
+  },
   { name: 'page', type: 'number (model, 1-indexed)', default: '1' },
   { name: 'selectable', type: 'boolean', default: 'false' },
   { name: 'selected', type: 'TRow[] (model)', default: '[]' },
@@ -92,7 +100,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="virtual-scroll"
         title="Virtual Scroll"
-        description="virtualScroll renders a role=&quot;table&quot; CSS grid where only a small window mounts; sorting and selection both still work. Not combined with pageSize — a virtualized table always renders every (filtered/sorted) row."
+        description='virtualScroll renders a role="table" CSS grid where only a small window mounts; sorting and selection both still work. Not combined with pageSize — a virtualized table always renders every (filtered/sorted) row.'
       >
         <div preview>
           <dg-table
