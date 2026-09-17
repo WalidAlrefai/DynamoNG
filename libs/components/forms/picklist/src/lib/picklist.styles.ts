@@ -16,6 +16,16 @@ export const picklistPanelTitleStyles = sectionHeadingBaseClass;
 
 export const picklistPanelListStyles = 'flex-1 overflow-auto py-1';
 
+// While virtualized, `@dynamong/virtual-scroll`'s own fixed-height
+// viewport is the sole scrolling region — this `<ul>` must NOT also
+// scroll, or two nested scrollable regions both activate ("double
+// scrollbar"). Drops `py-1` (the viewport sits flush) and swaps
+// `overflow-auto` for `overflow-hidden` (clips rounding overflow without
+// introducing its own scrollbar). Keeps `flex-1` so the `<ul>` still
+// fills the panel's remaining flex height for `dg-virtual-scroll`'s
+// `height.px`-equivalent input to size against.
+export const picklistPanelListVirtualStyles = 'flex-1 overflow-hidden';
+
 // Mirrors listboxOptionStyles verbatim (same active/selected/disabled shape),
 // plus a `dragging` variant CDK's cdkDrag adds a class for.
 export const picklistOptionStyles = cva(
