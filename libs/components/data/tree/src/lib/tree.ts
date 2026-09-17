@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -16,6 +17,7 @@ import {
   findTypeaheadMatch,
   resolveTypeaheadQuery,
 } from '@dynamong/utils/typeahead';
+import { filterTree } from './tree.filter';
 import { DynamoTreeItem } from './tree-item';
 import {
   collectCascadeIds,
@@ -23,7 +25,12 @@ import {
   shouldCascadeCheck,
 } from './tree-selection';
 import { DynamoTreeState } from './tree-state';
-import { treeEmptyStateStyles, treeRootStyles } from './tree.styles';
+import {
+  treeEmptyStateStyles,
+  treeFilterWrapperStyles,
+  treeStyles,
+  treeWrapperStyles,
+} from './tree.styles';
 import type { DynamoTreeNode, DynamoTreePart } from './tree.types';
 
 interface DynamoTreeEntry {
@@ -36,7 +43,7 @@ interface DynamoTreeEntry {
   selector: 'dg-tree',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSpinner, DynamoTreeItem],
+  imports: [DynamoSpinner, DynamoTreeItem, DynamoInputText],
   providers: [DynamoTreeState],
   templateUrl: './tree.html',
 })
@@ -60,39 +67,92 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
   /** Fires once per node a user directly checks/unchecks with the full node object — not once per cascaded descendant. */
   readonly itemSelect = output<DynamoTreeNode>();
 
+  /**
+   * Opt-in global filter. `false` (default) renders no search UI at all —
+   * byte-for-byte identical to pre-filter behavior. Mirrors Table's/
+   * TreeTable's own `filterable`.
+   */
+  readonly filterable = input(false);
+  /** Placeholder text for the search input rendered when `filterable` is `true`. */
+  readonly filterPlaceholder = input('Search...');
+  /**
+   * Two-way bindable filter query — mirrors Table's/TreeTable's own
+   * `filterText`. Case-insensitive substring match against `label`;
+   * blank/whitespace-only text matches every node.
+   */
+  readonly filterText = model('');
+  /** Shown in the empty-state slot instead of `emptyMessage` when `items` has nodes but the active `filterText` matched none of them. */
+  readonly noMatchesMessage = input('No matching results');
+
   private readonly activeIdSignal = signal<string | undefined>(undefined);
   private readonly treeState = inject(DynamoTreeState);
   private readonly typeahead = createTypeaheadBuffer();
 
-  protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(treeRootStyles, this.styleClass()),
+  protected readonly wrapperClasses = computed(() =>
+    this.unstyled()
+      ? this.styleClass()
+      : cn(treeWrapperStyles, this.styleClass()),
   );
+  protected readonly treeClasses = treeStyles;
   protected readonly emptyStateClasses = treeEmptyStateStyles;
+  protected readonly filterWrapperClasses = treeFilterWrapperStyles;
 
   /** Plain alias, not a `disabled`-merge — Tree has no `disabled` input of its own to merge with. */
   protected readonly isBusy = computed(() => this.loading());
 
   private readonly selectedSet = computed(() => new Set(this.selected()));
 
+  /**
+   * `items()` pruned to hierarchy-matching branches — see `filterTree`'s
+   * own doc comment. Returns `items()` unchanged (same reference) when
+   * `filterText` is blank/whitespace-only.
+   */
+  protected readonly filteredItems = computed(() =>
+    filterTree(this.items(), this.filterText()),
+  );
+
+  /** True while a non-blank filter is narrowing `filteredItems()` — used by `isEffectivelyExpanded` to force every retained node open, and by `emptyStateMessage` to pick the right empty-state wording. */
+  protected readonly isFilterActive = computed(
+    () => this.filterText().trim().length > 0,
+  );
+
+  /**
+   * Picks which empty-state message to show — mirrors Table's/TreeTable's
+   * own `emptyStateMessage` exactly: `items()` itself empty always wins
+   * with `emptyMessage()` regardless of an active-but-irrelevant filter;
+   * otherwise an active filter that matched nothing gets
+   * `noMatchesMessage()`.
+   */
+  protected readonly emptyStateMessage = computed(() =>
+    this.isFilterActive() && this.items().length > 0
+      ? this.noMatchesMessage()
+      : this.emptyMessage(),
+  );
+
   // Depth-first, skipping children of collapsed nodes — a pure data walk,
   // not a DOM query, so it isn't blocked by DynamoTreeItem's recursive
   // component boundaries the way viewChildren()/contentChildren() would be.
+  // Walks `filteredItems()`, not raw `items()`, and treats every node as
+  // expanded while a filter is active (see `isEffectivelyExpanded`).
   protected readonly visibleEntries = computed<DynamoTreeEntry[]>(() => {
     const result: DynamoTreeEntry[] = [];
     const expanded = new Set(this.expandedIds());
     const walk = (
-      nodes: DynamoTreeNode[],
+      nodes: readonly DynamoTreeNode[],
       depth: number,
       parentId: string | undefined,
     ) => {
       for (const node of nodes) {
         result.push({ node, depth, parentId });
-        if (node.children?.length && expanded.has(node.id)) {
+        if (
+          node.children?.length &&
+          this.isEffectivelyExpanded(node.id, expanded)
+        ) {
           walk(node.children, depth + 1, node.id);
         }
       }
     };
-    walk(this.items(), 0, undefined);
+    walk(this.filteredItems(), 0, undefined);
     return result;
   });
 
@@ -121,6 +181,7 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
     super();
 
     this.treeState.expandedIds = () => this.expandedIds();
+    this.treeState.isFilterActive = () => this.isFilterActive();
     this.treeState.activeId = () => this.activeEntryId();
     this.treeState.checkState = (node) =>
       computeNodeCheckState(node, this.selectedSet());
@@ -180,7 +241,7 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
           return;
         }
         const hasChildren = (entry.node.children?.length ?? 0) > 0;
-        const isExpanded = this.expandedIds().includes(entry.node.id);
+        const isExpanded = this.isEffectivelyExpanded(entry.node.id);
         if (hasChildren && !isExpanded) {
           this.toggleExpanded(entry.node.id);
         } else if (hasChildren && isExpanded) {
@@ -201,7 +262,7 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
           return;
         }
         const hasChildren = (entry.node.children?.length ?? 0) > 0;
-        const isExpanded = this.expandedIds().includes(entry.node.id);
+        const isExpanded = this.isEffectivelyExpanded(entry.node.id);
         if (hasChildren && isExpanded) {
           this.toggleExpanded(entry.node.id);
         } else if (entry.parentId !== undefined) {
@@ -285,6 +346,34 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
       }
     }
     return null;
+  }
+
+  /**
+   * "Is this node effectively expanded" — the ONE check `visibleEntries()`'s
+   * walk and the `ArrowRight`/`ArrowLeft` handlers agree on, instead of two
+   * independent raw reads of `expandedIds()` (a third, `tree-item.ts`'s own
+   * `isExpanded` computed — the one that actually renders the recursive
+   * children group — consults `DynamoTreeState.isFilterActive` directly,
+   * since it can't call back into this component). While a filter is
+   * active, every node retained by `filteredItems()` renders expanded
+   * regardless of `expandedIds` — never written to by filtering itself.
+   * `expanded`, when passed, is a precomputed `Set` for the O(1) lookup
+   * `visibleEntries()`'s hot walk loop wants; the Arrow handlers (once per
+   * keystroke, not once per node) omit it and fall back to
+   * `expandedIds().includes(id)`.
+   */
+  private isEffectivelyExpanded(
+    id: string,
+    expanded?: ReadonlySet<string>,
+  ): boolean {
+    if (this.isFilterActive()) return true;
+    return expanded ? expanded.has(id) : this.expandedIds().includes(id);
+  }
+
+  /** Wired to `<dg-input-text>`'s `(valueChange)` — mirrors Table's/TreeTable's own `onFilterTextChange`, minus the page-reset (Tree has no pagination). */
+  protected onFilterTextChange(value: string): void {
+    if (this.isBusy()) return;
+    this.filterText.set(value);
   }
 
   private toggleExpanded(id: string): void {

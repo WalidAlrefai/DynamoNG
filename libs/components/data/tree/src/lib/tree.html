@@ -1,27 +1,40 @@
-@if (items().length > 0) {
+<div [class]="wrapperClasses()">
+  @if (filterable()) {
+  <div [class]="filterWrapperClasses">
+    <dg-input-text
+      type="search"
+      size="sm"
+      [value]="filterText()"
+      (valueChange)="onFilterTextChange($event)"
+      ariaLabel="Search tree"
+      [placeholder]="filterPlaceholder()"
+      [disabled]="loading()"
+    />
+  </div>
+  } @if (filteredItems().length > 0) {
   <div
-    [class]="rootClasses()"
+    [class]="treeClasses"
     role="tree"
     aria-multiselectable="true"
     [attr.aria-label]="ariaLabel() ?? null"
     [attr.aria-busy]="loading() ? 'true' : null"
   >
-    @for (node of items(); track node.id; let i = $index) {
-      <dg-tree-item
-        [node]="node"
-        [depth]="0"
-        [posinset]="i + 1"
-        [setsize]="items().length"
-      />
+    @for (node of filteredItems(); track node.id; let i = $index) {
+    <dg-tree-item
+      [node]="node"
+      [depth]="0"
+      [posinset]="i + 1"
+      [setsize]="filteredItems().length"
+    />
     }
   </div>
-} @else {
+  } @else {
   <!--
-    Not nested inside role="tree" — axe's aria-required-children rule (rightly)
-    flags a plain <div> as an invalid child of role="tree" (only role="treeitem"/
-    "group" satisfy it), and there's nothing to navigate when there are no
-    items anyway, so the tree role itself is simply omitted while empty.
-  -->
+      Not nested inside role="tree" — axe's aria-required-children rule (rightly)
+      flags a plain <div> as an invalid child of role="tree" (only role="treeitem"/
+      "group" satisfy it), and there's nothing to navigate when there are no
+      items anyway, so the tree role itself is simply omitted while empty.
+    -->
   <div
     [class]="emptyStateClasses"
     role="status"
@@ -29,10 +42,11 @@
     [attr.aria-busy]="loading() ? 'true' : null"
   >
     @if (loading()) {
-      <dg-spinner size="sm" />
-      <span>{{ loadingMessage() }}</span>
+    <dg-spinner size="sm" />
+    <span>{{ loadingMessage() }}</span>
     } @else {
-      <span>{{ emptyMessage() }}</span>
+    <span>{{ emptyStateMessage() }}</span>
     }
   </div>
-}
+  }
+</div>

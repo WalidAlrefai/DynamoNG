@@ -20,10 +20,7 @@ export class DynamoTreeHarness extends ComponentHarness {
   ): Promise<'true' | 'false' | 'mixed' | null> {
     const row = await this.locatorFor(`[data-node-id="${id}"]`)();
     return (await row.getAttribute('aria-checked')) as
-      | 'true'
-      | 'false'
-      | 'mixed'
-      | null;
+      'true' | 'false' | 'mixed' | null;
   }
 
   async getActiveNodeId(): Promise<string | null> {
@@ -34,5 +31,26 @@ export class DynamoTreeHarness extends ComponentHarness {
   async clickNode(id: string): Promise<void> {
     const row = await this.locatorFor(`[data-node-id="${id}"]`)();
     await row.click();
+  }
+
+  private readonly filterInputLocator = this.locatorForOptional(
+    'input[type="search"]',
+  );
+
+  /** Throws if `filterable` is not set — there is no search input to type into. */
+  async setFilterText(text: string): Promise<void> {
+    const input = await this.filterInputLocator();
+    if (!input) {
+      throw new Error(
+        'DynamoTree is not filterable (filterable input not set)',
+      );
+    }
+    await input.clear();
+    await input.sendKeys(text);
+  }
+
+  async getFilterText(): Promise<string> {
+    const input = await this.filterInputLocator();
+    return (await input?.getProperty<string>('value')) ?? '';
   }
 }
