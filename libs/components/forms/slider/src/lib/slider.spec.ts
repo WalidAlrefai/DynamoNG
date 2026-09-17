@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DynamoSlider } from './slider';
 import { DynamoSliderHarness } from './slider.harness';
+import type { DynamoSliderRange } from './slider.types';
 
 @Component({
   selector: 'dg-slider-reactive-form-host',
@@ -19,6 +20,23 @@ import { DynamoSliderHarness } from './slider.harness';
 })
 class ReactiveFormHostComponent {
   readonly control = new FormControl(0, { nonNullable: true });
+}
+
+@Component({
+  selector: 'dg-slider-reactive-range-form-host',
+  standalone: true,
+  imports: [DynamoSlider, ReactiveFormsModule],
+  template: `<dg-slider
+    [formControl]="control"
+    [range]="true"
+    ariaLabel="Price"
+  />`,
+})
+class ReactiveRangeFormHostComponent {
+  readonly control = new FormControl<DynamoSliderRange>(
+    { minValue: 20, maxValue: 80 },
+    { nonNullable: true },
+  );
 }
 
 function mockTrackRect(
@@ -40,6 +58,12 @@ function mockTrackRect(
       y: 0,
       toJSON: () => '',
     }) as DOMRect;
+}
+
+function getThumb(container: HTMLElement, which: 'min' | 'max'): HTMLElement {
+  const el = container.querySelector(`[data-thumb="${which}"]`);
+  if (!el) throw new Error(`thumb not found: ${which}`);
+  return el as HTMLElement;
 }
 
 describe('DynamoSlider', () => {
@@ -368,6 +392,245 @@ describe('DynamoSlider', () => {
       expect(
         within(container).getByRole('slider').getAttribute('aria-valuenow'),
       ).toBe('42');
+    });
+  });
+
+  describe('range', () => {
+    it('renders exactly one slider when range is unset (regression)', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50 },
+      });
+
+      expect(within(container).getAllByRole('slider')).toHaveLength(1);
+    });
+
+    it('renders exactly two sliders when range is true', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+        },
+      });
+
+      expect(within(container).getAllByRole('slider')).toHaveLength(2);
+    });
+
+    it('reflects an explicit DynamoSliderRange value on both thumbs', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+        },
+      });
+
+      expect(getThumb(container, 'min').getAttribute('aria-valuenow')).toBe(
+        '20',
+      );
+      expect(getThumb(container, 'max').getAttribute('aria-valuenow')).toBe(
+        '80',
+      );
+    });
+
+    it('clamps the min-thumb so it never exceeds the max-thumb (keyboard)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            value: { minValue: 20, maxValue: 25 } as DynamoSliderRange,
+          },
+        },
+      );
+      getThumb(container, 'min').focus();
+
+      // step 1, x10 pushes to 30, well past maxValue (25) — should clamp to 25.
+      await userEvent.keyboard('{PageUp}');
+
+      expect(componentInstance.value()).toEqual({ minValue: 25, maxValue: 25 });
+    });
+
+    it('clamps the max-thumb so it never drops below the min-thumb (keyboard)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            value: { minValue: 75, maxValue: 80 } as DynamoSliderRange,
+          },
+        },
+      );
+      getThumb(container, 'max').focus();
+
+      await userEvent.keyboard('{PageDown}');
+
+      expect(componentInstance.value()).toEqual({ minValue: 75, maxValue: 75 });
+    });
+
+    it('moves each thumb independently via keyboard', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          },
+        },
+      );
+
+      getThumb(container, 'min').focus();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(componentInstance.value()).toEqual({ minValue: 21, maxValue: 80 });
+
+      getThumb(container, 'max').focus();
+      await userEvent.keyboard('{ArrowLeft}');
+      expect(componentInstance.value()).toEqual({ minValue: 21, maxValue: 79 });
+    });
+
+    it('ignores keyboard input on either thumb when disabled', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+            disabled: true,
+          },
+        },
+      );
+
+      getThumb(container, 'min').focus();
+      await userEvent.keyboard('{ArrowRight}');
+      getThumb(container, 'max').focus();
+      await userEvent.keyboard('{ArrowLeft}');
+
+      expect(componentInstance.value()).toEqual({ minValue: 20, maxValue: 80 });
+    });
+
+    it('drags each thumb independently via pointer, never affecting the other', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          },
+        },
+      );
+      mockTrackRect(container, 0, 200);
+      const track = getThumb(container, 'min').parentElement as HTMLElement;
+
+      fireEvent.pointerDown(getThumb(container, 'min'), { clientX: 0 });
+      fireEvent.pointerMove(track, { clientX: 10 });
+      expect(componentInstance.value()).toEqual({ minValue: 5, maxValue: 80 });
+      fireEvent.pointerUp(track);
+
+      fireEvent.pointerDown(getThumb(container, 'max'), { clientX: 0 });
+      fireEvent.pointerMove(track, { clientX: 190 });
+      expect(componentInstance.value()).toEqual({ minValue: 5, maxValue: 95 });
+    });
+
+    it('does not jump on a bare track click in range mode (track-click-to-jump is non-range only)', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          },
+        },
+      );
+      mockTrackRect(container, 0, 200);
+      const track = getThumb(container, 'min').parentElement as HTMLElement;
+
+      fireEvent.pointerDown(track, { clientX: 100 });
+
+      expect(componentInstance.value()).toEqual({ minValue: 20, maxValue: 80 });
+    });
+
+    it("each thumb's aria-valuemin/aria-valuemax reflects its own movable range, not the slider's overall bounds", async () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          min: 0,
+          max: 100,
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+        },
+      });
+
+      const minThumb = getThumb(container, 'min');
+      const maxThumb = getThumb(container, 'max');
+      expect(minThumb.getAttribute('aria-valuemin')).toBe('0');
+      expect(minThumb.getAttribute('aria-valuemax')).toBe('80');
+      expect(maxThumb.getAttribute('aria-valuemin')).toBe('20');
+      expect(maxThumb.getAttribute('aria-valuemax')).toBe('100');
+
+      // Move the max-thumb down — the min-thumb's own aria-valuemax should
+      // track it live, not stay pinned to the slider's overall max().
+      maxThumb.focus();
+      await userEvent.keyboard('{ArrowLeft}');
+
+      expect(getThumb(container, 'min').getAttribute('aria-valuemax')).toBe(
+        '79',
+      );
+    });
+
+    it('gives each thumb a distinct aria-label derived from ariaLabel', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          ariaLabel: 'Price',
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+        },
+      });
+
+      expect(getThumb(container, 'min').getAttribute('aria-label')).toBe(
+        'Price minimum',
+      );
+      expect(getThumb(container, 'max').getAttribute('aria-label')).toBe(
+        'Price maximum',
+      );
+    });
+
+    it('propagates a keyboard change to a bound reactive FormControl<DynamoSliderRange>', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ReactiveRangeFormHostComponent,
+      );
+      getThumb(container, 'min').focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+
+      expect(componentInstance.control.value).toEqual({
+        minValue: 21,
+        maxValue: 80,
+      });
+    });
+
+    it('reflects an externally-set FormControl<DynamoSliderRange> value (writeValue)', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        ReactiveRangeFormHostComponent,
+      );
+
+      componentInstance.control.setValue({ minValue: 30, maxValue: 70 });
+      fixture.detectChanges();
+
+      expect(getThumb(container, 'min').getAttribute('aria-valuenow')).toBe(
+        '30',
+      );
+      expect(getThumb(container, 'max').getAttribute('aria-valuenow')).toBe(
+        '70',
+      );
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          ariaLabel: 'Price',
+        },
+      });
+
+      await expectNoA11yViolations(container);
     });
   });
 });

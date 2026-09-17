@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DynamoSlider } from '@dynamong/slider';
+import type { DynamoSliderRange } from '@dynamong/slider';
 import { DocExample } from '../components/example-block';
 import {
   DocExamplesLayout,
@@ -9,6 +10,7 @@ import {
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
+  { id: 'range', title: 'Range' },
   { id: 'severity-size', title: 'Severity & Size' },
   { id: 'disabled', title: 'Disabled' },
   { id: 'readonly', title: 'Read-only' },
@@ -35,6 +37,27 @@ const EXAMPLES: DocExampleRef[] = [
         <div preview class="flex flex-col gap-2">
           <span class="text-sm text-text-muted">Volume: {{ volume() }}</span>
           <dg-slider [(value)]="volume" ariaLabel="Volume" />
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="range"
+        title="Range"
+        description="range renders two independently-draggable thumbs; value becomes a DynamoSliderRange ({minValue, maxValue}) instead of a plain number. Thumbs can touch but never cross."
+        [code]="rangeCode"
+      >
+        <div preview class="flex flex-col gap-2">
+          <span class="text-sm text-text-muted"
+            >Price: {{ priceRange().minValue }} –
+            {{ priceRange().maxValue }}</span
+          >
+          <dg-slider
+            [(value)]="priceRange"
+            [range]="true"
+            [min]="0"
+            [max]="200"
+            ariaLabel="Price"
+          />
         </div>
       </docs-example>
 
@@ -113,6 +136,11 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 font-mono">0 / 100 / 1</td>
           </tr>
           <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">range</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">disabled</td>
             <td class="py-2 pr-4 font-mono">boolean (model)</td>
             <td class="py-2 font-mono">false</td>
@@ -148,12 +176,17 @@ const EXAMPLES: DocExampleRef[] = [
 export class SliderDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly volume = signal(50);
+  protected readonly priceRange = signal<DynamoSliderRange>({
+    minValue: 20,
+    maxValue: 80,
+  });
 
   protected readonly reactiveVolume = new FormControl(30, {
     nonNullable: true,
   });
 
   protected readonly basicCode = `<dg-slider [(value)]="volume" ariaLabel="Volume" />`;
+  protected readonly rangeCode = `<dg-slider [(value)]="priceRange" [range]="true" [min]="0" [max]="200" ariaLabel="Price" />`;
   protected readonly severitySizeCode = `<dg-slider [value]="70" severity="success" size="lg" ariaLabel="Brightness" />`;
   protected readonly disabledCode = `<dg-slider [value]="40" [disabled]="true" ariaLabel="Disabled" />`;
   protected readonly readonlyCode = `<dg-slider [value]="60" [readOnly]="true" ariaLabel="Read-only" />`;
