@@ -52,8 +52,17 @@ export class DynamoTreeItem {
   protected readonly hasChildren = computed(
     () => (this.node().children?.length ?? 0) > 0,
   );
-  protected readonly isExpanded = computed(() =>
-    this.state.expandedIds().includes(this.node().id),
+  // While a filter is active, every retained node renders expanded
+  // regardless of `expandedIds` — `filterTree` already pruned the tree
+  // down to matches and their ancestor chain, so there's nothing left to
+  // hide — without ever writing to the `expandedIds` model itself. This
+  // is the one place that actually decides whether the recursive children
+  // group renders, so unlike `DynamoTree`'s own keyboard-nav-only checks,
+  // it must independently consult `isFilterActive` too.
+  protected readonly isExpanded = computed(
+    () =>
+      this.state.isFilterActive() ||
+      this.state.expandedIds().includes(this.node().id),
   );
   protected readonly isActive = computed(
     () => this.state.activeId() === this.node().id,

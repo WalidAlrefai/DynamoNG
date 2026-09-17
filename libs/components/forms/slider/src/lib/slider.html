@@ -7,6 +7,45 @@
     (pointerup)="onTrackPointerUp()"
     (pointercancel)="onTrackPointerUp()"
   >
+    @if (range()) {
+    <div
+      [class]="fillClasses()"
+      [style.left.%]="percentMin()"
+      [style.width.%]="percentMax() - percentMin()"
+    ></div>
+    <div
+      #minThumb
+      role="slider"
+      data-thumb="min"
+      [tabindex]="disabled() ? -1 : 0"
+      [class]="thumbClasses()"
+      [style.left.%]="percentMin()"
+      [attr.aria-valuenow]="currentMin()"
+      [attr.aria-valuemin]="min()"
+      [attr.aria-valuemax]="currentMax()"
+      [attr.aria-disabled]="disabled() ? 'true' : null"
+      [attr.aria-readonly]="readOnly() ? 'true' : null"
+      [attr.aria-label]="minThumbLabel()"
+      (keydown)="onThumbKeydown('min', $event)"
+      (pointerdown)="onThumbPointerDown('min', $event)"
+    ></div>
+    <div
+      #maxThumb
+      role="slider"
+      data-thumb="max"
+      [tabindex]="disabled() ? -1 : 0"
+      [class]="thumbClasses()"
+      [style.left.%]="percentMax()"
+      [attr.aria-valuenow]="currentMax()"
+      [attr.aria-valuemin]="currentMin()"
+      [attr.aria-valuemax]="max()"
+      [attr.aria-disabled]="disabled() ? 'true' : null"
+      [attr.aria-readonly]="readOnly() ? 'true' : null"
+      [attr.aria-label]="maxThumbLabel()"
+      (keydown)="onThumbKeydown('max', $event)"
+      (pointerdown)="onThumbPointerDown('max', $event)"
+    ></div>
+    } @else {
     <div [class]="fillClasses()" [style.width.%]="percent()"></div>
     <div
       #thumb
@@ -20,7 +59,8 @@
       [attr.aria-disabled]="disabled() ? 'true' : null"
       [attr.aria-readonly]="readOnly() ? 'true' : null"
       [attr.aria-label]="ariaLabel() ?? 'Slider'"
-      (keydown)="onThumbKeydown($event)"
+      (keydown)="onThumbKeydown('min', $event)"
     ></div>
+    }
   </div>
 </div>

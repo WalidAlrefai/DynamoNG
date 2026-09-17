@@ -1,14 +1,36 @@
+import type { ComponentFixture } from '@angular/core/testing';
 import type { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
 } from '@dynamong/testing';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { within } from '@testing-library/dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoPicklist } from './picklist';
 import { DynamoPicklistHarness } from './picklist.harness';
 import type { DynamoSelectOption } from './picklist.types';
+
+// jsdom has no real `Element.scrollTo`. While `virtualScroll` is enabled,
+// Picklist's `scrollActiveIntoView()` reaches the virtual-scroll
+// viewport's `scrollToIndex()` (CDK's viewport calls `scrollTo`
+// internally) — a minimal stub lets these tests exercise the real
+// keyboard-nav-while-virtualized behavior instead of throwing, same gap
+// already worked around in `listbox.spec.ts`.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (): void {
+    /* jsdom gap — see comment above */
+  };
+}
+
+// jsdom reports a zero-height viewport, so CDK's fixed-size strategy
+// renders zero rows synchronously — flush a real setTimeout(0) +
+// detectChanges() before asserting on virtualized content.
+async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  fixture.detectChanges();
+}
 
 const SOURCE: DynamoSelectOption<string>[] = [
   { label: 'Rust', value: 'rust' },
@@ -25,6 +47,11 @@ const SOURCE_WITH_DISABLED: DynamoSelectOption<string>[] = [
   { label: 'Go', value: 'go', disabled: true },
   { label: 'Python', value: 'py' },
 ];
+
+const MANY_SOURCE: DynamoSelectOption<string>[] = Array.from(
+  { length: 50 },
+  (_, i) => ({ label: `Option ${i + 1}`, value: `option-${i + 1}` }),
+);
 
 function dispatchKey(target: HTMLElement, key: string): void {
   target.dispatchEvent(
@@ -798,6 +825,176 @@ describe('DynamoPicklist', () => {
       const { container } = renderDynamoComponent(DynamoPicklist, {
         inputs: { source: [], target: [] },
       });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('virtual scroll', () => {
+    it('does not virtualize when virtualScroll is left at its default (false)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: MANY_SOURCE, target: [] },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('dg-virtual-scroll')).toBeNull();
+      expect(
+        container.querySelectorAll('[data-part="sourcePanel"] [role="option"]'),
+      ).toHaveLength(50);
+    });
+
+    it('renders both panels through dg-virtual-scroll when enabled', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: {
+          source: MANY_SOURCE,
+          target: MANY_SOURCE,
+          virtualScroll: true,
+        },
+      });
+      await settle(fixture);
+
+      expect(container.querySelectorAll('dg-virtual-scroll')).toHaveLength(2);
+    });
+
+    it('makes dropListDisabled() true while virtualized, independent of disabled/readOnly', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, virtualScroll: true },
+      });
+
+      expect(
+        (
+          componentInstance as unknown as { dropListDisabled: () => boolean }
+        ).dropListDisabled(),
+      ).toBe(true);
+    });
+
+    it('still allows checkbox selection while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: MANY_SOURCE, target: [], virtualScroll: true },
+        },
+      );
+      await settle(fixture);
+
+      const option = within(container)
+        .getAllByRole('option')
+        .find((el) => el.textContent?.trim() === 'Option 1') as HTMLElement;
+      option.click();
+      fixture.detectChanges();
+
+      expect(
+        componentInstance.source().find((o) => o.value === 'option-1'),
+      ).toBeTruthy();
+      expect(option.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('keyboard navigation still moves the active row while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: MANY_SOURCE, target: [], virtualScroll: true },
+        },
+      );
+      await settle(fixture);
+      const sourceList = panelListEl(container, 'source');
+
+      dispatchKey(sourceList, 'ArrowDown');
+      fixture.detectChanges();
+      dispatchKey(sourceList, 'Enter');
+      fixture.detectChanges();
+
+      expect(componentInstance.source()[0]?.value).toBe('option-1');
+      expect(
+        within(container)
+          .getAllByRole('option')[0]
+          ?.getAttribute('aria-selected'),
+      ).toBe('true');
+    });
+
+    it('keyboard reorder buttons still work while virtualized', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: [], target: SOURCE, virtualScroll: true },
+        },
+      );
+      const targetList = panelListEl(container, 'target');
+      dispatchKey(targetList, 'ArrowDown'); // active = Rust (index 0)
+      fixture.detectChanges();
+
+      within(container)
+        .getByRole('button', { name: 'Move down in Selected' })
+        .click();
+      fixture.detectChanges();
+
+      expect(componentInstance.target().map((o) => o.value)).toEqual([
+        'go',
+        'rust',
+        'py',
+      ]);
+    });
+
+    it('move-selected/move-all buttons still transfer items across panels while virtualized', async () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET, virtualScroll: true },
+        },
+      );
+      await settle(fixture);
+
+      within(container).getByRole('option', { name: 'Rust' }).click();
+      fixture.detectChanges();
+      within(container)
+        .getByRole('button', { name: 'Move selected to Selected' })
+        .click();
+      fixture.detectChanges();
+
+      expect(componentInstance.target().map((o) => o.value)).toEqual([
+        'ts',
+        'rust',
+      ]);
+    });
+
+    // Regression test for the same bug fixed in Listbox/Select: CDK's
+    // `scrollToIndex` is an unconditional absolute scroll, so wiring it to
+    // every activeIndex change — including `(mouseenter)` hover — would
+    // jump the list on every mouseover. `scrollActiveIntoView()` runs only
+    // from the keyboard-nav/reorder paths.
+    it('does not scroll the viewport on hover, only on keyboard navigation', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: MANY_SOURCE, target: [], virtualScroll: true },
+      });
+      await settle(fixture);
+      const viewport = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      ).componentInstance as DynamoVirtualScroll<unknown>;
+      const scrollSpy = vi.spyOn(viewport, 'scrollToIndex');
+
+      const secondOption = within(container).getAllByRole(
+        'option',
+      )[1] as HTMLElement;
+      secondOption.dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+      expect(scrollSpy).not.toHaveBeenCalled();
+
+      dispatchKey(panelListEl(container, 'source'), 'ArrowDown');
+      fixture.detectChanges();
+      expect(scrollSpy).toHaveBeenCalled();
+    });
+
+    it('has no axe violations when virtualized', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: {
+          source: MANY_SOURCE,
+          target: MANY_SOURCE,
+          virtualScroll: true,
+        },
+      });
+      await settle(fixture);
+
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });

@@ -7,13 +7,24 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'filter', title: 'Filter' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'items', type: 'DynamoTreeNode[]', default: 'required' },
   { name: 'expandedIds', type: 'string[] (model)', default: '[]' },
   { name: 'selected', type: 'string[] (model)', default: '[]' },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
+  { name: 'filterable', type: 'boolean', default: 'false' },
+  { name: 'filterPlaceholder', type: 'string', default: "'Search...'" },
+  { name: 'filterText', type: 'string (model)', default: "''" },
+  {
+    name: 'noMatchesMessage',
+    type: 'string',
+    default: "'No matching results'",
+  },
 ];
 
 @Component({
@@ -43,6 +54,26 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-tree [items]="items()" [(expandedIds)]="expanded"
           [(selected)]="selected" ariaLabel="Project files" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="filter"
+        title="Filter"
+        description="filterable renders a search box that prunes the tree down to matches and their ancestor chain (a match keeps its whole subtree), auto-expanding the matched branches."
+      >
+        <div preview>
+          <dg-tree
+            [items]="items()"
+            [(expandedIds)]="expanded"
+            [(selected)]="selected"
+            ariaLabel="Project files"
+            [filterable]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-tree [items]="items()" [(expandedIds)]="expanded"
+          [filterable]="true" /&gt;
         </div>
       </docs-example>
 

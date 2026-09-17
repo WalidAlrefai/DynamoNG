@@ -17,32 +17,73 @@ addition to `[(value)]`.
 />
 ```
 
+### Range mode
+
+Set `range` to render two independently-draggable thumbs; `value` becomes
+a `DynamoSliderRange` (`{minValue, maxValue}`) instead of a plain number:
+
+```html
+<dg-slider
+  [(value)]="priceRange"
+  [range]="true"
+  [min]="0"
+  [max]="200"
+  ariaLabel="Price"
+/>
+```
+
+```ts
+protected readonly priceRange = signal<DynamoSliderRange>({ minValue: 20, maxValue: 80 });
+```
+
 ## Inputs
 
-| Input       | Type                  | Default     | Description                                                                                                                                                                                 |
-| ----------- | --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`     | `number` (model)      | `0`         | Two-way bindable; also driven by Angular forms via `writeValue`.                                                                                                                            |
-| `min`       | `number`              | `0`         |                                                                                                                                                                                             |
-| `max`       | `number`              | `100`       |                                                                                                                                                                                             |
-| `step`      | `number`              | `1`         | Values are snapped to the nearest step (relative to `min`) before clamping. `step <= 0` disables snapping.                                                                                  |
-| `disabled`  | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                      |
-| `readOnly`  | `boolean`             | `false`     | HTML `readonly` semantics: the thumb stays visible/focusable, but dragging and keyboard changes are both blocked. Unlike `disabled`, doesn't dim the track or remove it from the tab order. |
-| `size`      | `DynamoSize`          | `'md'`      |                                                                                                                                                                                             |
-| `severity`  | `DynamoSeverity`      | `'primary'` | Color of the fill and thumb.                                                                                                                                                                |
-| `ariaLabel` | `string \| undefined` | `undefined` | Defaults to `'Slider'` when unset.                                                                                                                                                          |
+| Input       | Type                                  | Default     | Description                                                                                                                                                                                 |
+| ----------- | ------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`     | `number \| DynamoSliderRange` (model) | `0`         | Two-way bindable; also driven by Angular forms via `writeValue`. Becomes `DynamoSliderRange` when `range` is `true`.                                                                        |
+| `min`       | `number`                              | `0`         |                                                                                                                                                                                             |
+| `max`       | `number`                              | `100`       |                                                                                                                                                                                             |
+| `step`      | `number`                              | `1`         | Values are snapped to the nearest step (relative to `min`) before clamping. `step <= 0` disables snapping.                                                                                  |
+| `range`     | `boolean`                             | `false`     | Renders two independently-draggable thumbs instead of one — see Design notes.                                                                                                               |
+| `disabled`  | `boolean` (model)                     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                      |
+| `readOnly`  | `boolean`                             | `false`     | HTML `readonly` semantics: the thumb stays visible/focusable, but dragging and keyboard changes are both blocked. Unlike `disabled`, doesn't dim the track or remove it from the tab order. |
+| `size`      | `DynamoSize`                          | `'md'`      |                                                                                                                                                                                             |
+| `severity`  | `DynamoSeverity`                      | `'primary'` | Color of the fill and thumb.                                                                                                                                                                |
+| `ariaLabel` | `string \| undefined`                 | `undefined` | Defaults to `'Slider'` when unset. In range mode, each thumb's own label is derived from this (`"${ariaLabel} minimum"` / `"... maximum"`).                                                 |
 
 ## Outputs
 
-| Output           | Payload   | Fires when                                                                                             |
-| ---------------- | --------- | ------------------------------------------------------------------------------------------------------ |
-| `valueChange`    | `number`  | `value` changes (auto-generated by `model()`) — from a track click, a drag, or a keyboard interaction. |
-| `disabledChange` | `boolean` | `disabled` changes (auto-generated by `model()`).                                                      |
+| Output           | Payload                       | Fires when                                                                                                                  |
+| ---------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `valueChange`    | `number \| DynamoSliderRange` | `value` changes (auto-generated by `model()`) — from a drag or a keyboard interaction (and, non-range only, a track click). |
+| `disabledChange` | `boolean`                     | `disabled` changes (auto-generated by `model()`).                                                                           |
 
 ## Accessibility
 
-- `role="slider"` thumb with `aria-valuenow`/`aria-valuemin`/`aria-valuemax`/`aria-disabled`/`aria-readonly`.
+- `role="slider"` thumb(s) with `aria-valuenow`/`aria-valuemin`/`aria-valuemax`/`aria-disabled`/`aria-readonly`.
 - Keyboard (thumb focused): `ArrowRight`/`ArrowUp` and `ArrowLeft`/`ArrowDown` step by `step`, `PageUp`/`PageDown` step by `step * 10`, `Home`/`End` jump to `min`/`max`.
-- Pointer: pressing anywhere on the track jumps the thumb there and starts a drag (via pointer capture); the track and fill are non-focusable — the thumb is the sole tab stop.
+- Pointer, non-range mode: pressing anywhere on the track jumps the thumb there and starts a drag (via pointer capture); the track and fill are non-focusable — the thumb is the sole tab stop.
+- Pointer, range mode: each thumb owns its own pointerdown — dragging starts only from a handle, not the track (see Design notes).
+
+## Design notes
+
+**Pairwise clamping.** In range mode, the min-thumb's value can never
+exceed the max-thumb's, and vice versa — they can touch (0 gap) but never
+cross. There's no configurable minimum gap in v1; the internal
+`clampPair` helper is written so one could be added later without an
+API-shape change.
+
+**Per-thumb ARIA min/max reflects each handle's own movable range, not
+the slider's overall bounds.** The min-thumb's `aria-valuemax` is the
+max-thumb's current value (its ceiling is wherever the other handle
+currently sits), and the max-thumb's `aria-valuemin` is the min-thumb's
+current value — both update live as the other handle moves.
+
+**Track-click-to-jump is intentionally not supported in range mode.** A
+bare click on the track is ambiguous about which thumb should respond;
+only dragging a handle directly (or its own keyboard interaction) moves
+it — the same limitation PrimeNG's own range slider has. Non-range
+mode's track-click-to-jump is unaffected.
 
 ## Tier / dependencies
 

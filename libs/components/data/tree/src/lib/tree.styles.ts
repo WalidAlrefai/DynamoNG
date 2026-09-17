@@ -3,12 +3,31 @@ import { focusRingInsetClass } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — never inline in tree.html/tree-item.html.
-export const treeRootStyles = 'flex flex-col gap-0.5 rounded-md';
+
+// The outer wrapper — the mergeable-with-styleClass()/unstyled() element.
+// A visual no-op on its own (Tree ships border-less by default, unlike
+// Table's/TreeTable's bordered-card wrapper styles) — just a hook for a
+// consumer's own styleClass border/background to round against.
+export const treeWrapperStyles = 'rounded-md';
+
+// The inner `role="tree"` element's own row-stacking layout — plain,
+// non-overridable (bound directly, never merged with styleClass()),
+// mirroring Table's own tableStyles/tableClasses split: unstyled() now
+// only strips the WRAPPER's classes, never this layout.
+export const treeStyles = 'flex flex-col gap-0.5';
 
 // Shown in place of the item list when `items()` is empty — a loading spin
-// + message while `loading` is true, or `emptyMessage()` otherwise.
+// + message while `loading` is true, or `emptyStateMessage()` otherwise.
 export const treeEmptyStateStyles =
   'flex items-center justify-center gap-2 px-4 py-8 text-sm text-text-muted';
+
+// Header bar above the tree body, shown only while `filterable()` is true.
+// Deliberately has no `border-b` — unlike Table's/TreeTable's own
+// `*FilterWrapperStyles` (which pair a border-b against their bordered
+// card's own border/border-t footer), Tree has no bordered card to pair a
+// rule against; a lone border here would be the only one anywhere in the
+// component. Spacing alone (bottom padding) separates it from the tree body.
+export const treeFilterWrapperStyles = 'flex items-center gap-2 pb-2';
 
 export const treeRowStyles = cva(
   'flex items-center gap-1.5 rounded-md py-1.5 pe-2 text-sm text-text-primary ' +

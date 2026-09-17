@@ -7,6 +7,7 @@
     "@dynamong/core": "0.0.1",
     "@dynamong/utils": "0.0.1",
     "@dynamong/checkbox": "0.0.1",
+    "@dynamong/input-text": "0.0.1",
     "@dynamong/spinner": "0.0.1"
   },
   "dependencies": {

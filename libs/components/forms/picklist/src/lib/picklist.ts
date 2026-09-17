@@ -6,6 +6,7 @@ import {
   model,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import {
   CdkDrag,
@@ -17,6 +18,7 @@ import {
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoCheckIcon } from '@dynamong/icons';
 import { cn } from '@dynamong/utils/class-merge';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { findEnabledPicklistIndex } from './picklist-option-nav';
 import {
   picklistButtonStyles,
@@ -25,6 +27,7 @@ import {
   picklistOptionStyles,
   picklistPanelHeaderStyles,
   picklistPanelListStyles,
+  picklistPanelListVirtualStyles,
   picklistPanelStyles,
   picklistPanelTitleStyles,
   picklistReorderButtonRowStyles,
@@ -42,7 +45,13 @@ import type {
   selector: 'dg-picklist',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkDropList, CdkDropListGroup, CdkDrag, DynamoCheckIcon],
+  imports: [
+    CdkDropList,
+    CdkDropListGroup,
+    CdkDrag,
+    DynamoCheckIcon,
+    DynamoVirtualScroll,
+  ],
   templateUrl: './picklist.html',
 })
 export class DynamoPicklist<
@@ -64,10 +73,44 @@ export class DynamoPicklist<
   readonly sourceLabel = input('Available');
   readonly targetLabel = input('Selected');
 
+  /**
+   * Opt-in — renders each panel's option list through
+   * `@dynamong/virtual-scroll` instead of a plain `@for`, for large
+   * `source`/`target` arrays. Unlike Listbox, Picklist has no grouping
+   * concept, so there's no fixed-row-height edge case to guard against —
+   * but drag-and-drop pays the price instead: while this is on, CDK
+   * drag-and-drop (both same-panel reorder-via-drag and cross-panel
+   * transfer-via-drag) is disabled on BOTH panels. `CdkDropList` computes
+   * `previousIndex`/`currentIndex` from its own `_draggables` list of
+   * currently-mounted `<li cdkDrag>` elements, which is only a subset of
+   * the full array once virtualized — not the full-array positions
+   * `onDropped()` assumes. Rather than risk a silently-wrong reorder/
+   * transfer, drag is disabled outright; the always-visible ▲/▼
+   * keyboard-reorder buttons and the ▶/◀/▶▶/◀◀ move buttons are
+   * unaffected (both operate on the full array directly, never on CDK's
+   * mounted-DOM index tracking), so every operation stays available while
+   * virtualized, just not via drag.
+   */
+  readonly virtualScroll = input(false);
+  /** Row height in px when virtualized — matches `picklistOptionStyles`' own rendered height (`px-3 py-2 text-sm`: 16px padding + 20px line-height). */
+  readonly virtualScrollItemSize = input(36);
+  /** Viewport height in px when virtualized — matches `picklistPanelStyles`' own `max-h-80` (320px) so a virtualized panel is roughly the same size as the non-virtualized, CSS-scrolled one. */
+  readonly virtualScrollHeight = input(320);
+
   protected readonly sourceSelected = signal<Set<TValue>>(new Set());
   protected readonly targetSelected = signal<Set<TValue>>(new Set());
   protected readonly sourceActiveIndex = signal(-1);
   protected readonly targetActiveIndex = signal(-1);
+
+  // Template-ref-scoped (not a type-only `viewChild(DynamoVirtualScroll)`)
+  // because both panels can be virtualized simultaneously — a type-only
+  // query would only ever resolve one of the two instances.
+  private readonly sourceVirtualScrollRef = viewChild<
+    DynamoVirtualScroll<DynamoSelectOption<TValue>>
+  >('sourceVirtualScroll');
+  private readonly targetVirtualScrollRef = viewChild<
+    DynamoVirtualScroll<DynamoSelectOption<TValue>>
+  >('targetVirtualScroll');
 
   protected readonly canMoveSelectedRight = computed(
     () => this.sourceSelected().size > 0,
@@ -87,9 +130,31 @@ export class DynamoPicklist<
   protected readonly panelClasses = picklistPanelStyles;
   protected readonly panelHeaderClasses = picklistPanelHeaderStyles;
   protected readonly panelTitleClasses = picklistPanelTitleStyles;
-  protected readonly panelListClasses = picklistPanelListStyles;
   protected readonly moveButtonColumnClasses = picklistMoveButtonColumnStyles;
   protected readonly reorderButtonRowClasses = picklistReorderButtonRowStyles;
+
+  // Trivial today (Picklist has no grouping concept to guard against, unlike
+  // Listbox's isVirtualized), but kept as its own computed so both panels
+  // read one shared flag and stay in lockstep — Picklist never virtualizes
+  // them independently.
+  protected readonly isVirtualized = computed(() => this.virtualScroll());
+
+  /** Gates BOTH panels' `cdkDropList` off entirely while virtualized — see `virtualScroll`'s own doc comment for why. Folded together with the existing `disabled()`/`readOnly()` gating into one boolean for `[cdkDropListDisabled]`. */
+  protected readonly dropListDisabled = computed(
+    () => this.disabled() || this.readOnly() || this.isVirtualized(),
+  );
+
+  /** `dg-virtual-scroll`'s own fixed-height viewport is the sole scrolling region while virtualized — this `<ul>` must not also scroll (no double scrollbar). */
+  protected readonly panelListClasses = computed(() =>
+    this.isVirtualized()
+      ? picklistPanelListVirtualStyles
+      : picklistPanelListStyles,
+  );
+
+  /** Mirrors the existing `@for`'s `track option.value` so item identity stays stable across the virtualized/non-virtualized branches and across reorder/move operations. */
+  protected readonly virtualTrackBy = (
+    option: DynamoSelectOption<TValue>,
+  ): unknown => option.value;
 
   // --- selection ---
 
@@ -259,6 +324,25 @@ export class DynamoPicklist<
     moveItemInArray(next, idx, target);
     listModel.set(next);
     activeSig.set(target);
+    this.scrollActiveIntoView(side, target);
+  }
+
+  /**
+   * Scrolls the virtualized viewport so `index` is actually rendered.
+   * Called only from keyboard-driven moves (Arrow/Home/End nav and the
+   * ▲/▼ reorder buttons) — deliberately NOT from the `(mouseenter)="...
+   * ActiveIndex.set(i)"` hover handlers, since CDK's `scrollToIndex` is an
+   * unconditional jump-to-top (not "only scroll if out of view"), which
+   * would visibly jerk the list on every hover — same fix already applied
+   * in Listbox.
+   */
+  private scrollActiveIntoView(side: DynamoPicklistSide, index: number): void {
+    if (!this.isVirtualized() || index < 0) return;
+    const ref =
+      side === 'source'
+        ? this.sourceVirtualScrollRef()
+        : this.targetVirtualScrollRef();
+    ref?.scrollToIndex(index);
   }
 
   // --- keyboard nav within a panel, mirrors Listbox's onKeydown shape ---
@@ -280,6 +364,7 @@ export class DynamoPicklist<
         const next = findEnabledPicklistIndex(options, activeSig(), 1);
         if (next !== null) {
           activeSig.set(next);
+          this.scrollActiveIntoView(side, next);
         }
         break;
       }
@@ -288,17 +373,24 @@ export class DynamoPicklist<
         const next = findEnabledPicklistIndex(options, activeSig(), -1);
         if (next !== null) {
           activeSig.set(next);
+          this.scrollActiveIntoView(side, next);
         }
         break;
       }
-      case 'Home':
+      case 'Home': {
         event.preventDefault();
-        activeSig.set(findEnabledPicklistIndex(options, -1, 1) ?? -1);
+        const next = findEnabledPicklistIndex(options, -1, 1) ?? -1;
+        activeSig.set(next);
+        this.scrollActiveIntoView(side, next);
         break;
-      case 'End':
+      }
+      case 'End': {
         event.preventDefault();
-        activeSig.set(findEnabledPicklistIndex(options, 0, -1) ?? -1);
+        const next = findEnabledPicklistIndex(options, 0, -1) ?? -1;
+        activeSig.set(next);
+        this.scrollActiveIntoView(side, next);
         break;
+      }
       case 'Enter':
       case ' ': {
         event.preventDefault();

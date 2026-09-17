@@ -23,15 +23,18 @@ protected onItemSelect(event: DynamoPicklistItemSelectEvent<string>): void { ...
 
 ## Inputs
 
-| Input         | Type                                   | Default       | Description                                                                                                                                                                                                            |
-| ------------- | -------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source`      | `DynamoSelectOption<TValue>[]` (model) | `[]`          | Two-way bindable. Options currently in the left/available panel.                                                                                                                                                       |
-| `target`      | `DynamoSelectOption<TValue>[]` (model) | `[]`          | Two-way bindable. Options currently in the right/selected panel.                                                                                                                                                       |
-| `size`        | `DynamoPicklistSize`                   | `'md'`        |                                                                                                                                                                                                                        |
-| `disabled`    | `boolean`                              | `false`       | Disables checkbox toggling, drag-and-drop, move buttons, and keyboard reorder.                                                                                                                                         |
-| `readOnly`    | `boolean`                              | `false`       | HTML `readonly` semantics: rows stay visible/focusable/navigable, but moving items (drag, arrows, buttons) and selection are all blocked. Unlike `disabled`, doesn't dim either panel or remove it from the tab order. |
-| `sourceLabel` | `string`                               | `'Available'` | Left panel heading; also used to build move/reorder button `aria-label`s.                                                                                                                                              |
-| `targetLabel` | `string`                               | `'Selected'`  | Right panel heading; also used to build move/reorder button `aria-label`s.                                                                                                                                             |
+| Input                   | Type                                   | Default       | Description                                                                                                                                                                                                            |
+| ----------------------- | -------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`                | `DynamoSelectOption<TValue>[]` (model) | `[]`          | Two-way bindable. Options currently in the left/available panel.                                                                                                                                                       |
+| `target`                | `DynamoSelectOption<TValue>[]` (model) | `[]`          | Two-way bindable. Options currently in the right/selected panel.                                                                                                                                                       |
+| `size`                  | `DynamoPicklistSize`                   | `'md'`        |                                                                                                                                                                                                                        |
+| `disabled`              | `boolean`                              | `false`       | Disables checkbox toggling, drag-and-drop, move buttons, and keyboard reorder.                                                                                                                                         |
+| `readOnly`              | `boolean`                              | `false`       | HTML `readonly` semantics: rows stay visible/focusable/navigable, but moving items (drag, arrows, buttons) and selection are all blocked. Unlike `disabled`, doesn't dim either panel or remove it from the tab order. |
+| `sourceLabel`           | `string`                               | `'Available'` | Left panel heading; also used to build move/reorder button `aria-label`s.                                                                                                                                              |
+| `targetLabel`           | `string`                               | `'Selected'`  | Right panel heading; also used to build move/reorder button `aria-label`s.                                                                                                                                             |
+| `virtualScroll`         | `boolean`                              | `false`       | Renders each panel's option list through `@dynamong/virtual-scroll`, for large `source`/`target` arrays. Disables drag-and-drop on both panels while enabled — see Design notes.                                       |
+| `virtualScrollItemSize` | `number`                               | `36`          |                                                                                                                                                                                                                        |
+| `virtualScrollHeight`   | `number`                               | `320`         |                                                                                                                                                                                                                        |
 
 ## Outputs
 
@@ -47,9 +50,25 @@ protected onItemSelect(event: DynamoPicklistItemSelectEvent<string>): void { ...
 - Keyboard within a panel: `ArrowDown`/`ArrowUp` move the active row, `Home`/`End` jump to the first/last enabled row, `Enter`/`Space` toggles the active row's checkbox.
 - Drag-and-drop is implemented with Angular CDK (`cdkDropList`/`cdkDrag`, disabled rows excluded); the always-visible ▲/▼ buttons next to each panel reorder the keyboard-active row by one position as a non-drag alternative.
 
+## Design notes
+
+**`virtualScroll` disables drag-and-drop, not just as a v1 gap.** CDK
+virtual-scroll and CDK drag-and-drop have no working combination in this
+codebase: `CdkDropList` computes `previousIndex`/`currentIndex` from its
+own list of currently-MOUNTED `<li cdkDrag>` elements, which is a subset
+of the full `source()`/`target()` array once virtualized — not the
+full-array positions `onDropped()` assumes. Rather than risk a
+silently-wrong reorder/transfer, both same-panel drag-reorder and
+cross-panel drag-transfer are disabled entirely on both panels while
+`virtualScroll` is on. The always-visible ▲/▼ reorder buttons and the
+▶/◀/▶▶/◀◀ move buttons are unaffected — both operate on the full array
+directly and never touch CDK's mounted-DOM index tracking — so every
+Picklist operation remains available while virtualized, just not via
+drag.
+
 ## Tier / dependencies
 
-- `tier:0`. Peer dependencies: `@angular/cdk` (drag-drop), `@dynamong/icons`.
+- `tier:1`. Peer dependencies: `@angular/cdk` (drag-drop), `@dynamong/icons`, `@dynamong/virtual-scroll`.
 
 ## Running unit tests
 

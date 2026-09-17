@@ -100,6 +100,20 @@ function checkboxInput(container: HTMLElement, id: string): HTMLInputElement {
   return el as HTMLInputElement;
 }
 
+function getFilterInput(container: HTMLElement): HTMLInputElement {
+  const input = container.querySelector<HTMLInputElement>(
+    'input[type="search"]',
+  );
+  if (!input) throw new Error('No filter input found — is filterable set?');
+  return input;
+}
+
+function setFilterValue(container: HTMLElement, value: string): void {
+  const input = getFilterInput(container);
+  input.value = value;
+  input.dispatchEvent(new Event('input'));
+}
+
 describe('DynamoTree', () => {
   describe('creation', () => {
     it('renders one treeitem per root-level node by default (children collapsed)', () => {
@@ -689,6 +703,141 @@ describe('DynamoTree', () => {
       }
 
       expect(() => renderDynamoComponent(TreeDeepHostComponent)).not.toThrow();
+    });
+  });
+
+  describe('filter', () => {
+    it('renders no search input when filterable is unset (regression)', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: sampleItems() },
+      });
+
+      expect(container.querySelector('input[type="search"]')).toBeNull();
+    });
+
+    it('keeps a deep match and its ancestor chain, pruning non-matching branches', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: sampleItems(), filterable: true },
+      });
+
+      setFilterValue(container, 'beach');
+      fixture.detectChanges();
+
+      // "photos" > "vacation" > "beach" survive; "family" (photos' other
+      // child, no match) and "docs"/"notes" (no match at all) are pruned.
+      expect(row(container, 'beach')).toBeTruthy();
+      expect(row(container, 'vacation')).toBeTruthy();
+      expect(row(container, 'photos')).toBeTruthy();
+      expect(container.querySelector('[data-node-id="family"]')).toBeNull();
+      expect(container.querySelector('[data-node-id="docs"]')).toBeNull();
+      expect(container.querySelector('[data-node-id="notes"]')).toBeNull();
+    });
+
+    it('keeps a matching branch’s entire original subtree unpruned', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: sampleItems(), filterable: true },
+      });
+
+      setFilterValue(container, 'photos');
+      fixture.detectChanges();
+
+      expect(row(container, 'vacation')).toBeTruthy();
+      expect(row(container, 'beach')).toBeTruthy();
+      expect(row(container, 'mountain')).toBeTruthy();
+      expect(row(container, 'family')).toBeTruthy();
+    });
+
+    it('force-expands matched branches through the real recursive render, regardless of expandedIds', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: sampleItems(), filterable: true, expandedIds: [] },
+      });
+
+      setFilterValue(container, 'beach');
+      fixture.detectChanges();
+
+      expect(row(container, 'beach')).toBeTruthy();
+      expect(row(container, 'photos').getAttribute('aria-expanded')).toBe(
+        'true',
+      );
+      expect(row(container, 'vacation').getAttribute('aria-expanded')).toBe(
+        'true',
+      );
+    });
+
+    it('restores prior collapsed state once the filter is cleared, without mutating expandedIds', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: sampleItems(), filterable: true, expandedIds: [] } },
+      );
+
+      setFilterValue(container, 'beach');
+      fixture.detectChanges();
+      expect(row(container, 'beach')).toBeTruthy();
+
+      setFilterValue(container, '');
+      fixture.detectChanges();
+
+      expect(within(container).getAllByRole('treeitem')).toHaveLength(3);
+      expect(row(container, 'photos').getAttribute('aria-expanded')).toBe(
+        'false',
+      );
+      expect(componentInstance.expandedIds()).toEqual([]);
+    });
+
+    it('shows noMatchesMessage instead of emptyMessage when the filter matches nothing', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTree, {
+        inputs: {
+          items: sampleItems(),
+          filterable: true,
+          noMatchesMessage: 'Nothing found',
+        },
+      });
+
+      setFilterValue(container, 'zzz-nonexistent');
+      fixture.detectChanges();
+
+      expect(within(container).getByRole('status').textContent?.trim()).toBe(
+        'Nothing found',
+      );
+    });
+
+    it('shows emptyMessage, not noMatchesMessage, when items itself is empty regardless of filterText', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: {
+          items: [],
+          filterable: true,
+          filterText: 'anything',
+        },
+      });
+
+      expect(within(container).getByRole('status').textContent?.trim()).toBe(
+        'No data',
+      );
+    });
+
+    it('moves focus into the first child on ArrowRight for a node force-expanded by filtering', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: sampleItems(), filterable: true, expandedIds: [] },
+      });
+      setFilterValue(container, 'beach');
+      fixture.detectChanges();
+      row(container, 'photos').focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+
+      expect(document.activeElement).toBe(row(container, 'vacation'));
+    });
+
+    it('has no axe violations while filtering', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: sampleItems(), filterable: true },
+      });
+      setFilterValue(container, 'beach');
+      fixture.detectChanges();
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
     });
   });
 });

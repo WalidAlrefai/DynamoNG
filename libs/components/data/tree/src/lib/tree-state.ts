@@ -21,6 +21,8 @@ import type { DynamoTreeNode } from './tree.types';
 @Injectable()
 export class DynamoTreeState {
   expandedIds: () => readonly string[] = () => [];
+  /** True while a non-blank filter is narrowing the tree — see `DynamoTreeItem`'s own `isExpanded` doc comment for why it consults this alongside `expandedIds`. */
+  isFilterActive: () => boolean = () => false;
   activeId: () => string | undefined = () => undefined;
   checkState: (node: DynamoTreeNode) => DynamoTreeCheckState = () =>
     'unchecked';
