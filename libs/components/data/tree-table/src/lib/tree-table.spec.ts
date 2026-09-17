@@ -1158,4 +1158,293 @@ describe('DynamoTreeTable', () => {
       ).not.toThrow();
     });
   });
+
+  describe('global filter', () => {
+    it('renders no search input when filterable is unset (regression)', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns() } },
+      );
+
+      expect(container.querySelector('input[type="search"]')).toBeNull();
+    });
+
+    it('keeps a deep match and its ancestor chain, pruning non-matching branches', () => {
+      const { container, fixture } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          filterable: true,
+        },
+      });
+
+      const input = container.querySelector<HTMLInputElement>(
+        'input[type="search"]',
+      )!;
+      input.value = 'beach';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      // "photos" > "vacation" > "beach" survive; "family" (photos' other
+      // child, no match) and "docs"/"notes" (no match at all) are pruned.
+      expect(rowNames(container)).toEqual(['photos', 'vacation', 'beach.jpg']);
+    });
+
+    it('force-expands matched branches regardless of expandedIds, and restores collapsed state once cleared', () => {
+      const { container, fixture } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          filterable: true,
+          expandedIds: [],
+        },
+      });
+      const input = container.querySelector<HTMLInputElement>(
+        'input[type="search"]',
+      )!;
+
+      input.value = 'beach';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(rowNames(container)).toContain('beach.jpg');
+
+      input.value = '';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      // Back to collapsed — expandedIds was never mutated by filtering.
+      expect(rowNames(container)).toEqual(['docs', 'photos', 'notes.txt']);
+    });
+
+    it('shows noMatchesMessage instead of emptyMessage when the filter matches nothing', () => {
+      const { container, fixture } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          filterable: true,
+          noMatchesMessage: 'Nothing found',
+        },
+      });
+      const input = container.querySelector<HTMLInputElement>(
+        'input[type="search"]',
+      )!;
+
+      input.value = 'zzz-nonexistent';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(
+        container.querySelector('[role="status"]')?.textContent?.trim(),
+      ).toBe('Nothing found');
+    });
+
+    it('shows emptyMessage, not noMatchesMessage, when items itself is empty regardless of filterText', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: [],
+            columns: sampleColumns(),
+            filterable: true,
+            filterText: 'anything',
+          },
+        },
+      );
+
+      expect(
+        container.querySelector('[role="status"]')?.textContent?.trim(),
+      ).toBe('No data');
+    });
+
+    it('resets page to 1 when the filter text changes', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          filterable: true,
+          pageSize: 1,
+          page: 2,
+        },
+      });
+
+      const input = container.querySelector<HTMLInputElement>(
+        'input[type="search"]',
+      )!;
+      input.value = 'notes';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(1);
+    });
+  });
+
+  describe('pagination', () => {
+    it('renders no pagination footer when pageSize is unset (regression)', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns() } },
+      );
+
+      expect(container.querySelector('[aria-live="polite"]')).toBeNull();
+      expect(rowNames(container)).toEqual(['docs', 'photos', 'notes.txt']);
+    });
+
+    it('paginates over ROOT nodes, not the flattened visible-row list', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: sampleItems(),
+            columns: sampleColumns(),
+            pageSize: 2,
+          },
+        },
+      );
+
+      // 3 roots (docs, photos, notes) paginated 2-per-page -> page 1 shows
+      // the first 2 roots only.
+      expect(rowNames(container)).toEqual(['docs', 'photos']);
+    });
+
+    it('advances to the next page via Next, showing the remaining root(s)', async () => {
+      const { container, fixture } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          pageSize: 2,
+        },
+      });
+
+      await userEvent.click(
+        container.querySelector<HTMLElement>('button[aria-label="Next page"]')!,
+      );
+      fixture.detectChanges();
+
+      expect(rowNames(container)).toEqual(['notes.txt']);
+    });
+
+    it("expanding a page's own root never changes which roots are on the page", async () => {
+      const { container, fixture } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          pageSize: 2,
+        },
+      });
+
+      await userEvent.click(
+        rowByName(container, 'docs').querySelector<HTMLElement>(
+          '[data-testid="chevron"]',
+        )!,
+      );
+      fixture.detectChanges();
+
+      expect(rowNames(container)).toEqual([
+        'docs',
+        'resume.pdf',
+        'cover.pdf',
+        'photos',
+      ]);
+    });
+
+    it('resets page to 1 when the sort changes', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          pageSize: 1,
+          page: 2,
+        },
+      });
+
+      const nameHeader = Array.from(
+        container.querySelectorAll('thead button'),
+      ).find((button) => button.textContent?.includes('Name'))!;
+      await userEvent.click(nameHeader);
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(1);
+    });
+  });
+
+  describe('selection with pagination', () => {
+    it('select-all only checks the current page’s roots, leaving other pages alone', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          selectable: true,
+          pageSize: 2,
+        },
+      });
+
+      await userEvent.click(headerCheckbox(container));
+      fixture.detectChanges();
+
+      // Page 1 = docs + photos roots; "notes" (page 2) is untouched.
+      expect(componentInstance.selected().sort()).toEqual([
+        'beach',
+        'docs',
+        'family',
+        'mountain',
+        'photos',
+        'resume',
+        'vacation',
+      ]);
+    });
+
+    it('preserves a selection made on another page when toggling select-all on this page', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          selectable: true,
+          pageSize: 2,
+          selected: ['notes'],
+        },
+      });
+
+      await userEvent.click(headerCheckbox(container));
+      fixture.detectChanges();
+      await userEvent.click(headerCheckbox(container));
+      fixture.detectChanges();
+
+      expect(componentInstance.selected()).toEqual(['notes']);
+    });
+  });
+
+  describe('accessibility (v2)', () => {
+    it('has no axe violations with filterable and paginated', async () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: sampleItems(),
+            columns: sampleColumns(),
+            filterable: true,
+            pageSize: 2,
+          },
+        },
+      );
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
 });

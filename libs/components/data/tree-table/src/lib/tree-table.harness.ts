@@ -11,7 +11,20 @@ export class DynamoTreeTableHarness extends ComponentHarness {
   // A normal body <td> never carries a `colspan` attribute; only the
   // synthetic empty-state row's single <td> does (see tree-table.html) —
   // same reliable, markup-native technique as Table's own harness.
-  private readonly emptyStateCellLocator = this.locatorForOptional('tbody td[colspan]');
+  private readonly emptyStateCellLocator =
+    this.locatorForOptional('tbody td[colspan]');
+  private readonly filterInputLocator = this.locatorForOptional(
+    'input[type="search"]',
+  );
+  private readonly previousPageButtonLocator = this.locatorForOptional(
+    'button[aria-label="Previous page"]',
+  );
+  private readonly nextPageButtonLocator = this.locatorForOptional(
+    'button[aria-label="Next page"]',
+  );
+  private readonly pageIndicatorLocator = this.locatorForOptional(
+    '[aria-live="polite"]',
+  );
 
   async sortBy(header: string): Promise<void> {
     for (const button of await this.headerButtonLocators()) {
@@ -67,10 +80,64 @@ export class DynamoTreeTableHarness extends ComponentHarness {
     await chevron.click();
   }
 
-  /** The current `emptyMessage` text, or `null` when rows are rendered (no empty-state row present). */
+  /** The current `emptyMessage`/`noMatchesMessage` text, or `null` when rows are rendered (no empty-state row present). */
   async getEmptyStateMessage(): Promise<string | null> {
     const cell = await this.emptyStateCellLocator();
     return (await cell?.text())?.trim() ?? null;
+  }
+
+  /** Throws if `filterable` is not set — there is no search input to type into. */
+  async setFilterText(text: string): Promise<void> {
+    const input = await this.filterInputLocator();
+    if (!input) {
+      throw new Error(
+        'DynamoTreeTable is not filterable (filterable input not set)',
+      );
+    }
+    await input.clear();
+    await input.sendKeys(text);
+  }
+
+  async getFilterText(): Promise<string> {
+    const input = await this.filterInputLocator();
+    return (await input?.getProperty<string>('value')) ?? '';
+  }
+
+  /** Throws if `pageSize` is not set — there is no Prev/Next control to click. */
+  async goToNextPage(): Promise<void> {
+    const button = await this.nextPageButtonLocator();
+    if (!button) {
+      throw new Error(
+        'DynamoTreeTable is not paginated (pageSize input not set)',
+      );
+    }
+    await button.click();
+  }
+
+  async goToPreviousPage(): Promise<void> {
+    const button = await this.previousPageButtonLocator();
+    if (!button) {
+      throw new Error(
+        'DynamoTreeTable is not paginated (pageSize input not set)',
+      );
+    }
+    await button.click();
+  }
+
+  /** The `<dg-pagination>` footer's live summary text, e.g. `"Showing 1-2 of 3"`. Empty string when unpaginated. */
+  async getPaginationSummary(): Promise<string> {
+    const indicator = await this.pageIndicatorLocator();
+    return (await indicator?.text())?.trim() ?? '';
+  }
+
+  async isNextPageDisabled(): Promise<boolean> {
+    const button = await this.nextPageButtonLocator();
+    return (await button?.getProperty<boolean>('disabled')) ?? true;
+  }
+
+  async isPreviousPageDisabled(): Promise<boolean> {
+    const button = await this.previousPageButtonLocator();
+    return (await button?.getProperty<boolean>('disabled')) ?? true;
   }
 
   private async findRow(rowLabel: string): Promise<TestElement> {

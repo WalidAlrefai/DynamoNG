@@ -1,13 +1,7 @@
 import type { TemplateRef } from '@angular/core';
 
 export type DynamoTreeTablePart =
-  | 'root'
-  | 'table'
-  | 'headerRow'
-  | 'headerCell'
-  | 'row'
-  | 'cell'
-  | 'chevron';
+  'root' | 'table' | 'headerRow' | 'headerCell' | 'row' | 'cell' | 'chevron';
 
 export type DynamoTreeTableSortDirection = 'asc' | 'desc';
 
@@ -45,9 +39,10 @@ export interface DynamoTreeTableCellContext<TRow> {
 
 /**
  * Independently duplicated from `DynamoTableColumn`'s shape, dropping
- * `filterable`/`sortFn` — TreeTable v1 has no global filter, and a custom
- * per-column sort function isn't worth the complexity budget alongside the
- * genuinely new per-level recursive sort (see tree-table.ts).
+ * `sortFn` — a custom per-column sort function isn't worth the complexity
+ * budget alongside the genuinely new per-level recursive sort (see
+ * tree-table.ts). `filterable` was dropped in v1 (no global filter yet)
+ * and reinstated once the filter was added.
  */
 export interface DynamoTreeTableColumn<TRow> {
   /** Stable identity key — the sort-state key, and (when `cell` is omitted) the property read directly off `data` via `data[field]`. */
@@ -57,4 +52,11 @@ export interface DynamoTreeTableColumn<TRow> {
   /** Display value; NEVER used as the sort accessor (sorting always reads the raw `field`, same split Table's own `cell`/sort logic makes). */
   cell?: (row: TRow) => unknown;
   cellTemplate?: TemplateRef<DynamoTreeTableCellContext<TRow>>;
+  /**
+   * Opts this column OUT of the global filter's search (`filterText`) when
+   * explicitly `false` — e.g. a computed/actions column with no meaningful
+   * searchable text. Omitting it defaults to `true` (included) — same
+   * opt-out-by-default polarity as Table's own `filterable`.
+   */
+  filterable?: boolean;
 }

@@ -95,3 +95,15 @@ export const treeTableFirstCellContentStyles = 'flex items-center gap-1.5';
 export function treeTableIndentRem(depth: number): number {
   return depth * 1.25;
 }
+
+// --- v2: global filter + pagination ---
+
+// Header bar above the `<table>` — copied verbatim from Table's own
+// `tableFilterWrapperStyles` (symmetric to `treeTablePaginationWrapperStyles`
+// below: `border-b` here, `border-t` there, both inside the same bordered/
+// rounded `treeTableRootStyles` card).
+export const treeTableFilterWrapperStyles =
+  'flex items-center gap-2 border-b border-border px-4 py-2.5';
+
+export const treeTablePaginationWrapperStyles =
+  'flex items-center justify-between gap-4 border-t border-border px-4 py-2.5';
