@@ -1430,7 +1430,7 @@ describe('DynamoTable', () => {
         rows.map((row) => row.style.gridTemplateColumns),
       );
       expect(templates.size).toBe(1);
-      expect(templates.has('repeat(2, minmax(0, 1fr))')).toBe(true);
+      expect(templates.has('minmax(0, 1fr) minmax(0, 1fr)')).toBe(true);
     });
 
     it('exposes aria-rowcount and sequential aria-rowindex (the DOM can not be counted while virtualized)', async () => {
@@ -1572,6 +1572,93 @@ describe('DynamoTable', () => {
       expect(container.querySelector('table')).toBeTruthy();
       expect(container.querySelector('[role="table"]')).toBeNull();
     });
+
+    describe('selectable', () => {
+      it('renders a checkbox column in both the virtual header and body', async () => {
+        const { container, fixture } = renderDynamoComponent<
+          DynamoTable<Person>
+        >(DynamoTable, {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+            selectable: true,
+          },
+        });
+        await settle(fixture);
+
+        // 1 selection columnheader + 2 data columnheaders.
+        expect(
+          container.querySelectorAll('[role="columnheader"]'),
+        ).toHaveLength(3);
+        expect(
+          container.querySelector('[role="row"] input[type="checkbox"]'),
+        ).toBeTruthy();
+      });
+
+      it('reserves a leading fixed track in the shared grid template', async () => {
+        const { container, fixture } = renderDynamoComponent<
+          DynamoTable<Person>
+        >(DynamoTable, {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+            selectable: true,
+          },
+        });
+        await settle(fixture);
+
+        const row = container.querySelector<HTMLElement>('[role="row"]');
+        expect(row?.style.gridTemplateColumns).toBe(
+          '2.5rem minmax(0, 1fr) minmax(0, 1fr)',
+        );
+      });
+
+      it('toggles row selection identically to the native-table path', async () => {
+        const { container, fixture, componentInstance } = renderDynamoComponent<
+          DynamoTable<Person>
+        >(DynamoTable, {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: MANY_PEOPLE,
+            virtualScroll: true,
+            selectable: true,
+          },
+        });
+        await settle(fixture);
+
+        // Scoped to `role="cell"` (body), not `role="row"` broadly — the
+        // header row also matches `[role="row"]` and comes first in
+        // document order, which would otherwise select the "select all"
+        // checkbox instead of an individual row's.
+        const checkbox = container.querySelector<HTMLInputElement>(
+          '[role="cell"] input[type="checkbox"]',
+        );
+        checkbox?.click();
+        fixture.detectChanges();
+
+        expect(componentInstance.selected()).toEqual([MANY_PEOPLE[0]]);
+      });
+
+      it('does not warn in dev mode about the selectable + virtualScroll combination', () => {
+        const warn = vi
+          .spyOn(console, 'warn')
+          .mockImplementation(() => undefined);
+
+        renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            virtualScroll: true,
+            selectable: true,
+          },
+        });
+
+        expect(warn).not.toHaveBeenCalled();
+        warn.mockRestore();
+      });
+    });
   });
 
   describe('accessibility (virtual scroll)', () => {
@@ -1620,14 +1707,37 @@ describe('DynamoTable', () => {
         expectNoA11yViolations(fixture.nativeElement),
       ).resolves.toBeUndefined();
     });
+
+    it('has no axe violations when virtualized with selectable on', async () => {
+      const many: Person[] = Array.from({ length: 200 }, (_, i) => ({
+        name: `Person ${i}`,
+        age: 20 + (i % 50),
+      }));
+      const { fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: many,
+            virtualScroll: true,
+            selectable: true,
+          },
+        },
+      );
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
   });
 
   describe('dev-mode misconfiguration warnings', () => {
     // `isDevMode()` is true under the test environment, so `ngOnInit`'s guard
-    // runs. These combinations render silently-wrong output (the virtualized
-    // path can't host the selection column or the pagination footer in v1),
-    // so a dev-only `console.warn` makes the dropped feature visible.
-    it('warns when `selectable` is combined with `virtualScroll`', () => {
+    // runs. `pageSize` is a deliberate, permanent exclusion when virtualized
+    // (renders silently-wrong output otherwise), so a dev-only
+    // `console.warn` makes the dropped feature visible.
+    it('does not warn when `selectable` is combined with `virtualScroll` (supported since v6)', () => {
       const warn = vi
         .spyOn(console, 'warn')
         .mockImplementation(() => undefined);
@@ -1641,11 +1751,7 @@ describe('DynamoTable', () => {
         },
       });
 
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          '`selectable` is ignored while `virtualScroll`',
-        ),
-      );
+      expect(warn).not.toHaveBeenCalled();
       warn.mockRestore();
     });
 

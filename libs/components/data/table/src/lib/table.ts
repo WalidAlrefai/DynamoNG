@@ -160,19 +160,14 @@ export class DynamoTable<TRow = unknown>
   /**
    * Opt-in — renders the body through `@dynamong/virtual-scroll` instead
    * of a plain `@for`, for large datasets. Mutually exclusive with
-   * `pageSize` in v1: enabling this renders `sortedData()` directly
-   * (bypassing `pagedData()`'s slice — virtualizing an already-small
-   * paginated page defeats the purpose), and the pagination footer is
-   * hidden while this is on. Not supported together with `selectable` in
-   * v1 — the checkbox column isn't woven into the virtualized path's CSS
-   * Grid layout. A real `<table>`/`<tbody>` cannot have a non-`<tr>` child
-   * (CDK's viewport is a `<div>` — the HTML parser would foster-parent it
-   * right out of the table), so this path is a genuinely different DOM
-   * shape, not just an added feature — see table.html's own comment for
-   * the CSS-Grid-with-explicit-ARIA-roles technique used instead. Equal-
-   * width columns only in v1 (both grid contexts — header and body — share
-   * one `virtualGridTemplate()` string; there's no per-column width input
-   * yet to make that anything but equal).
+   * `pageSize`: enabling this renders `sortedData()` directly (bypassing
+   * `pagedData()`'s slice — virtualizing an already-small paginated page
+   * defeats the purpose), and the pagination footer is hidden while this
+   * is on — a deliberate, permanent design choice, not a v1 gap.
+   * `selectable` IS supported here (v6) — see `table.html`'s comment on
+   * why the virtualized path is a different DOM shape (CSS Grid with
+   * explicit ARIA roles, not a real `<table>`) and how the checkbox
+   * column is woven into that grid.
    */
   readonly virtualScroll = input(false);
   /** Row height in px when virtualized. */
@@ -285,10 +280,18 @@ export class DynamoTable<TRow = unknown>
   protected readonly virtualBodyRowClasses = tableVirtualBodyRowStyles;
   protected readonly loadingWrapperClasses = tableLoadingWrapperStyles;
 
-  /** Shared verbatim by the header row and every body row — see `virtualScroll`'s own doc comment for why this can't rely on native table auto-layout. */
-  protected readonly virtualGridTemplate = computed(
-    () => `repeat(${this.columns().length}, minmax(0, 1fr))`,
-  );
+  /**
+   * Shared verbatim by the header row and every body row — see
+   * `virtualScroll`'s own doc comment for why the two grid contexts can't
+   * rely on native table auto-layout to stay aligned. A leading `2.5rem`
+   * track is prepended for the selection column when `selectable` is on.
+   */
+  protected readonly virtualGridTemplate = computed(() => {
+    const tracks = this.columns().map(() => 'minmax(0, 1fr)');
+    return this.selectable()
+      ? ['2.5rem', ...tracks].join(' ')
+      : tracks.join(' ');
+  });
 
   protected readonly headerCellClasses = computed(() =>
     tableHeaderCellStyles({ size: this.size() }),
@@ -330,21 +333,17 @@ export class DynamoTable<TRow = unknown>
   /**
    * Dev-only misconfiguration guard. `virtualScroll` is a static config
    * input (not reactive state), so a one-shot check on init is enough — no
-   * `effect()`, keeping Table effect-free by design. The virtualized path
-   * genuinely can't render the selection checkbox column or the pagination
-   * footer in v1 (see `virtualScroll`'s own doc), and today it just drops
-   * them silently; this makes that visible while developing.
+   * `effect()`, keeping Table effect-free by design. `pageSize` is a
+   * deliberate, permanent exclusion (see `virtualScroll`'s own doc) — the
+   * virtualized path renders all rows and hides the pagination footer;
+   * this makes that visible while developing rather than silently
+   * dropping it.
    */
   ngOnInit(): void {
     if (!isDevMode()) return;
-    if (this.virtualScroll() && this.selectable()) {
-      console.warn(
-        '[dg-table] `selectable` is ignored while `virtualScroll` is enabled — the selection checkbox column is not supported on the virtualized path (v1).',
-      );
-    }
     if (this.virtualScroll() && this.pageSize()) {
       console.warn(
-        '[dg-table] `pageSize` is ignored while `virtualScroll` is enabled — the virtualized path renders all rows and hides the pagination footer (v1).',
+        '[dg-table] `pageSize` is ignored while `virtualScroll` is enabled — the virtualized path renders all rows and hides the pagination footer.',
       );
     }
   }

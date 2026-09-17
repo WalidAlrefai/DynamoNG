@@ -122,9 +122,8 @@
     viewport), so column alignment can't rely on the browser's native
     table auto-layout negotiating widths across them the way the <table>
     path gets for free — both share one `virtualGridTemplate()` string
-    instead (equal-width columns only in v1 — see table.ts's own doc
-    comment on `virtualScroll` for why, and for the `selectable` v1 cut
-    this path doesn't support the extra checkbox column at all).
+    instead. The selection checkbox column (v6) is just a leading grid
+    cell here, same as the native path's fixed-width `<th>`/`<td>`.
   -->
   <!--
     aria-rowcount / aria-rowindex are load-bearing here, not decorative: the
@@ -146,7 +145,19 @@
         [class]="virtualHeaderRowClasses"
         [style.gridTemplateColumns]="virtualGridTemplate()"
       >
-        @for (column of columns(); track column.field) {
+        @if (selectable()) {
+        <div role="columnheader" [class]="selectionCellClasses()">
+          <dg-checkbox
+            size="sm"
+            [checked]="isAllSelected()"
+            [indeterminate]="isSomeSelected()"
+            [disabled]="pagedData().length === 0 || loading()"
+            (checkedChange)="toggleSelectAll()"
+          >
+            <span class="sr-only">Select all rows</span>
+          </dg-checkbox>
+        </div>
+        } @for (column of columns(); track column.field) {
         <div
           role="columnheader"
           [class]="headerCellClasses()"
@@ -209,7 +220,18 @@
             [class]="virtualBodyRowClasses"
             [style.gridTemplateColumns]="virtualGridTemplate()"
           >
-            @for (column of columns(); track column.field) {
+            @if (selectable()) {
+            <div role="cell" [class]="selectionCellClasses()">
+              <dg-checkbox
+                size="sm"
+                [checked]="isRowSelected(row)"
+                [disabled]="loading()"
+                (checkedChange)="toggleRowSelection(row)"
+              >
+                <span class="sr-only">{{ 'Select row ' + (i + 1) }}</span>
+              </dg-checkbox>
+            </div>
+            } @for (column of columns(); track column.field) {
             <div role="cell" [class]="bodyCellClasses()">
               @if (column.cellTemplate) {
               <ng-container

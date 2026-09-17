@@ -12,6 +12,8 @@ import {
 } from '@angular/core';
 import { DynamoCheckbox } from '@dynamong/checkbox';
 import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoPagination } from '@dynamong/pagination';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -25,17 +27,20 @@ import {
   shouldCascadeCheck,
   type DynamoTreeTableCheckState,
 } from './tree-table-selection';
+import { filterTree } from './tree-table.filter';
 import {
   treeTableCellStyles,
   treeTableChevronButtonStyles,
   treeTableChevronPlaceholderStyles,
   treeTableChevronStyles,
   treeTableEmptyCellStyles,
+  treeTableFilterWrapperStyles,
   treeTableFirstCellContentStyles,
   treeTableHeaderCellStyles,
   treeTableHeaderRowStyles,
   treeTableIndentRem,
   treeTableLoadingWrapperStyles,
+  treeTablePaginationWrapperStyles,
   treeTableRootStyles,
   treeTableRowStyles,
   treeTableSelectionCellStyles,
@@ -78,11 +83,11 @@ function compareValues(a: unknown, b: unknown): number {
 // among its own siblings and its children's position among themselves are
 // each independently re-sorted, preserving the hierarchy.
 function sortNodes<TRow>(
-  nodes: DynamoTreeTableNode<TRow>[],
+  nodes: readonly DynamoTreeTableNode<TRow>[],
   column: DynamoTreeTableColumn<TRow> | undefined,
   direction: DynamoTreeTableSortDirection | null,
 ): DynamoTreeTableNode<TRow>[] {
-  if (!column || !direction) return nodes;
+  if (!column || !direction) return [...nodes];
   const field = column.field;
   return [...nodes].sort((a, b) => {
     const va = (a.data as Record<string, unknown>)[field];
@@ -132,22 +137,35 @@ function findEnabledEntryIndex<TRow>(
  *
  * Column/cell rendering (`cellValue`/`cellContext`, the
  * `@if (cellTemplate) { NgTemplateOutlet } @else { cellValue }` split) is
- * independently duplicated from `@dynamong/table`'s identical-shape logic —
- * filtering/pagination aren't in TreeTable's v1 scope (see README), so
- * there's nothing to compose from Table for those. Table's own sort/filter
- * helpers (`table.sort.ts`/`table.filter.ts`) aren't exported from its
- * `index.ts` regardless, so a small comparator is independently duplicated
- * here too, adapted to sort each tree level's siblings independently rather
- * than Table's flat global sort (which would destroy the hierarchy).
+ * independently duplicated from `@dynamong/table`'s identical-shape logic.
+ * Table's own sort/filter helpers (`table.sort.ts`/`table.filter.ts`)
+ * aren't exported from its `index.ts` regardless, so a small comparator
+ * is independently duplicated here too, adapted to sort each tree level's
+ * siblings independently rather than Table's flat global sort (which
+ * would destroy the hierarchy) — likewise `tree-table.filter.ts`'s
+ * `filterTree` is independently duplicated (and hierarchy-aware) rather
+ * than reusing Table's flat `filterRows`.
  * Row selection (opt-in `selectable`/`selected`/`itemSelect`) mirrors
  * Tree's own cascading-checkbox model instead of Table's flat one — the
  * natural fit for hierarchical data — with the cascade algorithm
  * independently duplicated from `tree-selection.ts` in `tree-table-
  * selection.ts` for the same reason as the sort logic: TreeTable and Tree
- * are both `tier:1`, and same-tier dependencies are forbidden. TreeTable
- * is `tier:1`, not `tier:0`, because it composes `@dynamong/spinner`
- * (`tier:0`) for its `loading` empty-state and `@dynamong/checkbox`
- * (`tier:0`) for row selection.
+ * are both `tier:1`, and same-tier dependencies are forbidden.
+ *
+ * Global filter (`filterable`/`filterText`) and pagination
+ * (`pageSize`/`page`) were added in v2. Filtering is hierarchy-aware — see
+ * `tree-table.filter.ts`'s `filterTree` doc for why a flat per-node filter
+ * would hide a matching descendant behind its now-excluded parent, and why
+ * a match keeps its whole subtree unpruned. Pagination paginates over
+ * ROOT nodes only (`pagedRoots`), never the flattened `visibleEntries()`
+ * list — paginating the flattened list would make the page boundary shift
+ * every time a row expands/collapses, since a single root's visible
+ * descendant count is unbounded and variable. `selectable`'s "select all"
+ * is scoped to the current page's roots once pagination is in play, same
+ * as Table's own page-scoped `toggleSelectAll`. TreeTable moved from
+ * `tier:1` to `tier:3` to compose `@dynamong/input-text` (`tier:0`) for the
+ * filter box and `@dynamong/pagination` (`tier:2`) for the footer, on top
+ * of the `tier:0` `@dynamong/spinner`/`@dynamong/checkbox` it already used.
  *
  * ARIA: unlike PanelMenu (which had to reject both `role="tree"` and
  * `role="menu"`), ARIA has a role built for exactly this hybrid —
@@ -160,7 +178,13 @@ function findEnabledEntryIndex<TRow>(
   selector: 'dg-tree-table',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, DynamoSpinner, DynamoCheckbox],
+  imports: [
+    NgTemplateOutlet,
+    DynamoSpinner,
+    DynamoCheckbox,
+    DynamoInputText,
+    DynamoPagination,
+  ],
   templateUrl: './tree-table.html',
 })
 export class DynamoTreeTable<
@@ -190,6 +214,37 @@ export class DynamoTreeTable<
   /** Fires once per node a user directly checks/unchecks with the full node object — not from `toggleSelectAll()`, and not once per cascaded descendant. */
   readonly itemSelect = output<DynamoTreeTableNode<TRow>>();
 
+  /**
+   * Opt-in global filter. `false` (default) renders no search UI at all —
+   * byte-for-byte identical to v1. Mirrors Table's own `filterable`.
+   */
+  readonly filterable = input(false);
+  /** Placeholder text for the search input rendered when `filterable` is `true`. */
+  readonly filterPlaceholder = input('Search...');
+  /**
+   * Two-way bindable filter query — mirrors Table's own `filterText`.
+   * Case-insensitive substring match against every `filterable !== false`
+   * column; blank/whitespace-only text matches every node. Typing into
+   * the search input writes here AND resets `page` to 1 in the same
+   * handler (`onFilterTextChange`) — no `effect()` needed.
+   */
+  readonly filterText = model('');
+  /** Shown in the `@empty` block instead of `emptyMessage` when `items` has nodes but the active `filterText` matched none of them. */
+  readonly noMatchesMessage = input('No matching rows');
+
+  /**
+   * Opt-in pagination over ROOT nodes only — see this class's own doc
+   * comment for why the flattened visible-row list isn't what gets
+   * paginated. Unset (default) means every root renders and no pagination
+   * UI shows at all — byte-for-byte identical to v1. Mirrors Table's own
+   * `pageSize`.
+   */
+  readonly pageSize = model<number | undefined>(undefined);
+  /** Options for the pagination footer's rows-per-page selector — forwarded as-is. */
+  readonly pageSizeOptions = input<number[]>([10, 25, 50, 100]);
+  /** Two-way bindable, 1-indexed root-node page — mirrors Table's own `page`. */
+  readonly page = model(1);
+
   private readonly activeIdSignal = signal<string | undefined>(undefined);
   // Matches visibleEntries()'s order 1:1 — both derive from the same
   // `@for` iteration in tree-table.html, so index-based lookup (rather
@@ -216,13 +271,63 @@ export class DynamoTreeTable<
   private readonly selectedSet = computed(() => new Set(this.selected()));
 
   /**
-   * Aggregate checked state across every root node in `items()` — drives
-   * the header "select all" checkbox. Scoped to the entire tree, not just
-   * visible/expanded entries, since TreeTable has no pagination to scope
-   * by the way Table's own select-all is scoped to the current page.
+   * `items()` pruned to hierarchy-matching branches — see `filterTree`'s
+   * own doc comment. Returns `items()` unchanged (same reference) when
+   * `filterText` is blank/whitespace-only.
+   */
+  protected readonly filteredItems = computed(() =>
+    filterTree(this.items(), this.columns(), this.filterText(), (row, column) =>
+      this.cellValue(row, column),
+    ),
+  );
+
+  /** True while a non-blank filter is narrowing `filteredItems()` — used by `visibleEntries` to force every retained node open (see its own comment) and by `emptyStateMessage` to pick the right empty-state wording. */
+  protected readonly isFilterActive = computed(
+    () => this.filterText().trim().length > 0,
+  );
+
+  /** Always >= 1, even for zero root nodes — mirrors Table's own `pageCount`. Based on `filteredItems().length` (root count), not the flattened row count — see this class's own doc comment. */
+  protected readonly pageCount = computed(() => {
+    const size = this.pageSize();
+    if (!size) return 1;
+    return Math.max(1, Math.ceil(this.filteredItems().length / size));
+  });
+
+  /** Clamps the *read* of `page()` into `[1, pageCount()]` without ever writing back to `page` — mirrors Table's own `currentPage`, keeping TreeTable effect-free. */
+  protected readonly currentPage = computed(() =>
+    Math.min(Math.max(1, this.page()), this.pageCount()),
+  );
+
+  /** The current page's root nodes (or every filtered root, when `pageSize` is unset) — what `visibleEntries()` actually walks. */
+  protected readonly pagedRoots = computed(() => {
+    const size = this.pageSize();
+    if (!size) return this.filteredItems();
+    const start = (this.currentPage() - 1) * size;
+    return this.filteredItems().slice(start, start + size);
+  });
+
+  /**
+   * Picks which "no rows" message the `@empty` block shows — mirrors
+   * Table's own `emptyStateMessage` exactly: `items()` itself empty always
+   * wins with `emptyMessage()` regardless of an active-but-irrelevant
+   * filter; otherwise an active filter that matched nothing gets
+   * `noMatchesMessage()`.
+   */
+  protected readonly emptyStateMessage = computed(() =>
+    this.isFilterActive() && this.items().length > 0
+      ? this.noMatchesMessage()
+      : this.emptyMessage(),
+  );
+
+  /**
+   * Aggregate checked state across the current page's root nodes — drives
+   * the header "select all" checkbox. Scoped to `pagedRoots()`, not the
+   * entire tree, mirroring Table's own page-scoped select-all now that
+   * TreeTable has pagination (v1 scoped this to the whole tree since there
+   * was no page to scope by).
    */
   protected readonly allCheckState = computed<DynamoTreeTableCheckState>(() => {
-    const roots = this.items();
+    const roots = this.pagedRoots();
     if (roots.length === 0) return 'unchecked';
     const selectedIds = this.selectedSet();
     const states = roots.map((node) =>
@@ -235,11 +340,17 @@ export class DynamoTreeTable<
 
   // Depth-first, sorting each level's own siblings before descending —
   // skipping children of collapsed nodes. A pure data walk, not a DOM
-  // query, mirroring Tree's own visibleEntries exactly (id-keyed).
+  // query, mirroring Tree's own visibleEntries exactly (id-keyed). Walks
+  // `pagedRoots()` (filtered + paginated), not raw `items()`. While a
+  // filter is active, every retained node renders as expanded regardless
+  // of `expandedIds` — `filterTree` already pruned the tree down to
+  // matches and their ancestor chain, so there is nothing to hide, and
+  // this way filtering never has to write to the `expandedIds` model.
   protected readonly visibleEntries = computed<DynamoTreeTableEntry<TRow>[]>(
     () => {
       const result: DynamoTreeTableEntry<TRow>[] = [];
       const expanded = new Set(this.expandedIds());
+      const filterActive = this.isFilterActive();
       const state = this.sortState();
       const column = state
         ? this.columns().find((c) => c.field === state.field)
@@ -247,18 +358,21 @@ export class DynamoTreeTable<
       const direction = state?.direction ?? null;
 
       const walk = (
-        nodes: DynamoTreeTableNode<TRow>[],
+        nodes: readonly DynamoTreeTableNode<TRow>[],
         depth: number,
         parentId: string | undefined,
       ) => {
         for (const node of sortNodes(nodes, column, direction)) {
           result.push({ node, depth, parentId });
-          if (node.children?.length && expanded.has(node.id)) {
+          if (
+            node.children?.length &&
+            (filterActive || expanded.has(node.id))
+          ) {
             walk(node.children, depth + 1, node.id);
           }
         }
       };
-      walk(this.items(), 0, undefined);
+      walk(this.pagedRoots(), 0, undefined);
       return result;
     },
   );
@@ -294,6 +408,9 @@ export class DynamoTreeTable<
   protected readonly firstCellContentClasses = treeTableFirstCellContentStyles;
   protected readonly loadingWrapperClasses = treeTableLoadingWrapperStyles;
   protected readonly selectionCellClasses = treeTableSelectionCellStyles;
+  protected readonly filterWrapperClasses = treeTableFilterWrapperStyles;
+  protected readonly paginationWrapperClasses =
+    treeTablePaginationWrapperStyles;
 
   protected hasChildren(node: DynamoTreeTableNode<TRow>): boolean {
     return (node.children?.length ?? 0) > 0;
@@ -361,8 +478,11 @@ export class DynamoTreeTable<
   /**
    * Click cycle: unsorted -> ascending -> descending -> unsorted. Clicking
    * a *different* sortable column always jumps straight to ascending —
-   * single-column sort only, mirrors Table's own toggleSort exactly (minus
-   * the page-reset, since TreeTable has no pagination in v1).
+   * single-column sort only, mirrors Table's own `toggleSort` exactly,
+   * including its page-reset (sorting re-sorts each level's siblings
+   * in-place, so it never changes which roots exist or their count — the
+   * reset is purely for the same disorientation reason Table resets: a
+   * paginated table showing a jumbled mid-list slice under the new order).
    */
   protected toggleSort(column: DynamoTreeTableColumn<TRow>): void {
     if (this.isBusy() || !column.sortable) return;
@@ -373,6 +493,14 @@ export class DynamoTreeTable<
         return { field: column.field, direction: 'desc' };
       return null;
     });
+    this.page.set(1);
+  }
+
+  /** Wired to `<dg-input-text>`'s `(valueChange)` — mirrors Table's own `onFilterTextChange` exactly, including the page-reset-in-the-same-handler technique (no `effect()` needed). */
+  protected onFilterTextChange(value: string): void {
+    if (this.isBusy()) return;
+    this.filterText.set(value);
+    this.page.set(1);
   }
 
   protected toggleExpanded(id: string): void {
@@ -403,9 +531,13 @@ export class DynamoTreeTable<
   }
 
   /**
-   * Checks/unchecks every node in the entire tree — not just visible ones
-   * — a bulk operation, so (mirroring Table's own `toggleSelectAll` and
-   * Tree's cascade convention) it does NOT fire `itemSelect`.
+   * Checks/unchecks every node on the CURRENT PAGE's roots (or the whole
+   * tree, when unpaginated, since `pagedRoots()` already equals
+   * `filteredItems()` in that case) — not every root across every page. A
+   * bulk operation, so (mirroring Table's own `toggleSelectAll` and Tree's
+   * cascade convention) it does NOT fire `itemSelect`. Selections made on
+   * other pages are preserved either way — only this page's membership is
+   * toggled.
    *
    * Deliberately decides check-vs-uncheck via `shouldCascadeCheck` (same
    * per-root test `toggleChecked` uses), NOT `allCheckState()`: a root with
@@ -417,16 +549,20 @@ export class DynamoTreeTable<
    */
   protected toggleSelectAll(): void {
     if (this.isBusy()) return;
-    const roots = this.items();
+    const roots = this.pagedRoots();
     const selectedIds = this.selectedSet();
     const shouldCheck = roots.some((node) =>
       shouldCascadeCheck(node, selectedIds),
     );
+    const idsOnPage = new Set(roots.flatMap((node) => collectCascadeIds(node)));
     if (!shouldCheck) {
-      this.selected.set([]);
+      this.selected.set(this.selected().filter((id) => !idsOnPage.has(id)));
       return;
     }
-    this.selected.set(roots.flatMap((node) => collectCascadeIds(node)));
+    this.selected.set([
+      ...this.selected().filter((id) => !idsOnPage.has(id)),
+      ...idsOnPage,
+    ]);
   }
 
   protected onRowKeydown(

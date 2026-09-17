@@ -38,11 +38,19 @@ const EXAMPLES: DocExampleRef[] = [
 ];
 
 const API: ApiTableRow[] = [
-  { name: 'columns', type: 'DynamoTableColumn<TRow>[] (required)', default: '—' },
+  {
+    name: 'columns',
+    type: 'DynamoTableColumn<TRow>[] (required)',
+    default: '—',
+  },
   { name: 'data', type: 'readonly TRow[] (required)', default: '—' },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'emptyMessage', type: 'string', default: "'No data'" },
-  { name: 'pageSize', type: 'number | undefined (model)', default: 'undefined' },
+  {
+    name: 'pageSize',
+    type: 'number | undefined (model)',
+    default: 'undefined',
+  },
   { name: 'page', type: 'number (model, 1-indexed)', default: '1' },
   { name: 'selectable', type: 'boolean', default: 'false' },
   { name: 'selected', type: 'TRow[] (model)', default: '[]' },
@@ -92,7 +100,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="virtual-scroll"
         title="Virtual Scroll"
-        description="virtualScroll renders a role=&quot;table&quot; CSS grid where only a small window mounts; sorting still works, pagination and selection do not (v1)."
+        description='virtualScroll renders a role="table" CSS grid where only a small window mounts; sorting and selection both still work. Not combined with pageSize — a virtualized table always renders every (filtered/sorted) row.'
       >
         <div preview>
           <dg-table
@@ -100,6 +108,8 @@ const API: ApiTableRow[] = [
             [data]="manyRows"
             ariaLabel="Employees (virtualized)"
             [virtualScroll]="true"
+            [selectable]="true"
+            [(selected)]="virtualSelected"
           />
           <p class="mt-2 text-sm text-text-muted">
             5,000 rows — only a small rendered window ever mounts in the DOM.
@@ -107,7 +117,8 @@ const API: ApiTableRow[] = [
         </div>
         <div code>
           &lt;dg-table [columns]="columns" [data]="manyRows"
-          [virtualScroll]="true" /&gt;
+          [virtualScroll]="true" [selectable]="true" [(selected)]="selected"
+          /&gt;
         </div>
       </docs-example>
 
@@ -116,10 +127,9 @@ const API: ApiTableRow[] = [
         <p class="text-sm text-text-muted">
           <code class="font-mono">virtualScroll</code> renders a
           <code class="font-mono">role="table"</code> CSS Grid, not a real
-          <code class="font-mono">&lt;table&gt;</code>. Equal-width columns only
-          in v1. Mutually exclusive with
-          <code class="font-mono">pageSize</code> and not supported together with
-          <code class="font-mono">selectable</code>.
+          <code class="font-mono">&lt;table&gt;</code> — not combined with
+          <code class="font-mono">pageSize</code> (a virtualized table always
+          renders every row).
         </p>
       </div>
     </docs-examples-layout>
@@ -133,5 +143,6 @@ export class TableDocPage {
   protected readonly manyRows = MANY_ROWS;
   protected readonly page = signal(1);
   protected readonly selected = signal<DocEmployee[]>([]);
+  protected readonly virtualSelected = signal<DocEmployee[]>([]);
   protected readonly filterText = signal('');
 }

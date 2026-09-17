@@ -1,4 +1,17 @@
 <div [class]="rootClasses()" [attr.aria-busy]="loading() ? 'true' : null">
+  @if (filterable()) {
+  <div [class]="filterWrapperClasses">
+    <dg-input-text
+      type="search"
+      size="sm"
+      [value]="filterText()"
+      (valueChange)="onFilterTextChange($event)"
+      ariaLabel="Search tree table"
+      [placeholder]="filterPlaceholder()"
+      [disabled]="loading()"
+    />
+  </div>
+  }
   <table
     role="treegrid"
     [class]="tableClasses"
@@ -146,11 +159,24 @@
             <span>{{ loadingMessage() }}</span>
           </span>
           } @else {
-          <span role="status">{{ emptyMessage() }}</span>
+          <span role="status">{{ emptyStateMessage() }}</span>
           }
         </td>
       </tr>
       }
     </tbody>
   </table>
+  @if (pageSize()) {
+  <div [class]="paginationWrapperClasses">
+    <dg-pagination
+      [totalItems]="filteredItems().length"
+      [(page)]="page"
+      [pageSize]="pageSize() ?? 10"
+      (pageSizeChange)="pageSize.set($event)"
+      [pageSizeOptions]="pageSizeOptions()"
+      [disabled]="loading()"
+      size="sm"
+    />
+  </div>
+  }
 </div>

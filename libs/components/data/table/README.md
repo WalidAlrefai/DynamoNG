@@ -48,7 +48,7 @@ protected onItemSelect(row: Person): void { ... }
 | `filterPlaceholder`     | `string`                                               | `'Search...'`        |                                                                                                                                                                                                                              |
 | `filterText`            | `string` (model)                                       | `''`                 | Case-insensitive substring match; blank matches every row.                                                                                                                                                                   |
 | `noMatchesMessage`      | `string`                                               | `'No matching rows'` | Shown instead of `emptyMessage` when `data` has rows but the active filter matched none.                                                                                                                                     |
-| `virtualScroll`         | `boolean`                                              | `false`              | Renders the body through `@dynamong/virtual-scroll`. Not supported together with `pageSize` or `selectable` in v1.                                                                                                           |
+| `virtualScroll`         | `boolean`                                              | `false`              | Renders the body through `@dynamong/virtual-scroll`. Not supported together with `pageSize` (a deliberate, permanent exclusion — see Design notes). `selectable` IS supported here.                                          |
 | `virtualScrollItemSize` | `number`                                               | `40`                 |                                                                                                                                                                                                                              |
 | `virtualScrollHeight`   | `number`                                               | `400`                |                                                                                                                                                                                                                              |
 
@@ -66,6 +66,30 @@ protected onItemSelect(row: Person): void { ... }
 - Semantic `<table>`/`<thead>`/`<tbody>` (or a CSS-Grid-with-explicit-ARIA-roles equivalent while `virtualScroll` is on); sortable headers are `<button>`s announcing `aria-sort`.
 - The header/row checkboxes are labeled native `<input type="checkbox">`s; the header checkbox reflects indeterminate state via its DOM property.
 - `aria-busy` on the root wrapper reflects `loading`.
+
+## Design notes
+
+**Page-out-of-range clamping.** `page`'s _read_ is clamped into
+`[1, pageCount]` without ever writing back to `page` itself — if an
+externally-bound `page` is left out of range (e.g. `data` shrank while
+the consumer's own signal still pointed at page 3), the table silently
+renders the clamped page without correcting the bound `page` value until
+the user clicks Prev/Next (which read from the clamped value, so the
+click writes the corrected value back).
+
+**Selection identity without `trackBy`.** Row selection membership uses
+`trackBy` when provided (a pure function of the row alone, e.g.
+`(row) => row.id`); without one, it falls back to `===` reference
+equality, so selection does not survive a wholesale `data` array
+replacement in that case. Provide `trackBy` whenever rows are recreated
+on every render and selection needs to survive it.
+
+**`virtualScroll` + `pageSize`/`selectable`.** `pageSize` stays a
+deliberate, permanent exclusion — virtualizing an already-small paginated
+page defeats the purpose, so `virtualScroll` renders `sortedData()`
+directly and hides the pagination footer. `selectable` IS supported on
+the virtualized path: the checkbox column is a leading grid cell there,
+same mechanics as the native path's fixed-width column.
 
 ## Tier / dependencies
 

@@ -79,6 +79,7 @@ const ITEMS: DynamoTreeTableNode<FileRow>[] = [
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'selection', title: 'Selection' },
+  { id: 'filter-paginate', title: 'Filter & Paginate' },
 ];
 
 const API: ApiTableRow[] = [
@@ -97,6 +98,15 @@ const API: ApiTableRow[] = [
   { name: 'emptyMessage', type: 'string', default: "'No data'" },
   { name: 'selectable', type: 'boolean', default: 'false' },
   { name: 'selected', type: 'string[] (model)', default: '[]' },
+  { name: 'filterable', type: 'boolean', default: 'false' },
+  { name: 'filterText', type: 'string (model)', default: "''" },
+  { name: 'noMatchesMessage', type: 'string', default: "'No matching rows'" },
+  {
+    name: 'pageSize',
+    type: 'number | undefined (model)',
+    default: 'undefined',
+  },
+  { name: 'page', type: 'number (model, 1-indexed)', default: '1' },
 ];
 
 @Component({
@@ -107,7 +117,7 @@ const API: ApiTableRow[] = [
   template: `
     <docs-examples-layout
       name="TreeTable"
-      description="A hierarchical table — Tree's expand/collapse rows combined with Table's columns and sorting — for data like a file system or org chart."
+      description="A hierarchical table — Tree's expand/collapse rows combined with Table's columns, sorting, filtering, and pagination — for data like a file system or org chart."
       [examples]="examples"
     >
       <docs-example
@@ -159,6 +169,27 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="filter-paginate"
+        title="Filter & Paginate"
+        description="filterable renders a search box that prunes the tree down to matches and their ancestor chain (a match keeps its whole subtree); pageSize paginates over ROOT nodes only, never the flattened expanded-row list."
+      >
+        <div preview>
+          <dg-tree-table
+            [items]="items"
+            [columns]="columns"
+            [(expandedIds)]="expanded"
+            ariaLabel="Files"
+            [filterable]="true"
+            [pageSize]="2"
+          />
+        </div>
+        <div code>
+          &lt;dg-tree-table [items]="items" [columns]="columns"
+          [filterable]="true" [pageSize]="2" /&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -166,8 +197,7 @@ const API: ApiTableRow[] = [
           <code class="font-mono">id</code> (required),
           <code class="font-mono">data</code> (your row shape),
           <code class="font-mono">children?</code>,
-          <code class="font-mono">disabled?</code>. No pagination or global
-          filter in v1.
+          <code class="font-mono">disabled?</code>.
         </p>
       </div>
     </docs-examples-layout>
