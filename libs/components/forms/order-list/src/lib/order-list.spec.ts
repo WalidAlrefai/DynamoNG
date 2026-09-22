@@ -1,20 +1,56 @@
+import type { ComponentFixture } from '@angular/core/testing';
 import type { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
 } from '@dynamong/testing';
-import { within } from '@testing-library/dom';
-import { describe, expect, it } from 'vitest';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
+import { fireEvent, within } from '@testing-library/dom';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoOrderList } from './order-list';
 import { DynamoOrderListHarness } from './order-list.harness';
 import type { DynamoSelectOption } from './order-list.types';
+
+// jsdom has no real `Element.scrollTo`. While `virtualScroll` is enabled,
+// OrderList's `scrollActiveIntoView()` reaches the virtual-scroll
+// viewport's `scrollToIndex()` (CDK's viewport calls `scrollTo`
+// internally) — a minimal stub lets these tests exercise the real
+// keyboard-nav-while-virtualized behavior instead of throwing, same gap
+// already worked around in Picklist's/Listbox's own specs.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (): void {
+    /* jsdom gap — see comment above */
+  };
+}
+
+// jsdom reports a zero-height viewport, so CDK's fixed-size strategy
+// renders zero rows synchronously — flush a real setTimeout(0) +
+// detectChanges() before asserting on virtualized content.
+async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  fixture.detectChanges();
+}
 
 const ITEMS: DynamoSelectOption<string>[] = [
   { label: 'Alpha', value: 'a' },
   { label: 'Bravo', value: 'b' },
   { label: 'Charlie', value: 'c' },
   { label: 'Delta', value: 'd' },
+];
+
+const MANY_ITEMS: DynamoSelectOption<string>[] = Array.from(
+  { length: 50 },
+  (_, i) => ({ label: `Option ${i + 1}`, value: `option-${i + 1}` }),
+);
+
+// "e" matches One/Three but not Two — a clean way to exercise "one item
+// hidden between two visible ones" without relying on substrings that
+// accidentally match more/fewer items than intended.
+const FILTER_ITEMS: DynamoSelectOption<string>[] = [
+  { label: 'One', value: '1' },
+  { label: 'Two', value: '2' },
+  { label: 'Three', value: '3' },
 ];
 
 const ITEMS_WITH_DISABLED: DynamoSelectOption<string>[] = [
@@ -364,7 +400,7 @@ describe('DynamoOrderList', () => {
       const emitted: DynamoSelectOption<string>[] = [];
       componentInstance.itemSelect.subscribe((option) => emitted.push(option));
 
-      componentInstance['activeIndex'].set(0);
+      componentInstance['activeValue'].set('a');
       (
         componentInstance as unknown as {
           reorder: (direction: -1 | 1) => void;
@@ -483,6 +519,401 @@ describe('DynamoOrderList', () => {
         'Charlie',
       ]);
       expect(await harness.getActiveIndex()).toBe(2);
+    });
+
+    it('drives the filter box and reports no-results/drag-disabled state', async () => {
+      const { fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, filterable: true },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoOrderListHarness,
+      );
+
+      expect(await harness.getFilterText()).toBe('');
+      expect(await harness.isDragDisabled()).toBe(false);
+
+      await harness.setFilterText('ra');
+      fixture.detectChanges();
+      expect(await harness.getFilterText()).toBe('ra');
+      expect(await harness.getItemLabels()).toEqual(['Bravo']);
+      expect(await harness.isDragDisabled()).toBe(true);
+      expect(await harness.hasNoResults()).toBe(false);
+
+      await harness.setFilterText('zzz');
+      fixture.detectChanges();
+      expect(await harness.hasNoResults()).toBe(true);
+    });
+
+    it('throws from setFilterText when filterable is off', async () => {
+      const { fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoOrderListHarness,
+      );
+
+      await expect(harness.setFilterText('x')).rejects.toThrow(/filterable/);
+    });
+  });
+
+  describe('filter', () => {
+    it('renders no filter box by default', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS },
+      });
+
+      expect(container.querySelector('input[type="search"]')).toBeNull();
+    });
+
+    it('narrows visible rows as the query changes, and restores them when cleared', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, filterable: true },
+      });
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+
+      fireEvent.input(input, { target: { value: 'ra' } });
+      fixture.detectChanges();
+      expect(getRowTexts(container)).toEqual(['Bravo']);
+
+      fireEvent.input(input, { target: { value: '' } });
+      fixture.detectChanges();
+      expect(getRowTexts(container)).toEqual([
+        'Alpha',
+        'Bravo',
+        'Charlie',
+        'Delta',
+      ]);
+    });
+
+    it('shows the no-results message only when the filter matches nothing', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, filterable: true },
+      });
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+
+      expect(within(container).queryByRole('status')).toBeNull();
+
+      fireEvent.input(input, { target: { value: 'zzz' } });
+      fixture.detectChanges();
+
+      expect(within(container).getByRole('status').textContent).toBe(
+        'No matching items',
+      );
+    });
+
+    it('does not show the no-results message for a genuinely empty list', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: [], filterable: true },
+      });
+
+      expect(within(container).queryByRole('status')).toBeNull();
+    });
+
+    it('clicking a filtered row sets the correct active item', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        { inputs: { value: ITEMS, filterable: true, selectable: true } },
+      );
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      fireEvent.input(input, { target: { value: 'ra' } });
+
+      within(container).getByRole('option', { name: 'Charlie' }).click();
+
+      expect(componentInstance['activeValue']()).toBe('c');
+    });
+
+    it('keyboard navigation only visits filtered/visible rows', () => {
+      // "e" matches One/Three but not Two — ArrowDown from One should land
+      // on Three directly, not the hidden Two.
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        { inputs: { value: FILTER_ITEMS, filterable: true } },
+      );
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      fireEvent.input(input, { target: { value: 'e' } });
+      fixture.detectChanges();
+      // Typing already activates the first match (One) — confirm that,
+      // then one ArrowDown should land on Three, skipping the hidden Two.
+      expect(componentInstance['activeValue']()).toBe('1');
+
+      dispatchKey(getList(container), 'ArrowDown');
+      fixture.detectChanges();
+
+      expect(componentInstance['activeValue']()).toBe('3');
+    });
+
+    it('makes dropListDisabled() true while a filter query is active, false once cleared', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        { inputs: { value: ITEMS, filterable: true } },
+      );
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+
+      fireEvent.input(input, { target: { value: 'ra' } });
+      fixture.detectChanges();
+      expect(
+        (
+          componentInstance as unknown as { dropListDisabled: () => boolean }
+        ).dropListDisabled(),
+      ).toBe(true);
+
+      fireEvent.input(input, { target: { value: '' } });
+      fixture.detectChanges();
+      expect(
+        (
+          componentInstance as unknown as { dropListDisabled: () => boolean }
+        ).dropListDisabled(),
+      ).toBe(false);
+    });
+
+    it('reorder buttons still move the active item in the full value() while filtered', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        { inputs: { value: FILTER_ITEMS, filterable: true, selectable: true } },
+      );
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      fireEvent.input(input, { target: { value: 'e' } }); // One, Three visible; Two hidden
+      fixture.detectChanges();
+
+      within(container).getByRole('option', { name: 'One' }).click();
+      fixture.detectChanges();
+      within(container)
+        .getByRole('button', { name: 'Move down in Items' })
+        .click();
+      fixture.detectChanges();
+
+      // One moved past the hidden Two in the full array...
+      expect(componentInstance.value().map((o) => o.value)).toEqual([
+        '2',
+        '1',
+        '3',
+      ]);
+      // ...but the filtered/visible order is unaffected, since filtering
+      // preserves relative order among visible rows — the documented,
+      // data-correct "looks like a no-op" quirk.
+      expect(getRowTexts(container)).toEqual(['One', 'Three']);
+    });
+
+    it('Escape in the filter box clears the query', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, filterable: true },
+      });
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      fireEvent.input(input, { target: { value: 'ra' } });
+      fixture.detectChanges();
+
+      dispatchKey(input, 'Escape');
+      fixture.detectChanges();
+
+      expect(getRowTexts(container)).toEqual([
+        'Alpha',
+        'Bravo',
+        'Charlie',
+        'Delta',
+      ]);
+    });
+
+    it('has no axe violations with the filter box rendered', async () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, filterable: true },
+      });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations with the no-results message rendered', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, filterable: true },
+      });
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      fireEvent.input(input, { target: { value: 'zzz' } });
+      fixture.detectChanges();
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('virtual scroll', () => {
+    it('does not virtualize when virtualScroll is left at its default (false)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: MANY_ITEMS },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('dg-virtual-scroll')).toBeNull();
+      expect(container.querySelectorAll('[role="option"]')).toHaveLength(50);
+    });
+
+    it('renders through dg-virtual-scroll when enabled, with no cdkDrag rows', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: MANY_ITEMS, virtualScroll: true },
+      });
+      await settle(fixture);
+
+      expect(container.querySelector('dg-virtual-scroll')).not.toBeNull();
+      expect(container.querySelectorAll('[cdkdrag]')).toHaveLength(0);
+    });
+
+    it('makes dropListDisabled() true while virtualized, independent of disabled/readOnly', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, virtualScroll: true },
+      });
+
+      expect(
+        (
+          componentInstance as unknown as { dropListDisabled: () => boolean }
+        ).dropListDisabled(),
+      ).toBe(true);
+    });
+
+    it('▲/▼ reorder buttons still work while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        { inputs: { value: ITEMS, virtualScroll: true, selectable: true } },
+      );
+      await settle(fixture);
+
+      within(container).getByRole('option', { name: 'Alpha' }).click();
+      fixture.detectChanges();
+      within(container)
+        .getByRole('button', { name: 'Move down in Items' })
+        .click();
+      fixture.detectChanges();
+
+      expect(componentInstance.value().map((o) => o.value)).toEqual([
+        'b',
+        'a',
+        'c',
+        'd',
+      ]);
+    });
+
+    it('keyboard navigation still moves the active row while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        {
+          inputs: {
+            value: MANY_ITEMS,
+            virtualScroll: true,
+            selectable: true,
+          },
+        },
+      );
+      await settle(fixture);
+
+      dispatchKey(getList(container), 'ArrowDown');
+      fixture.detectChanges();
+      dispatchKey(getList(container), 'Enter');
+      fixture.detectChanges();
+
+      expect(componentInstance.value()[0]?.value).toBe('option-1');
+      expect(
+        within(container)
+          .getAllByRole('option')[0]
+          ?.getAttribute('aria-selected'),
+      ).toBe('true');
+    });
+
+    // Regression test for the same bug fixed in Picklist/Listbox: CDK's
+    // `scrollToIndex` is an unconditional absolute scroll, so wiring it to
+    // every activeValue change — including `(mouseenter)` hover — would
+    // jump the list on every mouseover. `scrollActiveIntoView()` runs only
+    // from the keyboard-nav/reorder paths.
+    it('does not scroll the viewport on hover, only on keyboard navigation', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: MANY_ITEMS, virtualScroll: true },
+      });
+      await settle(fixture);
+      const viewport = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      ).componentInstance as DynamoVirtualScroll<unknown>;
+      const scrollSpy = vi.spyOn(viewport, 'scrollToIndex');
+
+      const secondOption = within(container).getAllByRole(
+        'option',
+      )[1] as HTMLElement;
+      secondOption.dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+      expect(scrollSpy).not.toHaveBeenCalled();
+
+      dispatchKey(getList(container), 'ArrowDown');
+      fixture.detectChanges();
+      expect(scrollSpy).toHaveBeenCalled();
+    });
+
+    it('has no axe violations when virtualized', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: MANY_ITEMS, virtualScroll: true },
+      });
+      await settle(fixture);
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('filter + virtual scroll combined', () => {
+    it('filters the virtualized set (filteredItems feeds [items], not the raw value())', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        {
+          inputs: { value: MANY_ITEMS, filterable: true, virtualScroll: true },
+        },
+      );
+      await settle(fixture);
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+
+      fireEvent.input(input, { target: { value: 'Option 1' } });
+      await settle(fixture);
+
+      // Matches "Option 1", "Option 10".."Option 19" — 11 total. Asserted
+      // against the logical filtered set, not DOM-rendered row count —
+      // the virtualized viewport only ever mounts however many rows fit,
+      // not every match.
+      expect(componentInstance['filteredItems']()).toHaveLength(11);
+      expect(container.querySelector('dg-virtual-scroll')).not.toBeNull();
+    });
+
+    it('drag stays disabled while filtering, even with virtualScroll off', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, filterable: true, filterText: 'a' },
+      });
+      expect(
+        (
+          componentInstance as unknown as { dropListDisabled: () => boolean }
+        ).dropListDisabled(),
+      ).toBe(true);
+    });
+
+    it('drag stays disabled while virtualized, even with filterable off', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, virtualScroll: true },
+      });
+      expect(
+        (
+          componentInstance as unknown as { dropListDisabled: () => boolean }
+        ).dropListDisabled(),
+      ).toBe(true);
     });
   });
 

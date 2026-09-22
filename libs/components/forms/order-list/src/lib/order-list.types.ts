@@ -8,7 +8,9 @@ export type DynamoOrderListPart =
   | 'list'
   | 'option'
   | 'checkbox'
-  | 'controls';
+  | 'controls'
+  | 'filter'
+  | 'no-results';
 
 // `DynamoSelectOption` (label/value/disabled?) already lives in
 // `@dynamong/core/api` and is reused across Select/Listbox/Picklist — re-exported

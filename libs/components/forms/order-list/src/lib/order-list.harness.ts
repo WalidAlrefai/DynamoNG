@@ -7,8 +7,14 @@ export class DynamoOrderListHarness extends ComponentHarness {
   static hostSelector = 'dg-order-list';
 
   private readonly options = this.locatorForAll('[role="option"]');
-  private readonly buttons = this.locatorForAll('[data-part="controls"] button');
+  private readonly buttons = this.locatorForAll(
+    '[data-part="controls"] button',
+  );
   private readonly list = this.locatorFor('[role="listbox"]');
+  private readonly filterInput = this.locatorForOptional(
+    'input[type="search"]',
+  );
+  private readonly noResultsEl = this.locatorForOptional('[role="status"]');
 
   async getItemLabels(): Promise<string[]> {
     const options = await this.options();
@@ -59,5 +65,33 @@ export class DynamoOrderListHarness extends ComponentHarness {
 
   async isDisabled(): Promise<boolean> {
     return (await (await this.list()).getAttribute('tabindex')) === '-1';
+  }
+
+  /** Throws if `filterable` is off (no box rendered). */
+  async setFilterText(text: string): Promise<void> {
+    const input = await this.filterInput();
+    if (!input) {
+      throw new Error('No filter box found — is `filterable` set?');
+    }
+    await input.clear();
+    if (text) {
+      await input.sendKeys(text);
+    }
+  }
+
+  async getFilterText(): Promise<string> {
+    const input = await this.filterInput();
+    return input ? ((await input.getProperty<string>('value')) ?? '') : '';
+  }
+
+  /** True when the filter matched nothing and the no-results message is showing. */
+  async hasNoResults(): Promise<boolean> {
+    return (await this.noResultsEl()) !== null;
+  }
+
+  /** True when the drop list is CDK-disabled (filtering active, virtualized, disabled, readOnly, or dragdrop=false). */
+  async isDragDisabled(): Promise<boolean> {
+    const classes = await (await this.list()).getAttribute('class');
+    return (classes ?? '').includes('cdk-drop-list-disabled');
   }
 }
