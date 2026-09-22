@@ -1,5 +1,77 @@
 <div [class]="rootClasses()">
-  <div [class]="toolbarClasses" role="toolbar" aria-label="Formatting">
+  <!--
+    Every toolbar control is declared exactly once here and rendered via
+    two ngTemplateOutlets below — one inline in the toolbar row, one inside
+    the portaled overflow panel — each item's own @if is mutually exclusive
+    between the two locations (isOverflowed() decides which), so a given
+    control's markup only ever actually renders in one place at a time.
+    The trailing label <span> only renders in the overflow location, since
+    a vertical list of unlabeled icon-only buttons is hard to scan.
+  -->
+  <ng-template #toolbarItems let-location="location">
+    @if ((isOverflowed('undo') ? 'overflow' : 'inline') === location) {
+    <button
+      type="button"
+      [class]="buttonClasses('undo')"
+      [disabled]="disabled() || readOnly()"
+      aria-label="Undo"
+      (click)="onFormat('undo')"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          d="M4 8 a5 5 0 1 1 1.6 3.6"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <path
+          d="M4 4.5 V8 H7.5"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Undo</span>
+    } } @if ((isOverflowed('redo') ? 'overflow' : 'inline') === location) {
+    <button
+      type="button"
+      [class]="buttonClasses('redo')"
+      [disabled]="disabled() || readOnly()"
+      aria-label="Redo"
+      (click)="onFormat('redo')"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          d="M12 8 a5 5 0 1 0 -1.6 3.6"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <path
+          d="M12 4.5 V8 H8.5"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Redo</span>
+    } } @if ((isOverflowed('bold') ? 'overflow' : 'inline') === location) {
     <button
       type="button"
       [class]="buttonClasses('bold')"
@@ -10,6 +82,9 @@
     >
       <span class="font-bold">B</span>
     </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Bold</span>
+    } } @if ((isOverflowed('italic') ? 'overflow' : 'inline') === location) {
     <button
       type="button"
       [class]="buttonClasses('italic')"
@@ -20,6 +95,9 @@
     >
       <span class="italic">I</span>
     </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Italic</span>
+    } } @if ((isOverflowed('underline') ? 'overflow' : 'inline') === location) {
     <button
       type="button"
       [class]="buttonClasses('underline')"
@@ -30,6 +108,224 @@
     >
       <span class="underline">U</span>
     </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Underline</span>
+    } } @if ((isOverflowed('alignLeft') ? 'overflow' : 'inline') === location) {
+    <button
+      type="button"
+      [class]="buttonClasses('justifyLeft')"
+      [disabled]="disabled() || readOnly()"
+      [attr.aria-pressed]="isActive('justifyLeft')"
+      aria-label="Align left"
+      (click)="onFormat('justifyLeft')"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <line
+          x1="1"
+          y1="3"
+          x2="15"
+          y2="3"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="1"
+          y1="6"
+          x2="10"
+          y2="6"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="1"
+          y1="9"
+          x2="15"
+          y2="9"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="1"
+          y1="12"
+          x2="10"
+          y2="12"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Align left</span>
+    } } @if ((isOverflowed('alignCenter') ? 'overflow' : 'inline') === location)
+    {
+    <button
+      type="button"
+      [class]="buttonClasses('justifyCenter')"
+      [disabled]="disabled() || readOnly()"
+      [attr.aria-pressed]="isActive('justifyCenter')"
+      aria-label="Align center"
+      (click)="onFormat('justifyCenter')"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <line
+          x1="1"
+          y1="3"
+          x2="15"
+          y2="3"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="3"
+          y1="6"
+          x2="13"
+          y2="6"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="1"
+          y1="9"
+          x2="15"
+          y2="9"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="3"
+          y1="12"
+          x2="13"
+          y2="12"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Align center</span>
+    } } @if ((isOverflowed('alignRight') ? 'overflow' : 'inline') === location)
+    {
+    <button
+      type="button"
+      [class]="buttonClasses('justifyRight')"
+      [disabled]="disabled() || readOnly()"
+      [attr.aria-pressed]="isActive('justifyRight')"
+      aria-label="Align right"
+      (click)="onFormat('justifyRight')"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <line
+          x1="1"
+          y1="3"
+          x2="15"
+          y2="3"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="6"
+          y1="6"
+          x2="15"
+          y2="6"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="1"
+          y1="9"
+          x2="15"
+          y2="9"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="6"
+          y1="12"
+          x2="15"
+          y2="12"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Align right</span>
+    } } @if ((isOverflowed('justify') ? 'overflow' : 'inline') === location) {
+    <button
+      type="button"
+      [class]="buttonClasses('justifyFull')"
+      [disabled]="disabled() || readOnly()"
+      [attr.aria-pressed]="isActive('justifyFull')"
+      aria-label="Justify"
+      (click)="onFormat('justifyFull')"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <line
+          x1="1"
+          y1="3"
+          x2="15"
+          y2="3"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="1"
+          y1="6"
+          x2="15"
+          y2="6"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="1"
+          y1="9"
+          x2="15"
+          y2="9"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+        <line
+          x1="1"
+          y1="12"
+          x2="15"
+          y2="12"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Justify</span>
+    } } @if ((isOverflowed('bulletedList') ? 'overflow' : 'inline') ===
+    location) {
     <button
       type="button"
       [class]="buttonClasses('insertUnorderedList')"
@@ -75,6 +371,10 @@
         />
       </svg>
     </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Bulleted list</span>
+    } } @if ((isOverflowed('numberedList') ? 'overflow' : 'inline') ===
+    location) {
     <button
       type="button"
       [class]="buttonClasses('insertOrderedList')"
@@ -126,6 +426,22 @@
         />
       </svg>
     </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Numbered list</span>
+    } } @if ((isOverflowed('heading') ? 'overflow' : 'inline') === location) {
+    <select
+      [class]="headingSelectClasses"
+      [disabled]="disabled() || readOnly()"
+      [value]="currentBlockFormat()"
+      aria-label="Text style"
+      (change)="onHeadingChange($event)"
+    >
+      <option value="p">Paragraph</option>
+      <option value="h1">Heading 1</option>
+      <option value="h2">Heading 2</option>
+      <option value="h3">Heading 3</option>
+    </select>
+    } @if ((isOverflowed('link') ? 'overflow' : 'inline') === location) {
     <button
       type="button"
       [class]="buttonClasses('createLink')"
@@ -153,6 +469,99 @@
         />
       </svg>
     </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Insert link</span>
+    } } @if ((isOverflowed('image') ? 'overflow' : 'inline') === location) {
+    <button
+      type="button"
+      [class]="buttonClasses('insertImage')"
+      [disabled]="disabled() || readOnly()"
+      aria-label="Insert image"
+      (click)="onImageButtonClick()"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <rect
+          x="1.5"
+          y="2.5"
+          width="13"
+          height="11"
+          rx="1"
+          stroke-width="1.5"
+        />
+        <circle cx="5" cy="6" r="1.1" fill="currentColor" stroke="none" />
+        <path
+          d="M2 12 L6 8 L9 10.5 L12 7.5 L14.5 10"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    @if (location === 'overflow') {
+    <span [class]="overflowItemLabelClasses">Insert image</span>
+    } }
+  </ng-template>
+
+  <div
+    #toolbarEl
+    [class]="toolbarClasses"
+    role="toolbar"
+    aria-label="Formatting"
+  >
+    <ng-container
+      [ngTemplateOutlet]="toolbarItems"
+      [ngTemplateOutletContext]="{ location: 'inline' }"
+    />
+    <!--
+      The native file input is a sibling, not a child, of any button — same
+      reasoning as @dynamong/file-upload's own hidden input: it only ever
+      exists to be triggered programmatically by onImageButtonClick(), so it
+      doesn't need to be visually or structurally nested inside one. It's
+      not a toolbar item and stays here, once, regardless of overflow state.
+    -->
+    <input
+      #imageInputEl
+      type="file"
+      accept="image/*"
+      class="hidden"
+      tabindex="-1"
+      aria-hidden="true"
+      (change)="onImageFileChange($event)"
+    />
+    @if (hasOverflow()) {
+    <button
+      #overflowTriggerEl
+      type="button"
+      [class]="overflowTriggerClasses()"
+      [disabled]="disabled() || readOnly()"
+      aria-haspopup="true"
+      [attr.aria-expanded]="overflowOpen()"
+      [attr.aria-controls]="overflowOpen() ? overflowId : null"
+      aria-label="More formatting options"
+      (click)="toggleOverflow()"
+      (keydown)="onTriggerKeydown($event)"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <circle cx="3" cy="8" r="1.3" fill="currentColor" stroke="none" />
+        <circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none" />
+        <circle cx="13" cy="8" r="1.3" fill="currentColor" stroke="none" />
+      </svg>
+    </button>
+    }
   </div>
   <div
     #contentEl
@@ -171,3 +580,18 @@
     (blur)="onBlur()"
   ></div>
 </div>
+
+<ng-template #overflowPanelTemplate>
+  <div
+    role="group"
+    [id]="overflowId"
+    aria-label="More formatting options"
+    [class]="overflowPanelClasses"
+    (keydown)="onOverflowPanelKeydown($event)"
+  >
+    <ng-container
+      [ngTemplateOutlet]="toolbarItems"
+      [ngTemplateOutletContext]="{ location: 'overflow' }"
+    />
+  </div>
+</ng-template>
