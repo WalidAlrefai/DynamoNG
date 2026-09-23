@@ -9,6 +9,7 @@ import {
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
+  { id: 'half-star', title: 'Half Star' },
   { id: 'read-only', title: 'Read Only' },
   { id: 'reactive-forms', title: 'Reactive Forms' },
 ];
@@ -36,6 +37,24 @@ const EXAMPLES: DocExampleRef[] = [
             Value: <span class="font-mono">{{ stars() }}</span>
           </p>
         </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="half-star"
+        title="Half Star"
+        description="allowHalf lets clicking or the keyboard set half-star increments, e.g. 3.5."
+      >
+        <div preview class="flex flex-col gap-2">
+          <dg-rating
+            [(value)]="halfStars"
+            [allowHalf]="true"
+            ariaLabel="Rate this product"
+          />
+          <p class="text-sm text-text-muted">
+            Value: <span class="font-mono">{{ halfStars() }}</span>
+          </p>
+        </div>
+        <div code>&lt;dg-rating [(value)]="stars" [allowHalf]="true" /&gt;</div>
       </docs-example>
 
       <docs-example
@@ -95,9 +114,14 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
             <td class="py-2 font-mono">'md'</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">disabled</td>
             <td class="py-2 pr-4 font-mono">boolean (model)</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">allowHalf</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
           </tr>
         </tbody>
@@ -108,6 +132,7 @@ const EXAMPLES: DocExampleRef[] = [
 export class RatingDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly stars = signal(3);
+  protected readonly halfStars = signal(3.5);
   protected readonly reactiveStars = new FormControl(2, { nonNullable: true });
 
   protected readonly basicCode = `<dg-rating [(value)]="stars" ariaLabel="Rate this product" />`;

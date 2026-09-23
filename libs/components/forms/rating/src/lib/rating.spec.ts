@@ -33,6 +33,14 @@ function star(container: HTMLElement, index: number): HTMLElement {
   return el;
 }
 
+function starByValue(container: HTMLElement, value: number): HTMLElement {
+  const el = container.querySelector(`[data-star="${value}"]`);
+  if (!el) {
+    throw new Error(`No star half-zone with data-star="${value}"`);
+  }
+  return el as HTMLElement;
+}
+
 describe('DynamoRating', () => {
   describe('creation', () => {
     it('renders a role="slider" element', () => {
@@ -303,6 +311,186 @@ describe('DynamoRating', () => {
     it('has no axe violations', async () => {
       const { container } = renderDynamoComponent(DynamoRating, {
         inputs: { value: 3 },
+      });
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('allowHalf', () => {
+    it('defaults to false: renders the existing single-span-per-star markup, no half-zones', () => {
+      const { container } = renderDynamoComponent(DynamoRating, {
+        inputs: { value: 3 },
+      });
+
+      expect(stars(container)).toHaveLength(5);
+      expect(container.querySelector('[data-star="2.5"]')).toBeNull();
+    });
+
+    it('renders a left (half) and right (full) zone per star with correct data-star values', () => {
+      const { container } = renderDynamoComponent(DynamoRating, {
+        inputs: { allowHalf: true },
+      });
+
+      expect(stars(container)).toHaveLength(10); // 2 zones × 5 stars
+      expect(starByValue(container, 2.5)).toBeTruthy();
+      expect(starByValue(container, 3)).toBeTruthy();
+    });
+
+    // Regression test: the foreground (clipped) SVG's wrapper shrinks via
+    // [style.width.%], and SVG's own default preserveAspectRatio
+    // ("xMidYMid meet") scales the WHOLE viewBox down to fit that shrunken
+    // box instead of cropping it — rendering a smaller, letterboxed star
+    // instead of a left-cropped half. `xMinYMid slice` is required to get
+    // a crop instead of a scale-down.
+    it('sets preserveAspectRatio="xMinYMid slice" on the foreground SVG so it crops instead of scaling down', () => {
+      const { container } = renderDynamoComponent(DynamoRating, {
+        inputs: { allowHalf: true, value: 2.5 },
+      });
+      const root = within(container).getByRole('slider');
+      const starWrapper = root.children[0] as HTMLElement;
+      const foregroundSvg = starWrapper.querySelectorAll('svg')[1];
+
+      expect(foregroundSvg?.getAttribute('preserveAspectRatio')).toBe(
+        'xMinYMid slice',
+      );
+    });
+
+    it('clicking the left half of a star sets the half value', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { allowHalf: true } },
+      );
+
+      await userEvent.click(starByValue(container, 2.5));
+
+      expect(componentInstance.value()).toBe(2.5);
+    });
+
+    it('clicking the right half of a star sets the whole value', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { allowHalf: true } },
+      );
+
+      await userEvent.click(starByValue(container, 3));
+
+      expect(componentInstance.value()).toBe(3);
+    });
+
+    it('clicking the already-selected half clears it to 0', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { allowHalf: true, value: 2.5 } },
+      );
+
+      await userEvent.click(starByValue(container, 2.5));
+
+      expect(componentInstance.value()).toBe(0);
+    });
+
+    it('hovering a half previews it without committing', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { allowHalf: true } },
+      );
+      const root = within(container).getByRole('slider');
+
+      fireEvent.mouseEnter(starByValue(container, 2.5));
+      fixture.detectChanges();
+      expect(root.getAttribute('aria-valuenow')).toBe('2.5');
+      expect(componentInstance.value()).toBe(0);
+
+      fireEvent.mouseLeave(root);
+      fixture.detectChanges();
+      expect(root.getAttribute('aria-valuenow')).toBe('0');
+    });
+
+    it('fillPercent reports 100/50/0 for stars above/at-half/below the current value', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoRating, {
+        inputs: { allowHalf: true, value: 2.5 },
+      });
+
+      expect(componentInstance['fillPercent'](1)).toBe(100);
+      expect(componentInstance['fillPercent'](2)).toBe(100);
+      expect(componentInstance['fillPercent'](3)).toBe(50);
+      expect(componentInstance['fillPercent'](4)).toBe(0);
+    });
+
+    it('steps by 0.5 with ArrowRight/ArrowLeft', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { allowHalf: true, value: 2 } },
+      );
+      within(container).getByRole('slider').focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+      expect(componentInstance.value()).toBe(2.5);
+
+      await userEvent.keyboard('{ArrowLeft}');
+      await userEvent.keyboard('{ArrowLeft}');
+      expect(componentInstance.value()).toBe(1.5);
+    });
+
+    it('Home/End still jump to exactly 0/max', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { allowHalf: true, value: 2.5, max: 5 } },
+      );
+      within(container).getByRole('slider').focus();
+
+      await userEvent.keyboard('{End}');
+      expect(componentInstance.value()).toBe(5);
+
+      await userEvent.keyboard('{Home}');
+      expect(componentInstance.value()).toBe(0);
+    });
+
+    it('readOnly blocks half-zone click, hover, and keyboard interaction', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { allowHalf: true, value: 2, readOnly: true } },
+      );
+      const root = within(container).getByRole('slider');
+      root.focus();
+
+      await userEvent.click(starByValue(container, 3.5));
+      fireEvent.mouseEnter(starByValue(container, 3.5));
+      await userEvent.keyboard('{ArrowRight}');
+
+      expect(componentInstance.value()).toBe(2);
+    });
+
+    it('disabled blocks all half-zone interaction', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { allowHalf: true, value: 2, disabled: true } },
+      );
+
+      await userEvent.click(starByValue(container, 3.5));
+      await userEvent.keyboard('{ArrowRight}');
+
+      expect(componentInstance.value()).toBe(2);
+    });
+
+    it('supports fractional values through the DynamoRatingHarness with no harness changes', async () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        DynamoRating,
+        { inputs: { allowHalf: true } },
+      );
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoRatingHarness,
+      );
+
+      await harness.clickStar(2.5);
+
+      expect(componentInstance.value()).toBe(2.5);
+      expect(await harness.getValue()).toBe(2.5);
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = renderDynamoComponent(DynamoRating, {
+        inputs: { allowHalf: true, value: 2.5 },
       });
       await expectNoA11yViolations(container);
     });
