@@ -8,6 +8,9 @@ import {
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
+  { id: 'no-presets', title: 'No presets' },
+  { id: 'custom-picker', title: 'Custom picker' },
+  { id: 'alpha', title: 'Alpha' },
   { id: 'disabled', title: 'Disabled' },
   { id: 'inline', title: 'Inline' },
 ];
@@ -35,6 +38,62 @@ const EXAMPLES: DocExampleRef[] = [
           </p>
         </div>
         <div code>&lt;dg-color-picker [(value)]="color" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="no-presets"
+        title="No presets"
+        description="Pass an empty swatches array to drop the preset grid entirely — just the hex field and the native OS color picker."
+      >
+        <div preview class="max-w-xs">
+          <dg-color-picker
+            [(value)]="noPresetsColor"
+            [swatches]="[]"
+            ariaLabel="Brand color"
+          />
+        </div>
+        <div code>&lt;dg-color-picker [(value)]="color" [swatches]="[]" /&gt;</div>
+      </docs-example>
+
+      <docs-example
+        exampleId="custom-picker"
+        title="Custom picker"
+        description="customPicker replaces the native color-dialog fallback with an in-app saturation/brightness square + hue slider — no OS dialog."
+      >
+        <div preview class="max-w-xs">
+          <dg-color-picker
+            [(value)]="customPickerColor"
+            [customPicker]="true"
+            ariaLabel="Brand color"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Value:
+            <span class="font-mono">{{ customPickerColor() || '(none)' }}</span>
+          </p>
+        </div>
+        <div code>
+          &lt;dg-color-picker [(value)]="color" [customPicker]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="alpha"
+        title="Alpha"
+        description="showAlpha renders an opacity slider and lets value carry an 8-digit #rrggbbaa hex string."
+      >
+        <div preview class="max-w-xs">
+          <dg-color-picker
+            [(value)]="alphaColor"
+            [showAlpha]="true"
+            ariaLabel="Brand color"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Value: <span class="font-mono">{{ alphaColor() || '(none)' }}</span>
+          </p>
+        </div>
+        <div code>
+          &lt;dg-color-picker [(value)]="color" [showAlpha]="true" /&gt;
+        </div>
       </docs-example>
 
       <docs-example
@@ -100,9 +159,19 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
             <td class="py-2 font-mono">'md'</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">disabled</td>
             <td class="py-2 pr-4 font-mono">boolean (model)</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">showAlpha</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">customPicker</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
           </tr>
         </tbody>
@@ -113,5 +182,8 @@ const EXAMPLES: DocExampleRef[] = [
 export class ColorPickerDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly color = signal('#3b82f6');
+  protected readonly noPresetsColor = signal('#3b82f6');
+  protected readonly customPickerColor = signal('#3b82f6');
+  protected readonly alphaColor = signal('#3b82f6cc');
   protected readonly inlineColor = signal('#22c55e');
 }
