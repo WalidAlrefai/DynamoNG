@@ -28,8 +28,10 @@ import { cn } from '@dynamong/utils/class-merge';
 import { DynamoMenuItem } from './menu-item';
 import {
   menuChevronStyles,
+  menuItemIconClasses,
   menuItemStyles,
   menuPanelStyles,
+  menuSeparatorStyles,
   menuTriggerStyles,
 } from './menu.styles';
 import type {
@@ -132,6 +134,8 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
     menuChevronStyles({ open: this.open() }),
   );
   protected readonly panelClasses = menuPanelStyles;
+  protected readonly itemIconClasses = menuItemIconClasses;
+  protected readonly separatorClasses = menuSeparatorStyles;
 
   constructor() {
     super();
@@ -250,13 +254,19 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
   }
 
   protected onItemClick(item: DynamoMenuItem): void {
-    if (item.disabled()) {
+    // Separators are never wired to (click) in the template, but guard
+    // anyway — defense in depth, matches the existing disabled() guard.
+    if (item.disabled() || item.separator()) {
       return;
     }
+    // `exactOptionalPropertyTypes` forbids assigning `icon: undefined`
+    // outright — the key is only included when actually set.
+    const icon = item.icon();
     this.itemSelect.emit({
       value: item.value(),
       label: item.label(),
       disabled: item.disabled(),
+      ...(icon !== undefined && { icon }),
     });
     this.close();
     this.triggerEl().nativeElement.focus();
@@ -303,7 +313,7 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
     this.portal = null;
   }
 
-  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled item index. Returns `null` if every item is disabled. */
+  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled, non-separator item index. Returns `null` if every item is disabled/a separator. */
   private findEnabledIndex(from: number, delta: number): number | null {
     const itemsArr = this.items();
     if (itemsArr.length === 0) {
@@ -312,7 +322,7 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
     let index = from;
     for (let step = 0; step < itemsArr.length; step++) {
       index = (index + delta + itemsArr.length) % itemsArr.length;
-      if (!itemsArr[index]?.disabled()) {
+      if (!itemsArr[index]?.disabled() && !itemsArr[index]?.separator()) {
         return index;
       }
     }

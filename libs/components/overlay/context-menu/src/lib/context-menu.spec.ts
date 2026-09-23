@@ -105,6 +105,28 @@ function trigger(container: HTMLElement): HTMLElement {
   return within(container).getByTestId('trigger-card');
 }
 
+@Component({
+  selector: 'dg-context-menu-icon-separator-host',
+  standalone: true,
+  imports: [DynamoContextMenu, DynamoMenuItem],
+  template: `
+    <dg-context-menu (itemSelect)="onSelect($event)">
+      <div data-testid="trigger-card">Right-click me</div>
+      <dg-menu-item value="edit" label="Edit" icon="✎" />
+      <dg-menu-item value="duplicate" label="Duplicate" />
+      <dg-menu-item [separator]="true" value="" label="" />
+      <dg-menu-item value="delete" label="Delete" icon="🗑" />
+    </dg-context-menu>
+  `,
+})
+class ContextMenuIconSeparatorHostComponent {
+  readonly lastEvent = signal<DynamoMenuItemSelectEvent | null>(null);
+
+  onSelect(event: DynamoMenuItemSelectEvent): void {
+    this.lastEvent.set(event);
+  }
+}
+
 describe('DynamoContextMenu', () => {
   describe('creation', () => {
     it('renders the projected trigger content', () => {
@@ -495,6 +517,106 @@ describe('DynamoContextMenu', () => {
 
       expect(getPanel()).not.toBeNull();
       expect(getItems()).toHaveLength(0);
+    });
+  });
+
+  describe('icon and separator', () => {
+    it('renders an item icon in an aria-hidden span before the label', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ContextMenuIconSeparatorHostComponent,
+      );
+      fireEvent.contextMenu(trigger(container));
+      await settle(fixture);
+
+      const edit = getItems().find((el) => el.textContent?.includes('Edit'));
+      const iconSpan = edit?.querySelector('span[aria-hidden="true"]');
+      expect(iconSpan?.textContent).toBe('✎');
+    });
+
+    it('renders a separator with role="separator", not role="menuitem"', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ContextMenuIconSeparatorHostComponent,
+      );
+      fireEvent.contextMenu(trigger(container));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelectorAll('[role="separator"]')).toHaveLength(
+        1,
+      );
+      expect(getItems()).toHaveLength(3);
+    });
+
+    it('keyboard navigation skips the separator', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ContextMenuIconSeparatorHostComponent,
+      );
+      fireEvent.contextMenu(trigger(container));
+      await settle(fixture);
+      expect(document.activeElement?.textContent).toContain('Edit');
+
+      await userEvent.keyboard('{ArrowDown}'); // -> Duplicate
+      await userEvent.keyboard('{ArrowDown}'); // skips the separator -> Delete
+
+      expect(document.activeElement?.textContent).toContain('Delete');
+    });
+
+    it('clicking the separator does not emit itemSelect', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        ContextMenuIconSeparatorHostComponent,
+      );
+      fireEvent.contextMenu(trigger(container));
+      await settle(fixture);
+
+      const separator = getPanel()?.querySelector(
+        '[role="separator"]',
+      ) as HTMLElement;
+      separator.click();
+      fixture.detectChanges();
+
+      expect(componentInstance.lastEvent()).toBeNull();
+    });
+
+    it('itemSelect includes the icon when set, omits it when unset', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        ContextMenuIconSeparatorHostComponent,
+      );
+      fireEvent.contextMenu(trigger(container));
+      await settle(fixture);
+
+      const edit = getItems().find((el) => el.textContent?.includes('Edit'));
+      edit?.click();
+      fixture.detectChanges();
+      expect(componentInstance.lastEvent()).toEqual({
+        value: 'edit',
+        label: 'Edit',
+        disabled: false,
+        icon: '✎',
+      });
+
+      fireEvent.contextMenu(trigger(container));
+      await settle(fixture);
+      const duplicate = getItems().find((el) =>
+        el.textContent?.includes('Duplicate'),
+      );
+      duplicate?.click();
+      fixture.detectChanges();
+      expect(componentInstance.lastEvent()).toEqual({
+        value: 'duplicate',
+        label: 'Duplicate',
+        disabled: false,
+      });
+    });
+
+    it('has no axe violations with an icon and a separator present', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ContextMenuIconSeparatorHostComponent,
+      );
+      fireEvent.contextMenu(trigger(container));
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
     });
   });
 });

@@ -37,7 +37,9 @@
     [class]="panelClasses"
     (keydown)="onMenuKeydown($event)"
   >
-    @for (item of items(); track item) {
+    @for (item of items(); track item) { @if (item.separator()) {
+    <li role="separator" #menuItemButton [class]="separatorClasses"></li>
+    } @else {
     <button
       #menuItemButton
       type="button"
@@ -47,8 +49,12 @@
       [class]="itemClasses(item)"
       (click)="onItemClick(item)"
     >
-      {{ item.label() }}
+      @if (item.icon()) {
+      <span [class]="itemIconClasses" aria-hidden="true"
+        >{{ item.icon() }}</span
+      >
+      } {{ item.label() }}
     </button>
-    }
+    } }
   </div>
 </ng-template>

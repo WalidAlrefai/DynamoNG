@@ -27,8 +27,10 @@ import { isBrowser } from '@dynamong/utils/dom';
 import { DynamoMenuItem, type DynamoMenuItemSelectEvent } from '@dynamong/menu';
 import { cn } from '@dynamong/utils/class-merge';
 import {
+  contextMenuItemIconClasses,
   contextMenuItemStyles,
   contextMenuPanelStyles,
+  contextMenuSeparatorStyles,
   contextMenuTriggerStyles,
 } from './context-menu.styles';
 import type { DynamoContextMenuPart } from './context-menu.types';
@@ -105,6 +107,8 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
       : cn(contextMenuTriggerStyles, this.styleClass()),
   );
   protected readonly panelClasses = contextMenuPanelStyles;
+  protected readonly itemIconClasses = contextMenuItemIconClasses;
+  protected readonly separatorClasses = contextMenuSeparatorStyles;
 
   constructor() {
     super();
@@ -275,13 +279,19 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
   }
 
   protected onItemClick(item: DynamoMenuItem): void {
-    if (item.disabled()) {
+    // Separators are never wired to (click) in the template, but guard
+    // anyway — defense in depth, matches the existing disabled() guard.
+    if (item.disabled() || item.separator()) {
       return;
     }
+    // `exactOptionalPropertyTypes` forbids assigning `icon: undefined`
+    // outright — the key is only included when actually set.
+    const icon = item.icon();
     this.itemSelect.emit({
       value: item.value(),
       label: item.label(),
       disabled: item.disabled(),
+      ...(icon !== undefined && { icon }),
     });
     this.close();
   }
@@ -322,7 +332,7 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
     this.portal = null;
   }
 
-  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled item index. Returns `null` if every item is disabled. */
+  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled, non-separator item index. Returns `null` if every item is disabled/a separator. */
   private findEnabledIndex(from: number, delta: number): number | null {
     const itemsArr = this.items();
     if (itemsArr.length === 0) {
@@ -331,7 +341,7 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
     let index = from;
     for (let step = 0; step < itemsArr.length; step++) {
       index = (index + delta + itemsArr.length) % itemsArr.length;
-      if (!itemsArr[index]?.disabled()) {
+      if (!itemsArr[index]?.disabled() && !itemsArr[index]?.separator()) {
         return index;
       }
     }

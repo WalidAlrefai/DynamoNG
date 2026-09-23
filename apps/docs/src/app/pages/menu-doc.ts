@@ -26,14 +26,15 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Project <dg-menu-item> children with a value and label; (itemSelect) fires the full clicked item ({ value, label, disabled })."
+        description="Project <dg-menu-item> children with a value and label; (itemSelect) fires the full clicked item ({ value, label, disabled, icon? }). icon renders a short glyph before the label; separator renders a non-interactive divider row."
       >
         <div preview>
           <dg-menu label="Actions" (itemSelect)="lastSelected.set($event)">
-            <dg-menu-item value="edit" label="Edit" />
-            <dg-menu-item value="duplicate" label="Duplicate" />
+            <dg-menu-item value="edit" label="Edit" icon="✎" />
+            <dg-menu-item value="duplicate" label="Duplicate" icon="⧉" />
+            <dg-menu-item [separator]="true" value="" label="" />
             <dg-menu-item value="archive" label="Archive" [disabled]="true" />
-            <dg-menu-item value="delete" label="Delete" />
+            <dg-menu-item value="delete" label="Delete" icon="🗑" />
           </dg-menu>
           @if (lastSelected(); as selected) {
             <p class="mt-2 text-sm text-text-muted">
@@ -43,7 +44,9 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
         </div>
         <div code>
           &lt;dg-menu label="Actions" (itemSelect)="onSelect($event)"&gt;
-          &lt;dg-menu-item value="edit" label="Edit" /&gt; &lt;/dg-menu&gt;
+          &lt;dg-menu-item value="edit" label="Edit" icon="✎" /&gt;
+          &lt;dg-menu-item [separator]="true" value="" label="" /&gt;
+          &lt;/dg-menu&gt;
         </div>
       </docs-example>
 
@@ -84,9 +87,21 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
               <td class="py-2 pr-4 font-mono">string (required)</td>
               <td class="py-2 font-mono">—</td>
             </tr>
-            <tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">dg-menu-item</td>
               <td class="py-2 pr-4 font-mono">disabled</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">false</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">dg-menu-item</td>
+              <td class="py-2 pr-4 font-mono">icon</td>
+              <td class="py-2 pr-4 font-mono">string | undefined</td>
+              <td class="py-2 font-mono">undefined</td>
+            </tr>
+            <tr>
+              <td class="py-2 pr-4 font-mono">dg-menu-item</td>
+              <td class="py-2 pr-4 font-mono">separator</td>
               <td class="py-2 pr-4 font-mono">boolean</td>
               <td class="py-2 font-mono">false</td>
             </tr>
