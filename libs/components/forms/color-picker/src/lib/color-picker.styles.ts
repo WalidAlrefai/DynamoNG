@@ -89,7 +89,8 @@ export const colorPickerNativeInputStyles =
 export const CHECKERBOARD_GRADIENT =
   'repeating-conic-gradient(#d1d5db 0% 25%, #fff 0% 50%) 0 0 / 8px 8px';
 
-export const colorPickerAlphaWrapperStyles = 'flex items-center gap-2 px-3 pb-3';
+export const colorPickerAlphaWrapperStyles =
+  'flex items-center gap-2 px-3 pb-3';
 
 // Shared by both the alpha slider and the hue slider (customPicker) — their
 // track/thumb visuals are identical; only each instance's own

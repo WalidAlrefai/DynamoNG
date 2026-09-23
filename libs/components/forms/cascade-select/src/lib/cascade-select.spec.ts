@@ -994,7 +994,9 @@ describe('DynamoCascadeSelect', () => {
       await userEvent.click(within(container).getByRole('combobox'));
       await settle(fixture);
 
-      expect(getListboxes()[0]!.querySelector('input[type="search"]')).toBeNull();
+      expect(
+        getListboxes()[0]!.querySelector('input[type="search"]'),
+      ).toBeNull();
     });
 
     it('renders a filter box only in the root panel when filterable is enabled', async () => {
@@ -1087,10 +1089,7 @@ describe('DynamoCascadeSelect', () => {
       await userEvent.type(getFilterInput(), 'dallas');
       await settle(fixture);
 
-      const row = getRowByText(
-        getListboxes()[0]!,
-        'Dallas — USA / Texas',
-      );
+      const row = getRowByText(getListboxes()[0]!, 'Dallas — USA / Texas');
       expect(row.getAttribute('aria-disabled')).toBe('true');
     });
 
@@ -1281,7 +1280,9 @@ describe('DynamoCascadeSelect', () => {
         // so it no longer matches getListboxes() — check the whole overlay instead.
         await expect(
           expectNoA11yViolations(
-            document.body.querySelector('.cdk-overlay-container') as HTMLElement,
+            document.body.querySelector(
+              '.cdk-overlay-container',
+            ) as HTMLElement,
           ),
         ).resolves.toBeUndefined();
       });

@@ -42,6 +42,7 @@ export const timelineDotStyles = cva(
 // JS involved. `<dg-timeline-item>` is the actual DOM node sitting among its
 // siblings, so Tailwind's `:last-child`-backed `group-last:` variant
 // correctly detects the last entry with zero component code.
-export const timelineConnectorStyles = 'mt-1 w-px flex-1 bg-border group-last:hidden';
+export const timelineConnectorStyles =
+  'mt-1 w-px flex-1 bg-border group-last:hidden';
 
 export const timelineContentStyles = 'flex-1 pb-6';

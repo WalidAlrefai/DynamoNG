@@ -47,8 +47,7 @@
         [attr.aria-pressed]="isSameColor(swatch)"
         (click)="selectSwatch(swatch)"
       ></button>
-      }
-      @if (!customPicker()) {
+      } @if (!customPicker()) {
       <div [class]="nativeInputWrapperClasses">
         <input
           type="color"
@@ -60,9 +59,7 @@
       </div>
       }
     </div>
-    }
-
-    @if (customPicker()) {
+    } @if (customPicker()) {
     <div
       #svSquare
       [class]="svSquareClasses"
@@ -104,9 +101,7 @@
         (input)="onHueInput($event)"
       />
     </div>
-    }
-
-    @if (showAlpha()) {
+    } @if (showAlpha()) {
     <div [class]="alphaWrapperClasses">
       <input
         type="range"
@@ -120,9 +115,9 @@
         aria-label="Alpha"
         (input)="onAlphaInput($event)"
       />
-      <span [class]="alphaReadoutClasses" aria-hidden="true">{{
-        alphaPercentLabel()
-      }}</span>
+      <span [class]="alphaReadoutClasses" aria-hidden="true"
+        >{{ alphaPercentLabel() }}</span
+      >
     </div>
     }
   </div>

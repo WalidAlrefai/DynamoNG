@@ -17,12 +17,18 @@ export class DynamoColorPickerHarness extends ComponentHarness {
   // aria-label, not the generic `input[type="range"]` — when `customPicker`
   // is also on, the hue slider is a second `input[type="range"]` and would
   // otherwise collide with this locator.
-  private readonly alphaSliderLocator = this.documentRootLocatorFactory()
-    .locatorForOptional('input[aria-label="Alpha"]');
-  private readonly hueSliderLocator = this.documentRootLocatorFactory()
-    .locatorForOptional('input[aria-label="Hue"]');
-  private readonly svSquareLocator = this.documentRootLocatorFactory()
-    .locatorForOptional('[aria-label="Saturation and brightness"]');
+  private readonly alphaSliderLocator =
+    this.documentRootLocatorFactory().locatorForOptional(
+      'input[aria-label="Alpha"]',
+    );
+  private readonly hueSliderLocator =
+    this.documentRootLocatorFactory().locatorForOptional(
+      'input[aria-label="Hue"]',
+    );
+  private readonly svSquareLocator =
+    this.documentRootLocatorFactory().locatorForOptional(
+      '[aria-label="Saturation and brightness"]',
+    );
 
   async typeHex(text: string): Promise<void> {
     const input = await this.hexInputLocator();

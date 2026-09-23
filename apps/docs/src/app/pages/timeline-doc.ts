@@ -84,10 +84,7 @@ const EXAMPLES: DocExampleRef[] = [
         description='align="alternate" zigzags each item by index around a centered connector line — even items on the left, odd on the right.'
       >
         <div preview class="max-w-lg">
-          <dg-timeline
-            align="alternate"
-            ariaLabel="Order status, alternating"
-          >
+          <dg-timeline align="alternate" ariaLabel="Order status, alternating">
             <dg-timeline-item severity="success">
               <p class="font-medium text-text-primary">Order placed</p>
               <p class="text-sm text-text-muted">Jan 1, 9:02 AM</p>

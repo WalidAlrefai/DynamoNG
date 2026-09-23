@@ -103,7 +103,10 @@ export class DynamoCascadeSelectHarness extends ComponentHarness {
     )();
   }
 
-  private async findRowAtLevel(depth: number, label: string): Promise<TestElement> {
+  private async findRowAtLevel(
+    depth: number,
+    label: string,
+  ): Promise<TestElement> {
     const rows = await this.rowsAtLevel(depth);
     for (const row of rows) {
       if ((await row.text()).trim() === label) {

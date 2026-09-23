@@ -977,10 +977,12 @@ describe('DynamoColorPicker', () => {
     ])(
       'sets hue=$hue to $expected (covers the 240-300 and 300-360 hue-wheel segments)',
       async ({ hue, expected }) => {
-        const { container, fixture, componentInstance } =
-          renderDynamoComponent(DynamoColorPicker, {
+        const { container, fixture, componentInstance } = renderDynamoComponent(
+          DynamoColorPicker,
+          {
             inputs: { customPicker: true, value: '#ff0000' },
-          });
+          },
+        );
         const trigger = within(container).getByRole('button', {
           name: /Choose color/,
         });

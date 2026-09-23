@@ -402,7 +402,10 @@ export class DynamoCascadeSelect<TValue = string>
     });
   }
 
-  protected filterRowClasses(node: DynamoTreeNode<TValue>, index: number): string {
+  protected filterRowClasses(
+    node: DynamoTreeNode<TValue>,
+    index: number,
+  ): string {
     return cascadeSelectRowStyles({
       active: this.filterActiveIndex() === index,
       selected: this.isSelected(node),

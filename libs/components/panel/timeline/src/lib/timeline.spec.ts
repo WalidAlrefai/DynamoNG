@@ -52,7 +52,9 @@ class TimelineRightAlignedHostComponent {}
     <dg-timeline align="alternate">
       <dg-timeline-item><p data-testid="item-0">Placed</p></dg-timeline-item>
       <dg-timeline-item><p data-testid="item-1">Shipped</p></dg-timeline-item>
-      <dg-timeline-item><p data-testid="item-2">Out for delivery</p></dg-timeline-item>
+      <dg-timeline-item
+        ><p data-testid="item-2">Out for delivery</p></dg-timeline-item
+      >
       <dg-timeline-item><p data-testid="item-3">Delivered</p></dg-timeline-item>
     </dg-timeline>
   `,
@@ -206,7 +208,9 @@ describe('DynamoTimeline', () => {
   describe('align="alternate"', () => {
     function getContentEls(container: HTMLElement): HTMLElement[] {
       return Array.from(
-        container.querySelectorAll('[data-testid="DynamoTimelineItem-content"]'),
+        container.querySelectorAll(
+          '[data-testid="DynamoTimelineItem-content"]',
+        ),
       );
     }
 

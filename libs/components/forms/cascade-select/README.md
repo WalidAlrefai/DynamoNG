@@ -20,24 +20,24 @@ protected onItemSelect(node: DynamoTreeNode<string>): void { ... }
 
 ## Inputs
 
-| Input                   | Type                                  | Default       | Description                                                                                                       |
-| ----------------------- | ------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `nodes`                 | `DynamoTreeNode<TValue>[]` (required) | —             | The hierarchy. A node's `value` (falling back to its `id`) is what gets committed.                                |
-| `placeholder`           | `string`                              | `'Select...'` |                                                                                                                   |
-| `size`                  | `DynamoSize`                          | `'md'`        |                                                                                                                   |
-| `invalid`               | `boolean`                             | `false`       |                                                                                                                   |
-| `disabled`              | `boolean` (model)                     | `false`       | Also driven by Angular forms.                                                                                     |
-| `loading`               | `boolean`                             | `false`       | Renders a small spinner in the trigger and makes the component fully non-interactive, like `disabled`.            |
-| `ariaLabel`             | `string \| undefined`                 | `undefined`   |                                                                                                                   |
-| `clearable`             | `boolean`                             | `false`       | Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoSelect`'s own `clearable`. |
-| `value`                 | `TValue \| null` (model)              | `null`        | Also driven by Angular forms.                                                                                     |
-| `virtualScroll`         | `boolean`                             | `false`       | Renders every open level's row list through `@dynamong/virtual-scroll`.                                           |
-| `virtualScrollItemSize` | `number`                              | `36`          |                                                                                                                   |
-| `virtualScrollHeight`   | `number`                              | `240`         |                                                                                                                   |
-| `filterable`            | `boolean`                             | `false`       | Opt-in filter box above the root panel — see [Filtering](#filtering) below.                                       |
-| `filterText`            | `string` (model)                      | `''`          | Two-way bindable filter query.                                                                                    |
-| `filterPlaceholder`     | `string`                              | `'Search...'` |                                                                                                                   |
-| `noResultsMessage`      | `string`                              | `'No matching options'` | Shown when `nodes()` is non-empty but the filter matched no leaf.                                      |
+| Input                   | Type                                  | Default                 | Description                                                                                                       |
+| ----------------------- | ------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `nodes`                 | `DynamoTreeNode<TValue>[]` (required) | —                       | The hierarchy. A node's `value` (falling back to its `id`) is what gets committed.                                |
+| `placeholder`           | `string`                              | `'Select...'`           |                                                                                                                   |
+| `size`                  | `DynamoSize`                          | `'md'`                  |                                                                                                                   |
+| `invalid`               | `boolean`                             | `false`                 |                                                                                                                   |
+| `disabled`              | `boolean` (model)                     | `false`                 | Also driven by Angular forms.                                                                                     |
+| `loading`               | `boolean`                             | `false`                 | Renders a small spinner in the trigger and makes the component fully non-interactive, like `disabled`.            |
+| `ariaLabel`             | `string \| undefined`                 | `undefined`             |                                                                                                                   |
+| `clearable`             | `boolean`                             | `false`                 | Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoSelect`'s own `clearable`. |
+| `value`                 | `TValue \| null` (model)              | `null`                  | Also driven by Angular forms.                                                                                     |
+| `virtualScroll`         | `boolean`                             | `false`                 | Renders every open level's row list through `@dynamong/virtual-scroll`.                                           |
+| `virtualScrollItemSize` | `number`                              | `36`                    |                                                                                                                   |
+| `virtualScrollHeight`   | `number`                              | `240`                   |                                                                                                                   |
+| `filterable`            | `boolean`                             | `false`                 | Opt-in filter box above the root panel — see [Filtering](#filtering) below.                                       |
+| `filterText`            | `string` (model)                      | `''`                    | Two-way bindable filter query.                                                                                    |
+| `filterPlaceholder`     | `string`                              | `'Search...'`           |                                                                                                                   |
+| `noResultsMessage`      | `string`                              | `'No matching options'` | Shown when `nodes()` is non-empty but the filter matched no leaf.                                                 |
 
 ## Outputs
 
@@ -58,7 +58,7 @@ This is a deliberate design choice, not a simplification: CascadeSelect's
 "levels" are real, independently DOM-anchored CDK flyout overlays (each one
 anchored to a specific already-rendered row element from the level above),
 not one substitutable rendered list the way Tree/TreeSelect's own filter
-narrows in place. Synthesizing a *narrowed nested* view while filtering would
+narrows in place. Synthesizing a _narrowed nested_ view while filtering would
 need each intermediate level's row DOM element to already exist to anchor a
 new flyout to — which isn't true until that level has actually rendered, the
 same render-order dependency this component's own `buildInitialLevels`
@@ -76,11 +76,7 @@ filtering starts. The first `Escape` clears the filter and returns to normal
 browsing; a second `Escape` (or one while already blank) closes the panel.
 
 ```html
-<dg-cascade-select
-  [nodes]="locations"
-  [(value)]="selectedCity"
-  filterable
-/>
+<dg-cascade-select [nodes]="locations" [(value)]="selectedCity" filterable />
 ```
 
 ## Accessibility

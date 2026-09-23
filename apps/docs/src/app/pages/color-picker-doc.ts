@@ -52,7 +52,9 @@ const EXAMPLES: DocExampleRef[] = [
             ariaLabel="Brand color"
           />
         </div>
-        <div code>&lt;dg-color-picker [(value)]="color" [swatches]="[]" /&gt;</div>
+        <div code>
+          &lt;dg-color-picker [(value)]="color" [swatches]="[]" /&gt;
+        </div>
       </docs-example>
 
       <docs-example
