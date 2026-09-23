@@ -58,6 +58,41 @@ export class DynamoCascadeSelectHarness extends ComponentHarness {
     await row.click();
   }
 
+  /** Types into the root panel's filter box (opening the panel first if needed).
+   *  The filter box is a sibling of the root `[role="listbox"]`, not a
+   *  descendant (see cascade-select.html), so it's located directly. */
+  async filter(query: string): Promise<void> {
+    await this.open();
+    const input = await this.documentRootLocatorFactory().locatorFor(
+      'input[type="search"]',
+    )();
+    await input.clear();
+    await input.sendKeys(query);
+  }
+
+  /** Text of every visible row in the filtered flat-list view. */
+  async getFilteredResults(): Promise<string[]> {
+    const rows = await this.documentRootLocatorFactory().locatorForAll(
+      '[role="listbox"] [role="option"]',
+    )();
+    return Promise.all(rows.map(async (row) => (await row.text()).trim()));
+  }
+
+  /** Clicks a filtered-view row whose text starts with `label` (leaf label, ignoring any trailing path text). */
+  async clickFilteredResult(label: string): Promise<void> {
+    const rows = await this.documentRootLocatorFactory().locatorForAll(
+      '[role="listbox"] [role="option"]',
+    )();
+    for (const row of rows) {
+      const text = (await row.text()).trim();
+      if (text === label || text.startsWith(`${label} —`)) {
+        await row.click();
+        return;
+      }
+    }
+    throw new Error(`No filtered result with label "${label}" found`);
+  }
+
   private async rowsAtLevel(depth: number): Promise<TestElement[]> {
     const listboxes = await this.listboxLocators();
     const listbox = listboxes[depth];

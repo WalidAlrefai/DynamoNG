@@ -566,6 +566,29 @@ describe('DynamoCascadeSelect', () => {
         'Texas',
       ]);
     });
+
+    it('filters, reports, and selects a filtered result through the harness', async () => {
+      const { fixture, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoCascadeSelectHarness,
+      );
+
+      await harness.filter('austin');
+
+      expect(await harness.getFilteredResults()).toEqual([
+        'Austin — USA / Texas',
+      ]);
+
+      await harness.clickFilteredResult('Austin');
+
+      expect(componentInstance.value()).toBe('austin');
+      expect(await harness.isOpen()).toBe(false);
+    });
   });
 
   describe('output events', () => {
@@ -947,6 +970,321 @@ describe('DynamoCascadeSelect', () => {
       fixture.detectChanges();
 
       expect(getListboxes()).toHaveLength(0);
+    });
+  });
+
+  describe('filter', () => {
+    // The filter box wraps the root listbox as a sibling, not a descendant
+    // (see cascade-select.html: it lives outside the `role="listbox"` div,
+    // matching @dynamong/select's own filter-box/listbox structure, so the
+    // listbox's only ARIA children are its own option rows). It only ever
+    // renders once (root panel, `!levelIndex`), so a document-wide query is
+    // unambiguous.
+    function getFilterInput(): HTMLInputElement {
+      return document.body.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+    }
+
+    it('renders no filter box by default', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        CascadeSelectTestHostComponent,
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getListboxes()[0]!.querySelector('input[type="search"]')).toBeNull();
+    });
+
+    it('renders a filter box only in the root panel when filterable is enabled', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      getRowByText(getListboxes()[0]!, 'USA').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+
+      expect(getListboxes()).toHaveLength(2);
+      expect(getFilterInput()).not.toBeNull();
+      expect(
+        getListboxes()[1]!.querySelector('input[type="search"]'),
+      ).toBeNull();
+    });
+
+    it('narrows to leaves whose own label matches', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), 'austin');
+      await settle(fixture);
+
+      const labels = getRowsIn(getListboxes()[0]!).map((r) =>
+        r.textContent?.trim(),
+      );
+      expect(labels).toEqual(['Austin — USA / Texas']);
+    });
+
+    it('surfaces every leaf descendant when an ancestor label matches', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), 'california');
+      await settle(fixture);
+
+      const labels = getRowsIn(getListboxes()[0]!).map((r) =>
+        r.textContent?.trim(),
+      );
+      expect(labels).toEqual([
+        'Downtown — USA / California / Los Angeles',
+        'Uptown — USA / California / Los Angeles',
+        'San Francisco — USA / California',
+      ]);
+    });
+
+    it('excludes a leaf under a disabled ancestor even when directly matched', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), 'toronto');
+      await settle(fixture);
+
+      // No-results state isn't `role="listbox"` (see cascade-select.html),
+      // so it no longer shows up via getListboxes() — query the overlay
+      // container directly instead.
+      const overlay = document.body.querySelector(
+        '.cdk-overlay-container',
+      ) as HTMLElement;
+      expect(overlay.querySelectorAll('[role="option"]')).toHaveLength(0);
+      expect(overlay.textContent).toContain('No matching options');
+    });
+
+    it('still shows a disabled leaf with enabled ancestors, marked aria-disabled', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), 'dallas');
+      await settle(fixture);
+
+      const row = getRowByText(
+        getListboxes()[0]!,
+        'Dallas — USA / Texas',
+      );
+      expect(row.getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('clicking a filtered result commits the value and closes the panel', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoCascadeSelect<string>,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), 'austin');
+      await settle(fixture);
+      getRowByText(getListboxes()[0]!, 'Austin — USA / Texas').click();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('austin');
+      expect(getListboxes()).toHaveLength(0);
+    });
+
+    it('Enter commits the active filtered result', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoCascadeSelect<string>,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), 'austin');
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), '{Enter}');
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('austin');
+      expect(getListboxes()).toHaveLength(0);
+    });
+
+    it('ArrowDown/ArrowUp move the active filtered row', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoCascadeSelect<string>,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), 'california');
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), '{ArrowDown}{ArrowDown}{Enter}');
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('sf');
+    });
+
+    it('typing while a child flyout is open closes it', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      getRowByText(getListboxes()[0]!, 'USA').dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+      expect(getListboxes()).toHaveLength(2);
+
+      await userEvent.type(getFilterInput(), 'a');
+      await settle(fixture);
+
+      expect(getListboxes()).toHaveLength(1);
+    });
+
+    it('the first Escape clears the filter and restores normal browsing', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), 'austin');
+      await settle(fixture);
+
+      await userEvent.type(getFilterInput(), '{Escape}');
+      await settle(fixture);
+
+      expect(getListboxes()).toHaveLength(1);
+      expect(getFilterInput().value).toBe('');
+      const labels = getRowsIn(getListboxes()[0]!).map((r) =>
+        r.textContent?.trim(),
+      );
+      expect(labels).toEqual(['USA', 'Canada', 'Mexico']);
+    });
+
+    it('a second Escape (or Escape while already blank) closes the panel', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DynamoCascadeSelect,
+        { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.type(getFilterInput(), '{Escape}');
+      await settle(fixture);
+
+      expect(getListboxes()).toHaveLength(0);
+    });
+
+    it('does not react to typeahead letter keys while filterable', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoCascadeSelect<string>
+      >(DynamoCascadeSelect, {
+        inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' },
+      });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      trigger.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'm',
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+      fixture.detectChanges();
+
+      expect(getListboxes()).toHaveLength(0);
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    describe('with virtual scroll', () => {
+      it('renders the filtered list through dg-virtual-scroll and selects correctly', async () => {
+        const { container, fixture, componentInstance } = renderDynamoComponent(
+          DynamoCascadeSelect,
+          {
+            inputs: {
+              nodes: MANY_CASCADE_NODES,
+              filterable: true,
+              virtualScroll: true,
+              ariaLabel: 'Many',
+            },
+          },
+        );
+
+        await userEvent.click(within(container).getByRole('combobox'));
+        await settle(fixture);
+        const filterInput = getFilterInput();
+        await userEvent.type(filterInput, 'Item 5A');
+        await settle(fixture);
+
+        expect(
+          getListboxes()[0]!.querySelector('dg-virtual-scroll'),
+        ).toBeTruthy();
+        getRowByText(getListboxes()[0]!, 'Item 5A — Category 5').click();
+        await settle(fixture);
+
+        expect(componentInstance.value()).toBe('c5-a');
+      });
+    });
+
+    describe('accessibility', () => {
+      it('has no axe violations with the filter box shown', async () => {
+        const { container, fixture } = renderDynamoComponent(
+          DynamoCascadeSelect,
+          { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+        );
+
+        await userEvent.click(within(container).getByRole('combobox'));
+        await settle(fixture);
+
+        await expect(
+          expectNoA11yViolations(getListboxes()[0]!),
+        ).resolves.toBeUndefined();
+      });
+
+      it('has no axe violations in the no-results state', async () => {
+        const { container, fixture } = renderDynamoComponent(
+          DynamoCascadeSelect,
+          { inputs: { nodes: NODES, filterable: true, ariaLabel: 'Location' } },
+        );
+
+        await userEvent.click(within(container).getByRole('combobox'));
+        await settle(fixture);
+        await userEvent.type(getFilterInput(), 'zzz-no-match');
+        await settle(fixture);
+
+        // The no-results container isn't role="listbox" (see cascade-select.html),
+        // so it no longer matches getListboxes() — check the whole overlay instead.
+        await expect(
+          expectNoA11yViolations(
+            document.body.querySelector('.cdk-overlay-container') as HTMLElement,
+          ),
+        ).resolves.toBeUndefined();
+      });
     });
   });
 

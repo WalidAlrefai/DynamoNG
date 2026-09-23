@@ -63,6 +63,7 @@ const MANY_NODES: DynamoTreeNode<string>[] = Array.from(
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'clearable', title: 'Clearable' },
+  { id: 'filterable', title: 'Filterable' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
 ];
 
@@ -76,6 +77,14 @@ const API: ApiTableRow[] = [
   { name: 'virtualScroll', type: 'boolean', default: 'false' },
   { name: 'virtualScrollItemSize', type: 'number', default: '36' },
   { name: 'virtualScrollHeight', type: 'number', default: '240' },
+  { name: 'filterable', type: 'boolean', default: 'false' },
+  { name: 'filterText', type: 'string (model)', default: "''" },
+  { name: 'filterPlaceholder', type: 'string', default: "'Search...'" },
+  {
+    name: 'noResultsMessage',
+    type: 'string',
+    default: "'No matching options'",
+  },
 ];
 
 @Component({
@@ -136,6 +145,25 @@ const API: ApiTableRow[] = [
       </docs-example>
 
       <docs-example
+        exampleId="filterable"
+        title="Filterable"
+        description="Set filterable to render a search box above the root panel. Typing switches to a flat list of every matching leaf, shown with its ancestor path."
+      >
+        <div preview class="max-w-xs">
+          <dg-cascade-select
+            [nodes]="nodes"
+            [(value)]="filterableValue"
+            [filterable]="true"
+            ariaLabel="Location"
+          />
+        </div>
+        <div code>
+          &lt;dg-cascade-select [nodes]="nodes" [(value)]="value"
+          [filterable]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="virtual-scroll"
         title="Virtual Scroll"
         description="virtualScroll renders every open level's row list virtualized — no grouping caveat, since each level is a flat same-height list."
@@ -167,4 +195,5 @@ export class CascadeSelectDocPage {
   protected readonly location = new FormControl<string | null>(null);
   protected readonly manyValue = signal<string | null>(null);
   protected readonly clearableValue = signal<string | null>('mexico');
+  protected readonly filterableValue = signal<string | null>(null);
 }
