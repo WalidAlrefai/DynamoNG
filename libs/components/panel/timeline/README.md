@@ -27,7 +27,7 @@ connecting line to the next event, and projected content.
 | Input       | Type                  | Default     | Description                                                                                                                                                                                                                 |
 | ----------- | --------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ariaLabel` | `string \| undefined` | `undefined` |                                                                                                                                                                                                                             |
-| `align`     | `'left' \| 'right'`   | `'left'`    | Which side of the connector line every item's content renders on. Read by each `dg-timeline-item` via a direct (optional) DI lookup of `DynamoTimeline` — a standalone item outside a `dg-timeline` falls back to `'left'`. |
+| `align`     | `'left' \| 'right' \| 'alternate'` | `'left'`    | Which side of the connector line each item's content renders on. `'left'`/`'right'` are uniform across every item; `'alternate'` zigzags by index (even → left, odd → right) around a centered connector line. Read by each `dg-timeline-item` via a direct (optional) DI lookup of `DynamoTimeline` — a standalone item outside a `dg-timeline` falls back to `'left'`. |
 
 ### `dg-timeline-item`
 
@@ -46,15 +46,19 @@ None — both components are static, presentational content containers with no i
 
 ## Design notes
 
-`align` is uniform across all items (`'left' | 'right'`) — a per-item
-alternating layout was considered and left out: alternating sides needs each
-item to know its own index among siblings, which would mean
-`DynamoTimeline` starting to query its items via `contentChildren()` (it's
-currently a pure `<ng-content />` passthrough). That's a real feature, but a
-larger, separate piece of work from this single-signal `align` addition.
-Also left out: a secondary content-projection slot on the far side of the
-marker — no existing need, and `align` alone already covers the common
-"flip which side content sits on" request.
+`align="alternate"` renders each item's own host as a 3-column grid
+(`content | marker | content`) instead of the normal two-column flex row —
+the marker (dot + connector) always sits in the fixed center column, and
+each item's actual content is placed into the left or right column via
+`grid-column`, based on its index (`DynamoTimeline` exposes its projected
+items via `contentChildren()` so each `dg-timeline-item` can look up its
+own position among siblings). Even index → left; odd → right. There's no
+per-item override of which side it lands on — this stays a single signal
+on `dg-timeline`, same as `align` itself.
+
+Left out: a way to override an individual item's side in alternate mode.
+No existing need, and it would turn `align` from one signal read by every
+item into per-item state — a bigger surface for a case that hasn't come up.
 
 ## Tier / dependencies
 

@@ -1,7 +1,15 @@
-<div [class]="markerColumnClasses" [attr.data-testid]="'DynamoTimelineItem-marker'">
+<div
+  [class]="markerColumnClasses"
+  [style.grid-column]="markerGridColumn()"
+  [attr.data-testid]="'DynamoTimelineItem-marker'"
+>
   <span [class]="dotClasses()" [attr.data-testid]="'DynamoTimelineItem-dot'"></span>
   <span [class]="connectorClasses" [attr.data-testid]="'DynamoTimelineItem-connector'"></span>
 </div>
-<div [class]="contentClasses()" [attr.data-testid]="'DynamoTimelineItem-content'">
+<div
+  [class]="contentClasses()"
+  [style.grid-column]="contentGridColumn()"
+  [attr.data-testid]="'DynamoTimelineItem-content'"
+>
   <ng-content />
 </div>

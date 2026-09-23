@@ -13,6 +13,12 @@ export const timelineRootStyles = 'flex flex-col';
 // own host element.
 export const timelineItemHostStyles = 'group flex gap-4';
 
+// Grid's default align-items is also stretch (same as flex's), so the
+// marker column's connector still stretches to the full row height with
+// no explicit override — same mechanism as the flex layout above.
+export const timelineItemHostAlternateStyles =
+  'group grid grid-cols-[1fr_auto_1fr] gap-4';
+
 export const timelineMarkerColumnStyles = 'flex flex-col items-center';
 
 export const timelineDotStyles = cva(

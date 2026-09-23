@@ -9,6 +9,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'align', title: 'Align' },
+  { id: 'alternate', title: 'Alternate' },
 ];
 
 @Component({
@@ -74,6 +75,39 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
         <div code>
           &lt;dg-timeline align="right"&gt; ... &lt;/dg-timeline&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="alternate"
+        title="Alternate"
+        description='align="alternate" zigzags each item by index around a centered connector line — even items on the left, odd on the right.'
+      >
+        <div preview class="max-w-lg">
+          <dg-timeline
+            align="alternate"
+            ariaLabel="Order status, alternating"
+          >
+            <dg-timeline-item severity="success">
+              <p class="font-medium text-text-primary">Order placed</p>
+              <p class="text-sm text-text-muted">Jan 1, 9:02 AM</p>
+            </dg-timeline-item>
+            <dg-timeline-item severity="info">
+              <p class="font-medium text-text-primary">Shipped</p>
+              <p class="text-sm text-text-muted">Jan 2, 4:45 PM</p>
+            </dg-timeline-item>
+            <dg-timeline-item severity="warning">
+              <p class="font-medium text-text-primary">Out for delivery</p>
+              <p class="text-sm text-text-muted">Jan 3, 8:15 AM</p>
+            </dg-timeline-item>
+            <dg-timeline-item severity="primary">
+              <p class="font-medium text-text-primary">Delivered</p>
+              <p class="text-sm text-text-muted">Jan 3, 1:30 PM</p>
+            </dg-timeline-item>
+          </dg-timeline>
+        </div>
+        <div code>
+          &lt;dg-timeline align="alternate"&gt; ... &lt;/dg-timeline&gt;
         </div>
       </docs-example>
 

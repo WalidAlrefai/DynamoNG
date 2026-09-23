@@ -45,6 +45,21 @@ class TimelineTestHostComponent {}
 class TimelineRightAlignedHostComponent {}
 
 @Component({
+  selector: 'dg-timeline-alternate-host',
+  standalone: true,
+  imports: [DynamoTimeline, DynamoTimelineItem],
+  template: `
+    <dg-timeline align="alternate">
+      <dg-timeline-item><p data-testid="item-0">Placed</p></dg-timeline-item>
+      <dg-timeline-item><p data-testid="item-1">Shipped</p></dg-timeline-item>
+      <dg-timeline-item><p data-testid="item-2">Out for delivery</p></dg-timeline-item>
+      <dg-timeline-item><p data-testid="item-3">Delivered</p></dg-timeline-item>
+    </dg-timeline>
+  `,
+})
+class TimelineAlternateHostComponent {}
+
+@Component({
   selector: 'dg-timeline-item-standalone-host',
   standalone: true,
   imports: [DynamoTimelineItem],
@@ -185,6 +200,110 @@ describe('DynamoTimeline', () => {
 
       expect(item?.className).not.toContain('flex-row-reverse');
       expect(within(container).getByTestId('standalone-item')).toBeTruthy();
+    });
+  });
+
+  describe('align="alternate"', () => {
+    function getContentEls(container: HTMLElement): HTMLElement[] {
+      return Array.from(
+        container.querySelectorAll('[data-testid="DynamoTimelineItem-content"]'),
+      );
+    }
+
+    function getMarkerEls(container: HTMLElement): HTMLElement[] {
+      return Array.from(
+        container.querySelectorAll('[data-testid="DynamoTimelineItem-marker"]'),
+      );
+    }
+
+    it('places even-index content in grid-column 1, odd-index in grid-column 3', () => {
+      const { container } = renderDynamoComponent(
+        TimelineAlternateHostComponent,
+      );
+      const contents = getContentEls(container);
+
+      expect(contents).toHaveLength(4);
+      expect(contents[0]?.style.gridColumn).toBe('1');
+      expect(contents[1]?.style.gridColumn).toBe('3');
+      expect(contents[2]?.style.gridColumn).toBe('1');
+      expect(contents[3]?.style.gridColumn).toBe('3');
+    });
+
+    it('places every marker in grid-column 2', () => {
+      const { container } = renderDynamoComponent(
+        TimelineAlternateHostComponent,
+      );
+      const markers = getMarkerEls(container);
+
+      expect(markers).toHaveLength(4);
+      for (const marker of markers) {
+        expect(marker.style.gridColumn).toBe('2');
+      }
+    });
+
+    it('switches the item host to the grid layout, not flex', () => {
+      const { container } = renderDynamoComponent(
+        TimelineAlternateHostComponent,
+      );
+      const item = container.querySelector('dg-timeline-item');
+
+      expect(item?.className).toContain('grid');
+      expect(item?.className).not.toContain('flex-row-reverse');
+    });
+
+    it('projects each item’s own content into the correct side', () => {
+      const { container } = renderDynamoComponent(
+        TimelineAlternateHostComponent,
+      );
+
+      expect(within(container).getByTestId('item-0').textContent).toContain(
+        'Placed',
+      );
+      expect(within(container).getByTestId('item-3').textContent).toContain(
+        'Delivered',
+      );
+    });
+
+    it('does not set grid-column on any item when align is unset (regression guard)', () => {
+      const { container } = renderDynamoComponent(TimelineTestHostComponent);
+      for (const content of getContentEls(container)) {
+        expect(content.style.gridColumn).toBe('');
+      }
+      for (const marker of getMarkerEls(container)) {
+        expect(marker.style.gridColumn).toBe('');
+      }
+    });
+
+    it('does not set grid-column on any item when align="right" (regression guard)', () => {
+      const { container } = renderDynamoComponent(
+        TimelineRightAlignedHostComponent,
+      );
+      for (const content of getContentEls(container)) {
+        expect(content.style.gridColumn).toBe('');
+      }
+      for (const marker of getMarkerEls(container)) {
+        expect(marker.style.gridColumn).toBe('');
+      }
+    });
+
+    it('still reports item count and per-item content text through the harness', async () => {
+      const { fixture } = renderDynamoComponent(TimelineAlternateHostComponent);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTimelineHarness,
+      );
+
+      expect(await harness.getItemCount()).toBe(4);
+      expect(await harness.getItemContentText(0)).toContain('Placed');
+      expect(await harness.getItemContentText(1)).toContain('Shipped');
+      expect(await harness.getItemContentText(3)).toContain('Delivered');
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = renderDynamoComponent(
+        TimelineAlternateHostComponent,
+      );
+      await expectNoA11yViolations(container);
     });
   });
 

@@ -13,6 +13,7 @@ import {
   timelineConnectorStyles,
   timelineContentStyles,
   timelineDotStyles,
+  timelineItemHostAlternateStyles,
   timelineItemHostStyles,
   timelineMarkerColumnStyles,
 } from './timeline.styles';
@@ -41,13 +42,39 @@ export class DynamoTimelineItem extends DynamoBaseComponent<DynamoTimelineItemPa
   // posture other components in this codebase use for ancestor lookups.
   private readonly timeline = inject(DynamoTimeline, { optional: true });
 
-  // Structural (row direction), not decorative — stays applied even when
-  // `unstyled`, same precedent as `group` itself in timelineItemHostStyles.
+  // This item's own position among its `DynamoTimeline` siblings — `indexOf`
+  // compares by reference against the signal-query result, which is exactly
+  // the actual component instances. Only meaningful (and only read) when
+  // `isAlternate()` is true.
+  protected readonly index = computed(() => {
+    const list = this.timeline?.items() ?? [];
+    return list.indexOf(this);
+  });
+  protected readonly isAlternate = computed(
+    () => this.timeline?.align() === 'alternate',
+  );
+  // Even index (0, 2, 4...) -> left; odd -> right. No per-item override —
+  // keeps this a single-signal addition, same framing as `align` itself.
+  protected readonly isRightSide = computed(
+    () => this.isAlternate() && this.index() % 2 === 1,
+  );
+  protected readonly contentGridColumn = computed(() =>
+    this.isAlternate() ? (this.isRightSide() ? '3' : '1') : null,
+  );
+  protected readonly markerGridColumn = computed(() =>
+    this.isAlternate() ? '2' : null,
+  );
+
+  // Structural (row direction/grid columns), not decorative — stays applied
+  // even when `unstyled`, same precedent as `group` itself in
+  // timelineItemHostStyles.
   protected readonly hostClasses = computed(() =>
-    cn(
-      timelineItemHostStyles,
-      this.timeline?.align() === 'right' ? 'flex-row-reverse' : '',
-    ),
+    this.isAlternate()
+      ? timelineItemHostAlternateStyles
+      : cn(
+          timelineItemHostStyles,
+          this.timeline?.align() === 'right' ? 'flex-row-reverse' : '',
+        ),
   );
 
   protected readonly markerColumnClasses = timelineMarkerColumnStyles;
