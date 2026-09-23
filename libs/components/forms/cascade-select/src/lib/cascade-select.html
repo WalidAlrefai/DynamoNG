@@ -70,85 +70,176 @@
 -->
 <ng-template #panelTemplate let-levelIndex="levelIndex">
   @if (levels()[levelIndex ?? 0]; as level) {
-  <div
-    [id]="panelIdForLevel(levelIndex ?? 0)"
-    [class]="panelWrapperClasses()"
-    role="listbox"
-    [attr.aria-label]="ariaLabel() ?? 'Options'"
-  >
-    @if (isVirtualized()) {
-    <dg-virtual-scroll
-      [items]="level.nodes"
-      [itemSize]="virtualScrollItemSize()"
-      [height]="virtualScrollHeight()"
-    >
-      <ng-template let-node let-i="index">
-        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown, see the non-virtualized branch below -->
-        <div
-          [id]="rowId(levelIndex ?? 0, i)"
-          role="option"
-          tabindex="-1"
-          [attr.aria-selected]="isSelected(node)"
-          [attr.aria-disabled]="node.disabled ? 'true' : null"
-          [class]="rowClasses(node, levelIndex ?? 0, i)"
-          (mouseenter)="onRowHover(levelIndex ?? 0, i)"
-          (click)="onRowActivate(levelIndex ?? 0, i)"
-        >
-          <span>{{ node.label }}</span>
-          @if (node.children?.length) {
-          <svg
-            [class]="caretClasses"
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            [attr.aria-hidden]="true"
-          >
-            <path
-              d="M6 4l4 4-4 4"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          }
-        </div>
-      </ng-template>
-    </dg-virtual-scroll>
-    } @else { @for (node of level.nodes; track node.id; let i = $index) {
-    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown, see cascade-select.ts's onTriggerKeydown doc comment -->
-    <div
-      [id]="rowId(levelIndex ?? 0, i)"
-      role="option"
-      tabindex="-1"
-      [attr.aria-selected]="isSelected(node)"
-      [attr.aria-disabled]="node.disabled ? 'true' : null"
-      [class]="rowClasses(node, levelIndex ?? 0, i)"
-      (mouseenter)="onRowHover(levelIndex ?? 0, i)"
-      (click)="onRowActivate(levelIndex ?? 0, i)"
-    >
-      <span>{{ node.label }}</span>
-      @if (node.children?.length) {
-      <svg
-        [class]="caretClasses"
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        [attr.aria-hidden]="true"
-      >
-        <path
-          d="M6 4l4 4-4 4"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+  <div [class]="panelWrapperClasses()">
+    @if (filterable() && !levelIndex) {
+    <div [class]="filterWrapperClasses">
+      <div [class]="filterFieldWrapperClasses">
+        <dg-input-text
+          type="search"
+          size="sm"
+          [styleClass]="filterInputExtraClasses"
+          [ngModel]="filterText()"
+          (ngModelChange)="onFilterInputChange($event)"
+          (keydown)="onFilterKeydown($event)"
+          [placeholder]="filterPlaceholder()"
+          ariaLabel="Search options"
         />
-      </svg>
-      }
+        <svg
+          [class]="filterIconClasses"
+          [attr.aria-hidden]="true"
+          width="14"
+          height="14"
+          viewBox="0 0 20 20"
+          fill="none"
+        >
+          <path
+            d="M9 17a8 8 0 100-16 8 8 0 000 16zM19 19l-4.35-4.35"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
     </div>
-    } }
+    }
+    <!--
+      role/aria-label are omitted in the no-results state — an empty
+      `role="listbox"` (zero option/group children) is itself an
+      aria-required-children violation regardless of what other,
+      non-option content it holds, so this container isn't a listbox at
+      all while showing only a status message.
+    -->
+    <div
+      [id]="panelIdForLevel(levelIndex ?? 0)"
+      [attr.role]="showNoResults() ? null : 'listbox'"
+      [attr.aria-label]="showNoResults() ? null : (ariaLabel() ?? 'Options')"
+    >
+      @if (isFilterActive()) { @if (showNoResults()) {
+      <div role="status" class="px-3 py-2 text-sm text-text-muted">
+        {{ noResultsMessage() }}
+      </div>
+      } @else if (isVirtualized()) {
+      <dg-virtual-scroll
+        [items]="filteredResults()"
+        [itemSize]="virtualScrollItemSize()"
+        [height]="virtualScrollHeight()"
+      >
+        <ng-template let-result let-i="index">
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the filter input's own keydown, see the non-virtualized branch below -->
+          <div
+            [id]="rowId(levelIndex ?? 0, i)"
+            role="option"
+            tabindex="-1"
+            [attr.aria-selected]="isSelected(result.node)"
+            [attr.aria-disabled]="result.node.disabled ? 'true' : null"
+            [class]="filterRowClasses(result.node, i)"
+            (mouseenter)="filterActiveIndex.set(i)"
+            (click)="onFilterRowActivate(i)"
+          >
+            <span class="truncate">
+              {{ result.node.label }} @if (result.path.length) {
+              <span class="text-text-muted"
+                >— {{ result.path.join(' / ') }}</span
+              >
+              }
+            </span>
+          </div>
+        </ng-template>
+      </dg-virtual-scroll>
+      } @else { @for (result of filteredResults(); track result.node.id; let i =
+      $index) {
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the filter input's own keydown -->
+      <div
+        [id]="rowId(levelIndex ?? 0, i)"
+        role="option"
+        tabindex="-1"
+        [attr.aria-selected]="isSelected(result.node)"
+        [attr.aria-disabled]="result.node.disabled ? 'true' : null"
+        [class]="filterRowClasses(result.node, i)"
+        (mouseenter)="filterActiveIndex.set(i)"
+        (click)="onFilterRowActivate(i)"
+      >
+        <span class="truncate">
+          {{ result.node.label }} @if (result.path.length) {
+          <span class="text-text-muted">— {{ result.path.join(' / ') }}</span>
+          }
+        </span>
+      </div>
+      } } } @else { @if (isVirtualized()) {
+      <dg-virtual-scroll
+        [items]="level.nodes"
+        [itemSize]="virtualScrollItemSize()"
+        [height]="virtualScrollHeight()"
+      >
+        <ng-template let-node let-i="index">
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown, see the non-virtualized branch below -->
+          <div
+            [id]="rowId(levelIndex ?? 0, i)"
+            role="option"
+            tabindex="-1"
+            [attr.aria-selected]="isSelected(node)"
+            [attr.aria-disabled]="node.disabled ? 'true' : null"
+            [class]="rowClasses(node, levelIndex ?? 0, i)"
+            (mouseenter)="onRowHover(levelIndex ?? 0, i)"
+            (click)="onRowActivate(levelIndex ?? 0, i)"
+          >
+            <span>{{ node.label }}</span>
+            @if (node.children?.length) {
+            <svg
+              [class]="caretClasses"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              [attr.aria-hidden]="true"
+            >
+              <path
+                d="M6 4l4 4-4 4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            }
+          </div>
+        </ng-template>
+      </dg-virtual-scroll>
+      } @else { @for (node of level.nodes; track node.id; let i = $index) {
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown, see cascade-select.ts's onTriggerKeydown doc comment -->
+      <div
+        [id]="rowId(levelIndex ?? 0, i)"
+        role="option"
+        tabindex="-1"
+        [attr.aria-selected]="isSelected(node)"
+        [attr.aria-disabled]="node.disabled ? 'true' : null"
+        [class]="rowClasses(node, levelIndex ?? 0, i)"
+        (mouseenter)="onRowHover(levelIndex ?? 0, i)"
+        (click)="onRowActivate(levelIndex ?? 0, i)"
+      >
+        <span>{{ node.label }}</span>
+        @if (node.children?.length) {
+        <svg
+          [class]="caretClasses"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          [attr.aria-hidden]="true"
+        >
+          <path
+            d="M6 4l4 4-4 4"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        }
+      </div>
+      } } }
+    </div>
   </div>
   }
 </ng-template>

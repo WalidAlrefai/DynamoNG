@@ -15,17 +15,23 @@ import {
 } from '@angular/core';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
+import { FormsModule } from '@angular/forms';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import {
   DynamoListboxBase,
   buildListboxPositions,
   selectChevronStyles,
   selectClearButtonStyles,
+  selectFilterFieldWrapperStyles,
+  selectFilterIconStyles,
+  selectFilterInputExtraClasses,
+  selectFilterWrapperStyles,
   selectPanelWrapperStyles,
   selectPanelWrapperVirtualStyles,
   selectTriggerButtonStyles,
   selectTriggerStyles,
 } from '@dynamong/select';
+import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoTreeNode } from '@dynamong/tree';
@@ -37,6 +43,7 @@ import {
   findTypeaheadMatch,
   resolveTypeaheadQuery,
 } from '@dynamong/utils/typeahead';
+import { flattenCascadeFilterResults } from './cascade-select.filter';
 import { buildCascadePositions } from './cascade-select.positioning';
 import {
   cascadeSelectCaretStyles,
@@ -106,7 +113,7 @@ function findEnabledNodeIndex<TValue>(
   selector: 'dg-cascade-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSpinner, DynamoVirtualScroll],
+  imports: [DynamoSpinner, DynamoVirtualScroll, DynamoInputText, FormsModule],
   templateUrl: './cascade-select.html',
   providers: [
     {
@@ -149,6 +156,20 @@ export class DynamoCascadeSelect<TValue = string>
   readonly virtualScrollItemSize = input(36);
   /** Viewport height in px when virtualized — matches `selectPanelWrapperStyles`' own `max-h-60` (240px). */
   readonly virtualScrollHeight = input(240);
+  /**
+   * Opt-in filter box rendered above the root panel — mirrors
+   * `DynamoTreeSelect`'s own `filterable`. Typing switches the panel from
+   * the normal nested-flyout view to a single flat list of every matching
+   * LEAF (own label or any ancestor's label matches), each shown with its
+   * ancestor path as secondary text — not a per-level narrowing of the
+   * currently-open flyouts. See `isFilterActive`'s doc comment for why.
+   */
+  readonly filterable = input(false);
+  /** Two-way bindable filter query. */
+  readonly filterText = model('');
+  readonly filterPlaceholder = input('Search...');
+  /** Shown when `nodes()` is non-empty but the filter matched no leaf. */
+  readonly noResultsMessage = input('No matching options');
 
   private readonly triggerEl =
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
@@ -199,6 +220,35 @@ export class DynamoCascadeSelect<TValue = string>
   });
   protected readonly isVirtualized = computed(() => this.virtualScroll());
 
+  /** True once filtering has replaced the nested-flyout view with the flat
+   *  results list. Blank query (or `filterable()` off) means normal
+   *  per-level browsing — unlike `filterTree`/TreeSelect's own filter,
+   *  which narrow a single already-rendered list in place, CascadeSelect's
+   *  "levels" are real, independently DOM-anchored flyout overlays, so
+   *  filtering switches the WHOLE panel to a different rendering mode
+   *  entirely rather than attempting to narrow the nested view — see
+   *  `filteredResults`' own doc comment for the render-order reason a
+   *  narrowed *nested* view isn't attempted. */
+  protected readonly isFilterActive = computed(
+    () => this.filterable() && this.filterText().trim() !== '',
+  );
+  /** The flattened, filtered leaf list — see `flattenCascadeFilterResults`'
+   *  own doc comment for the exact match/exclusion semantics. Empty
+   *  whenever `isFilterActive()` is false; there is no "browse everything
+   *  flattened" mode. */
+  protected readonly filteredResults = computed(() =>
+    this.isFilterActive()
+      ? flattenCascadeFilterResults(this.nodes(), this.filterText())
+      : [],
+  );
+  protected readonly showNoResults = computed(
+    () => this.isFilterActive() && this.filteredResults().length === 0,
+  );
+  /** Active row index within `filteredResults()` — separate from any
+   *  `level.activeIndex`, since there's no level to index into while
+   *  filtering. */
+  protected readonly filterActiveIndex = signal(-1);
+
   protected readonly isDisabled = computed(
     () => this.disabled() || this.loading(),
   );
@@ -227,6 +277,10 @@ export class DynamoCascadeSelect<TValue = string>
       : selectPanelWrapperStyles,
   );
   protected readonly caretClasses = cascadeSelectCaretStyles;
+  protected readonly filterWrapperClasses = selectFilterWrapperStyles;
+  protected readonly filterFieldWrapperClasses = selectFilterFieldWrapperStyles;
+  protected readonly filterIconClasses = selectFilterIconStyles;
+  protected readonly filterInputExtraClasses = selectFilterInputExtraClasses;
 
   constructor() {
     super();
@@ -276,6 +330,21 @@ export class DynamoCascadeSelect<TValue = string>
           }),
         );
         this.flyoutHandles.push({ ...handle, anchorEl: anchor });
+      }
+    });
+
+    // Filtering replaces the nested-flyout view with a single flat list
+    // rendered inside the root panel — any deeper flyouts (levels()[1..])
+    // must close. Truncating levels() to length 1 here is sufficient: the
+    // flyout-resync effect above already detaches/disposes any flyout
+    // handle beyond what levels().length - 1 calls for, so no separate
+    // "close flyouts" call is needed. levels()[0] itself stays populated
+    // (its nodes/activeIndex become irrelevant while filtering, but the
+    // template's own `@if (levels()[levelIndex ?? 0]; as level)` guard
+    // needs it present to render the root panel at all).
+    effect(() => {
+      if (this.isFilterActive() && this.levels().length > 1) {
+        this.levels.update((current) => current.slice(0, 1));
       }
     });
   }
@@ -333,6 +402,83 @@ export class DynamoCascadeSelect<TValue = string>
     });
   }
 
+  protected filterRowClasses(
+    node: DynamoTreeNode<TValue>,
+    index: number,
+  ): string {
+    return cascadeSelectRowStyles({
+      active: this.filterActiveIndex() === index,
+      selected: this.isSelected(node),
+      disabled: !!node.disabled,
+    });
+  }
+
+  protected onFilterRowActivate(index: number): void {
+    const result = this.filteredResults()[index];
+    if (!result || result.node.disabled) return;
+    this.selectNode(result.node);
+  }
+
+  protected onFilterInputChange(value: string): void {
+    this.filterText.set(value);
+    // filteredResults() is read AFTER the set above, so it already reflects
+    // the new query (signals recompute synchronously on read).
+    const results = this.filteredResults();
+    this.filterActiveIndex.set(
+      findEnabledNodeIndex(
+        results.map((r) => r.node),
+        -1,
+        1,
+      ) ?? -1,
+    );
+    this.scrollActiveIntoView(0);
+  }
+
+  protected onFilterKeydown(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'Escape':
+        event.preventDefault();
+        if (this.filterText()) {
+          // First Escape clears the filter and returns to normal
+          // nested-flyout browsing — levels()[0] is already intact.
+          this.filterText.set('');
+        } else {
+          this.close();
+          this.triggerEl().nativeElement.focus();
+        }
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        this.moveFilterActive(1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.moveFilterActive(-1);
+        break;
+      case 'Enter': {
+        event.preventDefault();
+        const result = this.filteredResults()[this.filterActiveIndex()];
+        if (result) this.selectNode(result.node);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  private moveFilterActive(delta: number): void {
+    const results = this.filteredResults();
+    const next = findEnabledNodeIndex(
+      results.map((r) => r.node),
+      this.filterActiveIndex(),
+      delta,
+    );
+    if (next !== null) {
+      this.filterActiveIndex.set(next);
+      this.scrollActiveIntoView(0);
+    }
+  }
+
   protected toggle(): void {
     if (this.isDisabled()) return;
     if (this.isOpen()) {
@@ -354,6 +500,8 @@ export class DynamoCascadeSelect<TValue = string>
     this.isOpen.set(false);
     this.levels.set([]);
     this.activeLevelIndex.set(0);
+    this.filterText.set('');
+    this.filterActiveIndex.set(-1);
     this.typeahead.clear();
     this.onTouchedFn();
   }
@@ -480,12 +628,16 @@ export class DynamoCascadeSelect<TValue = string>
     }
   }
 
+  // Typeahead only applies to the non-filterable path — once `filterable()`
+  // is true, the filter box's own `onFilterKeydown` supersedes it, same
+  // gating TreeSelect's own `handleTypeahead` already established.
   private handleClosedTypeahead(event: KeyboardEvent): void {
     if (
       event.key.length !== 1 ||
       event.ctrlKey ||
       event.metaKey ||
-      event.altKey
+      event.altKey ||
+      this.filterable()
     ) {
       return;
     }
@@ -507,7 +659,8 @@ export class DynamoCascadeSelect<TValue = string>
       event.key.length !== 1 ||
       event.ctrlKey ||
       event.metaKey ||
-      event.altKey
+      event.altKey ||
+      this.filterable()
     ) {
       return;
     }
@@ -555,6 +708,16 @@ export class DynamoCascadeSelect<TValue = string>
    */
   private scrollActiveIntoView(levelIndex: number): void {
     if (!this.isVirtualized()) return;
+    if (this.isFilterActive()) {
+      // Only one virtual-scroll instance exists while filtering — the root
+      // panel's, now bound to filteredResults() instead of level.nodes.
+      // levels() stays truncated to length 1 whenever filtering is active
+      // (see the constructor effect), so virtualScrollRefs()[0] is still
+      // the correct (and only) ref to scroll.
+      if (levelIndex !== 0 || this.filterActiveIndex() < 0) return;
+      this.virtualScrollRefs()[0]?.scrollToIndex(this.filterActiveIndex());
+      return;
+    }
     const level = this.levels()[levelIndex];
     if (!level || level.activeIndex < 0) return;
     this.virtualScrollRefs()[levelIndex]?.scrollToIndex(level.activeIndex);

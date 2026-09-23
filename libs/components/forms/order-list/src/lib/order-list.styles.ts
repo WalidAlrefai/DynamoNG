@@ -21,6 +21,23 @@ export const orderListControlsStyles = 'flex items-center gap-1';
 
 export const orderListListStyles = 'flex-1 overflow-auto py-1';
 
+// `dg-virtual-scroll`'s own fixed-height viewport is the sole scrolling
+// region while virtualized — this `<ul>` must not also scroll (no double
+// scrollbar). Mirrors `picklistPanelListVirtualStyles`.
+export const orderListListVirtualStyles = 'flex-1 overflow-hidden';
+
+// Mirrors Listbox's own filter-box styles (`listboxFilterWrapperStyles` et
+// al.) — reimplemented locally rather than imported, matching this
+// component's existing precedent (see `orderListButtonStyles` above and
+// `order-list-nav.ts`'s doc comment) of not cross-importing between
+// sibling `type:component` packages.
+export const orderListFilterWrapperStyles = 'border-b border-border p-2';
+export const orderListFilterFieldWrapperStyles = 'relative min-w-0 flex-1';
+export const orderListFilterIconStyles =
+  'pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted';
+export const orderListFilterInputExtraClasses = 'pe-8';
+export const orderListNoResultsStyles = 'px-4 py-2 text-sm text-text-muted';
+
 // Mirrors `picklistOptionStyles` / `listboxOptionStyles` — same
 // active/selected/disabled shape.
 export const orderListOptionStyles = cva(

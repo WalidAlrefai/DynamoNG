@@ -332,7 +332,7 @@ export const COMPONENT_REGISTRY: DocComponentEntry[] = [
     domain: 'forms',
     category: 'Form',
     description:
-      'A color input with a hex field, preset swatches, and a native color picker.',
+      'A color input with a hex field, preset swatches, a native color picker, and optional alpha/opacity support.',
   },
   {
     slug: 'file-upload',

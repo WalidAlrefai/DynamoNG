@@ -7,4 +7,5 @@ export interface DynamoMenuItemSelectEvent {
   value: string;
   label: string;
   disabled: boolean;
+  icon?: string;
 }

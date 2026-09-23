@@ -14,18 +14,24 @@
     [class]="panelClasses"
     (keydown)="onPanelKeydown($event)"
   >
-    @for (item of items(); track item) {
-      <button
-        #itemButton
-        type="button"
-        role="menuitem"
-        tabindex="-1"
-        [attr.aria-disabled]="item.disabled() ? 'true' : null"
-        [class]="itemClasses(item)"
-        (click)="onItemClick(item)"
+    @for (item of items(); track item) { @if (item.separator()) {
+    <li role="separator" #itemButton [class]="separatorClasses"></li>
+    } @else {
+    <button
+      #itemButton
+      type="button"
+      role="menuitem"
+      tabindex="-1"
+      [attr.aria-disabled]="item.disabled() ? 'true' : null"
+      [class]="itemClasses(item)"
+      (click)="onItemClick(item)"
+    >
+      @if (item.icon()) {
+      <span [class]="itemIconClasses" aria-hidden="true"
+        >{{ item.icon() }}</span
       >
-        {{ item.label() }}
-      </button>
-    }
+      } {{ item.label() }}
+    </button>
+    } }
   </div>
 </ng-template>

@@ -15,6 +15,7 @@
     type="button"
     [class]="swatchButtonClasses()"
     [style.background-color]="value() || 'transparent'"
+    [style.background-image]="triggerPreviewBackground()"
     [disabled]="disabled()"
     aria-haspopup="dialog"
     [attr.aria-expanded]="isOpen()"
@@ -35,6 +36,7 @@
     tabindex="-1"
     (keydown)="onPanelKeydown($event)"
   >
+    @if (swatches().length > 0 || !customPicker()) {
     <div [class]="swatchGridClasses">
       @for (swatch of swatches(); track swatch) {
       <button
@@ -45,7 +47,7 @@
         [attr.aria-pressed]="isSameColor(swatch)"
         (click)="selectSwatch(swatch)"
       ></button>
-      }
+      } @if (!customPicker()) {
       <div [class]="nativeInputWrapperClasses">
         <input
           type="color"
@@ -55,6 +57,68 @@
           (input)="onNativeColorInput($event)"
         />
       </div>
+      }
     </div>
+    } @if (customPicker()) {
+    <div
+      #svSquare
+      [class]="svSquareClasses"
+      [style.background]="svSquareBackground()"
+      tabindex="0"
+      role="slider"
+      aria-label="Saturation and brightness"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      [attr.aria-valuenow]="(hsv().s * 100).toFixed(0)"
+      [attr.aria-valuetext]="
+        (hsv().s * 100).toFixed(0) +
+        '% saturation, ' +
+        (hsv().v * 100).toFixed(0) +
+        '% brightness'
+      "
+      (pointerdown)="onSvPointerDown($event)"
+      (pointermove)="onSvPointerMove($event)"
+      (pointerup)="onSvPointerUp()"
+      (keydown)="onSvKeydown($event)"
+    >
+      <div
+        [class]="svThumbClasses"
+        [style.left.%]="svThumbLeftPercent()"
+        [style.top.%]="svThumbTopPercent()"
+        [style.background-color]="rgbHexOfCurrent()"
+      ></div>
+    </div>
+    <div [class]="hueWrapperClasses">
+      <input
+        type="range"
+        min="0"
+        max="360"
+        step="1"
+        [class]="rangeSliderClasses()"
+        [style.background]="hueTrackGradient"
+        [value]="hsv().h"
+        aria-label="Hue"
+        (input)="onHueInput($event)"
+      />
+    </div>
+    } @if (showAlpha()) {
+    <div [class]="alphaWrapperClasses">
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        [class]="rangeSliderClasses()"
+        [style.background]="alphaTrackBackground()"
+        [value]="alpha()"
+        [attr.aria-valuetext]="alphaPercentLabel()"
+        aria-label="Alpha"
+        (input)="onAlphaInput($event)"
+      />
+      <span [class]="alphaReadoutClasses" aria-hidden="true"
+        >{{ alphaPercentLabel() }}</span
+      >
+    </div>
+    }
   </div>
 </ng-template>

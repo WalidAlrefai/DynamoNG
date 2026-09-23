@@ -10,6 +10,7 @@ import {
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
+  { id: 'rich-formatting', title: 'Rich formatting' },
   { id: 'placeholder', title: 'Placeholder' },
   { id: 'read-only', title: 'Read-Only' },
 ];
@@ -35,7 +36,7 @@ const API: ApiTableRow[] = [
   template: `
     <docs-examples-layout
       name="Editor"
-      description="A contenteditable rich-text editor with a formatting toolbar for bold, italic, underline, lists, and links."
+      description="A contenteditable rich-text editor with a formatting toolbar for undo/redo, bold, italic, underline, alignment, headings, lists, links, and image embedding."
       [examples]="examples"
     >
       <docs-example
@@ -48,6 +49,19 @@ const API: ApiTableRow[] = [
         </div>
         <div code>
           &lt;dg-editor [formControl]="control" ariaLabel="Notes" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="rich-formatting"
+        title="Rich formatting"
+        description="Headings, alignment, undo/redo, and image embedding — all driven through document.execCommand, same as the other toolbar buttons. Images are stored as base64 data URIs directly in the HTML string (see the component README's Design notes for why)."
+      >
+        <div preview class="max-w-lg">
+          <dg-editor [formControl]="richControl" ariaLabel="Rich content" />
+        </div>
+        <div code>
+          &lt;dg-editor [formControl]="control" ariaLabel="Rich content" /&gt;
         </div>
       </docs-example>
 
@@ -96,6 +110,10 @@ export class EditorDocPage {
   protected readonly control = new FormControl('<p>Hello <b>world</b></p>', {
     nonNullable: true,
   });
+  protected readonly richControl = new FormControl(
+    '<h1>Heading</h1><p>Some <b>rich</b> content.</p>',
+    { nonNullable: true },
+  );
   protected readonly emptyControl = new FormControl('', {
     nonNullable: true,
   });

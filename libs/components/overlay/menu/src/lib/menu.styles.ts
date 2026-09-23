@@ -25,8 +25,10 @@ export const menuChevronStyles = cva(
 export const menuPanelStyles =
   'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;
 
+// flex (not block) so an optional leading icon sits beside the label
+// instead of just flowing inline before it.
 export const menuItemStyles = cva(
-  'block w-full cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
+  'flex w-full items-center gap-2 cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
     'focus-visible:outline-none focus-visible:bg-surface-100',
   {
     variants: {
@@ -38,3 +40,11 @@ export const menuItemStyles = cva(
     defaultVariants: { disabled: false },
   },
 );
+
+export const menuItemIconClasses = 'shrink-0';
+
+// A thin divider row — role="separator" is an ARIA-spec-permitted child of
+// role="menu" (unlike role="presentation", which isn't a valid owned
+// element and trips aria-required-children — see OrderList's no-results
+// row fix this session for the contrast).
+export const menuSeparatorStyles = 'my-1 h-px bg-border';

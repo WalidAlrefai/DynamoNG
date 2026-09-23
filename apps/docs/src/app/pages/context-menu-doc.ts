@@ -49,10 +49,11 @@ const API: ApiTableRow[] = [
             >
               Right-click me
             </div>
-            <dg-menu-item value="edit" label="Edit" />
-            <dg-menu-item value="duplicate" label="Duplicate" />
+            <dg-menu-item value="edit" label="Edit" icon="✎" />
+            <dg-menu-item value="duplicate" label="Duplicate" icon="⧉" />
+            <dg-menu-item [separator]="true" value="" label="" />
             <dg-menu-item value="archive" label="Archive" [disabled]="true" />
-            <dg-menu-item value="delete" label="Delete" />
+            <dg-menu-item value="delete" label="Delete" icon="🗑" />
           </dg-context-menu>
           @if (lastSelected(); as selected) {
             <p class="mt-2 text-sm text-text-muted">

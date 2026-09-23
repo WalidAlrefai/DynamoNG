@@ -13,6 +13,12 @@ export const timelineRootStyles = 'flex flex-col';
 // own host element.
 export const timelineItemHostStyles = 'group flex gap-4';
 
+// Grid's default align-items is also stretch (same as flex's), so the
+// marker column's connector still stretches to the full row height with
+// no explicit override — same mechanism as the flex layout above.
+export const timelineItemHostAlternateStyles =
+  'group grid grid-cols-[1fr_auto_1fr] gap-4';
+
 export const timelineMarkerColumnStyles = 'flex flex-col items-center';
 
 export const timelineDotStyles = cva(
@@ -36,6 +42,7 @@ export const timelineDotStyles = cva(
 // JS involved. `<dg-timeline-item>` is the actual DOM node sitting among its
 // siblings, so Tailwind's `:last-child`-backed `group-last:` variant
 // correctly detects the last entry with zero component code.
-export const timelineConnectorStyles = 'mt-1 w-px flex-1 bg-border group-last:hidden';
+export const timelineConnectorStyles =
+  'mt-1 w-px flex-1 bg-border group-last:hidden';
 
 export const timelineContentStyles = 'flex-1 pb-6';

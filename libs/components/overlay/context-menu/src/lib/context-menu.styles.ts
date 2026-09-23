@@ -12,8 +12,10 @@ export const contextMenuTriggerStyles = '';
 export const contextMenuPanelStyles =
   'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;
 
+// flex (not block) so an optional leading icon sits beside the label
+// instead of just flowing inline before it.
 export const contextMenuItemStyles = cva(
-  'block w-full cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
+  'flex w-full items-center gap-2 cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
     'focus-visible:outline-none focus-visible:bg-surface-100',
   {
     variants: {
@@ -25,3 +27,10 @@ export const contextMenuItemStyles = cva(
     defaultVariants: { disabled: false },
   },
 );
+
+export const contextMenuItemIconClasses = 'shrink-0';
+
+// role="separator" is an ARIA-spec-permitted child of role="menu" — see
+// menuSeparatorStyles' own comment in @dynamong/menu for the contrast with
+// role="presentation", which isn't.
+export const contextMenuSeparatorStyles = 'my-1 h-px bg-border';
