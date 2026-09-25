@@ -13,8 +13,13 @@ import type { DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   ratingRootStyles,
+  ratingStarBackgroundClasses,
   ratingStarButtonStyles,
+  ratingStarForegroundClasses,
+  ratingStarForegroundWrapperClasses,
+  ratingStarHalfZoneStyles,
   ratingStarStyles,
+  ratingStarWrapperStyles,
 } from './rating.styles';
 import type { DynamoRatingPart } from './rating.types';
 
@@ -43,6 +48,8 @@ export class DynamoRating
   readonly disabled = model(false);
   readonly size = input<DynamoSize>('md');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Lets clicking/keyboard set half-star increments (e.g. 3.5) instead of only whole stars, and renders each star's fill proportionally. Off by default — existing consumers see no behavior change. */
+  readonly allowHalf = input(false);
 
   private onChangeFn: (value: number) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
@@ -54,6 +61,7 @@ export class DynamoRating
   protected readonly stars = computed(() =>
     Array.from({ length: Math.max(0, this.max()) }, (_, i) => i + 1),
   );
+  protected readonly step = computed(() => (this.allowHalf() ? 0.5 : 1));
 
   // Hover preview overrides the committed value for display only — same
   // "derive display from one source of truth" reasoning as Slider's
@@ -69,9 +77,31 @@ export class DynamoRating
       : cn(ratingRootStyles({ disabled: this.disabled() }), this.styleClass()),
   );
   protected readonly starButtonClasses = ratingStarButtonStyles;
+  protected readonly starWrapperClasses = computed(() =>
+    ratingStarWrapperStyles({ size: this.size() }),
+  );
+  protected readonly starBackgroundClasses = ratingStarBackgroundClasses;
+  protected readonly starForegroundWrapperClasses =
+    ratingStarForegroundWrapperClasses;
+  protected readonly starForegroundClasses = ratingStarForegroundClasses;
 
   protected isFilled(star: number): boolean {
     return star <= this.displayValue();
+  }
+
+  /** 100/50/0 fill percentage for `star`'s clipped foreground overlay in `allowHalf` mode. */
+  protected fillPercent(star: number): number {
+    const d = this.displayValue();
+    if (d >= star) return 100;
+    if (d >= star - 0.5) return 50;
+    return 0;
+  }
+
+  protected halfZoneClasses(side: 'left' | 'right'): string {
+    return ratingStarHalfZoneStyles({
+      side,
+      interactive: !this.disabled() && !this.readOnly(),
+    });
   }
 
   protected starClasses(star: number) {
@@ -115,11 +145,11 @@ export class DynamoRating
     switch (event.key) {
       case 'ArrowRight':
       case 'ArrowUp':
-        next = Math.min(this.max(), this.value() + 1);
+        next = Math.min(this.max(), this.value() + this.step());
         break;
       case 'ArrowLeft':
       case 'ArrowDown':
-        next = Math.max(0, this.value() - 1);
+        next = Math.max(0, this.value() - this.step());
         break;
       case 'Home':
         next = 0;

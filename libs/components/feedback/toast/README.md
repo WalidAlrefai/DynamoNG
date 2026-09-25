@@ -58,6 +58,15 @@ Hovering a toast card pauses its auto-dismiss countdown so it doesn't
 disappear while you're reading it; moving the pointer away resumes the
 countdown for the remaining time.
 
+## Animation
+
+Each toast slides and fades in on show, and slides back out the way it
+came in on dismiss — top-positioned toasts from/to above, bottom-positioned
+toasts from/to below — over 200ms, respecting `prefers-reduced-motion`.
+`dismiss()`/`dismissAll()` resolve their DOM removal only once that exit
+transition finishes, so a toast stays in the DOM briefly after being
+dismissed.
+
 ## Accessibility
 
 - Each position's container renders `role="status"` with `aria-live="polite"`, so new toasts are announced without stealing focus. The manual close button carries `aria-label="Dismiss notification"`.

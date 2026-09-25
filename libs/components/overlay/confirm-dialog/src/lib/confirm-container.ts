@@ -1,11 +1,14 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   ElementRef,
   OnDestroy,
+  computed,
   effect,
   inject,
   input,
+  signal,
   viewChild,
 } from '@angular/core';
 import type { ConfigurableFocusTrap } from '@angular/cdk/a11y';
@@ -33,11 +36,15 @@ export class DynamoConfirmContainer implements OnDestroy {
   private readonly confirmService = inject(DynamoConfirmService);
   private readonly focusTrapService = inject(DynamoFocusTrapService);
   private readonly idGenerator = inject(DynamoIdGenerator);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly panelRef = viewChild<ElementRef<HTMLElement>>('panel');
 
   protected readonly titleId = this.idGenerator.next('dg-confirm-title');
   protected readonly messageId = this.idGenerator.next('dg-confirm-message');
-  protected readonly panelClasses = confirmPanelStyles;
+  protected readonly phase = signal<'opening' | 'open' | 'closing'>('opening');
+  protected readonly panelClasses = computed(() =>
+    confirmPanelStyles({ phase: this.phase() }),
+  );
 
   private focusTrap: ConfigurableFocusTrap | null = null;
   private readonly previouslyFocusedElement = isBrowser()
@@ -57,10 +64,31 @@ export class DynamoConfirmContainer implements OnDestroy {
         // A `setTimeout(0)` runs after the current synchronous render pass
         // (including `DynamoConfirmService`'s own explicit
         // `detectChanges()`) has fully committed, same technique the specs'
-        // own `flushFocusTrap()` helper relies on.
+        // own `flushFocusTrap()` helper relies on. Deliberately independent
+        // of the entrance animation below — re-tuning this already-delicate
+        // timing to also gate on the phase isn't worth the risk.
         setTimeout(() => this.focusInitialElement(panel));
       }
     });
+
+    // Double rAF, not single — same reasoning as Dialog/Drawer's own
+    // beginOpen: a single callback can still run before the browser has
+    // committed a paint at the closed transform, coalescing the two states
+    // and skipping the transition.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.phase.set('open');
+        // Portal-mounted; nothing else ticks this component's CD for a
+        // plain signal write (same zoneless-CD workaround as
+        // DynamoConfirmService's own detectChanges() calls).
+        this.cdr.detectChanges();
+      });
+    });
+  }
+
+  /** Called by DynamoConfirmService right before disposing the overlay, so the panel's exit transition plays instead of vanishing instantly. */
+  beginClose(): void {
+    this.phase.set('closing');
   }
 
   // Matches by rendered label text rather than DOM position — robust

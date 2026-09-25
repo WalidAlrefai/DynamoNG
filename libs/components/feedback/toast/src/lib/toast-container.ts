@@ -6,7 +6,7 @@ import {
   input,
 } from '@angular/core';
 import type { DynamoSeverity } from '@dynamong/core/api';
-import { DynamoToastService } from './toast.service';
+import { DynamoToastService, type DynamoToastEntry } from './toast.service';
 import {
   toastCardStyles,
   toastCloseButtonStyles,
@@ -16,6 +16,14 @@ import {
   toastTitleStyles,
 } from './toast.styles';
 import type { DynamoToastPosition } from './toast.types';
+
+function slideFor(
+  position: DynamoToastPosition,
+): 'right' | 'left' | 'top' | 'bottom' {
+  if (position.endsWith('right')) return 'right';
+  if (position.endsWith('left')) return 'left';
+  return position.startsWith('top') ? 'top' : 'bottom';
+}
 
 // Mounted imperatively by `DynamoToastService` (one instance per position
 // actually used, via `ComponentPortal`) — a consumer never writes
@@ -44,8 +52,12 @@ export class DynamoToastContainer {
   protected readonly messageClasses = toastMessageStyles;
   protected readonly closeButtonClasses = toastCloseButtonStyles;
 
-  protected cardClasses(severity: DynamoSeverity) {
-    return toastCardStyles({ severity });
+  protected cardClasses(toast: DynamoToastEntry) {
+    return toastCardStyles({
+      severity: toast.severity,
+      slide: slideFor(toast.position),
+      phase: toast.phase,
+    });
   }
 
   protected iconClasses(severity: DynamoSeverity) {

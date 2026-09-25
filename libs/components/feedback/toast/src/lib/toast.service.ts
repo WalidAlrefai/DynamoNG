@@ -13,6 +13,9 @@ import type { DynamoSeverity } from '@dynamong/core/api';
 import { DynamoToastContainer } from './toast-container';
 import type { DynamoToastOptions, DynamoToastPosition } from './toast.types';
 
+/** `'entering'`/`'leaving'` drive the enter/exit transition; `'visible'` is the steady state in between. Each toast animates independently since several can be entering/visible/leaving at once. */
+export type DynamoToastPhase = 'entering' | 'visible' | 'leaving';
+
 export interface DynamoToastEntry {
   id: string;
   message: string;
@@ -21,6 +24,7 @@ export interface DynamoToastEntry {
   duration: number;
   closable: boolean;
   position: DynamoToastPosition;
+  phase: DynamoToastPhase;
 }
 
 const MARGIN = '1rem';
@@ -74,9 +78,16 @@ export class DynamoToastService {
   private readonly idGenerator = inject(DynamoIdGenerator);
   private readonly injector = inject(Injector);
 
+  // Must stay in sync with `duration-200` in toastCardStyles.
+  private static readonly LEAVE_DURATION_MS = 200;
+
   private readonly toasts = signal<DynamoToastEntry[]>([]);
   private readonly containers = new Map<DynamoToastPosition, ContainerHandle>();
   private readonly timers = new Map<string, TimerState>();
+  private readonly leaveTimeouts = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
 
   /** Read-only signal of every currently-visible toast, across all positions — consumed by `DynamoToastContainer`. */
   readonly allToasts = this.toasts.asReadonly();
@@ -90,11 +101,30 @@ export class DynamoToastService {
       duration: options.duration ?? 5000,
       closable: options.closable ?? true,
       position: options.position ?? 'top-right',
+      phase: 'entering',
     };
 
     this.toasts.update((list) => [...list, entry]);
     this.ensureContainer(entry.position);
     this.refreshContainers();
+
+    // Double rAF, not single — same reasoning as Drawer's beginOpen: a
+    // single callback can still run before the browser has committed a
+    // paint at the entering transform, coalescing the two states and
+    // skipping the transition. Re-checks the phase in case dismiss() ran
+    // first (a near-instant programmatic dismiss).
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.toasts.update((list) =>
+          list.map((toast) =>
+            toast.id === entry.id && toast.phase === 'entering'
+              ? { ...toast, phase: 'visible' }
+              : toast,
+          ),
+        );
+        this.refreshContainers();
+      });
+    });
 
     if (entry.duration > 0) {
       this.startTimer(entry.id, entry.duration);
@@ -167,16 +197,32 @@ export class DynamoToastService {
 
   dismiss(id: string): void {
     this.clearTimer(id);
-    this.toasts.update((list) => list.filter((toast) => toast.id !== id));
+
+    const existing = this.toasts().find((toast) => toast.id === id);
+    if (!existing || existing.phase === 'leaving') {
+      return;
+    }
+
+    this.toasts.update((list) =>
+      list.map((toast) =>
+        toast.id === id ? { ...toast, phase: 'leaving' } : toast,
+      ),
+    );
     this.refreshContainers();
+
+    const timeoutId = setTimeout(() => {
+      this.toasts.update((list) => list.filter((toast) => toast.id !== id));
+      this.refreshContainers();
+      this.leaveTimeouts.delete(id);
+    }, DynamoToastService.LEAVE_DURATION_MS);
+    this.leaveTimeouts.set(id, timeoutId);
   }
 
+  /** Dismisses every visible toast, animating each one out individually rather than clearing them instantly. */
   dismissAll(): void {
-    for (const id of [...this.timers.keys()]) {
-      this.clearTimer(id);
+    for (const toast of this.toasts()) {
+      this.dismiss(toast.id);
     }
-    this.toasts.set([]);
-    this.refreshContainers();
   }
 
   private ensureContainer(position: DynamoToastPosition): void {

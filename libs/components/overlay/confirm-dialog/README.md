@@ -42,7 +42,13 @@ There is no `<dg-confirm-dialog>` element to place in a template — `DynamoConf
 
 ## Outputs
 
-None — `open()` returns a `Promise<boolean>` instead: resolves `true` if confirmed, `false` if cancelled, backdrop-clicked (when allowed), or `Escape`-dismissed (when allowed). Only one prompt is shown at a time; calling `open()` again while one is active queues the request until the current one settles. `confirm()`/`cancel()` on the service programmatically settle the currently-showing prompt as if its buttons were clicked.
+None — `open()` returns a `Promise<boolean>` instead: resolves `true` if confirmed, `false` if cancelled, backdrop-clicked (when allowed), or `Escape`-dismissed (when allowed). The promise resolves as soon as the prompt settles — before its exit animation finishes. Only one prompt is shown at a time; calling `open()` again while one is active (including one still playing its exit animation) queues the request until the current one is fully gone, never crossfading two panels. `confirm()`/`cancel()` on the service programmatically settle the currently-showing prompt as if its buttons were clicked.
+
+## Animation
+
+The panel pops in/out — scaling from 90% with a springy overshoot past
+100% before settling — while the backdrop fades in/out alongside it,
+both over 200ms and respecting `prefers-reduced-motion`.
 
 ## Accessibility
 

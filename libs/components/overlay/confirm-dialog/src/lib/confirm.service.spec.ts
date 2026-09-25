@@ -22,6 +22,14 @@ function flushFocusTrap(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+// Flushes the close sequence's dispose delay (CLOSE_DURATION_MS = 200 in
+// confirm.service.ts — kept in sync with confirmPanelStyles' duration-200
+// class), after which the settled panel is actually removed and, if
+// anything was queued behind it, presented.
+function settleClose(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 220));
+}
+
 describe('DynamoConfirmService', () => {
   let service: DynamoConfirmService;
 
@@ -33,9 +41,11 @@ describe('DynamoConfirmService', () => {
     service = TestBed.inject(DynamoConfirmService);
   });
 
-  afterEach(() => {
-    // Settle any prompt left open by a test so it doesn't leak into the next one.
+  afterEach(async () => {
+    // Settle any prompt left open by a test, then flush the dispose delay
+    // so it doesn't leak into the next test.
     service.cancel();
+    await settleClose();
   });
 
   describe('open()', () => {
@@ -148,6 +158,7 @@ describe('DynamoConfirmService', () => {
 
       service.confirm();
       await first;
+      await settleClose();
 
       expect(
         document.body.querySelectorAll('[role="alertdialog"]'),
@@ -163,6 +174,7 @@ describe('DynamoConfirmService', () => {
       const result = service.open({ message: 'Are you sure?' });
       service.confirm();
       await result;
+      await settleClose();
 
       expect(getPanel()).toBeNull();
     });
@@ -185,6 +197,7 @@ describe('DynamoConfirmService', () => {
       await flushFocusTrap();
       service.confirm();
       await result;
+      await settleClose();
 
       expect(document.activeElement).toBe(trigger);
       trigger.remove();
@@ -254,7 +267,7 @@ describe('DynamoConfirmService', () => {
   });
 
   describe('edge cases', () => {
-    it('does not throw on rapid open/confirm/open cycles', () => {
+    it('does not throw on rapid open/confirm/open cycles', async () => {
       expect(() => {
         service.open({ message: 'One' });
         service.confirm();
@@ -262,6 +275,16 @@ describe('DynamoConfirmService', () => {
         service.confirm();
         service.open({ message: 'Three' });
       }).not.toThrow();
+
+      // 'One' is still mid-close (settling) and 'Two'/'Three' are only
+      // queued behind it — the confirm() calls above were no-ops against
+      // an already-settling prompt. Drain the whole chain explicitly so
+      // nothing queued leaks into the next test.
+      await settleClose();
+      service.confirm();
+      await settleClose();
+      service.confirm();
+      await settleClose();
     });
 
     it('confirm()/cancel() are no-ops when nothing is open', () => {

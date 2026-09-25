@@ -42,6 +42,15 @@ closing, e.g. from a button inside the projected content.
 - `Escape` closes when `closeOnEscape` is true (default); clicking the backdrop closes when `closeOnBackdropClick` is true (default).
 - When `modal` is `false`, no backdrop is rendered and the rest of the page stays fully interactive around the panel.
 
+## Animation
+
+The panel pops in/out — scaling from 90% with a springy overshoot past
+100% before settling — while the backdrop fades in/out alongside it,
+both over 200ms and respecting `prefers-reduced-motion`. The panel
+stays mounted for the full closing transition (only actually removed
+once it settles), so nothing needs to opt in or out of this — it
+applies to every dialog by default.
+
 ## Tier / dependencies
 
 - `tier:0`. Peer dependencies: none beyond Angular core/CDK.

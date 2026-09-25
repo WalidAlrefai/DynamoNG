@@ -9,5 +9,8 @@
     "@dynamong/button": "0.0.1",
     "rxjs": "~7.8.0"
   },
+  "dependencies": {
+    "class-variance-authority": "0.7.1"
+  },
   "sideEffects": false
 }

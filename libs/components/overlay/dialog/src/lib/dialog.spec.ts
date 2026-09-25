@@ -1,4 +1,5 @@
 import { Component, model } from '@angular/core';
+import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -23,9 +24,25 @@ class DialogTestHostComponent {
   readonly isOpen = model(false);
 }
 
-/** CDK's ConfigurableFocusTrap moves initial focus asynchronously; flush that before asserting on it. */
-function flushFocusTrap(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
+// Flushes the double-rAF the open sequence uses to defer the closed->open
+// transform/opacity flip (see dialog.ts's beginOpen), plus CDK's
+// ConfigurableFocusTrap's own async initial-focus resolution — the focus
+// trap only activates once animationState reaches 'open'.
+async function settleOpen(fixture: ComponentFixture<unknown>): Promise<void> {
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  fixture.detectChanges();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  fixture.detectChanges();
+}
+
+// Flushes the close sequence's removal delay (CLOSE_DURATION_MS = 200 in
+// dialog.ts — kept in sync with dialogPanelStyles'/dialogBackdropStyles'
+// duration-200 classes).
+async function settleClose(fixture: ComponentFixture<unknown>): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 220));
+  fixture.detectChanges();
 }
 
 describe('DynamoDialog', () => {
@@ -283,10 +300,10 @@ describe('DynamoDialog', () => {
     });
 
     it('moves focus inside the dialog panel when opened', async () => {
-      const { container } = renderDynamoComponent(DynamoDialog, {
+      const { container, fixture } = renderDynamoComponent(DynamoDialog, {
         inputs: { open: true, title: 'Title' },
       });
-      await flushFocusTrap();
+      await settleOpen(fixture);
 
       const panel = container.querySelector('[role="dialog"]') as HTMLElement;
       expect(panel.contains(document.activeElement)).toBe(true);
@@ -295,7 +312,9 @@ describe('DynamoDialog', () => {
 
   describe('state changes', () => {
     it('returns focus to the trigger element when the dialog closes', async () => {
-      const { container } = renderDynamoComponent(DialogTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        DialogTestHostComponent,
+      );
       const trigger = within(container).getByRole('button', {
         name: 'Open dialog',
       }) as HTMLButtonElement;
@@ -303,7 +322,7 @@ describe('DynamoDialog', () => {
       expect(document.activeElement).toBe(trigger);
 
       await userEvent.click(trigger);
-      await flushFocusTrap();
+      await settleOpen(fixture);
       expect(document.activeElement).not.toBe(trigger);
 
       await userEvent.click(
@@ -311,6 +330,41 @@ describe('DynamoDialog', () => {
       );
 
       expect(document.activeElement).toBe(trigger);
+    });
+  });
+
+  describe('animation', () => {
+    it('keeps the panel in the DOM immediately after closing, removing it only once the close transition settles', async () => {
+      const { container, fixture, setInputs } = renderDynamoComponent(
+        DynamoDialog,
+        {
+          inputs: { open: true, title: 'Title' },
+        },
+      );
+      await settleOpen(fixture);
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+
+      setInputs({ open: false });
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+
+      await settleClose(fixture);
+      expect(container.querySelector('[role="dialog"]')).toBeNull();
+    });
+
+    it('cancels the pending removal when reopened during the close transition', async () => {
+      const { container, fixture, setInputs } = renderDynamoComponent(
+        DynamoDialog,
+        {
+          inputs: { open: true, title: 'Title' },
+        },
+      );
+      await settleOpen(fixture);
+
+      setInputs({ open: false });
+      setInputs({ open: true });
+      await settleClose(fixture);
+
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull();
     });
   });
 

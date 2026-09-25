@@ -28,8 +28,12 @@ describe('DynamoToastService', () => {
     service = TestBed.inject(DynamoToastService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // dismissAll() now animates each toast out (LEAVE_DURATION_MS = 200 in
+    // toast.service.ts) rather than clearing instantly — flush that delay
+    // so nothing leaks into the next test.
     service.dismissAll();
+    await new Promise((resolve) => setTimeout(resolve, 220));
   });
 
   describe('defaults', () => {
@@ -98,14 +102,30 @@ describe('DynamoToastService', () => {
       const containers = document.body.querySelectorAll('[role="status"]');
       expect(containers).toHaveLength(2);
     });
+
+    it('slides each toast in from the screen edge it is anchored to', () => {
+      service.show({ message: 'a', position: 'top-right' });
+      service.show({ message: 'b', position: 'bottom-left' });
+      service.show({ message: 'c', position: 'top-center' });
+      service.show({ message: 'd', position: 'bottom-center' });
+
+      const [right, left, top, bottom] = getCards().map((c) => c.className);
+      expect(right).toContain('translate-x-[calc(100%+1rem)]');
+      expect(right).not.toContain('-translate-x-');
+      expect(left).toContain('-translate-x-[calc(100%+1rem)]');
+      expect(top).toContain('-translate-y-[calc(100%+1rem)]');
+      expect(bottom).toContain('translate-y-[calc(100%+1rem)]');
+      expect(bottom).not.toContain('-translate-y-');
+    });
   });
 
   describe('dismiss()', () => {
-    it('removes only the dismissed toast', () => {
+    it('removes only the dismissed toast', async () => {
       const firstId = service.show({ message: 'First' });
       service.show({ message: 'Second' });
 
       service.dismiss(firstId);
+      await new Promise((resolve) => setTimeout(resolve, 220));
 
       expect(getCards()).toHaveLength(1);
       expect(getCards()[0]?.textContent).toContain('Second');
@@ -115,13 +135,14 @@ describe('DynamoToastService', () => {
       expect(() => service.dismiss('not-a-real-id')).not.toThrow();
     });
 
-    it('is triggered by clicking the close button', () => {
+    it('is triggered by clicking the close button', async () => {
       service.show({ message: 'Dismiss me' });
       const closeButton = getCards()[0]?.querySelector(
         '[aria-label="Dismiss notification"]',
       ) as HTMLElement;
 
       closeButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 220));
 
       expect(getCards()).toHaveLength(0);
     });
@@ -136,11 +157,12 @@ describe('DynamoToastService', () => {
   });
 
   describe('dismissAll()', () => {
-    it('clears every toast', () => {
+    it('clears every toast', async () => {
       service.show({ message: 'First' });
       service.show({ message: 'Second', position: 'bottom-left' });
 
       service.dismissAll();
+      await new Promise((resolve) => setTimeout(resolve, 220));
 
       expect(getCards()).toHaveLength(0);
     });
@@ -155,7 +177,9 @@ describe('DynamoToastService', () => {
       service.show({ message: 'Fleeting', duration: 20 });
       expect(getCards()).toHaveLength(1);
 
-      await new Promise((resolve) => setTimeout(resolve, 40));
+      // duration (20) + the leave-animation delay (LEAVE_DURATION_MS = 200
+      // in toast.service.ts) + margin.
+      await new Promise((resolve) => setTimeout(resolve, 240));
 
       expect(getCards()).toHaveLength(0);
     });
@@ -178,7 +202,8 @@ describe('DynamoToastService', () => {
       expect(getCards()).toHaveLength(1);
 
       service.resume(id);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // remaining time (~30) + the leave-animation delay (200) + margin.
+      await new Promise((resolve) => setTimeout(resolve, 250));
       expect(getCards()).toHaveLength(0);
     });
 
@@ -197,7 +222,9 @@ describe('DynamoToastService', () => {
       service.resume(id);
       await new Promise((resolve) => setTimeout(resolve, 30));
       expect(getCards()).toHaveLength(1);
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Remaining time from resume (~60) plus the leave-animation delay
+      // (200) plus margin, minus the 30ms already waited above.
+      await new Promise((resolve) => setTimeout(resolve, 280));
       expect(getCards()).toHaveLength(0);
     });
 
@@ -233,7 +260,8 @@ describe('DynamoToastService', () => {
       expect(getCards()).toHaveLength(1);
 
       card.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // remaining time (~30) + the leave-animation delay (200) + margin.
+      await new Promise((resolve) => setTimeout(resolve, 260));
       expect(getCards()).toHaveLength(0);
     });
   });

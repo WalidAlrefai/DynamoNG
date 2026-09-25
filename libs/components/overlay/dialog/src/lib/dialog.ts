@@ -1,12 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
   inject,
   input,
   model,
+  signal,
   viewChild,
 } from '@angular/core';
 import type { ConfigurableFocusTrap } from '@angular/cdk/a11y';
@@ -14,8 +16,14 @@ import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoFocusTrapService } from '@dynamong/core/a11y';
 import { cn } from '@dynamong/utils/class-merge';
 import { isBrowser } from '@dynamong/utils/dom';
-import { dialogCloseButtonStyles, dialogPanelStyles } from './dialog.styles';
+import {
+  dialogBackdropStyles,
+  dialogCloseButtonStyles,
+  dialogPanelStyles,
+} from './dialog.styles';
 import type { DynamoDialogPart, DynamoDialogSize } from './dialog.types';
+
+type DialogAnimationState = 'closed' | 'opening' | 'open' | 'closing';
 
 @Component({
   selector: 'dg-dialog',
@@ -42,28 +50,61 @@ export class DynamoDialog extends DynamoBaseComponent<DynamoDialogPart> {
   protected readonly titleId = this.idGenerator.next('dg-dialog-title');
   private readonly panelRef = viewChild<ElementRef<HTMLElement>>('panel');
   private readonly focusTrapService = inject(DynamoFocusTrapService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private focusTrap: ConfigurableFocusTrap | null = null;
   private previouslyFocusedElement: HTMLElement | null = null;
 
+  // Must stay in sync with `duration-200` in dialog.styles.ts.
+  private static readonly CLOSE_DURATION_MS = 200;
+  protected readonly animationState = signal<DialogAnimationState>('closed');
+  private closeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly panelPhase = computed(() => {
+    const state = this.animationState();
+    return state === 'closed' ? 'opening' : state;
+  });
   protected readonly panelClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
-      : cn(dialogPanelStyles({ size: this.size() }), this.styleClass()),
+      : cn(
+          dialogPanelStyles({
+            size: this.size(),
+            phase: this.panelPhase(),
+          }),
+          this.styleClass(),
+        ),
+  );
+  protected readonly backdropClasses = computed(() =>
+    this.unstyled()
+      ? ''
+      : dialogBackdropStyles({ visible: this.animationState() === 'open' }),
   );
   protected readonly closeButtonClasses = dialogCloseButtonStyles;
 
   constructor() {
     super();
+
+    effect(() => {
+      if (this.open()) {
+        this.beginOpen();
+      } else {
+        this.beginClose();
+      }
+    });
+
     effect(() => {
       const panel = this.panelRef()?.nativeElement;
+      const state = this.animationState();
 
-      if (this.open() && panel) {
+      if (state === 'open' && panel) {
         this.activateFocusTrap(panel);
-      } else if (!this.open()) {
+      } else if (state === 'closed' || state === 'closing') {
         this.releaseFocusTrap();
       }
     });
+
+    this.destroyRef.onDestroy(() => this.clearCloseTimeout());
 
     effect((onCleanup) => {
       if (!isBrowser() || !this.open() || !this.blockScroll()) {
@@ -90,6 +131,52 @@ export class DynamoDialog extends DynamoBaseComponent<DynamoDialogPart> {
   protected onEscape(): void {
     if (this.closeOnEscape()) {
       this.close();
+    }
+  }
+
+  private beginOpen(): void {
+    this.clearCloseTimeout();
+    if (
+      this.animationState() === 'open' ||
+      this.animationState() === 'opening'
+    ) {
+      return;
+    }
+
+    this.animationState.set('opening');
+
+    // Double rAF, not single: a single callback can still run before the
+    // browser has committed a paint at the closed transform in some
+    // browsers/timings, which would coalesce the two states and skip the
+    // transition (same reasoning as Drawer's beginOpen).
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (this.open()) {
+          this.animationState.set('open');
+        }
+      });
+    });
+  }
+
+  private beginClose(): void {
+    if (
+      this.animationState() === 'closed' ||
+      this.animationState() === 'closing'
+    ) {
+      return;
+    }
+
+    this.animationState.set('closing');
+    this.closeTimeoutId = setTimeout(() => {
+      this.animationState.set('closed');
+      this.closeTimeoutId = null;
+    }, DynamoDialog.CLOSE_DURATION_MS);
+  }
+
+  private clearCloseTimeout(): void {
+    if (this.closeTimeoutId !== null) {
+      clearTimeout(this.closeTimeoutId);
+      this.closeTimeoutId = null;
     }
   }
 
