@@ -13,6 +13,9 @@ export class DynamoPaginationHarness extends ComponentHarness {
   );
   private readonly pageSizeTriggerLocator =
     this.locatorForOptional('[role="combobox"]');
+  private readonly jumpInputLocator = this.locatorForOptional(
+    'input[aria-label="Go to page"]',
+  );
   private readonly pageButtonLocators = this.locatorForAll(
     'button[aria-label^="Page "]',
   );
@@ -101,5 +104,23 @@ export class DynamoPaginationHarness extends ComponentHarness {
       );
     }
     await trigger.click();
+  }
+
+  /** `true` when the jump-to-page box is rendered (`showJumpToPage` is true). */
+  async hasJumpToPage(): Promise<boolean> {
+    return (await this.jumpInputLocator()) !== null;
+  }
+
+  /** Types `page` into the jump-to-page box and commits it (Enter, then blur). */
+  async jumpToPage(page: number): Promise<void> {
+    const input = await this.jumpInputLocator();
+    if (!input) {
+      throw new Error(
+        'DynamoPagination has no jump-to-page box (showJumpToPage is false)',
+      );
+    }
+    await input.clear();
+    await input.sendKeys(String(page));
+    await input.blur();
   }
 }

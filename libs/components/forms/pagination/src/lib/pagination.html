@@ -1,6 +1,8 @@
 @if (shouldRender()) {
 <nav [class]="classes()" [attr.aria-label]="ariaLabel()">
+  @if (showPageReport()) {
   <span [class]="summaryClasses" aria-live="polite">{{ summaryText() }}</span>
+  }
 
   <div [class]="controlsClasses">
     @if (showPageSizeSelector()) {
@@ -142,6 +144,21 @@
         />
       </svg>
     </dg-button>
+    } @if (showJumpToPage()) {
+    <span [class]="jumpClasses">
+      Go to
+      <dg-input-number
+        size="sm"
+        [min]="1"
+        [max]="pageCount()"
+        [useGrouping]="false"
+        [value]="currentPage()"
+        [disabled]="disabled()"
+        [styleClass]="jumpInputClasses"
+        ariaLabel="Go to page"
+        (valueChange)="onJumpToPage($event)"
+      />
+    </span>
     }
   </div>
 </nav>

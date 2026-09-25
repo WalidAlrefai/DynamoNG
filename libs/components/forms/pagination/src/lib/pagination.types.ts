@@ -5,6 +5,7 @@ export type DynamoPaginationPart =
   | 'root'
   | 'summary'
   | 'pageSizeSelect'
+  | 'jump'
   | 'firstButton'
   | 'prevButton'
   | 'pageButton'

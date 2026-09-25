@@ -520,4 +520,127 @@ describe('DynamoPagination', () => {
       ).not.toThrow();
     });
   });
+  describe('page report', () => {
+    it('shows the default report and no jump box by default', () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: { totalItems: 95 },
+      });
+
+      expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe(
+        'Showing 1-10 of 95',
+      );
+      expect(
+        container.querySelector('input[aria-label="Go to page"]'),
+      ).toBeNull();
+    });
+
+    it('hides the report when showPageReport is false', () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: { totalItems: 95, showPageReport: false },
+      });
+
+      expect(container.querySelector('[aria-live="polite"]')).toBeNull();
+    });
+
+    it('substitutes every placeholder in reportTemplate', () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: {
+          totalItems: 95,
+          page: 2,
+          reportTemplate: '{first}/{last}/{total} p{page} of {pageCount}',
+        },
+      });
+
+      expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe(
+        '11/20/95 p2 of 10',
+      );
+    });
+
+    it('still reads "No results" for zero items regardless of the template', () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: { totalItems: 0, reportTemplate: '{first}-{last}' },
+      });
+
+      expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe(
+        'No results',
+      );
+    });
+  });
+
+  describe('jump to page', () => {
+    it('goes to the committed page, clamping to the valid range', async () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        DynamoPagination,
+        { inputs: { totalItems: 95, showJumpToPage: true } },
+      );
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoPaginationHarness,
+      );
+      expect(await harness.hasJumpToPage()).toBe(true);
+
+      await harness.jumpToPage(7);
+      expect(componentInstance.page()).toBe(7);
+
+      await harness.jumpToPage(99);
+      expect(componentInstance.page()).toBe(10);
+
+      await harness.jumpToPage(0);
+      expect(componentInstance.page()).toBe(1);
+    });
+
+    it('does nothing while disabled', async () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        DynamoPagination,
+        { inputs: { totalItems: 95, showJumpToPage: true, disabled: true } },
+      );
+      const input = fixture.nativeElement.querySelector(
+        'input[aria-label="Go to page"]',
+      ) as HTMLInputElement;
+
+      expect(input.disabled).toBe(true);
+      expect(componentInstance.page()).toBe(1);
+    });
+
+    it('reflects page changes made with Next', async () => {
+      const { fixture, container } = renderDynamoComponent(DynamoPagination, {
+        inputs: { totalItems: 95, showJumpToPage: true },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoPaginationHarness,
+      );
+
+      await harness.goToNextPage();
+
+      const input = container.querySelector(
+        'input[aria-label="Go to page"]',
+      ) as HTMLInputElement;
+      expect(input.value).toBe('2');
+    });
+
+    it('throws from jumpToPage when the box is hidden', async () => {
+      const { fixture } = renderDynamoComponent(DynamoPagination, {
+        inputs: { totalItems: 95 },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoPaginationHarness,
+      );
+
+      await expect(harness.jumpToPage(3)).rejects.toThrow(/showJumpToPage/);
+    });
+
+    it('has no axe violations with the jump box and a custom report', async () => {
+      const { container } = renderDynamoComponent(DynamoPagination, {
+        inputs: {
+          totalItems: 95,
+          showJumpToPage: true,
+          reportTemplate: 'Page {page} of {pageCount}',
+        },
+      });
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
 });

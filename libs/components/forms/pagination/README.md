@@ -23,19 +23,22 @@ protected pageSize = signal(10);
 
 ## Inputs
 
-| Input                  | Type                   | Default             | Description                                                                                                                                                                     |
-| ---------------------- | ---------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `totalItems`           | `number` (required)    | —                   | Total row count across all pages.                                                                                                                                               |
-| `page`                 | `number` (model)       | `1`                 | Two-way bindable, 1-indexed. The _displayed_ current page is clamped into `[1, pageCount]`; `page()` itself is only ever written by explicit interaction (never by a computed). |
-| `pageSize`             | `number` (model)       | `10`                | Two-way bindable rows-per-page.                                                                                                                                                 |
-| `pageSizeOptions`      | `number[]`             | `[10, 25, 50, 100]` | Options shown in the rows-per-page `<dg-select>`.                                                                                                                               |
-| `showPageSizeSelector` | `boolean`              | `true`              |                                                                                                                                                                                 |
-| `showFirstLastButtons` | `boolean`              | `false`             | Also renders "first page" / "last page" jump buttons flanking previous/next.                                                                                                    |
-| `hideOnSinglePage`     | `boolean`              | `false`             | Renders nothing at all once there's only one page (or none). The default always shows the paginator.                                                                            |
-| `maxVisiblePages`      | `number`               | `5`                 | Soft target for how many page-number buttons show before collapsing to an ellipsis.                                                                                             |
-| `size`                 | `DynamoPaginationSize` | `'md'`              |                                                                                                                                                                                 |
-| `disabled`             | `boolean`              | `false`             |                                                                                                                                                                                 |
-| `ariaLabel`            | `string`               | `'Pagination'`      |                                                                                                                                                                                 |
+| Input                  | Type                   | Default                               | Description                                                                                                                                                                     |
+| ---------------------- | ---------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `totalItems`           | `number` (required)    | —                                     | Total row count across all pages.                                                                                                                                               |
+| `page`                 | `number` (model)       | `1`                                   | Two-way bindable, 1-indexed. The _displayed_ current page is clamped into `[1, pageCount]`; `page()` itself is only ever written by explicit interaction (never by a computed). |
+| `pageSize`             | `number` (model)       | `10`                                  | Two-way bindable rows-per-page.                                                                                                                                                 |
+| `pageSizeOptions`      | `number[]`             | `[10, 25, 50, 100]`                   | Options shown in the rows-per-page `<dg-select>`.                                                                                                                               |
+| `showPageSizeSelector` | `boolean`              | `true`                                |                                                                                                                                                                                 |
+| `showFirstLastButtons` | `boolean`              | `false`                               | Also renders "first page" / "last page" jump buttons flanking previous/next.                                                                                                    |
+| `hideOnSinglePage`     | `boolean`              | `false`                               | Renders nothing at all once there's only one page (or none). The default always shows the paginator.                                                                            |
+| `maxVisiblePages`      | `number`               | `5`                                   | Soft target for how many page-number buttons show before collapsing to an ellipsis.                                                                                             |
+| `showPageReport`       | `boolean`              | `true`                                | Set `false` to hide the "Showing 1-10 of 95" report entirely.                                                                                                                   |
+| `reportTemplate`       | `string`               | `'Showing {first}-{last} of {total}'` | Report text; placeholders `{first}`, `{last}`, `{total}`, `{page}`, `{pageCount}`. Zero results always reads "No results".                                                      |
+| `showJumpToPage`       | `boolean`              | `false`                               | Renders a "Go to" page box (a `<dg-input-number>`); the value is clamped to `[1, pageCount]` when committed on blur/Enter.                                                      |
+| `size`                 | `DynamoPaginationSize` | `'md'`                                |                                                                                                                                                                                 |
+| `disabled`             | `boolean`              | `false`                               |                                                                                                                                                                                 |
+| `ariaLabel`            | `string`               | `'Pagination'`                        |                                                                                                                                                                                 |
 
 ## Outputs
 
@@ -51,7 +54,7 @@ protected pageSize = signal(10);
 
 ## Tier / dependencies
 
-- `tier:2`. Peer dependencies: `@dynamong/button`, `@dynamong/select`.
+- `tier:2`. Peer dependencies: `@dynamong/button`, `@dynamong/select`, `@dynamong/input-number`.
 
 ## Running unit tests
 

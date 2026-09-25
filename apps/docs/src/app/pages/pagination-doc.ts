@@ -10,6 +10,8 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'first-last', title: 'First / Last Buttons' },
+  { id: 'jump', title: 'Jump to Page' },
+  { id: 'report', title: 'Custom Report' },
 ];
 
 const API: ApiTableRow[] = [
@@ -21,6 +23,13 @@ const API: ApiTableRow[] = [
   { name: 'showFirstLastButtons', type: 'boolean', default: 'false' },
   { name: 'hideOnSinglePage', type: 'boolean', default: 'false' },
   { name: 'maxVisiblePages', type: 'number', default: '5' },
+  { name: 'showPageReport', type: 'boolean', default: 'true' },
+  {
+    name: 'reportTemplate',
+    type: 'string',
+    default: "'Showing {first}-{last} of {total}'",
+  },
+  { name: 'showJumpToPage', type: 'boolean', default: 'false' },
   { name: 'disabled', type: 'boolean', default: 'false' },
   { name: 'ariaLabel', type: 'string', default: "'Pagination'" },
 ];
@@ -73,6 +82,44 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="jump"
+        title="Jump to Page"
+        description="showJumpToPage adds a Go-to box; type a page and press Enter or blur — out-of-range values clamp."
+      >
+        <div preview>
+          <dg-pagination
+            [totalItems]="totalItems"
+            [(page)]="jumpPage"
+            [pageSize]="10"
+            [showJumpToPage]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-pagination [totalItems]="250" [(page)]="page"
+          [showJumpToPage]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="report"
+        title="Custom Report"
+        description="reportTemplate accepts {first}, {last}, {total}, {page} and {pageCount}; showPageReport hides it."
+      >
+        <div preview>
+          <dg-pagination
+            [totalItems]="totalItems"
+            [(page)]="reportPage"
+            [pageSize]="10"
+            reportTemplate="Page {page} of {pageCount} ({total} records)"
+          />
+        </div>
+        <div code>
+          &lt;dg-pagination [totalItems]="250" [(page)]="page"
+          reportTemplate="Page &#123;page&#125; of &#123;pageCount&#125;" /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -84,4 +131,6 @@ export class PaginationDocPage {
   protected readonly page = signal(1);
   protected readonly pageSize = signal(10);
   protected readonly firstLastPage = signal(3);
+  protected readonly jumpPage = signal(1);
+  protected readonly reportPage = signal(1);
 }
