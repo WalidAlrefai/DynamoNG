@@ -8,6 +8,7 @@ import {
 import { DynamoButton } from '@dynamong/button';
 import type { DynamoSelectOption } from '@dynamong/core/api';
 import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoInputNumber } from '@dynamong/input-number';
 import { DynamoSelect } from '@dynamong/select';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -17,6 +18,8 @@ import {
 import {
   paginationControlsStyles,
   paginationEllipsisStyles,
+  paginationJumpInputStyles,
+  paginationJumpStyles,
   paginationNavButtonExtraClasses,
   paginationPageButtonExtraClasses,
   paginationPageSizeSelectStyles,
@@ -32,7 +35,7 @@ import type {
   selector: 'dg-pagination',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoButton, DynamoSelect],
+  imports: [DynamoButton, DynamoInputNumber, DynamoSelect],
   templateUrl: './pagination.html',
 })
 export class DynamoPagination extends DynamoBaseComponent<DynamoPaginationPart> {
@@ -55,6 +58,12 @@ export class DynamoPagination extends DynamoBaseComponent<DynamoPaginationPart> 
   readonly hideOnSinglePage = input(false);
   /** Soft target for how many page-number buttons show before collapsing to an ellipsis — see `buildPaginationRange`. */
   readonly maxVisiblePages = input(5);
+  /** Renders the "Showing 1-10 of 95" report. Set `false` to hide it entirely. */
+  readonly showPageReport = input(true);
+  /** Report text. Placeholders: `{first}`, `{last}`, `{total}`, `{page}`, `{pageCount}`. The zero-results case always reads "No results". */
+  readonly reportTemplate = input('Showing {first}-{last} of {total}');
+  /** Renders a "Go to" page-number box; the value is clamped to the valid range on commit (blur/Enter). */
+  readonly showJumpToPage = input(false);
   readonly size = input<DynamoPaginationSize>('md');
   readonly disabled = input(false);
   readonly ariaLabel = input('Pagination');
@@ -95,7 +104,17 @@ export class DynamoPagination extends DynamoBaseComponent<DynamoPaginationPart> 
     const size = this.pageSize();
     const start = (this.currentPage() - 1) * size + 1;
     const end = Math.min(total, this.currentPage() * size);
-    return `Showing ${start}-${end} of ${total}`;
+    const values: Record<string, number> = {
+      first: start,
+      last: end,
+      total,
+      page: this.currentPage(),
+      pageCount: this.pageCount(),
+    };
+    return this.reportTemplate().replace(
+      /{(first|last|total|page|pageCount)}/g,
+      (_, key: string) => String(values[key]),
+    );
   });
 
   protected readonly classes = computed(() =>
@@ -106,6 +125,8 @@ export class DynamoPagination extends DynamoBaseComponent<DynamoPaginationPart> 
   protected readonly summaryClasses = paginationSummaryStyles;
   protected readonly controlsClasses = paginationControlsStyles;
   protected readonly pageSizeSelectClasses = paginationPageSizeSelectStyles;
+  protected readonly jumpClasses = paginationJumpStyles;
+  protected readonly jumpInputClasses = paginationJumpInputStyles;
 
   protected readonly navButtonExtraClasses = computed(() =>
     paginationNavButtonExtraClasses({ size: this.size() }),
@@ -129,6 +150,11 @@ export class DynamoPagination extends DynamoBaseComponent<DynamoPaginationPart> 
   protected goToPage(page: number): void {
     if (this.disabled()) return;
     this.page.set(Math.min(Math.max(1, page), this.pageCount()));
+  }
+
+  protected onJumpToPage(value: number | null): void {
+    if (value == null) return;
+    this.goToPage(value);
   }
 
   protected goToFirstPage(): void {

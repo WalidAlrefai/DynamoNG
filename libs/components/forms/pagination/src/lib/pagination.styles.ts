@@ -74,3 +74,7 @@ export const paginationEllipsisStyles = cva(
 );
 
 export const paginationPageSizeSelectStyles = 'w-auto min-w-[8rem]';
+
+export const paginationJumpStyles = 'flex items-center gap-2 text-text-muted';
+
+export const paginationJumpInputStyles = 'w-16';

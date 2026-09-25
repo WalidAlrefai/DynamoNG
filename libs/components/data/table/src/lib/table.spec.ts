@@ -1794,3 +1794,197 @@ describe('DynamoTable', () => {
     });
   });
 });
+
+@Component({
+  selector: 'dg-table-expansion-host',
+  standalone: true,
+  imports: [DynamoTable],
+  template: `
+    <ng-template #detail let-row let-i="index">
+      <p data-detail-marker>Details for {{ row.name }} (idx {{ i }})</p>
+    </ng-template>
+    <dg-table
+      [columns]="columns"
+      [data]="data"
+      [expansionTemplate]="withTemplate() ? detailTpl() : undefined"
+      [expandMode]="expandMode()"
+      [(expandedRows)]="expanded"
+      [selectable]="selectable()"
+      [pageSize]="pageSize()"
+      [loading]="loading()"
+      [virtualScroll]="virtualScroll()"
+      [trackBy]="trackBy"
+    />
+  `,
+})
+class TableExpansionHostComponent {
+  protected readonly detailTpl =
+    viewChild.required<TemplateRef<DynamoTableCellContext<Item>>>('detail');
+  readonly columns = ITEM_COLUMNS;
+  readonly data: Item[] = [
+    { id: 1, name: 'Ada' },
+    { id: 2, name: 'Bea' },
+    { id: 3, name: 'Cy' },
+  ];
+  readonly trackBy = (row: Item) => row.id;
+  readonly withTemplate = input(true);
+  readonly expandMode = input<'multiple' | 'single'>('multiple');
+  readonly selectable = input(false);
+  readonly pageSize = input<number | undefined>(undefined);
+  readonly loading = input(false);
+  readonly virtualScroll = input(false);
+  readonly expanded = model<Item[]>([]);
+}
+
+describe('DynamoTable row expansion', () => {
+  const chevrons = (c: HTMLElement) =>
+    Array.from(
+      c.querySelectorAll<HTMLButtonElement>('tbody button[aria-expanded]'),
+    );
+  const details = (c: HTMLElement) =>
+    Array.from(c.querySelectorAll('[data-detail-cell]'));
+
+  it('renders no expander column or detail rows without an expansionTemplate', () => {
+    const { container } = renderDynamoComponent(TableExpansionHostComponent, {
+      inputs: { withTemplate: false },
+    });
+
+    expect(chevrons(container)).toHaveLength(0);
+    expect(container.querySelectorAll('thead th')).toHaveLength(1);
+  });
+
+  it('expands a row on click, rendering the template with the row context, and collapses on a second click', async () => {
+    const { container } = renderDynamoComponent(TableExpansionHostComponent);
+    const [first] = chevrons(container);
+    expect(first?.getAttribute('aria-expanded')).toBe('false');
+    expect(first?.getAttribute('aria-label')).toBe('Expand row 1');
+
+    await userEvent.click(first as HTMLElement);
+
+    expect(details(container)).toHaveLength(1);
+    expect(details(container)[0]?.textContent).toContain(
+      'Details for Ada (idx 0)',
+    );
+    expect(first?.getAttribute('aria-expanded')).toBe('true');
+    expect(first?.getAttribute('aria-label')).toBe('Collapse row 1');
+    expect(first?.getAttribute('aria-controls')).toBe(
+      details(container)[0]?.id,
+    );
+
+    await userEvent.click(first as HTMLElement);
+
+    expect(details(container)).toHaveLength(0);
+    expect(first?.getAttribute('aria-controls')).toBeNull();
+  });
+
+  it('keeps several rows open in multiple mode and one at a time in single mode', async () => {
+    const multi = renderDynamoComponent(TableExpansionHostComponent);
+    await userEvent.click(chevrons(multi.container)[0] as HTMLElement);
+    await userEvent.click(chevrons(multi.container)[1] as HTMLElement);
+    expect(details(multi.container)).toHaveLength(2);
+  });
+
+  it('collapses the previous row in single mode', async () => {
+    const { container, componentInstance } = renderDynamoComponent(
+      TableExpansionHostComponent,
+      { inputs: { expandMode: 'single' } },
+    );
+    await userEvent.click(chevrons(container)[0] as HTMLElement);
+    await userEvent.click(chevrons(container)[1] as HTMLElement);
+
+    expect(details(container)).toHaveLength(1);
+    expect(details(container)[0]?.textContent).toContain('Bea');
+    expect(componentInstance.expanded()).toHaveLength(1);
+  });
+
+  it('two-way binds expandedRows and renders pre-expanded rows open', async () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent(
+      TableExpansionHostComponent,
+    );
+    await userEvent.click(chevrons(container)[2] as HTMLElement);
+    expect(componentInstance.expanded().map((r) => r.name)).toEqual(['Cy']);
+
+    componentInstance.expanded.set([componentInstance.data[0] as Item]);
+    fixture.detectChanges();
+
+    expect(details(container)).toHaveLength(1);
+    expect(details(container)[0]?.textContent).toContain('Ada');
+  });
+
+  it('spans the detail cell across the expander, selection and data columns', async () => {
+    const { container } = renderDynamoComponent(TableExpansionHostComponent, {
+      inputs: { selectable: true },
+    });
+    await userEvent.click(chevrons(container)[0] as HTMLElement);
+
+    expect(details(container)[0]?.getAttribute('colspan')).toBe('3');
+  });
+
+  it('keeps a row expanded across paging (identity via trackBy)', async () => {
+    const { container, fixture } = renderDynamoComponent(
+      TableExpansionHostComponent,
+      { inputs: { pageSize: 2 } },
+    );
+    const harness = await TestbedHarnessEnvironment.harnessForFixture(
+      fixture,
+      DynamoTableHarness,
+    );
+    await userEvent.click(chevrons(container)[0] as HTMLElement);
+
+    await harness.goToNextPage();
+    expect(details(container)).toHaveLength(0);
+    await harness.goToPreviousPage();
+
+    expect(details(container)).toHaveLength(1);
+  });
+
+  it('disables the chevrons while loading', () => {
+    const { container } = renderDynamoComponent(TableExpansionHostComponent, {
+      inputs: { loading: true },
+    });
+
+    for (const button of chevrons(container))
+      expect(button.disabled).toBe(true);
+  });
+
+  it('is not rendered, with a dev warning, under virtualScroll', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { container } = renderDynamoComponent(TableExpansionHostComponent, {
+      inputs: { virtualScroll: true },
+    });
+
+    expect(container.querySelectorAll('button[aria-expanded]')).toHaveLength(0);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '`expansionTemplate` is ignored while `virtualScroll`',
+      ),
+    );
+    warn.mockRestore();
+  });
+
+  it('exposes expansion through the harness without counting detail rows as data rows', async () => {
+    const { fixture } = renderDynamoComponent(TableExpansionHostComponent);
+    const harness = await TestbedHarnessEnvironment.harnessForFixture(
+      fixture,
+      DynamoTableHarness,
+    );
+
+    await harness.toggleRowExpansion('Bea');
+
+    expect(await harness.isRowExpanded('Bea')).toBe(true);
+    expect(await harness.isRowExpanded('Ada')).toBe(false);
+    expect(await harness.getRowCount()).toBe(3);
+    expect(await harness.getExpandedContent()).toEqual([
+      'Details for Bea (idx 1)',
+    ]);
+  });
+
+  it('has no axe violations with a row expanded', async () => {
+    const { container } = renderDynamoComponent(TableExpansionHostComponent, {
+      inputs: { selectable: true },
+    });
+    await userEvent.click(chevrons(container)[0] as HTMLElement);
+
+    await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+  });
+});

@@ -34,6 +34,7 @@ const MANY_ROWS: DocEmployee[] = Array.from({ length: 5000 }, (_, i) => ({
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'sort-filter-select', title: 'Sort, Filter, Select' },
+  { id: 'expandable-rows', title: 'Expandable Rows' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
 ];
 
@@ -46,6 +47,13 @@ const API: ApiTableRow[] = [
   { name: 'data', type: 'readonly TRow[] (required)', default: '—' },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'emptyMessage', type: 'string', default: "'No data'" },
+  {
+    name: 'expansionTemplate',
+    type: 'TemplateRef<DynamoTableCellContext<TRow>> | undefined',
+    default: 'undefined',
+  },
+  { name: 'expandedRows', type: 'TRow[] (model)', default: '[]' },
+  { name: 'expandMode', type: "'multiple' | 'single'", default: "'multiple'" },
   {
     name: 'pageSize',
     type: 'number | undefined (model)',
@@ -98,6 +106,33 @@ const API: ApiTableRow[] = [
       </docs-example>
 
       <docs-example
+        exampleId="expandable-rows"
+        title="Expandable Rows"
+        description="Pass an expansionTemplate to add a chevron column; expandMode='single' makes it accordion-style. Expansion is keyed by row identity, so it survives sorting."
+      >
+        <div preview>
+          <ng-template #detail let-row>
+            <p class="text-sm">
+              <strong>{{ row.name }}</strong> is currently
+              {{ row.status.toLowerCase() }} as {{ row.role }}.
+            </p>
+          </ng-template>
+          <dg-table
+            [columns]="columns"
+            [data]="rows"
+            ariaLabel="Employees (expandable)"
+            [expansionTemplate]="detail"
+            [(expandedRows)]="expanded"
+          />
+        </div>
+        <div code>
+          &lt;ng-template #detail let-row&gt;...&lt;/ng-template&gt;
+          &lt;dg-table [columns]="columns" [data]="rows"
+          [expansionTemplate]="detail" [(expandedRows)]="expanded" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="virtual-scroll"
         title="Virtual Scroll"
         description='virtualScroll renders a role="table" CSS grid where only a small window mounts; sorting and selection both still work. Not combined with pageSize — a virtualized table always renders every (filtered/sorted) row.'
@@ -144,5 +179,6 @@ export class TableDocPage {
   protected readonly page = signal(1);
   protected readonly selected = signal<DocEmployee[]>([]);
   protected readonly virtualSelected = signal<DocEmployee[]>([]);
+  protected readonly expanded = signal<DocEmployee[]>([]);
   protected readonly filterText = signal('');
 }

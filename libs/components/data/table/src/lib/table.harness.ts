@@ -6,8 +6,12 @@ export class DynamoTableHarness extends ComponentHarness {
 
   private readonly headerButtonLocators = this.locatorForAll('thead button');
   private readonly headerCellLocators = this.locatorForAll('thead th');
-  private readonly bodyRowLocators = this.locatorForAll('tbody tr');
-  private readonly bodyCellLocators = this.locatorForAll('tbody td');
+  private readonly bodyRowLocators = this.locatorForAll(
+    'tbody tr:not([data-detail-row])',
+  );
+  private readonly bodyCellLocators = this.locatorForAll(
+    'tbody tr:not([data-detail-row]) td',
+  );
   private readonly rowCheckboxLocators = this.locatorForAll(
     'tbody input[type="checkbox"]',
   );
@@ -23,6 +27,12 @@ export class DynamoTableHarness extends ComponentHarness {
   private readonly pageIndicatorLocator = this.locatorForOptional(
     '[aria-live="polite"]',
   );
+  private readonly expandButtonLocators = this.locatorForAll(
+    'tbody button[aria-expanded]',
+  );
+  private readonly detailCellLocators = this.locatorForAll(
+    'tbody td[data-detail-cell]',
+  );
   private readonly filterInputLocator = this.locatorForOptional(
     'input[type="search"]',
   );
@@ -30,8 +40,9 @@ export class DynamoTableHarness extends ComponentHarness {
   // synthetic empty-state row's single <td> does (see table.html) — a
   // reliable, markup-native way to find it regardless of the real data's
   // shape.
-  private readonly emptyStateCellLocator =
-    this.locatorForOptional('tbody td[colspan]');
+  private readonly emptyStateCellLocator = this.locatorForOptional(
+    'tbody td[colspan]:not([data-detail-cell])',
+  );
 
   async sortBy(header: string): Promise<void> {
     for (const button of await this.headerButtonLocators()) {
@@ -142,6 +153,30 @@ export class DynamoTableHarness extends ComponentHarness {
       if (await checkbox.getProperty<boolean>('checked')) count++;
     }
     return count;
+  }
+
+  /** Throws if `expansionTemplate` is not set — there are no expander buttons. */
+  async toggleRowExpansion(rowText: string): Promise<void> {
+    const index = await this.findRowIndex(rowText);
+    const button = (await this.expandButtonLocators())[index];
+    if (!button) {
+      throw new Error(
+        `Row "${rowText}" has no expander — is expansionTemplate set?`,
+      );
+    }
+    await button.click();
+  }
+
+  async isRowExpanded(rowText: string): Promise<boolean> {
+    const index = await this.findRowIndex(rowText);
+    const button = (await this.expandButtonLocators())[index];
+    return (await button?.getAttribute('aria-expanded')) === 'true';
+  }
+
+  /** Text of every currently-rendered detail row, in document order. */
+  async getExpandedContent(): Promise<string[]> {
+    const cells = await this.detailCellLocators();
+    return Promise.all(cells.map(async (cell) => (await cell.text()).trim()));
   }
 
   private async findRowIndex(rowText: string): Promise<number> {

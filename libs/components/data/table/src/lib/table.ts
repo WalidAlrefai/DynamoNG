@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   type OnInit,
+  type TemplateRef,
   computed,
   input,
   isDevMode,
@@ -22,7 +23,11 @@ import { sortRows, type DynamoTableSortDirection } from './table.sort';
 import {
   tableBodyCellStyles,
   tableBodyRowStyles,
+  tableDetailCellStyles,
   tableEmptyCellStyles,
+  tableExpandButtonStyles,
+  tableExpandCellStyles,
+  tableExpandIconStyles,
   tableFilterWrapperStyles,
   tableHeaderCellStyles,
   tableHeaderRowStyles,
@@ -40,6 +45,7 @@ import {
 import type {
   DynamoTableCellContext,
   DynamoTableColumn,
+  DynamoTableExpandMode,
   DynamoTablePart,
   DynamoTableSize,
 } from './table.types';
@@ -126,6 +132,20 @@ export class DynamoTable<TRow = unknown>
   readonly selected = model<TRow[]>([]);
   /** Fires once per row a user directly checks/unchecks — not from `toggleSelectAll()`. */
   readonly itemSelect = output<TRow>();
+
+  /**
+   * Opt-in row expansion. Setting this renders a leading chevron column;
+   * expanding a row renders this template in a full-width detail row right
+   * under it, with the same `{ $implicit, row, index }` context a column's
+   * `cellTemplate` gets. Unset (default) renders no expander column at all.
+   * Not supported with `virtualScroll` (see `ngOnInit`).
+   */
+  readonly expansionTemplate = input<
+    TemplateRef<DynamoTableCellContext<TRow>> | undefined
+  >(undefined);
+  /** Two-way bindable array of the actual expanded row objects: `<dg-table [(expandedRows)]="open">`. */
+  readonly expandedRows = model<TRow[]>([]);
+  readonly expandMode = input<DynamoTableExpandMode>('multiple');
 
   /**
    * Opt-in global filter. `false` (default) renders no search UI at all —
@@ -302,6 +322,30 @@ export class DynamoTable<TRow = unknown>
   protected readonly selectionCellClasses = computed(() =>
     tableSelectionCellStyles({ size: this.size() }),
   );
+  protected readonly expandCellClasses = computed(() =>
+    tableExpandCellStyles({ size: this.size() }),
+  );
+  protected readonly expandButtonClasses = tableExpandButtonStyles;
+  protected readonly detailCellClasses = tableDetailCellStyles;
+  private readonly tableId = this.idGenerator.next('dg-table');
+
+  /** Expansion is off under `virtualScroll` — its grid DOM has no detail-row slot. */
+  protected readonly expansionEnabled = computed(
+    () => !!this.expansionTemplate() && !this.virtualScroll(),
+  );
+
+  /** Columns + selection + expander, for full-width detail/empty cells. */
+  protected readonly fullColspan = computed(
+    () =>
+      this.columns().length +
+      (this.selectable() ? 1 : 0) +
+      (this.expansionEnabled() ? 1 : 0),
+  );
+
+  /** O(1) expansion lookup, keyed by the same row identity selection uses. */
+  protected readonly expandedKeys = computed(
+    () => new Set(this.expandedRows().map((row) => this.selectionKey(row))),
+  );
 
   /**
    * Selection-identity keys for every row currently in `selected()` — an
@@ -341,6 +385,11 @@ export class DynamoTable<TRow = unknown>
    */
   ngOnInit(): void {
     if (!isDevMode()) return;
+    if (this.virtualScroll() && this.expansionTemplate()) {
+      console.warn(
+        '[dg-table] `expansionTemplate` is ignored while `virtualScroll` is enabled — the virtualized grid has no detail-row slot.',
+      );
+    }
     if (this.virtualScroll() && this.pageSize()) {
       console.warn(
         '[dg-table] `pageSize` is ignored while `virtualScroll` is enabled — the virtualized path renders all rows and hides the pagination footer.',
@@ -425,6 +474,37 @@ export class DynamoTable<TRow = unknown>
     pageIndex: number,
   ): DynamoTableCellContext<TRow> {
     return { $implicit: row, row, index: this.absoluteIndex(pageIndex) };
+  }
+
+  protected expandIconClasses(row: TRow): string {
+    return tableExpandIconStyles({ expanded: this.isRowExpanded(row) });
+  }
+
+  protected isRowExpanded(row: TRow): boolean {
+    return this.expandedKeys().has(this.selectionKey(row));
+  }
+
+  /** Stable id linking a row's chevron (`aria-controls`) to its detail cell. */
+  protected detailId(pageIndex: number): string {
+    return `${this.tableId}-detail-${this.absoluteIndex(pageIndex)}`;
+  }
+
+  /**
+   * `'single'` mode replaces the array with just this row when expanding
+   * (accordion); `'multiple'` appends. Collapsing always just removes it.
+   */
+  protected toggleRowExpansion(row: TRow): void {
+    if (this.isBusy()) return;
+    const key = this.selectionKey(row);
+    if (this.expandedKeys().has(key)) {
+      this.expandedRows.update((rows) =>
+        rows.filter((r) => this.selectionKey(r) !== key),
+      );
+      return;
+    }
+    this.expandedRows.update((rows) =>
+      this.expandMode() === 'single' ? [row] : [...rows, row],
+    );
   }
 
   protected bodyRowClasses(row: TRow): string {

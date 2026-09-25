@@ -15,7 +15,11 @@
   <table [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
     <thead>
       <tr [class]="headerRowClasses">
-        @if (selectable()) {
+        @if (expansionEnabled()) {
+        <th scope="col" [class]="expandCellClasses()">
+          <span class="sr-only">Expand row</span>
+        </th>
+        } @if (selectable()) {
         <th scope="col" [class]="selectionCellClasses()">
           <dg-checkbox
             size="sm"
@@ -67,7 +71,39 @@
       @for (row of pagedData(); track trackRow(row, $index); let rowIndex =
       $index) {
       <tr [class]="bodyRowClasses(row)">
-        @if (selectable()) {
+        @if (expansionEnabled()) {
+        <td [class]="expandCellClasses()">
+          <button
+            type="button"
+            [class]="expandButtonClasses"
+            [disabled]="loading()"
+            [attr.aria-expanded]="isRowExpanded(row)"
+            [attr.aria-controls]="isRowExpanded(row) ? detailId(rowIndex) : null"
+            [attr.aria-label]="
+              (isRowExpanded(row) ? 'Collapse row ' : 'Expand row ') +
+              (rowIndex + 1)
+            "
+            (click)="toggleRowExpansion(row)"
+          >
+            <svg
+              [class]="expandIconClasses(row)"
+              [attr.aria-hidden]="true"
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+            >
+              <path
+                d="M6 3l5 5-5 5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </td>
+        } @if (selectable()) {
         <td [class]="selectionCellClasses()">
           <dg-checkbox
             size="sm"
@@ -89,12 +125,23 @@
         </td>
         }
       </tr>
-      } @empty {
-      <tr>
+      @if (expansionEnabled() && isRowExpanded(row)) {
+      <tr data-detail-row>
         <td
-          [attr.colspan]="columns().length + (selectable() ? 1 : 0)"
-          [class]="emptyCellClasses"
+          data-detail-cell
+          [id]="detailId(rowIndex)"
+          [attr.colspan]="fullColspan()"
+          [class]="detailCellClasses"
         >
+          <ng-container
+            [ngTemplateOutlet]="expansionTemplate() ?? null"
+            [ngTemplateOutletContext]="cellContext(row, rowIndex)"
+          />
+        </td>
+      </tr>
+      } } @empty {
+      <tr>
+        <td [attr.colspan]="fullColspan()" [class]="emptyCellClasses">
           @if (loading()) {
           <span [class]="loadingWrapperClasses" role="status">
             <dg-spinner size="sm" />
