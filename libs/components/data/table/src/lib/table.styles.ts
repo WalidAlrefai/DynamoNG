@@ -129,3 +129,41 @@ export const tableVirtualHeaderRowStyles =
 
 export const tableVirtualBodyRowStyles =
   'grid items-center border-b border-border last:border-b-0 hover:bg-surface-50';
+
+// --- v7: row expansion ---
+
+// Same fixed-width, size-varying-padding column as `tableSelectionCellStyles`,
+// for the leading chevron column.
+export const tableExpandCellStyles = cva('w-10 text-center', {
+  variants: {
+    size: {
+      sm: 'px-3 py-1.5',
+      md: 'px-4 py-2.5',
+      lg: 'px-5 py-3.5',
+    },
+  },
+  defaultVariants: { size: 'md' },
+});
+
+export const tableExpandButtonStyles =
+  'inline-flex h-6 w-6 items-center justify-center rounded-md text-text-muted transition-colors ' +
+  'hover:bg-surface-100 hover:text-text-primary ' +
+  focusRingClass;
+
+// Tailwind v4 implements `rotate-*` as the separate `rotate` CSS property
+// (not `transform`), so it must be named in the transition explicitly.
+export const tableExpandIconStyles = cva(
+  'transition-[rotate] duration-200 motion-reduce:transition-none',
+  {
+    variants: {
+      expanded: {
+        true: 'rotate-90',
+        false: 'rotate-0',
+      },
+    },
+    defaultVariants: { expanded: false },
+  },
+);
+
+export const tableDetailCellStyles =
+  'bg-surface-50 px-4 py-3 text-text-primary';
