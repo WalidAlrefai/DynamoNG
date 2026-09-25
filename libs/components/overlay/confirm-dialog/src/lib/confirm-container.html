@@ -7,7 +7,7 @@
     aria-modal="true"
     tabindex="-1"
     class="pointer-events-auto"
-    [class]="panelClasses"
+    [class]="panelClasses()"
     [attr.aria-labelledby]="request().title ? titleId : null"
     [attr.aria-describedby]="request().title ? messageId : null"
     [attr.aria-label]="!request().title ? request().message : null"

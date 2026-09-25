@@ -3,7 +3,11 @@ import type { OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { Subscription } from 'rxjs';
 import { DynamoOverlayService } from '@dynamong/core/overlay';
-import { confirmBackdropClass } from './confirm.styles';
+import {
+  confirmBackdropClass,
+  confirmBackdropHiddenClass,
+  confirmBackdropVisibleClass,
+} from './confirm.styles';
 import type { DynamoConfirmEntry, DynamoConfirmOptions } from './confirm.types';
 import { DynamoConfirmContainer } from './confirm-container';
 
@@ -16,12 +20,20 @@ interface ActiveConfirm extends QueuedConfirm {
   overlayRef: OverlayRef;
   componentRef: ComponentRef<DynamoConfirmContainer>;
   subs: Subscription;
+  // True once settle() has started closing this one — guards against a
+  // second confirm()/cancel() (or backdrop click/Escape firing again) from
+  // re-entering settle() during the exit-animation delay below, before
+  // dispose() has actually run and cleared `this.active`.
+  settling: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
 export class DynamoConfirmService {
   private readonly overlayService = inject(DynamoOverlayService);
   private readonly injector = inject(Injector);
+
+  // Must stay in sync with `duration-200` in confirmPanelStyles.
+  private static readonly CLOSE_DURATION_MS = 200;
 
   private readonly queue: QueuedConfirm[] = [];
   private active: ActiveConfirm | null = null;
@@ -82,6 +94,19 @@ export class DynamoConfirmService {
     // its change detector for the `request` input to render synchronously.
     componentRef.changeDetectorRef.detectChanges();
 
+    // CDK renders the backdrop element outside any template (see
+    // confirmBackdropClass's own comment), so its fade-in has to be
+    // toggled imperatively rather than template-bound. Double rAF to match
+    // the panel's own entrance timing in confirm-container.ts.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        overlayRef.backdropElement?.classList.replace(
+          confirmBackdropHiddenClass,
+          confirmBackdropVisibleClass,
+        );
+      });
+    });
+
     const subs = new Subscription();
     subs.add(
       overlayRef.backdropClick().subscribe(() => {
@@ -98,21 +123,37 @@ export class DynamoConfirmService {
       }),
     );
 
-    this.active = { ...next, overlayRef, componentRef, subs };
+    this.active = { ...next, overlayRef, componentRef, subs, settling: false };
   }
 
   private settle(result: boolean): void {
     const active = this.active;
-    if (!active) {
+    if (!active || active.settling) {
       return;
     }
+    active.settling = true;
 
     active.subs.unsubscribe();
-    // Destroys the portal's `ComponentRef`, firing
-    // `DynamoConfirmContainer.ngOnDestroy()`, which restores focus.
-    active.overlayRef.dispose();
-    this.active = null;
+    active.componentRef.instance.beginClose();
+    active.overlayRef.backdropElement?.classList.replace(
+      confirmBackdropVisibleClass,
+      confirmBackdropHiddenClass,
+    );
+    active.componentRef.changeDetectorRef.detectChanges();
+
     active.resolve(result);
-    this.presentNext();
+
+    // Deferred so the panel's exit transition plays before the overlay is
+    // actually disposed. `this.active` deliberately stays set (as
+    // `settling: true`) until then, not nulled immediately — so a new
+    // open() during this window queues behind it instead of presenting a
+    // second panel that would overlap the one still fading out, keeping
+    // the queue strictly sequential. Disposing fires
+    // `DynamoConfirmContainer.ngOnDestroy()`, which restores focus.
+    setTimeout(() => {
+      active.overlayRef.dispose();
+      this.active = null;
+      this.presentNext();
+    }, DynamoConfirmService.CLOSE_DURATION_MS);
   }
 }

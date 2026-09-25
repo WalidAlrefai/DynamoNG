@@ -1,7 +1,7 @@
 <div [class]="containerClasses" role="status" aria-live="polite">
   @for (toast of toasts(); track toast.id) {
   <div
-    [class]="cardClasses(toast.severity)"
+    [class]="cardClasses(toast)"
     (mouseenter)="pause(toast.id)"
     (mouseleave)="resume(toast.id)"
   >
