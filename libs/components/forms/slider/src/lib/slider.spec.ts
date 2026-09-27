@@ -7,7 +7,7 @@ import {
 } from '@dynamong/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DynamoSlider } from './slider';
 import { DynamoSliderHarness } from './slider.harness';
 import type { DynamoSliderRange } from './slider.types';
@@ -56,6 +56,27 @@ function mockTrackRect(
       bottom: 0,
       x: left,
       y: 0,
+      toJSON: () => '',
+    }) as DOMRect;
+}
+
+function mockVerticalTrackRect(
+  container: HTMLElement,
+  bottom: number,
+  height: number,
+): void {
+  const track = container.querySelector('[role="slider"]')
+    ?.parentElement as HTMLElement;
+  track.getBoundingClientRect = () =>
+    ({
+      left: 0,
+      width: 0,
+      top: bottom - height,
+      height,
+      right: 0,
+      bottom,
+      x: 0,
+      y: bottom - height,
       toJSON: () => '',
     }) as DOMRect;
 }
@@ -627,6 +648,268 @@ describe('DynamoSlider', () => {
           range: true,
           value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
           ariaLabel: 'Price',
+        },
+      });
+
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('orientation', () => {
+    it('defaults to horizontal, rendering identically to before orientation existed', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50 },
+      });
+
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      const thumb = container.querySelector('[role="slider"]') as HTMLElement;
+      expect(track.style.height).toBe('');
+      expect(thumb.style.left).toBe('50%');
+      expect(thumb.style.bottom).toBe('');
+    });
+
+    it('sets an explicit pixel height on the track', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { orientation: 'vertical', verticalHeight: 300 },
+      });
+
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      expect(track.style.height).toBe('300px');
+    });
+
+    it('positions the thumb from the bottom, not the left', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { orientation: 'vertical', value: 25 },
+      });
+
+      const thumb = container.querySelector('[role="slider"]') as HTMLElement;
+      expect(thumb.style.bottom).toBe('25%');
+      expect(thumb.style.left).toBe('');
+    });
+
+    it('dragging up increases the value and dragging down decreases it', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { orientation: 'vertical', value: 0 } },
+      );
+      mockVerticalTrackRect(container, 200, 200);
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+
+      // clientY 50 from the top == 150 up from the bottom (200 tall track).
+      fireEvent.pointerDown(track, { clientY: 50 });
+      expect(componentInstance.value()).toBe(75);
+
+      fireEvent.pointerMove(track, { clientY: 200 });
+      expect(componentInstance.value()).toBe(0);
+    });
+
+    it('keyboard arrows still increment/decrement correctly while vertical', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { orientation: 'vertical', value: 50, step: 5 } },
+      );
+      (container.querySelector('[role="slider"]') as HTMLElement).focus();
+
+      await userEvent.keyboard('{ArrowUp}');
+      expect(componentInstance.value()).toBe(55);
+
+      await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+      expect(componentInstance.value()).toBe(45);
+    });
+
+    it('drags each thumb independently along the vertical axis in range mode', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            orientation: 'vertical',
+            range: true,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          },
+        },
+      );
+      mockVerticalTrackRect(container, 200, 200);
+
+      fireEvent.pointerDown(getThumb(container, 'max'), { clientY: 0 });
+      fireEvent.pointerMove(
+        container.querySelector('[role="slider"]')
+          ?.parentElement as HTMLElement,
+        { clientY: 100 },
+      );
+
+      // clientY 100 of 200 == the midpoint == value 50 — dragged down from
+      // the initial 80, while the untouched min-thumb stays at 20.
+      expect((componentInstance.value() as DynamoSliderRange).maxValue).toBe(
+        50,
+      );
+      expect((componentInstance.value() as DynamoSliderRange).minValue).toBe(
+        20,
+      );
+    });
+  });
+
+  describe('showTicks / tickValues', () => {
+    it('renders no ticks by default', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50 },
+      });
+
+      expect(container.querySelectorAll('[role="slider"] ~ span')).toHaveLength(
+        0,
+      );
+    });
+
+    it('renders one tick per step across [min, max]', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { min: 0, max: 20, step: 5, showTicks: true },
+      });
+
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      // Ticks are the only <span>s directly under the track — the
+      // tooltip's own <span> (when shown) nests inside a thumb <div>
+      // instead, so this can't accidentally count it.
+      expect(track.querySelectorAll(':scope > span')).toHaveLength(5);
+    });
+
+    it('renders exactly the given sparse values, ignoring step', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          min: 0,
+          max: 100,
+          step: 1,
+          showTicks: true,
+          tickValues: [0, 50, 100],
+        },
+      });
+
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      const ticks = Array.from(track.querySelectorAll(':scope > span'));
+      expect(ticks).toHaveLength(3);
+      expect((ticks[1] as HTMLElement).style.left).toBe('50%');
+    });
+
+    it('drops tickValues entries outside [min, max]', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { min: 0, max: 10, tickValues: [-5, 0, 10, 15] },
+      });
+
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      expect(track.querySelectorAll(':scope > span')).toHaveLength(2);
+    });
+
+    it('warns in dev mode when step-based generation exceeds 50 ticks', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      renderDynamoComponent(DynamoSlider, {
+        inputs: { min: 0, max: 100, step: 1, showTicks: true },
+      });
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('`showTicks` generated more than 50'),
+      );
+      warn.mockRestore();
+    });
+
+    it('does not warn for an explicit tickValues list of any length', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          min: 0,
+          max: 1000,
+          tickValues: Array.from({ length: 200 }, (_, i) => i),
+        },
+      });
+
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+  });
+
+  describe('showTooltip', () => {
+    it('never renders a bubble when showTooltip is false, even while dragging', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 0 },
+      });
+      mockTrackRect(container, 0, 200);
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+
+      fireEvent.pointerDown(track, { clientX: 100 });
+
+      const thumb = container.querySelector('[role="slider"]') as HTMLElement;
+      expect(thumb.querySelector('span')).toBeNull();
+    });
+
+    it('shows the live value only while dragging, then hides it on pointerup', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 0, showTooltip: true },
+      });
+      mockTrackRect(container, 0, 200);
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      const thumb = container.querySelector('[role="slider"]') as HTMLElement;
+
+      expect(thumb.querySelector('span')).toBeNull();
+
+      fireEvent.pointerDown(track, { clientX: 100 });
+      fixture.detectChanges();
+      expect(thumb.querySelector('span')?.textContent).toBe('50');
+
+      fireEvent.pointerMove(track, { clientX: 150 });
+      fixture.detectChanges();
+      expect(thumb.querySelector('span')?.textContent).toBe('75');
+
+      fireEvent.pointerUp(track);
+      fixture.detectChanges();
+      expect(thumb.querySelector('span')).toBeNull();
+    });
+
+    it("shows only the actively-dragged thumb's own bubble in range mode", () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          showTooltip: true,
+        },
+      });
+      mockTrackRect(container, 0, 200);
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+
+      fireEvent.pointerDown(getThumb(container, 'max'), { clientX: 0 });
+      fixture.detectChanges();
+
+      expect(
+        getThumb(container, 'max').querySelector('span')?.textContent,
+      ).toBe('80');
+      expect(getThumb(container, 'min').querySelector('span')).toBeNull();
+
+      fireEvent.pointerUp(track);
+      fixture.detectChanges();
+      expect(getThumb(container, 'max').querySelector('span')).toBeNull();
+    });
+  });
+
+  describe('vertical + ticks + tooltip', () => {
+    it('has no axe violations with orientation, ticks and the tooltip all enabled', async () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          orientation: 'vertical',
+          showTicks: true,
+          step: 25,
+          showTooltip: true,
+          value: 50,
         },
       });
 
