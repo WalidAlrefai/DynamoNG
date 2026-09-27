@@ -36,6 +36,9 @@ protected readonly selectedDate = signal<Date | null>(null);
 | `disabledDays`  | `number[]`                        | `[]`              | Weekdays disabled beyond the `min`/`max` range — e.g. `[0, 6]` for weekends. `0` is Sunday, matching `date-fns`.                                                                                                                                                              |
 | `clearable`     | `boolean`                         | `false`           | Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoSelect`'s own `clearable`. Ignored when `inline`, which has no trigger to attach it to.                                                                                                |
 | `inline`        | `boolean`                         | `false`           | Renders the calendar directly in the page, with no trigger button or overlay — for embedding the picker permanently rather than behind a popup. Exactly one day (the currently focused one) is a native tab stop, and mounting never steals focus from elsewhere on the page. |
+| `showTime`      | `boolean`                         | `false`           | Renders hour/minute (and, with `showSeconds`, second) steppers below the calendar — see Time picker.                                                                                                                                                                          |
+| `hourFormat`    | `'12' \| '24'`                    | `'24'`            | `'12'` also renders an AM/PM toggle button next to the steppers.                                                                                                                                                                                                              |
+| `showSeconds`   | `boolean`                         | `false`           | Also renders a seconds stepper. Ignored (seconds always zeroed on commit) while `false`, even with `showTime` on.                                                                                                                                                             |
 | `value`         | `Date \| null` (model)            | `null`            | Two-way bindable; also driven by Angular forms via `writeValue`.                                                                                                                                                                                                              |
 | `disabled`      | `boolean` (model)                 | `false`           | Also driven by Angular forms via `setDisabledState`.                                                                                                                                                                                                                          |
 | `open`          | `boolean` (model)                 | `false`           | Two-way bindable: `<dg-date-picker [(open)]="isOpen">`.                                                                                                                                                                                                                       |
@@ -55,6 +58,20 @@ month-button grid with a year stepper, for jumping several months/years
 away faster than repeated `PageUp`/`PageDown`. `Escape` closes the
 quick-jump grid first (a second `Escape` then closes the whole panel).
 
+## Time picker
+
+`showTime` adds hour/minute (and, with `showSeconds`, second) steppers below the calendar. Selecting a day no
+longer closes the panel while `showTime` is on — an **Apply** button does that instead, since there's now
+more to do (set the time) before the user is done. Every stepper click — and every day click — still updates
+the bound `value` immediately, exactly like the rest of this codebase's live-signal components; Apply's only
+job is closing the panel (equivalent to clicking the trigger again or pressing `Escape`, just more
+discoverable), not staging or confirming a separate pending value. Each field wraps independently at its own
+boundary with no cross-field carry (e.g. decrementing the minute from `:00` goes to `:59` of the _same_ hour,
+not the previous hour) — the same "small, independent, no big rollover machinery" posture as PrimeNG's own
+time picker. Opening the panel seeds the steppers from the current `value`'s hours/minutes/seconds, or from
+the current wall-clock time when there's no value yet. `inline` mode renders the steppers with no Apply
+button (there's no popup to close).
+
 ## Accessibility
 
 - Trigger is a native `<button>` with `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`, `aria-invalid`, `aria-readonly`.
@@ -62,6 +79,7 @@ quick-jump grid first (a second `Escape` then closes the whole panel).
 - A visually-hidden `aria-live="polite"` region announces the visible month whenever it changes (prev/next, `PageUp`/`PageDown`, `Shift+PageUp`/`Shift+PageDown`, or quick-jump), so screen-reader users don't have to re-discover the new month by re-reading the grid.
 - Keyboard on the trigger: `ArrowDown`/`Enter`/`Space` opens the panel, `Escape` closes it.
 - Keyboard inside the panel (roving focus over day buttons): `ArrowRight`/`ArrowLeft`/`ArrowDown`/`ArrowUp` move by day/week, `Home`/`End` jump to the start/end of the focused week, `PageUp`/`PageDown` change month (`Shift+PageUp`/`Shift+PageDown` change year), `Escape` closes and refocuses the trigger.
+- Each time field is a `role="spinbutton"` (`aria-valuenow`/`aria-valuemin`/`aria-valuemax`/`aria-valuetext`) with its own `ArrowUp`/`ArrowDown` keyboard support, alongside the visible increment/decrement buttons.
 
 ## Design notes
 

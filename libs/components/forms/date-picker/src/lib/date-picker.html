@@ -209,6 +209,127 @@
         }
       </tbody>
     </table>
-    }
+    } @if (showTime()) {
+    <div [class]="timeWrapperClasses">
+      <div
+        [class]="timeFieldClasses"
+        role="spinbutton"
+        tabindex="0"
+        aria-label="Hour"
+        [attr.aria-valuenow]="timeOfDay().hours"
+        [attr.aria-valuemin]="0"
+        [attr.aria-valuemax]="23"
+        [attr.aria-valuetext]="hourDisplay()"
+        (keydown.ArrowUp)="stepHour(1)"
+        (keydown.ArrowDown)="stepHour(-1)"
+      >
+        <button
+          type="button"
+          [class]="timeStepButtonClasses"
+          aria-label="Increment hour"
+          (click)="stepHour(1)"
+        >
+          ▲
+        </button>
+        <span [class]="timeValueClasses" [attr.aria-hidden]="true"
+          >{{ hourDisplay() }}</span
+        >
+        <button
+          type="button"
+          [class]="timeStepButtonClasses"
+          aria-label="Decrement hour"
+          (click)="stepHour(-1)"
+        >
+          ▼
+        </button>
+      </div>
+      <span [class]="timeSeparatorClasses" [attr.aria-hidden]="true">:</span>
+      <div
+        [class]="timeFieldClasses"
+        role="spinbutton"
+        tabindex="0"
+        aria-label="Minute"
+        [attr.aria-valuenow]="timeOfDay().minutes"
+        [attr.aria-valuemin]="0"
+        [attr.aria-valuemax]="59"
+        [attr.aria-valuetext]="minuteDisplay()"
+        (keydown.ArrowUp)="stepMinute(1)"
+        (keydown.ArrowDown)="stepMinute(-1)"
+      >
+        <button
+          type="button"
+          [class]="timeStepButtonClasses"
+          aria-label="Increment minute"
+          (click)="stepMinute(1)"
+        >
+          ▲
+        </button>
+        <span [class]="timeValueClasses" [attr.aria-hidden]="true"
+          >{{ minuteDisplay() }}</span
+        >
+        <button
+          type="button"
+          [class]="timeStepButtonClasses"
+          aria-label="Decrement minute"
+          (click)="stepMinute(-1)"
+        >
+          ▼
+        </button>
+      </div>
+      @if (showSeconds()) {
+      <span [class]="timeSeparatorClasses" [attr.aria-hidden]="true">:</span>
+      <div
+        [class]="timeFieldClasses"
+        role="spinbutton"
+        tabindex="0"
+        aria-label="Second"
+        [attr.aria-valuenow]="timeOfDay().seconds"
+        [attr.aria-valuemin]="0"
+        [attr.aria-valuemax]="59"
+        [attr.aria-valuetext]="secondDisplay()"
+        (keydown.ArrowUp)="stepSecond(1)"
+        (keydown.ArrowDown)="stepSecond(-1)"
+      >
+        <button
+          type="button"
+          [class]="timeStepButtonClasses"
+          aria-label="Increment second"
+          (click)="stepSecond(1)"
+        >
+          ▲
+        </button>
+        <span [class]="timeValueClasses" [attr.aria-hidden]="true"
+          >{{ secondDisplay() }}</span
+        >
+        <button
+          type="button"
+          [class]="timeStepButtonClasses"
+          aria-label="Decrement second"
+          (click)="stepSecond(-1)"
+        >
+          ▼
+        </button>
+      </div>
+      } @if (hourFormat() === '12') {
+      <button
+        type="button"
+        [class]="meridiemButtonClasses"
+        (click)="toggleMeridiem()"
+      >
+        {{ meridiem() }}
+      </button>
+      }
+    </div>
+    @if (!inline()) {
+    <div class="mt-2 flex justify-end border-t border-border pt-2">
+      <button
+        type="button"
+        [class]="applyButtonClasses"
+        (click)="applyAndClose()"
+      >
+        Apply
+      </button>
+    </div>
+    } }
   </div>
 </ng-template>
