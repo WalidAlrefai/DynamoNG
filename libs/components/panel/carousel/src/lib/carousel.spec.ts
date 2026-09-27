@@ -93,6 +93,34 @@ class CarouselSingleHostComponent {}
 })
 class CarouselEmptyHostComponent {}
 
+@Component({
+  selector: 'dg-carousel-orientation-host',
+  standalone: true,
+  imports: [DynamoCarousel, DynamoCarouselSlide],
+  template: `
+    <dg-carousel
+      [(activeIndex)]="index"
+      [orientation]="orientation()"
+      [verticalHeight]="verticalHeight()"
+    >
+      <dg-carousel-slide
+        ><p data-testid="slide-0">Slide 0</p></dg-carousel-slide
+      >
+      <dg-carousel-slide
+        ><p data-testid="slide-1">Slide 1</p></dg-carousel-slide
+      >
+      <dg-carousel-slide
+        ><p data-testid="slide-2">Slide 2</p></dg-carousel-slide
+      >
+    </dg-carousel>
+  `,
+})
+class CarouselOrientationHostComponent {
+  readonly index = model(0);
+  readonly orientation = signal<'horizontal' | 'vertical'>('vertical');
+  readonly verticalHeight = signal(300);
+}
+
 function viewport(container: HTMLElement): HTMLElement {
   return within(container).getByTestId('carousel-viewport');
 }
@@ -609,6 +637,150 @@ describe('DynamoCarousel', () => {
       expect(() =>
         renderDynamoComponent(CarouselEmptyHostComponent),
       ).not.toThrow();
+    });
+  });
+
+  describe('orientation', () => {
+    it('defaults to horizontal, translating along X with no fixed viewport height (regression)', () => {
+      const { container } = renderDynamoComponent(CarouselTestHostComponent);
+
+      const viewportEl = viewport(container);
+      expect(viewportEl.style.height).toBe('');
+      expect(
+        viewportEl.querySelector('.flex')?.getAttribute('style'),
+      ).toContain('translateX(0%)');
+    });
+
+    it('sets an explicit pixel height on the viewport and translates along Y', () => {
+      const { container, fixture } = renderDynamoComponent(
+        CarouselOrientationHostComponent,
+      );
+      fixture.componentInstance.index.set(1);
+      fixture.detectChanges();
+
+      const viewportEl = viewport(container);
+      expect(viewportEl.style.height).toBe('300px');
+      const track = viewportEl.querySelector('.flex') as HTMLElement;
+      expect(track.style.transform).toContain('translateY(-100%)');
+      expect(track.style.transform).not.toContain('translateX');
+    });
+
+    it('moves prev/next with ArrowUp/ArrowDown, and ArrowLeft/ArrowRight still work too', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        CarouselOrientationHostComponent,
+      );
+      viewport(container).focus();
+
+      await userEvent.keyboard('{ArrowDown}');
+      expect(componentInstance.index()).toBe(1);
+
+      await userEvent.keyboard('{ArrowUp}');
+      expect(componentInstance.index()).toBe(0);
+
+      await userEvent.keyboard('{ArrowRight}');
+      expect(componentInstance.index()).toBe(1);
+
+      await userEvent.keyboard('{ArrowLeft}');
+      expect(componentInstance.index()).toBe(0);
+    });
+
+    it('does not rotate the arrow icons while horizontal', () => {
+      const { container } = renderDynamoComponent(CarouselTestHostComponent);
+
+      const icon = container.querySelector(
+        'button[aria-label="Next slide"] svg',
+      );
+      expect(icon?.getAttribute('class')).toContain('rotate-0');
+    });
+
+    it('rotates the arrow icons while vertical', () => {
+      const { container } = renderDynamoComponent(
+        CarouselOrientationHostComponent,
+      );
+
+      const icon = container.querySelector(
+        'button[aria-label="Next slide"] svg',
+      );
+      expect(icon?.getAttribute('class')).toContain('rotate-90');
+    });
+
+    describe('pointer drag', () => {
+      function mockViewportHeight(el: HTMLElement, height: number): void {
+        Object.defineProperty(el, 'clientHeight', {
+          configurable: true,
+          value: height,
+        });
+      }
+
+      it('dragging up past the threshold commits to the next slide', () => {
+        const { container, componentInstance } = renderDynamoComponent(
+          CarouselOrientationHostComponent,
+        );
+        const viewportEl = viewport(container);
+        mockViewportHeight(viewportEl, 200);
+
+        fireEvent.pointerDown(viewportEl, { clientY: 150 });
+        fireEvent.pointerMove(viewportEl, { clientY: 50 });
+        fireEvent.pointerUp(viewportEl);
+
+        expect(componentInstance.index()).toBe(1);
+      });
+
+      it('dragging down past the threshold commits to the previous slide', () => {
+        const { container, componentInstance, fixture } = renderDynamoComponent(
+          CarouselOrientationHostComponent,
+        );
+        const viewportEl = viewport(container);
+        mockViewportHeight(viewportEl, 200);
+        componentInstance.index.set(1);
+        fixture.detectChanges();
+
+        fireEvent.pointerDown(viewportEl, { clientY: 50 });
+        fireEvent.pointerMove(viewportEl, { clientY: 150 });
+        fireEvent.pointerUp(viewportEl);
+
+        expect(componentInstance.index()).toBe(0);
+      });
+
+      it('snaps back without navigating when dragged less than the threshold', () => {
+        const { container, componentInstance } = renderDynamoComponent(
+          CarouselOrientationHostComponent,
+        );
+        const viewportEl = viewport(container);
+        mockViewportHeight(viewportEl, 200);
+
+        fireEvent.pointerDown(viewportEl, { clientY: 150 });
+        fireEvent.pointerMove(viewportEl, { clientY: 130 });
+        fireEvent.pointerUp(viewportEl);
+
+        expect(componentInstance.index()).toBe(0);
+      });
+    });
+
+    it('keeps the indicator dots a horizontal row responding to ArrowLeft/ArrowRight', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        CarouselOrientationHostComponent,
+      );
+
+      expect(
+        container
+          .querySelector('[role="tablist"]')
+          ?.className.includes('flex-col'),
+      ).toBe(false);
+
+      dots(container)[0]?.focus();
+      await userEvent.keyboard('{ArrowLeft}');
+
+      expect(document.activeElement).toBe(dots(container)[2]);
+      expect(componentInstance.index()).toBe(2);
+    });
+
+    it('has no axe violations while vertical with arrows, indicators, and autoplay', async () => {
+      const { container } = renderDynamoComponent(
+        CarouselOrientationHostComponent,
+      );
+
+      await expectNoA11yViolations(container);
     });
   });
 });
