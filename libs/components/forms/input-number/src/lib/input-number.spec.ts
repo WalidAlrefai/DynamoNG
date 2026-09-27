@@ -653,4 +653,142 @@ describe('DynamoInputNumber', () => {
       ).toBe('');
     });
   });
+
+  describe('showButtons', () => {
+    it('renders both buttons, side by side, by default (regression)', () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { ariaLabel: 'Quantity' },
+      });
+
+      expect(
+        within(container).getByRole('button', { name: 'Decrement' }),
+      ).toBeTruthy();
+      expect(
+        within(container).getByRole('button', { name: 'Increment' }),
+      ).toBeTruthy();
+      expect(container.querySelectorAll('button')).toHaveLength(2);
+    });
+
+    it('renders no buttons when false, but keeps the field and keyboard stepping working', async () => {
+      const { container, componentInstance } = renderWithValue(5, {
+        inputs: { showButtons: false, min: 0, max: 10 },
+      });
+
+      expect(container.querySelectorAll('button')).toHaveLength(0);
+      const input = within(container).getByRole('spinbutton') as HTMLElement;
+      input.focus();
+
+      await userEvent.keyboard('{ArrowUp}');
+      expect(componentInstance.value()).toBe(6);
+
+      // 6 - step*10 (10) = -4, clamped up to min (0).
+      await userEvent.keyboard('{PageDown}');
+      expect(componentInstance.value()).toBe(0);
+    });
+
+    it('has no axe violations with showButtons false', async () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { ariaLabel: 'Quantity', showButtons: false },
+      });
+
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('buttonLayout', () => {
+    it('groups both buttons into a single stacked wrapper, increment before decrement', () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { ariaLabel: 'Quantity', buttonLayout: 'stacked' },
+      });
+
+      const buttons = Array.from(container.querySelectorAll('button'));
+      expect(buttons).toHaveLength(2);
+      expect(buttons[0]?.getAttribute('aria-label')).toBe('Increment');
+      expect(buttons[1]?.getAttribute('aria-label')).toBe('Decrement');
+    });
+
+    it('still increments/decrements and respects disabled bounds when stacked', async () => {
+      const { container, componentInstance } = renderWithValue(5, {
+        inputs: { buttonLayout: 'stacked', min: 5, max: 6 },
+      });
+
+      const incrementButton = within(container).getByRole('button', {
+        name: 'Increment',
+      }) as HTMLButtonElement;
+      const decrementButton = within(container).getByRole('button', {
+        name: 'Decrement',
+      }) as HTMLButtonElement;
+      expect(decrementButton.disabled).toBe(true);
+
+      await userEvent.click(incrementButton);
+      expect(componentInstance.value()).toBe(6);
+      expect(incrementButton.disabled).toBe(true);
+    });
+
+    it("uses chevron icon fallbacks, not the horizontal layout's +/− glyphs", () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { ariaLabel: 'Quantity', buttonLayout: 'stacked' },
+      });
+
+      expect(
+        within(container).getByLabelText('Increment').querySelector('svg'),
+      ).toBeTruthy();
+      expect(
+        within(container).getByLabelText('Increment').textContent?.trim(),
+      ).toBe('');
+      expect(
+        within(container).getByLabelText('Decrement').querySelector('svg'),
+      ).toBeTruthy();
+    });
+
+    it('is ignored (no stacked wrapper) when showButtons is false', () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: {
+          ariaLabel: 'Quantity',
+          showButtons: false,
+          buttonLayout: 'stacked',
+        },
+      });
+
+      expect(container.querySelectorAll('button')).toHaveLength(0);
+    });
+
+    it('has no axe violations with buttonLayout stacked', async () => {
+      const { container } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { ariaLabel: 'Quantity', buttonLayout: 'stacked' },
+      });
+
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('DynamoInputNumberHarness with showButtons/buttonLayout', () => {
+    it('still supports increment()/decrement()/isDisabled() when stacked', async () => {
+      const { fixture, componentInstance } = renderWithValue(5, {
+        inputs: { buttonLayout: 'stacked' },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoInputNumberHarness,
+      );
+
+      await harness.increment();
+      expect(componentInstance.value()).toBe(6);
+      await harness.decrement();
+      expect(componentInstance.value()).toBe(5);
+      expect(await harness.isDisabled()).toBe(false);
+    });
+
+    it('throws from increment()/decrement() when showButtons is false (no button to click)', async () => {
+      const { fixture } = renderDynamoComponent(DynamoInputNumber, {
+        inputs: { ariaLabel: 'Quantity', showButtons: false },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoInputNumberHarness,
+      );
+
+      await expect(harness.increment()).rejects.toThrow();
+    });
+  });
 });

@@ -10,6 +10,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'multi-visible', title: 'Multiple Visible' },
+  { id: 'vertical', title: 'Vertical' },
 ];
 
 const API: ApiTableRow[] = [
@@ -27,6 +28,12 @@ const API: ApiTableRow[] = [
     default: '[]',
   },
   { name: 'ariaLabel', type: 'string | undefined', default: "'Carousel'" },
+  {
+    name: 'orientation',
+    type: "'horizontal' | 'vertical'",
+    default: "'horizontal'",
+  },
+  { name: 'verticalHeight', type: 'number', default: '300' },
 ];
 
 @Component({
@@ -119,6 +126,48 @@ const API: ApiTableRow[] = [
           &lt;dg-carousel [numVisible]="3" [numScroll]="3"
           [responsiveOptions]="[&#123; breakpoint: 1024, numVisible: 2,
           numScroll: 2 &#125;]"&gt; ... &lt;/dg-carousel&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="vertical"
+        title="Vertical"
+        description="orientation set to vertical stacks slides top-to-bottom; verticalHeight sets the viewport's pixel height. Both arrow-key pairs work, and a drag past 25% of the height commits a slide change."
+      >
+        <div preview>
+          <dg-carousel
+            orientation="vertical"
+            [verticalHeight]="240"
+            styleClass="max-w-md"
+            ariaLabel="Vertical showcase"
+          >
+            <dg-carousel-slide>
+              <div
+                class="flex h-full items-center justify-center bg-primary text-lg font-medium text-on-primary"
+              >
+                Slide 1
+              </div>
+            </dg-carousel-slide>
+            <dg-carousel-slide>
+              <div
+                class="flex h-full items-center justify-center bg-success text-lg font-medium text-on-primary"
+              >
+                Slide 2
+              </div>
+            </dg-carousel-slide>
+            <dg-carousel-slide>
+              <div
+                class="flex h-full items-center justify-center bg-info text-lg font-medium text-on-primary"
+              >
+                Slide 3
+              </div>
+            </dg-carousel-slide>
+          </dg-carousel>
+        </div>
+        <div code>
+          &lt;dg-carousel orientation="vertical" [verticalHeight]="240"&gt;
+          &lt;dg-carousel-slide&gt;...&lt;/dg-carousel-slide&gt;
+          &lt;/dg-carousel&gt;
         </div>
       </docs-example>
 

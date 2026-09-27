@@ -65,3 +65,27 @@ export const inputNumberButtonStyles = cva(
     defaultVariants: { size: 'md' },
   },
 );
+
+// --- buttonLayout="stacked" ---
+
+// `self-stretch` overrides just this one child's cross-axis sizing to fill
+// the wrapper's full height, regardless of the wrapper's own `items-center`
+// (which the field and the horizontal-layout buttons still want).
+export const inputNumberStackedButtonsWrapperStyles =
+  'flex flex-shrink-0 flex-col self-stretch divide-y divide-border overflow-hidden rounded-sm border border-border';
+
+export const inputNumberStackedButtonStyles = cva(
+  'flex flex-1 items-center justify-center transition-colors ' +
+    'hover:bg-surface-200 disabled:pointer-events-none disabled:opacity-40 ' +
+    focusRingClass,
+  {
+    variants: {
+      size: {
+        sm: 'text-xs',
+        md: 'text-xs',
+        lg: 'text-sm',
+      },
+    },
+    defaultVariants: { size: 'md' },
+  },
+);

@@ -20,6 +20,7 @@ import { cn } from '@dynamong/utils/class-merge';
 import { isBrowser } from '@dynamong/utils/dom';
 import { DynamoCarouselSlide } from './carousel-slide';
 import {
+  carouselArrowIconStyles,
   carouselDotStyles,
   carouselIndicatorsStyles,
   carouselNextArrowStyles,
@@ -33,6 +34,7 @@ import {
   carouselViewportStyles,
 } from './carousel.styles';
 import type {
+  DynamoCarouselOrientation,
   DynamoCarouselPart,
   DynamoCarouselResponsiveOption,
 } from './carousel.types';
@@ -58,6 +60,10 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
   readonly numScroll = input(1);
   /** Overrides `numVisible`/`numScroll` per viewport width — see `DynamoCarouselResponsiveOption`. */
   readonly responsiveOptions = input<DynamoCarouselResponsiveOption[]>([]);
+  /** `'vertical'` stacks slides top-to-bottom and drags/keys along that axis instead. The indicator dots stay a horizontal row either way. */
+  readonly orientation = input<DynamoCarouselOrientation>('horizontal');
+  /** Viewport height in px — only consulted while `orientation` is `'vertical'`; there's no natural intrinsic height for a percentage-based flex-column of slides (same reasoning as Slider's own `verticalHeight`). */
+  readonly verticalHeight = input(300);
   readonly ariaLabel = input<string | undefined>(undefined);
 
   protected readonly slides = contentChildren(DynamoCarouselSlide);
@@ -151,7 +157,7 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
     () => 100 / this.effectiveVisible(),
   );
 
-  private dragStartX = 0;
+  private dragStartPos = 0;
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
   protected readonly rootClasses = computed(() =>
@@ -159,16 +165,27 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
       ? this.styleClass()
       : cn(carouselRootStyles, this.styleClass()),
   );
-  protected readonly viewportClasses = carouselViewportStyles;
-  protected readonly slideClasses = carouselSlideStyles;
-  protected readonly prevArrowClasses = carouselPrevArrowStyles;
-  protected readonly nextArrowClasses = carouselNextArrowStyles;
+  protected readonly viewportClasses = computed(() =>
+    carouselViewportStyles({ orientation: this.orientation() }),
+  );
+  protected readonly slideClasses = computed(() =>
+    carouselSlideStyles({ orientation: this.orientation() }),
+  );
+  protected readonly prevArrowClasses = computed(() =>
+    carouselPrevArrowStyles({ orientation: this.orientation() }),
+  );
+  protected readonly nextArrowClasses = computed(() =>
+    carouselNextArrowStyles({ orientation: this.orientation() }),
+  );
+  protected readonly arrowIconClasses = computed(() =>
+    carouselArrowIconStyles({ orientation: this.orientation() }),
+  );
   protected readonly indicatorsClasses = carouselIndicatorsStyles;
   protected readonly playToggleClasses = carouselPlayToggleStyles;
 
   protected readonly trackClasses = computed(() =>
     cn(
-      carouselTrackBaseStyles,
+      carouselTrackBaseStyles({ orientation: this.orientation() }),
       this.dragging()
         ? carouselTrackNoTransitionStyles
         : carouselTrackTransitionStyles,
@@ -181,12 +198,17 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
   // carousel.styles.ts's other inline bindings.
   protected readonly trackTransform = computed(() => {
     const base = -this.activeIndex() * this.slideBasisPercent();
+    const axis = this.orientation() === 'vertical' ? 'Y' : 'X';
     if (!this.dragging()) {
-      return `translateX(${base}%)`;
+      return `translate${axis}(${base}%)`;
     }
-    const width = this.viewportRef().nativeElement.clientWidth;
-    const dragPct = width > 0 ? (this.dragOffsetPx() / width) * 100 : 0;
-    return `translateX(${base + dragPct}%)`;
+    const viewportEl = this.viewportRef().nativeElement;
+    const size =
+      this.orientation() === 'vertical'
+        ? viewportEl.clientHeight
+        : viewportEl.clientWidth;
+    const dragPct = size > 0 ? (this.dragOffsetPx() / size) * 100 : 0;
+    return `translate${axis}(${base + dragPct}%)`;
   });
 
   constructor() {
@@ -300,10 +322,12 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
   protected onViewportKeydown(event: KeyboardEvent): void {
     switch (event.key) {
       case 'ArrowLeft':
+      case 'ArrowUp':
         event.preventDefault();
         this.prev();
         break;
       case 'ArrowRight':
+      case 'ArrowDown':
         event.preventDefault();
         this.next();
         break;
@@ -365,7 +389,7 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
     if ((event.target as HTMLElement).closest('button')) {
       return;
     }
-    this.dragStartX = event.clientX;
+    this.dragStartPos = this.pointerPos(event);
     this.dragging.set(true);
     // Not implemented in jsdom — guarded rather than assumed, same
     // defensiveness as any other real-only browser API used in this codebase.
@@ -380,23 +404,31 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
     if (!this.dragging()) {
       return;
     }
-    this.dragOffsetPx.set(event.clientX - this.dragStartX);
+    this.dragOffsetPx.set(this.pointerPos(event) - this.dragStartPos);
   }
 
   protected onPointerUp(): void {
     if (!this.dragging()) {
       return;
     }
-    const width = this.viewportRef().nativeElement.clientWidth;
+    const viewportEl = this.viewportRef().nativeElement;
+    const size =
+      this.orientation() === 'vertical'
+        ? viewportEl.clientHeight
+        : viewportEl.clientWidth;
     const offset = this.dragOffsetPx();
     this.dragging.set(false);
     this.dragOffsetPx.set(0);
-    if (width > 0 && Math.abs(offset) > width / 4) {
+    if (size > 0 && Math.abs(offset) > size / 4) {
       if (offset < 0) {
         this.next();
       } else {
         this.prev();
       }
     }
+  }
+
+  private pointerPos(event: PointerEvent): number {
+    return this.orientation() === 'vertical' ? event.clientY : event.clientX;
   }
 }

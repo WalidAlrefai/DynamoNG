@@ -37,9 +37,25 @@ export const fileUploadFileItemStyles =
 export const fileUploadPreviewStyles =
   'h-8 w-8 shrink-0 rounded-sm object-cover';
 
+// The file item's own name+size (still direct children of this wrapper, now
+// one level deeper than before) sit in a header row; a progress bar or error
+// line, when `fileStatus` reports one, renders as a second row beneath it —
+// hence a column here rather than the item's own flat row.
+export const fileUploadFileInfoStyles = 'flex min-w-0 flex-1 flex-col gap-1';
+export const fileUploadFileHeaderStyles = 'flex items-center gap-2';
+
 export const fileUploadFileNameStyles = 'min-w-0 flex-1 truncate';
 
 export const fileUploadFileSizeStyles = 'shrink-0 text-xs text-text-muted';
+
+// --- v2: per-file progress/status (opt-in via `fileStatus`) ---
+
+export const fileUploadProgressTrackStyles =
+  'h-1 w-full overflow-hidden rounded-full bg-surface-200';
+export const fileUploadProgressFillStyles =
+  'h-full rounded-full bg-primary transition-[width] duration-200';
+export const fileUploadStatusIconStyles = 'h-4 w-4 shrink-0 text-success';
+export const fileUploadErrorTextStyles = 'text-xs text-danger';
 
 // Mirrors chip's remove-button shape (`chipRemoveButtonStyles`) — not
 // imported directly since Chip doesn't export it from its public entry

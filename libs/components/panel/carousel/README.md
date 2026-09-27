@@ -28,18 +28,20 @@ protected readonly index = signal(0);
 
 ## Inputs
 
-| Input               | Type                               | Default     | Description                                                                                                   |
-| ------------------- | ---------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------- |
-| `activeIndex`       | `number` (model)                   | `0`         | Two-way bindable; the currently shown slide's index.                                                          |
-| `loop`              | `boolean`                          | `true`      | Whether prev/next wrap around at the ends. When `false`, the arrow buttons disable at the boundaries instead. |
-| `autoPlay`          | `boolean`                          | `false`     | Starts an auto-advance timer. Also reveals the play/pause toggle button.                                      |
-| `autoPlayInterval`  | `number`                           | `5000`      | Milliseconds between auto-advances.                                                                           |
-| `showArrows`        | `boolean`                          | `true`      | Shows the prev/next buttons (only when there's more than one page).                                           |
-| `showIndicators`    | `boolean`                          | `true`      | Shows the dot indicators (only when there's more than one page).                                              |
-| `numVisible`        | `number`                           | `1`         | How many slides are visible in the viewport at once.                                                          |
-| `numScroll`         | `number`                           | `1`         | How many slides `next()`/`prev()` (and a committed drag) advance by.                                          |
-| `responsiveOptions` | `DynamoCarouselResponsiveOption[]` | `[]`        | Overrides `numVisible`/`numScroll` at or below a given viewport width — see below.                            |
-| `ariaLabel`         | `string \| undefined`              | `undefined` | Falls back to `'Carousel'` on the root `aria-label`.                                                          |
+| Input               | Type                               | Default        | Description                                                                                                       |
+| ------------------- | ---------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `activeIndex`       | `number` (model)                   | `0`            | Two-way bindable; the currently shown slide's index.                                                              |
+| `loop`              | `boolean`                          | `true`         | Whether prev/next wrap around at the ends. When `false`, the arrow buttons disable at the boundaries instead.     |
+| `autoPlay`          | `boolean`                          | `false`        | Starts an auto-advance timer. Also reveals the play/pause toggle button.                                          |
+| `autoPlayInterval`  | `number`                           | `5000`         | Milliseconds between auto-advances.                                                                               |
+| `showArrows`        | `boolean`                          | `true`         | Shows the prev/next buttons (only when there's more than one page).                                               |
+| `showIndicators`    | `boolean`                          | `true`         | Shows the dot indicators (only when there's more than one page).                                                  |
+| `numVisible`        | `number`                           | `1`            | How many slides are visible in the viewport at once.                                                              |
+| `numScroll`         | `number`                           | `1`            | How many slides `next()`/`prev()` (and a committed drag) advance by.                                              |
+| `responsiveOptions` | `DynamoCarouselResponsiveOption[]` | `[]`           | Overrides `numVisible`/`numScroll` at or below a given viewport width — see below.                                |
+| `ariaLabel`         | `string \| undefined`              | `undefined`    | Falls back to `'Carousel'` on the root `aria-label`.                                                              |
+| `orientation`       | `'horizontal' \| 'vertical'`       | `'horizontal'` | `'vertical'` stacks slides top-to-bottom and drags/keys along that axis instead — see Vertical orientation below. |
+| `verticalHeight`    | `number`                           | `300`          | Viewport height in px — only consulted while `orientation` is `'vertical'`.                                       |
 
 `<dg-carousel-slide>` has no inputs of its own — it's a pure content-projection wrapper read via `contentChildren()`.
 
@@ -80,6 +82,31 @@ every entry's range, the plain `numVisible`/`numScroll` inputs apply.
   ...
 </dg-carousel>
 ```
+
+## Vertical orientation
+
+Set `orientation="vertical"` to stack slides top-to-bottom instead of
+side-by-side; `verticalHeight` sets the viewport's pixel height (there's
+no natural intrinsic height for a percentage-based flex-column of
+slides). Both arrow key pairs work regardless of orientation —
+`ArrowUp`/`ArrowDown` and `ArrowLeft`/`ArrowRight` all move prev/next —
+and a drag past 25% of the viewport _height_ (instead of width) commits
+a slide change. The prev/next arrow icons rotate to point up/down.
+
+```html
+<dg-carousel orientation="vertical" [verticalHeight]="400">
+  @for (item of items; track item.id) {
+  <dg-carousel-slide
+    ><img [src]="item.image" [alt]="item.title"
+  /></dg-carousel-slide>
+  }
+</dg-carousel>
+```
+
+Deliberate scope cut: the indicator dots always stay a horizontal row
+under the carousel, regardless of orientation — a normal, common
+pattern (e.g. a tall vertical carousel/story-viewer with dots along the
+bottom), not a gap.
 
 ## Outputs
 

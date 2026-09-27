@@ -17,26 +17,28 @@ and step snapping — plugs into Angular forms as a `ControlValueAccessor`.
 
 ## Inputs
 
-| Input               | Type                      | Default     | Description                                                                                                                                                                                                                |
-| ------------------- | ------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `size`              | `DynamoSize`              | `'md'`      |                                                                                                                                                                                                                            |
-| `placeholder`       | `string`                  | `''`        |                                                                                                                                                                                                                            |
-| `invalid`           | `boolean`                 | `false`     |                                                                                                                                                                                                                            |
-| `ariaLabel`         | `string \| undefined`     | `undefined` |                                                                                                                                                                                                                            |
-| `disabled`          | `boolean` (model)         | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                                                     |
-| `readOnly`          | `boolean`                 | `false`     | HTML `readonly` semantics — value stays visible and focusable/tabbable but not editable. Unlike `disabled`, doesn't remove the control from the tab order or dim it; also disables the increment/decrement buttons.        |
-| `min`               | `number \| undefined`     | `undefined` |                                                                                                                                                                                                                            |
-| `max`               | `number \| undefined`     | `undefined` |                                                                                                                                                                                                                            |
-| `step`              | `number`                  | `1`         | Used by the buttons, `ArrowUp`/`ArrowDown` (one step) and `PageUp`/`PageDown` (ten steps), and to snap committed values to a `min`-relative grid.                                                                          |
-| `mode`              | `'decimal' \| 'currency'` | `'decimal'` | `'currency'` requires `currency` to also be set.                                                                                                                                                                           |
-| `currency`          | `string \| undefined`     | `undefined` | ISO 4217 code (e.g. `'USD'`), required when `mode` is `'currency'`.                                                                                                                                                        |
-| `locale`            | `string \| undefined`     | `undefined` | BCP 47 tag passed to `Intl.NumberFormat`; `undefined` uses the runtime's default locale.                                                                                                                                   |
-| `useGrouping`       | `boolean`                 | `true`      | Thousands separators in the blurred display.                                                                                                                                                                               |
-| `minFractionDigits` | `number \| undefined`     | `undefined` |                                                                                                                                                                                                                            |
-| `maxFractionDigits` | `number \| undefined`     | `undefined` |                                                                                                                                                                                                                            |
-| `prefix`            | `string \| undefined`     | `undefined` | Literal text shown flush against the input, outside the editable value (e.g. a unit label) — never part of the parsed number.                                                                                              |
-| `suffix`            | `string \| undefined`     | `undefined` | Same, on the trailing side.                                                                                                                                                                                                |
-| `value`             | `number \| null` (model)  | `null`      | Two-way bindable; also driven by Angular forms via `writeValue`. Free-typed text is only parsed/clamped/snapped on blur (or Enter-adjacent commit paths), so partial input like `"-"` or `"12."` isn't clobbered mid-edit. |
+| Input               | Type                        | Default        | Description                                                                                                                                                                                                                |
+| ------------------- | --------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `size`              | `DynamoSize`                | `'md'`         |                                                                                                                                                                                                                            |
+| `placeholder`       | `string`                    | `''`           |                                                                                                                                                                                                                            |
+| `invalid`           | `boolean`                   | `false`        |                                                                                                                                                                                                                            |
+| `ariaLabel`         | `string \| undefined`       | `undefined`    |                                                                                                                                                                                                                            |
+| `disabled`          | `boolean` (model)           | `false`        | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                                                     |
+| `readOnly`          | `boolean`                   | `false`        | HTML `readonly` semantics — value stays visible and focusable/tabbable but not editable. Unlike `disabled`, doesn't remove the control from the tab order or dim it; also disables the increment/decrement buttons.        |
+| `min`               | `number \| undefined`       | `undefined`    |                                                                                                                                                                                                                            |
+| `max`               | `number \| undefined`       | `undefined`    |                                                                                                                                                                                                                            |
+| `step`              | `number`                    | `1`            | Used by the buttons, `ArrowUp`/`ArrowDown` (one step) and `PageUp`/`PageDown` (ten steps), and to snap committed values to a `min`-relative grid.                                                                          |
+| `mode`              | `'decimal' \| 'currency'`   | `'decimal'`    | `'currency'` requires `currency` to also be set.                                                                                                                                                                           |
+| `currency`          | `string \| undefined`       | `undefined`    | ISO 4217 code (e.g. `'USD'`), required when `mode` is `'currency'`.                                                                                                                                                        |
+| `locale`            | `string \| undefined`       | `undefined`    | BCP 47 tag passed to `Intl.NumberFormat`; `undefined` uses the runtime's default locale.                                                                                                                                   |
+| `useGrouping`       | `boolean`                   | `true`         | Thousands separators in the blurred display.                                                                                                                                                                               |
+| `minFractionDigits` | `number \| undefined`       | `undefined`    |                                                                                                                                                                                                                            |
+| `maxFractionDigits` | `number \| undefined`       | `undefined`    |                                                                                                                                                                                                                            |
+| `prefix`            | `string \| undefined`       | `undefined`    | Literal text shown flush against the input, outside the editable value (e.g. a unit label) — never part of the parsed number.                                                                                              |
+| `suffix`            | `string \| undefined`       | `undefined`    | Same, on the trailing side.                                                                                                                                                                                                |
+| `value`             | `number \| null` (model)    | `null`         | Two-way bindable; also driven by Angular forms via `writeValue`. Free-typed text is only parsed/clamped/snapped on blur (or Enter-adjacent commit paths), so partial input like `"-"` or `"12."` isn't clobbered mid-edit. |
+| `showButtons`       | `boolean`                   | `true`         | Set `false` to render just the field, no increment/decrement buttons. Keyboard stepping (`ArrowUp`/`ArrowDown`/`PageUp`/`PageDown`) still works either way.                                                                |
+| `buttonLayout`      | `'horizontal' \| 'stacked'` | `'horizontal'` | Only consulted while `showButtons` is true. `'stacked'` groups both buttons into a bordered mini-column at the trailing end instead of flanking the field — see Buttons below.                                             |
 
 While focused, the field shows the plain number (e.g. `"1234"`) so typing
 never fights with grouping separators or a currency symbol; once blurred, it
@@ -50,6 +52,25 @@ the default `+`/`−` glyphs with any projected icon, e.g.:
   <dg-icon-plus incrementIcon />
   <dg-icon-minus decrementIcon />
 </dg-input-number>
+```
+
+## Buttons
+
+`showButtons` and `buttonLayout` control whether the increment/decrement
+buttons render at all and how they're arranged. `showButtons` defaults to
+`true` and `buttonLayout` to `'horizontal'` — today's exact appearance
+(decrement to the left of the field, increment to the right). Set
+`buttonLayout="stacked"` to instead group both buttons into a single
+bordered column at the trailing end (increment on top, decrement on
+bottom), each exactly half height — a common compact spinner pattern.
+Its default fallback icons are small up/down chevrons rather than
+`+`/`−`, for legibility at that size; `[incrementIcon]`/`[decrementIcon]`
+projected content still overrides either one, exactly as in the
+horizontal layout.
+
+```html
+<dg-input-number [(value)]="qty" buttonLayout="stacked" />
+<dg-input-number [(value)]="qty" [showButtons]="false" />
 ```
 
 ## Outputs

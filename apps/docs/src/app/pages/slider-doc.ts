@@ -15,6 +15,9 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'disabled', title: 'Disabled' },
   { id: 'readonly', title: 'Read-only' },
   { id: 'reactive-forms', title: 'Reactive Forms' },
+  { id: 'vertical', title: 'Vertical' },
+  { id: 'ticks', title: 'Tick Marks' },
+  { id: 'tooltip', title: 'Drag Tooltip' },
 ];
 
 @Component({
@@ -100,6 +103,58 @@ const EXAMPLES: DocExampleRef[] = [
       </docs-example>
 
       <docs-example
+        exampleId="vertical"
+        title="Vertical"
+        description="orientation set to vertical renders a bottom-anchored track that grows upward — verticalHeight sets its pixel height."
+        [code]="verticalCode"
+      >
+        <div preview class="flex items-end gap-2">
+          <span class="text-sm text-text-muted">{{ verticalVolume() }}</span>
+          <dg-slider
+            [(value)]="verticalVolume"
+            orientation="vertical"
+            ariaLabel="Vertical volume"
+          />
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="ticks"
+        title="Tick Marks"
+        description="showTicks renders a dot per step; tickValues renders an explicit, sparse set instead, ignoring step."
+        [code]="ticksCode"
+      >
+        <div preview class="flex flex-col gap-2">
+          <dg-slider
+            [value]="60"
+            [step]="20"
+            [showTicks]="true"
+            ariaLabel="Ticks by step"
+          />
+          <dg-slider
+            [value]="60"
+            [tickValues]="[0, 25, 50, 75, 100]"
+            ariaLabel="Sparse ticks"
+          />
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="tooltip"
+        title="Drag Tooltip"
+        description="showTooltip shows the live value in a small bubble while a thumb is actively being dragged."
+        [code]="tooltipCode"
+      >
+        <div preview>
+          <dg-slider
+            [value]="45"
+            [showTooltip]="true"
+            ariaLabel="With tooltip"
+          />
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="reactive-forms"
         title="Reactive Forms"
         description="Implements ControlValueAccessor, so it plugs directly into formControl/ngModel."
@@ -163,10 +218,35 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 pr-4 font-mono">'sm' | 'md' | 'lg'</td>
             <td class="py-2 font-mono">'md'</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">ariaLabel</td>
             <td class="py-2 pr-4 font-mono">string | undefined</td>
             <td class="py-2 font-mono">undefined ('Slider')</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">orientation</td>
+            <td class="py-2 pr-4 font-mono">'horizontal' | 'vertical'</td>
+            <td class="py-2 font-mono">'horizontal'</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">verticalHeight</td>
+            <td class="py-2 pr-4 font-mono">number</td>
+            <td class="py-2 font-mono">200</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">showTicks</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">tickValues</td>
+            <td class="py-2 pr-4 font-mono">number[] | undefined</td>
+            <td class="py-2 font-mono">undefined</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">showTooltip</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
           </tr>
         </tbody>
       </table>
@@ -181,6 +261,8 @@ export class SliderDocPage {
     maxValue: 80,
   });
 
+  protected readonly verticalVolume = signal(50);
+
   protected readonly reactiveVolume = new FormControl(30, {
     nonNullable: true,
   });
@@ -191,4 +273,7 @@ export class SliderDocPage {
   protected readonly disabledCode = `<dg-slider [value]="40" [disabled]="true" ariaLabel="Disabled" />`;
   protected readonly readonlyCode = `<dg-slider [value]="60" [readOnly]="true" ariaLabel="Read-only" />`;
   protected readonly reactiveFormsCode = `<dg-slider [formControl]="volume" />`;
+  protected readonly verticalCode = `<dg-slider [(value)]="volume" orientation="vertical" ariaLabel="Vertical volume" />`;
+  protected readonly ticksCode = `<dg-slider [value]="60" [step]="20" [showTicks]="true" ariaLabel="Ticks by step" />`;
+  protected readonly tooltipCode = `<dg-slider [value]="45" [showTooltip]="true" ariaLabel="With tooltip" />`;
 }

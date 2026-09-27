@@ -1,14 +1,4 @@
-<div [class]="wrapperClasses()">
-  <button
-    type="button"
-    tabindex="-1"
-    [class]="buttonClasses()"
-    [disabled]="decrementDisabled()"
-    aria-label="Decrement"
-    (click)="decrement()"
-  >
-    <ng-content select="[decrementIcon]">&minus;</ng-content>
-  </button>
+<ng-template #field>
   @if (prefix(); as prefixText) {
   <span [class]="affixClasses" data-testid="dg-input-number-prefix"
     >{{ prefixText }}</span
@@ -39,6 +29,100 @@
     >{{ suffixText }}</span
   >
   }
+</ng-template>
+
+<!--
+  Each icon has exactly one <ng-content> declaration site, shared by both the
+  horizontal and stacked branches below via ngTemplateOutlet — declaring it
+  twice (once per branch) would make Angular's projection ambiguous about
+  which occurrence actually receives a consumer's projected
+  [incrementIcon]/[decrementIcon] content, discarding it from whichever one
+  loses. The default (unprojected) fallback glyph still differs by layout,
+  branched on buttonLayout() inside this single shared declaration.
+-->
+<ng-template #incrementIcon>
+  <ng-content select="[incrementIcon]">
+    @if (buttonLayout() === 'stacked') {
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 16 16"
+      fill="none"
+      [attr.aria-hidden]="true"
+    >
+      <path
+        d="M3 10l5-5 5 5"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+    } @else { + }
+  </ng-content>
+</ng-template>
+
+<ng-template #decrementIcon>
+  <ng-content select="[decrementIcon]">
+    @if (buttonLayout() === 'stacked') {
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 16 16"
+      fill="none"
+      [attr.aria-hidden]="true"
+    >
+      <path
+        d="M3 6l5 5 5-5"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+    } @else { &minus; }
+  </ng-content>
+</ng-template>
+
+<div [class]="wrapperClasses()">
+  @if (!showButtons()) {
+  <ng-container [ngTemplateOutlet]="field" />
+  } @else if (buttonLayout() === 'stacked') {
+  <ng-container [ngTemplateOutlet]="field" />
+  <div [class]="stackedButtonsWrapperClasses">
+    <button
+      type="button"
+      tabindex="-1"
+      [class]="stackedButtonClasses()"
+      [disabled]="incrementDisabled()"
+      aria-label="Increment"
+      (click)="increment()"
+    >
+      <ng-container [ngTemplateOutlet]="incrementIcon" />
+    </button>
+    <button
+      type="button"
+      tabindex="-1"
+      [class]="stackedButtonClasses()"
+      [disabled]="decrementDisabled()"
+      aria-label="Decrement"
+      (click)="decrement()"
+    >
+      <ng-container [ngTemplateOutlet]="decrementIcon" />
+    </button>
+  </div>
+  } @else {
+  <button
+    type="button"
+    tabindex="-1"
+    [class]="buttonClasses()"
+    [disabled]="decrementDisabled()"
+    aria-label="Decrement"
+    (click)="decrement()"
+  >
+    <ng-container [ngTemplateOutlet]="decrementIcon" />
+  </button>
+  <ng-container [ngTemplateOutlet]="field" />
   <button
     type="button"
     tabindex="-1"
@@ -47,6 +131,7 @@
     aria-label="Increment"
     (click)="increment()"
   >
-    <ng-content select="[incrementIcon]">+</ng-content>
+    <ng-container [ngTemplateOutlet]="incrementIcon" />
   </button>
+  }
 </div>

@@ -46,8 +46,41 @@
       @if (previewUrl(file); as url) {
       <img [class]="previewClasses" [src]="url" alt="" />
       }
-      <span [class]="fileNameClasses">{{ file.name }}</span>
-      <span [class]="fileSizeClasses">{{ formatSize(file.size) }}</span>
+      <div [class]="fileInfoClasses" [attr.data-file]="file.name">
+        <div [class]="fileHeaderClasses">
+          <span [class]="fileNameClasses">{{ file.name }}</span>
+          <span [class]="fileSizeClasses">{{ formatSize(file.size) }}</span>
+          @if (fileStatusFor(file)?.status === 'success') {
+          <svg
+            [class]="statusIconClasses"
+            data-success
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            [attr.aria-hidden]="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M16.704 5.29a1 1 0 010 1.415l-7.5 7.5a1 1 0 01-1.415 0l-3.5-3.5a1 1 0 111.415-1.415L8.5 11.586l6.79-6.79a1 1 0 011.414-.001z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          }
+        </div>
+        @if (fileStatusFor(file); as status) { @if (status.status ===
+        'uploading') {
+        <div [class]="progressTrackClasses">
+          <div
+            [class]="progressFillClasses"
+            [attr.data-progress]="status.progress ?? 0"
+            [style.width.%]="status.progress ?? 0"
+          ></div>
+        </div>
+        } @else if (status.status === 'error') {
+        <span [class]="errorTextClasses" data-error
+          >{{ status.error ?? 'Upload failed' }}</span
+        >
+        } }
+      </div>
       <button
         type="button"
         [class]="removeButtonClasses"

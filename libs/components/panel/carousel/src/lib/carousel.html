@@ -10,7 +10,8 @@
   <div
     #viewport
     data-testid="carousel-viewport"
-    [class]="viewportClasses"
+    [class]="viewportClasses()"
+    [style.height.px]="orientation() === 'vertical' ? verticalHeight() : null"
     tabindex="0"
     (keydown)="onViewportKeydown($event)"
     (pointerdown)="onPointerDown($event)"
@@ -21,7 +22,7 @@
     <div [class]="trackClasses()" [style.transform]="trackTransform()">
       @for (slide of slides(); track slide; let i = $index) {
       <div
-        [class]="slideClasses"
+        [class]="slideClasses()"
         [style.flex]="'0 0 ' + slideBasisPercent() + '%'"
         role="group"
         aria-roledescription="slide"
@@ -40,11 +41,12 @@
       severity="secondary"
       size="sm"
       ariaLabel="Previous slide"
-      [styleClass]="prevArrowClasses"
+      [styleClass]="prevArrowClasses()"
       [disabled]="!canPrev()"
       (click)="prev()"
     >
       <svg
+        [class]="arrowIconClasses()"
         [attr.aria-hidden]="true"
         width="16"
         height="16"
@@ -67,11 +69,12 @@
       severity="secondary"
       size="sm"
       ariaLabel="Next slide"
-      [styleClass]="nextArrowClasses"
+      [styleClass]="nextArrowClasses()"
       [disabled]="!canNext()"
       (click)="next()"
     >
       <svg
+        [class]="arrowIconClasses()"
         [attr.aria-hidden]="true"
         width="16"
         height="16"

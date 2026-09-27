@@ -8,27 +8,44 @@ import { focusRingClass } from '@dynamong/utils/styles';
 // could express it — same "deliberate inline-style exception" pattern as
 // Progress's fill-width, Tree's indent-depth, Skeleton's width/height, and
 // Carousel's track transform.
-export const sliderRootStyles = 'relative w-full py-2';
-
-export const sliderTrackStyles = cva(
-  'relative w-full rounded-full bg-surface-200',
-  {
-    variants: {
-      size: {
-        sm: 'h-1',
-        md: 'h-1.5',
-        lg: 'h-2',
-      },
-      disabled: {
-        true: 'pointer-events-none opacity-60',
-        false: 'cursor-pointer',
-      },
+export const sliderRootStyles = cva('relative', {
+  variants: {
+    orientation: {
+      horizontal: 'w-full py-2',
+      vertical: 'inline-flex px-2',
     },
-    defaultVariants: { size: 'md', disabled: false },
   },
-);
+  defaultVariants: { orientation: 'horizontal' },
+});
 
-export const sliderFillStyles = cva('absolute inset-y-0 start-0 rounded-full', {
+export const sliderTrackStyles = cva('relative rounded-full bg-surface-200', {
+  variants: {
+    size: {
+      sm: '',
+      md: '',
+      lg: '',
+    },
+    orientation: {
+      horizontal: 'w-full',
+      vertical: '',
+    },
+    disabled: {
+      true: 'pointer-events-none opacity-60',
+      false: 'cursor-pointer',
+    },
+  },
+  compoundVariants: [
+    { orientation: 'horizontal', size: 'sm', class: 'h-1' },
+    { orientation: 'horizontal', size: 'md', class: 'h-1.5' },
+    { orientation: 'horizontal', size: 'lg', class: 'h-2' },
+    { orientation: 'vertical', size: 'sm', class: 'w-1' },
+    { orientation: 'vertical', size: 'md', class: 'w-1.5' },
+    { orientation: 'vertical', size: 'lg', class: 'w-2' },
+  ],
+  defaultVariants: { size: 'md', orientation: 'horizontal', disabled: false },
+});
+
+export const sliderFillStyles = cva('absolute rounded-full', {
   variants: {
     severity: {
       primary: 'bg-primary',
@@ -38,13 +55,16 @@ export const sliderFillStyles = cva('absolute inset-y-0 start-0 rounded-full', {
       warning: 'bg-warning',
       danger: 'bg-danger',
     },
+    orientation: {
+      horizontal: 'inset-y-0 start-0',
+      vertical: 'inset-x-0 bottom-0',
+    },
   },
-  defaultVariants: { severity: 'primary' },
+  defaultVariants: { severity: 'primary', orientation: 'horizontal' },
 });
 
 export const sliderThumbStyles = cva(
-  'absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-surface-0 shadow ' +
-    'transition-shadow ' +
+  'absolute rounded-full border-2 bg-surface-0 shadow transition-shadow ' +
     focusRingClass,
   {
     variants: {
@@ -65,7 +85,48 @@ export const sliderThumbStyles = cva(
         true: 'cursor-not-allowed opacity-60',
         false: 'cursor-grab active:cursor-grabbing',
       },
+      orientation: {
+        horizontal: 'top-1/2 -translate-x-1/2 -translate-y-1/2',
+        vertical: 'start-1/2 -translate-x-1/2 translate-y-1/2',
+      },
     },
-    defaultVariants: { size: 'md', severity: 'primary', disabled: false },
+    defaultVariants: {
+      size: 'md',
+      severity: 'primary',
+      disabled: false,
+      orientation: 'horizontal',
+    },
+  },
+);
+
+// A dot per tick, positioned via the same [style] the thumb uses — offset
+// to the side opposite the thumb's own axis so it never overlaps the drag
+// target. No click behavior of its own; the track's existing step-snapping
+// pointerdown handling already lands exactly on a tick when dragged there.
+export const sliderTickStyles = cva(
+  'absolute h-1 w-1 rounded-full bg-surface-400',
+  {
+    variants: {
+      orientation: {
+        horizontal: 'top-full mt-1.5 -translate-x-1/2',
+        vertical: 'start-full ms-1.5 translate-y-1/2',
+      },
+    },
+    defaultVariants: { orientation: 'horizontal' },
+  },
+);
+
+// Nested inside the (already percent-positioned) thumb, so it only needs a
+// static offset toward the side/above it, not its own percent math.
+export const sliderTooltipStyles = cva(
+  'pointer-events-none absolute z-10 whitespace-nowrap rounded-md bg-surface-900 px-1.5 py-0.5 text-xs text-surface-0 shadow',
+  {
+    variants: {
+      orientation: {
+        horizontal: 'bottom-full start-1/2 mb-1.5 -translate-x-1/2',
+        vertical: 'start-full top-1/2 ms-1.5 -translate-y-1/2',
+      },
+    },
+    defaultVariants: { orientation: 'horizontal' },
   },
 );
