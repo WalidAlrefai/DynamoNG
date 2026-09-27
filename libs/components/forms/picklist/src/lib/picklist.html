@@ -24,13 +24,45 @@
           </button>
         </div>
       </div>
+      @if (filterable()) {
+      <div [class]="filterWrapperClasses" data-part="filter">
+        <div [class]="filterFieldWrapperClasses">
+          <dg-input-text
+            type="search"
+            size="sm"
+            [styleClass]="filterInputExtraClasses"
+            [ngModel]="sourceFilterText()"
+            (ngModelChange)="onFilterInputChange('source', $event)"
+            (keydown)="onFilterKeydown('source', $event)"
+            [placeholder]="filterPlaceholder()"
+            [ariaLabel]="'Search ' + sourceLabel()"
+          />
+          <svg
+            [class]="filterIconClasses"
+            [attr.aria-hidden]="true"
+            width="14"
+            height="14"
+            viewBox="0 0 20 20"
+            fill="none"
+          >
+            <path
+              d="M9 17a8 8 0 100-16 8 8 0 000 16zM19 19l-4.35-4.35"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+      }
       <ul
         role="listbox"
         cdkDropList
         #sourceList="cdkDropList"
         [cdkDropListConnectedTo]="[targetList]"
-        [cdkDropListData]="source()"
-        [cdkDropListDisabled]="dropListDisabled()"
+        [cdkDropListData]="cdkSourceItems()"
+        [cdkDropListDisabled]="sourceDropListDisabled()"
         [attr.aria-label]="sourceLabel()"
         [attr.aria-readonly]="readOnly() ? 'true' : null"
         [attr.tabindex]="disabled() ? -1 : 0"
@@ -38,10 +70,24 @@
         (cdkDropListDropped)="onDropped($event, 'source')"
         (keydown)="onPanelKeydown($event, 'source')"
       >
-        @if (isVirtualized()) {
+        @if (showSourceNoResults()) {
+        <!--
+          role="option" (not "presentation") — a role="listbox" requires at
+          least one valid option-role child; an inert "no results" row still
+          needs to satisfy that structural ARIA requirement.
+        -->
+        <li
+          role="option"
+          aria-selected="false"
+          aria-disabled="true"
+          [class]="noResultsClasses"
+        >
+          <span role="status">{{ noResultsMessage() }}</span>
+        </li>
+        } @else if (isVirtualized()) {
         <dg-virtual-scroll
           #sourceVirtualScroll
-          [items]="source()"
+          [items]="filteredSource()"
           [itemSize]="virtualScrollItemSize()"
           [height]="virtualScrollHeight()"
           [trackBy]="virtualTrackBy"
@@ -53,9 +99,9 @@
               tabindex="-1"
               [attr.aria-selected]="isSelected('source', option)"
               [attr.aria-disabled]="option.disabled ? 'true' : null"
-              [class]="optionClasses('source', option, i)"
+              [class]="optionClasses('source', option)"
               (click)="toggleSelected('source', option)"
-              (mouseenter)="sourceActiveIndex.set(i)"
+              (mouseenter)="sourceActiveValue.set(option.value)"
             >
               <span
                 [class]="checkboxClasses('source', option)"
@@ -69,8 +115,7 @@
             </li>
           </ng-template>
         </dg-virtual-scroll>
-        } @else { @for (option of source(); track option.value; let i = $index)
-        {
+        } @else { @for (option of filteredSource(); track option.value) {
         <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are tabindex="-1"/mouse-only by design; all keyboard handling lives on the panel root's (keydown), same reasoning as Listbox's own per-row bindings. -->
         <li
           role="option"
@@ -80,9 +125,9 @@
           [cdkDragDisabled]="disabled() || readOnly() || !!option.disabled"
           [attr.aria-selected]="isSelected('source', option)"
           [attr.aria-disabled]="option.disabled ? 'true' : null"
-          [class]="optionClasses('source', option, i)"
+          [class]="optionClasses('source', option)"
           (click)="toggleSelected('source', option)"
-          (mouseenter)="sourceActiveIndex.set(i)"
+          (mouseenter)="sourceActiveValue.set(option.value)"
         >
           <span
             [class]="checkboxClasses('source', option)"
@@ -161,13 +206,45 @@
           </button>
         </div>
       </div>
+      @if (filterable()) {
+      <div [class]="filterWrapperClasses" data-part="filter">
+        <div [class]="filterFieldWrapperClasses">
+          <dg-input-text
+            type="search"
+            size="sm"
+            [styleClass]="filterInputExtraClasses"
+            [ngModel]="targetFilterText()"
+            (ngModelChange)="onFilterInputChange('target', $event)"
+            (keydown)="onFilterKeydown('target', $event)"
+            [placeholder]="filterPlaceholder()"
+            [ariaLabel]="'Search ' + targetLabel()"
+          />
+          <svg
+            [class]="filterIconClasses"
+            [attr.aria-hidden]="true"
+            width="14"
+            height="14"
+            viewBox="0 0 20 20"
+            fill="none"
+          >
+            <path
+              d="M9 17a8 8 0 100-16 8 8 0 000 16zM19 19l-4.35-4.35"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+      }
       <ul
         role="listbox"
         cdkDropList
         #targetList="cdkDropList"
         [cdkDropListConnectedTo]="[sourceList]"
-        [cdkDropListData]="target()"
-        [cdkDropListDisabled]="dropListDisabled()"
+        [cdkDropListData]="cdkTargetItems()"
+        [cdkDropListDisabled]="targetDropListDisabled()"
         [attr.aria-label]="targetLabel()"
         [attr.aria-readonly]="readOnly() ? 'true' : null"
         [attr.tabindex]="disabled() ? -1 : 0"
@@ -175,10 +252,19 @@
         (cdkDropListDropped)="onDropped($event, 'target')"
         (keydown)="onPanelKeydown($event, 'target')"
       >
-        @if (isVirtualized()) {
+        @if (showTargetNoResults()) {
+        <li
+          role="option"
+          aria-selected="false"
+          aria-disabled="true"
+          [class]="noResultsClasses"
+        >
+          <span role="status">{{ noResultsMessage() }}</span>
+        </li>
+        } @else if (isVirtualized()) {
         <dg-virtual-scroll
           #targetVirtualScroll
-          [items]="target()"
+          [items]="filteredTarget()"
           [itemSize]="virtualScrollItemSize()"
           [height]="virtualScrollHeight()"
           [trackBy]="virtualTrackBy"
@@ -190,9 +276,9 @@
               tabindex="-1"
               [attr.aria-selected]="isSelected('target', option)"
               [attr.aria-disabled]="option.disabled ? 'true' : null"
-              [class]="optionClasses('target', option, i)"
+              [class]="optionClasses('target', option)"
               (click)="toggleSelected('target', option)"
-              (mouseenter)="targetActiveIndex.set(i)"
+              (mouseenter)="targetActiveValue.set(option.value)"
             >
               <span
                 [class]="checkboxClasses('target', option)"
@@ -206,8 +292,7 @@
             </li>
           </ng-template>
         </dg-virtual-scroll>
-        } @else { @for (option of target(); track option.value; let i = $index)
-        {
+        } @else { @for (option of filteredTarget(); track option.value) {
         <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are tabindex="-1"/mouse-only by design; all keyboard handling lives on the panel root's (keydown), same reasoning as Listbox's own per-row bindings. -->
         <li
           role="option"
@@ -217,9 +302,9 @@
           [cdkDragDisabled]="disabled() || readOnly() || !!option.disabled"
           [attr.aria-selected]="isSelected('target', option)"
           [attr.aria-disabled]="option.disabled ? 'true' : null"
-          [class]="optionClasses('target', option, i)"
+          [class]="optionClasses('target', option)"
           (click)="toggleSelected('target', option)"
-          (mouseenter)="targetActiveIndex.set(i)"
+          (mouseenter)="targetActiveValue.set(option.value)"
         >
           <span
             [class]="checkboxClasses('target', option)"

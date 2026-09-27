@@ -1,7 +1,8 @@
 import { ComponentHarness } from '@angular/cdk/testing';
 
 type DynamoPicklistSide = 'source' | 'target';
-type DynamoPicklistMoveButton = 'selected-right' | 'selected-left' | 'all-right' | 'all-left';
+type DynamoPicklistMoveButton =
+  'selected-right' | 'selected-left' | 'all-right' | 'all-left';
 
 // Fixed render order of the four move buttons in the middle column — see
 // picklist.html. Indexed rather than matched by aria-label text so this
@@ -25,9 +26,27 @@ export class DynamoPicklistHarness extends ComponentHarness {
     return this.locatorForAll('[data-part="moveButtons"] button');
   }
 
+  private filterInputLocator(side: DynamoPicklistSide) {
+    return this.locatorForOptional(
+      `[data-part="${side}Panel"] input[type="search"]`,
+    );
+  }
+
+  private noResultsLocator(side: DynamoPicklistSide) {
+    return this.locatorForOptional(
+      `[data-part="${side}Panel"] [role="status"]`,
+    );
+  }
+
+  private listLocator(side: DynamoPicklistSide) {
+    return this.locatorFor(`[data-part="${side}Panel"] [role="listbox"]`);
+  }
+
   async getLabels(side: DynamoPicklistSide): Promise<string[]> {
     const options = await this.optionLocators(side)();
-    return Promise.all(options.map((option) => option.text().then((text) => text.trim())));
+    return Promise.all(
+      options.map((option) => option.text().then((text) => text.trim())),
+    );
   }
 
   async toggleOption(side: DynamoPicklistSide, label: string): Promise<void> {
@@ -48,5 +67,37 @@ export class DynamoPicklistHarness extends ComponentHarness {
       throw new Error(`No move button found for "${name}"`);
     }
     await button.click();
+  }
+
+  /** Throws if that panel isn't `filterable` (no box rendered). */
+  async setFilterText(side: DynamoPicklistSide, text: string): Promise<void> {
+    const input = await this.filterInputLocator(side)();
+    if (!input) {
+      throw new Error(
+        `No filter box found in ${side} panel — is \`filterable\` set?`,
+      );
+    }
+    await input.clear();
+    if (text) {
+      await input.sendKeys(text);
+    }
+  }
+
+  async getFilterText(side: DynamoPicklistSide): Promise<string> {
+    const input = await this.filterInputLocator(side)();
+    return input ? ((await input.getProperty<string>('value')) ?? '') : '';
+  }
+
+  /** True when that panel's filter matched nothing and its no-results message is showing. */
+  async hasNoResults(side: DynamoPicklistSide): Promise<boolean> {
+    return (await this.noResultsLocator(side)()) !== null;
+  }
+
+  /** True when that panel's drop list is CDK-disabled (filtering active, virtualized, disabled, or readOnly). */
+  async isDragDisabled(side: DynamoPicklistSide): Promise<boolean> {
+    const classes = await (
+      await this.listLocator(side)()
+    ).getAttribute('class');
+    return (classes ?? '').includes('cdk-drop-list-disabled');
   }
 }
