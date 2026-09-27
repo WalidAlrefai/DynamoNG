@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -15,14 +16,20 @@ import {
   inputNumberAffixStyles,
   inputNumberButtonStyles,
   inputNumberInputStyles,
+  inputNumberStackedButtonStyles,
+  inputNumberStackedButtonsWrapperStyles,
   inputNumberWrapperStyles,
 } from './input-number.styles';
-import type { DynamoInputNumberPart } from './input-number.types';
+import type {
+  DynamoInputNumberButtonLayout,
+  DynamoInputNumberPart,
+} from './input-number.types';
 
 @Component({
   selector: 'dg-input-number',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [NgTemplateOutlet],
   templateUrl: './input-number.html',
   providers: [
     {
@@ -63,6 +70,9 @@ export class DynamoInputNumber
    *  wrapper rather than baked into the field's own text. */
   readonly prefix = input<string | undefined>(undefined);
   readonly suffix = input<string | undefined>(undefined);
+  readonly showButtons = input(true);
+  /** Only consulted while `showButtons` is true. `'stacked'` groups both buttons into a bordered mini-column at the trailing end instead of flanking the input. */
+  readonly buttonLayout = input<DynamoInputNumberButtonLayout>('horizontal');
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model<number | null>(null);
@@ -119,6 +129,11 @@ export class DynamoInputNumber
   protected readonly affixClasses = inputNumberAffixStyles;
   protected readonly buttonClasses = computed(() =>
     inputNumberButtonStyles({ size: this.size() }),
+  );
+  protected readonly stackedButtonsWrapperClasses =
+    inputNumberStackedButtonsWrapperStyles;
+  protected readonly stackedButtonClasses = computed(() =>
+    inputNumberStackedButtonStyles({ size: this.size() }),
   );
 
   writeValue(value: number | null): void {

@@ -13,6 +13,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'sizes', title: 'Sizes' },
   { id: 'currency', title: 'Currency & Grouping' },
   { id: 'affixes', title: 'Prefix / Suffix' },
+  { id: 'buttons', title: 'Buttons' },
 ];
 
 @Component({
@@ -121,6 +122,26 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="buttons"
+        title="Buttons"
+        description="buttonLayout='stacked' groups both buttons into a single column at the trailing end instead of flanking the field; showButtons=false renders just the field (keyboard stepping still works)."
+        [code]="buttonsCode"
+      >
+        <div preview class="flex max-w-xs flex-col gap-3">
+          <dg-input-number
+            [formControl]="stackedCtl"
+            buttonLayout="stacked"
+            ariaLabel="Stacked buttons"
+          />
+          <dg-input-number
+            [formControl]="noButtonsCtl"
+            [showButtons]="false"
+            ariaLabel="No buttons"
+          />
+        </div>
+      </docs-example>
+
       <table api class="w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-border text-left text-text-muted">
@@ -190,10 +211,20 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 pr-4 font-mono">string | undefined</td>
             <td class="py-2 font-mono">undefined</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">suffix</td>
             <td class="py-2 pr-4 font-mono">string | undefined</td>
             <td class="py-2 font-mono">undefined</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">showButtons</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">true</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">buttonLayout</td>
+            <td class="py-2 pr-4 font-mono">'horizontal' | 'stacked'</td>
+            <td class="py-2 font-mono">'horizontal'</td>
           </tr>
         </tbody>
       </table>
@@ -207,6 +238,8 @@ export class InputNumberDocPage {
   protected readonly sizeCtl = new FormControl<number | null>(1);
   protected readonly price = new FormControl<number | null>(1234.5);
   protected readonly rate = new FormControl<number | null>(29);
+  protected readonly stackedCtl = new FormControl<number | null>(5);
+  protected readonly noButtonsCtl = new FormControl<number | null>(5);
 
   protected readonly basicCode = `<dg-input-number [formControl]="quantity" ariaLabel="Quantity" />`;
   protected readonly boundsCode = `<dg-input-number [formControl]="quantity" [min]="0" [max]="10" [step]="2" />`;
@@ -215,4 +248,6 @@ export class InputNumberDocPage {
 <dg-input-number [formControl]="q" size="lg" />`;
   protected readonly currencyCode = `<dg-input-number [formControl]="price" mode="currency" currency="USD" locale="en-US" />`;
   protected readonly affixesCode = `<dg-input-number [formControl]="rate" prefix="$" suffix="/mo" />`;
+  protected readonly buttonsCode = `<dg-input-number [formControl]="q" buttonLayout="stacked" />
+<dg-input-number [formControl]="q" [showButtons]="false" />`;
 }
