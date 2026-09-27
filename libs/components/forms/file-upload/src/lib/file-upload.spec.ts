@@ -7,7 +7,10 @@ import { fireEvent, within } from '@testing-library/dom';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoFileUpload } from './file-upload';
 import { DynamoFileUploadHarness } from './file-upload.harness';
-import type { DynamoFileRejection } from './file-upload.types';
+import type {
+  DynamoFileRejection,
+  DynamoFileUploadProgress,
+} from './file-upload.types';
 
 function makeFile(name: string, size: number, type = 'text/plain'): File {
   return new File([new Uint8Array(size)], name, { type });
@@ -632,6 +635,177 @@ describe('DynamoFileUpload', () => {
       await expect(harness.removeFileByName('missing.txt')).rejects.toThrow(
         'No file item found with name "missing.txt"',
       );
+    });
+  });
+
+  describe('filesAdded', () => {
+    it('emits exactly the newly-accepted files, not the full accumulated value', () => {
+      const batches: File[][] = [];
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoFileUpload,
+        { inputs: { multiple: true } },
+      );
+      componentInstance.filesAdded.subscribe((batch) => batches.push(batch));
+      const input = container.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+
+      fireEvent.change(input, {
+        target: { files: [makeFile('first.txt', 10)] },
+      });
+      fireEvent.change(input, {
+        target: {
+          files: [makeFile('second.txt', 10), makeFile('third.txt', 10)],
+        },
+      });
+
+      expect(batches.map((b) => b.map((f) => f.name))).toEqual([
+        ['first.txt'],
+        ['second.txt', 'third.txt'],
+      ]);
+    });
+
+    it('does not fire for a batch that was entirely rejected', () => {
+      const filesAdded = vi.fn();
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoFileUpload,
+        { inputs: { accept: '.png' } },
+      );
+      componentInstance.filesAdded.subscribe(filesAdded);
+      const input = container.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+
+      fireEvent.change(input, {
+        target: { files: [makeFile('notes.txt', 10, 'text/plain')] },
+      });
+
+      expect(filesAdded).not.toHaveBeenCalled();
+    });
+
+    it('emits only the single replacing file in non-multiple mode', () => {
+      const batches: File[][] = [];
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoFileUpload);
+      componentInstance.filesAdded.subscribe((batch) => batches.push(batch));
+      const input = container.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+
+      fireEvent.change(input, {
+        target: {
+          files: [makeFile('a.txt', 10), makeFile('b.txt', 10)],
+        },
+      });
+
+      expect(batches).toEqual([[expect.objectContaining({ name: 'a.txt' })]]);
+    });
+  });
+
+  describe('fileStatus', () => {
+    function renderWithStatus(status: DynamoFileUploadProgress) {
+      const file = makeFile('report.pdf', 2048, 'application/pdf');
+      const rendered = renderDynamoComponent(DynamoFileUpload, {
+        inputs: {
+          value: [file],
+          fileStatus: new Map([[file, status]]),
+        },
+      });
+      return { ...rendered, file };
+    }
+
+    it('renders no progress bar, status icon, or error text when fileStatus is unset (regression)', () => {
+      const { container } = renderDynamoComponent(DynamoFileUpload, {
+        inputs: { value: [makeFile('report.pdf', 2048)] },
+      });
+
+      expect(container.querySelector('[data-progress]')).toBeNull();
+      expect(container.querySelector('[data-success]')).toBeNull();
+      expect(container.querySelector('[data-error]')).toBeNull();
+    });
+
+    it('renders a progress bar at the given percent while uploading', async () => {
+      const { container, fixture } = renderWithStatus({
+        status: 'uploading',
+        progress: 42,
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoFileUploadHarness,
+      );
+
+      const fill = container.querySelector('[data-progress]') as HTMLElement;
+      expect(fill.style.width).toBe('42%');
+      expect(await harness.getProgress('report.pdf')).toBe(42);
+      expect(await harness.getStatus('report.pdf')).toBe('uploading');
+    });
+
+    it('renders a success icon and no progress bar or error text', async () => {
+      const { container, fixture } = renderWithStatus({ status: 'success' });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoFileUploadHarness,
+      );
+
+      expect(container.querySelector('[data-success]')).toBeTruthy();
+      expect(container.querySelector('[data-progress]')).toBeNull();
+      expect(await harness.getStatus('report.pdf')).toBe('success');
+    });
+
+    it('renders the given error message, falling back to a generic one when unset', async () => {
+      const { container, fixture } = renderWithStatus({
+        status: 'error',
+        error: 'Network timeout',
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoFileUploadHarness,
+      );
+
+      expect(container.querySelector('[data-error]')?.textContent).toBe(
+        'Network timeout',
+      );
+      expect(await harness.getErrorText('report.pdf')).toBe('Network timeout');
+      expect(await harness.getStatus('report.pdf')).toBe('error');
+    });
+
+    it('falls back to a generic error message when none is given', () => {
+      const { container } = renderWithStatus({ status: 'error' });
+
+      expect(container.querySelector('[data-error]')?.textContent).toBe(
+        'Upload failed',
+      );
+    });
+
+    it('leaves the remove button enabled while a file is uploading (documented scope cut)', () => {
+      const { container } = renderWithStatus({
+        status: 'uploading',
+        progress: 10,
+      });
+
+      const removeButton = within(container).getByRole('button', {
+        name: 'Remove report.pdf',
+      }) as HTMLButtonElement;
+      expect(removeButton.disabled).toBe(false);
+    });
+
+    it('has no axe violations with a mixed-status file list', async () => {
+      const uploading = makeFile('uploading.txt', 10);
+      const success = makeFile('success.txt', 10);
+      const error = makeFile('error.txt', 10);
+      const { container } = renderDynamoComponent(DynamoFileUpload, {
+        inputs: {
+          multiple: true,
+          value: [uploading, success, error],
+          fileStatus: new Map<File, DynamoFileUploadProgress>([
+            [uploading, { status: 'uploading', progress: 50 }],
+            [success, { status: 'success' }],
+            [error, { status: 'error', error: 'Failed' }],
+          ]),
+        },
+      });
+
+      await expectNoA11yViolations(container);
     });
   });
 });

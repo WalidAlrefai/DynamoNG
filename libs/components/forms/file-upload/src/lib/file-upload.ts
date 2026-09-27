@@ -17,16 +17,23 @@ import { DynamoSpinner } from '@dynamong/spinner';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   fileUploadDropzoneStyles,
+  fileUploadErrorTextStyles,
+  fileUploadFileHeaderStyles,
+  fileUploadFileInfoStyles,
   fileUploadFileItemStyles,
   fileUploadFileListStyles,
   fileUploadFileNameStyles,
   fileUploadFileSizeStyles,
   fileUploadPreviewStyles,
+  fileUploadProgressFillStyles,
+  fileUploadProgressTrackStyles,
   fileUploadRemoveButtonStyles,
+  fileUploadStatusIconStyles,
 } from './file-upload.styles';
 import type {
   DynamoFileRejection,
   DynamoFileUploadPart,
+  DynamoFileUploadProgress,
 } from './file-upload.types';
 
 const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -81,6 +88,20 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
   readonly value = model<File[]>([]);
   /** Fires once per drop/browse batch that contained at least one rejected file. */
   readonly rejected = output<DynamoFileRejection[]>();
+  /** Fires once per drop/browse batch with exactly the files that were just accepted (a subset of `value()`, not the full list) — a direct hook to kick off uploads for the new files without diffing old vs. new `value()` yourself. */
+  readonly filesAdded = output<File[]>();
+  /**
+   * Opt-in per-file upload progress/status, keyed by the same `File`
+   * references held in `value()`. Entirely consumer-driven — this
+   * component never sets a status itself (e.g. via HttpClient), only
+   * displays whatever map you rebind here as your own upload proceeds.
+   * Unset (default) renders no progress bar/status icon/error text at
+   * all. Deliberately out of scope: no built-in retry/cancel — that's
+   * the consumer's own upload logic to expose.
+   */
+  readonly fileStatus = input<
+    ReadonlyMap<File, DynamoFileUploadProgress> | undefined
+  >(undefined);
 
   private readonly fileInputEl =
     viewChild.required<ElementRef<HTMLInputElement>>('fileInputEl');
@@ -109,6 +130,16 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
   protected readonly fileSizeClasses = fileUploadFileSizeStyles;
   protected readonly removeButtonClasses = fileUploadRemoveButtonStyles;
   protected readonly previewClasses = fileUploadPreviewStyles;
+  protected readonly fileInfoClasses = fileUploadFileInfoStyles;
+  protected readonly fileHeaderClasses = fileUploadFileHeaderStyles;
+  protected readonly progressTrackClasses = fileUploadProgressTrackStyles;
+  protected readonly progressFillClasses = fileUploadProgressFillStyles;
+  protected readonly statusIconClasses = fileUploadStatusIconStyles;
+  protected readonly errorTextClasses = fileUploadErrorTextStyles;
+
+  protected fileStatusFor(file: File): DynamoFileUploadProgress | undefined {
+    return this.fileStatus()?.get(file);
+  }
 
   /** Lazily-created, cached by `File` reference — revoked in `removeFile()` and on destroy so a long upload session never leaks object URLs. */
   private readonly previewUrls = new Map<File, string>();
@@ -241,9 +272,11 @@ export class DynamoFileUpload extends DynamoBaseComponent<DynamoFileUploadPart> 
           this.revokePreview(file);
         }
       }
+      const nextBatch = this.multiple() ? accepted : accepted.slice(0, 1);
       this.value.set(
-        this.multiple() ? [...this.value(), ...accepted] : accepted.slice(0, 1),
+        this.multiple() ? [...this.value(), ...accepted] : nextBatch,
       );
+      this.filesAdded.emit(nextBatch);
     }
     if (rejections.length > 0) {
       this.rejected.emit(rejections);

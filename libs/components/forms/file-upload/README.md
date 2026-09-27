@@ -22,26 +22,62 @@ protected onRejected(rejections: DynamoFileRejection[]): void { ... }
 
 ## Inputs
 
-| Input         | Type                  | Default                                          | Description                                                                                                                                                                                                       |
-| ------------- | --------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `multiple`    | `boolean`             | `false`                                          |                                                                                                                                                                                                                   |
-| `accept`      | `string \| undefined` | `undefined`                                      | Comma-separated `.ext` / `type/subtype` / `type/*` patterns, matching the native `accept` attribute's semantics. Re-checked manually for drag-and-drop too, not just the browse dialog.                           |
-| `maxFileSize` | `number \| undefined` | `undefined`                                      | Bytes.                                                                                                                                                                                                            |
-| `maxFiles`    | `number \| undefined` | `undefined`                                      |                                                                                                                                                                                                                   |
-| `disabled`    | `boolean` (model)     | `false`                                          |                                                                                                                                                                                                                   |
-| `loading`     | `boolean`             | `false`                                          | Renders a small spinner in the dropzone and makes the component fully non-interactive, like `disabled` — e.g. while an externally-tracked upload is in flight.                                                    |
-| `size`        | `DynamoSize`          | `'md'`                                           |                                                                                                                                                                                                                   |
-| `label`       | `string`              | `'Drag and drop files here, or click to browse'` |                                                                                                                                                                                                                   |
-| `ariaLabel`   | `string \| undefined` | `undefined`                                      |                                                                                                                                                                                                                   |
-| `showPreview` | `boolean`             | `true`                                           | Shows a small image thumbnail (via `URL.createObjectURL`) next to each selected file whose type starts with `image/`. Object URLs are revoked automatically when a file is removed or the component is destroyed. |
-| `value`       | `File[]` (model)      | `[]`                                             | The currently-held files.                                                                                                                                                                                         |
+| Input         | Type                                                       | Default                                          | Description                                                                                                                                                                                                       |
+| ------------- | ---------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `multiple`    | `boolean`                                                  | `false`                                          |                                                                                                                                                                                                                   |
+| `accept`      | `string \| undefined`                                      | `undefined`                                      | Comma-separated `.ext` / `type/subtype` / `type/*` patterns, matching the native `accept` attribute's semantics. Re-checked manually for drag-and-drop too, not just the browse dialog.                           |
+| `maxFileSize` | `number \| undefined`                                      | `undefined`                                      | Bytes.                                                                                                                                                                                                            |
+| `maxFiles`    | `number \| undefined`                                      | `undefined`                                      |                                                                                                                                                                                                                   |
+| `disabled`    | `boolean` (model)                                          | `false`                                          |                                                                                                                                                                                                                   |
+| `loading`     | `boolean`                                                  | `false`                                          | Renders a small spinner in the dropzone and makes the component fully non-interactive, like `disabled` — e.g. while an externally-tracked upload is in flight.                                                    |
+| `size`        | `DynamoSize`                                               | `'md'`                                           |                                                                                                                                                                                                                   |
+| `label`       | `string`                                                   | `'Drag and drop files here, or click to browse'` |                                                                                                                                                                                                                   |
+| `ariaLabel`   | `string \| undefined`                                      | `undefined`                                      |                                                                                                                                                                                                                   |
+| `showPreview` | `boolean`                                                  | `true`                                           | Shows a small image thumbnail (via `URL.createObjectURL`) next to each selected file whose type starts with `image/`. Object URLs are revoked automatically when a file is removed or the component is destroyed. |
+| `value`       | `File[]` (model)                                           | `[]`                                             | The currently-held files.                                                                                                                                                                                         |
+| `fileStatus`  | `ReadonlyMap<File, DynamoFileUploadProgress> \| undefined` | `undefined`                                      | Opt-in per-file upload progress/status, keyed by the same `File` references held in `value`. See Progress & status below.                                                                                         |
 
 ## Outputs
 
-| Output        | Payload                 | Fires when                                                                                                 |
-| ------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `valueChange` | `File[]`                | `value` changes (auto-generated by `model()`).                                                             |
-| `rejected`    | `DynamoFileRejection[]` | Once per drop/browse batch that contained at least one file rejected by `accept`/`maxFileSize`/`maxFiles`. |
+| Output        | Payload                 | Fires when                                                                                                                                                                             |
+| ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `valueChange` | `File[]`                | `value` changes (auto-generated by `model()`).                                                                                                                                         |
+| `rejected`    | `DynamoFileRejection[]` | Once per drop/browse batch that contained at least one file rejected by `accept`/`maxFileSize`/`maxFiles`.                                                                             |
+| `filesAdded`  | `File[]`                | Once per drop/browse batch, with exactly the files that were just accepted (a subset of `value`, not the full accumulated list) — a direct hook to kick off uploads for the new files. |
+
+## Progress & status
+
+`fileStatus` and `filesAdded` are entirely consumer-driven — this
+component never calls `HttpClient` (or anything else) itself, only
+displays whatever progress/status you report back:
+
+```ts
+protected fileStatus = signal(new Map<File, DynamoFileUploadProgress>());
+
+protected onFilesAdded(files: File[]): void {
+  for (const file of files) {
+    this.fileStatus.update((m) => new Map(m).set(file, { status: 'uploading', progress: 0 }));
+    this.upload(file).subscribe({
+      next: (progress) => this.fileStatus.update((m) => new Map(m).set(file, { status: 'uploading', progress })),
+      error: (err) => this.fileStatus.update((m) => new Map(m).set(file, { status: 'error', error: err.message })),
+      complete: () => this.fileStatus.update((m) => new Map(m).set(file, { status: 'success' })),
+    });
+  }
+}
+```
+
+```html
+<dg-file-upload
+  [(value)]="attachments"
+  [fileStatus]="fileStatus()"
+  (filesAdded)="onFilesAdded($event)"
+/>
+```
+
+Two deliberate scope cuts: there's no built-in retry/cancel button (a
+consumer's own upload logic owns that), and the remove button stays
+enabled while a file is `'uploading'` — removing it from `value` doesn't
+itself cancel an in-flight request, that's on the consumer too.
 
 ## Accessibility
 
