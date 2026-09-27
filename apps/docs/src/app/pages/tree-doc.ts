@@ -10,6 +10,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'filter', title: 'Filter' },
+  { id: 'lazy', title: 'Lazy Loading' },
 ];
 
 const API: ApiTableRow[] = [
@@ -25,6 +26,7 @@ const API: ApiTableRow[] = [
     type: 'string',
     default: "'No matching results'",
   },
+  { name: 'nodeExpand (output)', type: 'DynamoTreeNode', default: '—' },
 ];
 
 @Component({
@@ -77,6 +79,25 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="lazy"
+        title="Lazy Loading"
+        description="Mark a node leaf: false with no children to render it as an unresolved branch. Expanding it fires (nodeExpand); the handler sets loading, fetches, then patches children back in."
+      >
+        <div preview>
+          <dg-tree
+            [items]="lazyItems()"
+            [(expandedIds)]="lazyExpanded"
+            ariaLabel="Remote folders"
+            (nodeExpand)="onNodeExpand($event)"
+          />
+        </div>
+        <div code>
+          &lt;dg-tree [items]="items()" (nodeExpand)="onNodeExpand($event)"
+          /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -107,4 +128,34 @@ export class TreeDocPage {
 
   readonly expanded = signal<string[]>(['src']);
   readonly selected = signal<string[]>([]);
+
+  readonly lazyItems = signal<DynamoTreeNode[]>([
+    { id: 'remote-a', label: 'Marketing (remote)', leaf: false },
+    { id: 'remote-b', label: 'Engineering (remote)', leaf: false },
+  ]);
+  readonly lazyExpanded = signal<string[]>([]);
+
+  onNodeExpand(node: DynamoTreeNode): void {
+    this.lazyItems.set(
+      this.lazyItems().map((n) =>
+        n.id === node.id ? { ...n, loading: true } : n,
+      ),
+    );
+    setTimeout(() => {
+      this.lazyItems.set(
+        this.lazyItems().map((n) =>
+          n.id === node.id
+            ? {
+                ...n,
+                loading: false,
+                children: [
+                  { id: `${node.id}-1`, label: 'Q1 Report.pdf' },
+                  { id: `${node.id}-2`, label: 'Q2 Report.pdf' },
+                ],
+              }
+            : n,
+        ),
+      );
+    }, 600);
+  }
 }
