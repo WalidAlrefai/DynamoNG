@@ -98,14 +98,61 @@ describe('DynamoBreadcrumb', () => {
         inputs: { items: ITEMS },
       });
 
-      expect(
-        container.querySelectorAll('[aria-current="page"]'),
-      ).toHaveLength(1);
+      expect(container.querySelectorAll('[aria-current="page"]')).toHaveLength(
+        1,
+      );
     });
 
     it('has no axe violations', async () => {
       const { fixture } = renderDynamoComponent(DynamoBreadcrumb, {
         inputs: { items: ITEMS },
+      });
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('icons', () => {
+    const ITEMS_WITH_ICONS: DynamoBreadcrumbItem[] = [
+      { label: 'Home', href: '/', icon: '🏠' },
+      { label: 'Archived', icon: '📦' },
+      { label: 'Docs', href: '/docs' },
+      { label: 'Current', icon: '📄' },
+    ];
+
+    it.each([
+      { name: 'link', selector: 'a' },
+      { name: 'plain', selector: 'li:nth-child(2) span:not([aria-hidden])' },
+      { name: 'current', selector: '[aria-current="page"]' },
+    ])(
+      'renders an aria-hidden icon span before the label for a $name item with icon set',
+      ({ selector }) => {
+        const { container } = renderDynamoComponent(DynamoBreadcrumb, {
+          inputs: { items: ITEMS_WITH_ICONS },
+        });
+
+        const labelEl = container.querySelector(selector);
+        const iconSpan = labelEl?.querySelector('span[aria-hidden="true"]');
+        expect(iconSpan).toBeTruthy();
+        expect(labelEl?.textContent).toContain(iconSpan?.textContent);
+      },
+    );
+
+    it('renders no icon span for an item without icon set', () => {
+      const { container } = renderDynamoComponent(DynamoBreadcrumb, {
+        inputs: { items: ITEMS_WITH_ICONS },
+      });
+
+      const docsLink = within(container).getByRole('link', { name: /Docs/ });
+      expect(docsLink.querySelector('span[aria-hidden="true"]')).toBeNull();
+      expect(docsLink.textContent?.trim()).toBe('Docs');
+    });
+
+    it('has no axe violations with icons set', async () => {
+      const { fixture } = renderDynamoComponent(DynamoBreadcrumb, {
+        inputs: { items: ITEMS_WITH_ICONS },
       });
 
       await expect(

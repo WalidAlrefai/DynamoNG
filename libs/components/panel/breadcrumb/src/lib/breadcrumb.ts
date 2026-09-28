@@ -8,6 +8,7 @@ import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   breadcrumbCurrentStyles,
+  breadcrumbIconClasses,
   breadcrumbItemStyles,
   breadcrumbLinkStyles,
   breadcrumbListStyles,
@@ -26,8 +27,9 @@ import type {
   templateUrl: './breadcrumb.html',
 })
 // A dedicated `home`/`homeAriaLabel` (an icon-only leading crumb) is
-// intentionally not offered: no crumb here has icon support, so it would
-// just be a same-shape entry — prepend one to `items` instead. See README.
+// intentionally not offered: `items` accepts per-item `icon`, so
+// `{ label: 'Home', icon: '🏠', href: '/' }` already covers the same
+// navigational need without a separate shortcut input. See README.
 export class DynamoBreadcrumb extends DynamoBaseComponent<DynamoBreadcrumbPart> {
   readonly items = input.required<DynamoBreadcrumbItem[]>();
   readonly ariaLabel = input<string | undefined>(undefined);
@@ -42,4 +44,5 @@ export class DynamoBreadcrumb extends DynamoBaseComponent<DynamoBreadcrumbPart> 
   protected readonly currentClasses = breadcrumbCurrentStyles;
   protected readonly plainClasses = breadcrumbPlainStyles;
   protected readonly separatorClasses = breadcrumbSeparatorStyles;
+  protected readonly iconClasses = breadcrumbIconClasses;
 }

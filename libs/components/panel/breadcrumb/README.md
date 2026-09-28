@@ -18,10 +18,10 @@ ending in a non-interactive "current page" label.
 
 ## Inputs
 
-| Input       | Type                                | Default     | Description                                                                                                                                                                                                                                    |
-| ----------- | ----------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `items`     | `DynamoBreadcrumbItem[]` (required) | —           | Each item has `label` and optional `href`. The last item always renders as the current page (`aria-current="page"`), even if it has an `href` — it's never a link. Earlier items render as a link when `href` is set, otherwise as plain text. |
-| `ariaLabel` | `string \| undefined`               | `undefined` | Falls back to `'Breadcrumb'` on the `<nav>` when unset.                                                                                                                                                                                        |
+| Input       | Type                                | Default     | Description                                                                                                                                                                                                                                                                                                                      |
+| ----------- | ----------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`     | `DynamoBreadcrumbItem[]` (required) | —           | Each item has `label`, optional `href`, and optional `icon` (a plain glyph string, rendered `aria-hidden` before the label). The last item always renders as the current page (`aria-current="page"`), even if it has an `href` — it's never a link. Earlier items render as a link when `href` is set, otherwise as plain text. |
+| `ariaLabel` | `string \| undefined`               | `undefined` | Falls back to `'Breadcrumb'` on the `<nav>` when unset.                                                                                                                                                                                                                                                                          |
 
 ## Outputs
 
@@ -34,12 +34,16 @@ None — a breadcrumb navigates via its items' own `href`s; there's no selection
 
 ## Design notes
 
-A dedicated icon-only "home" crumb was considered and deliberately left out:
-no crumb in this component (first or otherwise) has icon support today —
-`items` already accepts a leading `{ label, href }` entry that covers the
-same navigational need. Adding icon-only rendering for just one slot would
-be inconsistent without a broader icon-support pass across all items, which
-is out of scope here.
+`icon` follows the same plain-glyph-string convention as `@dynamong/menu`'s
+`DynamoMenuItem.icon` (also used by Menubar, TieredMenu, MegaMenu, and
+PanelMenu item icons) — not wired to `@dynamong/icons`, which only exports
+one hardcoded checkmark component rather than a general icon-selection
+system.
+
+A dedicated `home`/`homeAriaLabel` (an icon-only leading crumb) is still
+intentionally not offered: `items` accepts per-item `icon`, so
+`{ label: 'Home', icon: '🏠', href: '/' }` already covers the same
+navigational need without a separate shortcut input.
 
 ## Tier / dependencies
 
