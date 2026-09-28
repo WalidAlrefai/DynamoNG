@@ -27,13 +27,26 @@ export const carouselViewportStyles = cva(
 );
 
 // Each slide's own `[style.flex]`-driven basis percentage (see carousel.ts)
-// follows whichever direction this is set to for free — no other sizing
-// change needed to support the vertical axis.
+// follows whichever direction this is set to — but a percentage flex-basis
+// only resolves against a DEFINITE main-size; the track is otherwise a plain
+// block child of `viewport` with no height/width of its own set here. A
+// block box's `width: auto` already defaults to filling its containing
+// block (CSS's normal-flow default), which is why horizontal "just worked"
+// with no explicit width — but `height: auto` does NOT default to filling
+// the parent (it shrinks to content instead), so `flex-col` alone left the
+// track's height indeterminate: every slide's `flex-basis: N%` fell back to
+// content-sized `auto`, and the translateY(-N%) step distances were computed
+// against that same wrong, content-sized height — collapsing every slide
+// into one and landing on empty space after any move. `h-full` gives the
+// track a definite height (100% of `viewport`'s own explicit
+// `verticalHeight`, set inline in carousel.ts) so the percentage math
+// actually resolves against the real viewport size, matching horizontal's
+// already-correct behavior.
 export const carouselTrackBaseStyles = cva('flex', {
   variants: {
     orientation: {
       horizontal: 'flex-row',
-      vertical: 'flex-col',
+      vertical: 'flex-col h-full',
     },
   },
   defaultVariants: { orientation: 'horizontal' },
