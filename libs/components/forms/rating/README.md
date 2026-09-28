@@ -41,15 +41,16 @@ star — the left half commits `star - 0.5`, the right half commits
 the whole-star click-to-clear behavior. `value` stays a plain `number`
 — a half-star rating is just `2.5`, no new type.
 
-Two deliberate scope cuts:
+One remaining deliberate scope cut: no arbitrary precision (quarter-stars,
+etc.) — only whole/half.
 
-- No `aria-valuetext` (e.g. "3.5 out of 5 stars") — the component has
-  none today for whole values either.
-- No arbitrary precision (quarter-stars, etc.) — only whole/half.
+`aria-valuetext` (e.g. "3.5 out of 5 stars") was previously cut too, but that
+was never a real technical blocker — just not yet implemented — so it's now
+included; see [Accessibility](#accessibility) below.
 
 ## Accessibility
 
-- A single `role="slider"` root carries `aria-valuenow`/`aria-valuemin="0"`/`aria-valuemax`/`aria-readonly`/`aria-disabled` — the whole group is one focusable control, not N stars.
+- A single `role="slider"` root carries `aria-valuenow`/`aria-valuemin="0"`/`aria-valuemax`/`aria-valuetext`/`aria-readonly`/`aria-disabled` — the whole group is one focusable control, not N stars. `aria-valuetext` reads e.g. `"3.5 out of 5 stars"`, tracking the same hover-preview-aware value as `aria-valuenow`.
 - Keyboard: `ArrowRight`/`ArrowUp` increments, `ArrowLeft`/`ArrowDown` decrements, `Home` resets to `0`, `End` jumps to `max`.
 - Individual stars are plain non-focusable `<span>`s (not `<button>`s) — a star isn't independently operable, so it's exposed only through the group's own value.
 

@@ -5,6 +5,7 @@
   [attr.aria-valuenow]="displayValue()"
   aria-valuemin="0"
   [attr.aria-valuemax]="max()"
+  [attr.aria-valuetext]="valueText()"
   [attr.aria-readonly]="readOnly() ? 'true' : null"
   [attr.aria-disabled]="disabled() ? 'true' : null"
   [attr.aria-label]="ariaLabel() ?? 'Rating'"
