@@ -13,20 +13,39 @@
   (keydown)="state.handleKeydown($event)"
 >
   @if (hasChildren()) {
-    <svg [class]="chevronClasses()" [attr.aria-hidden]="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
+  <svg
+    [class]="chevronClasses()"
+    [attr.aria-hidden]="true"
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+  >
+    <path
+      d="M4 6l4 4 4-4"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
   } @else {
-    <span [class]="chevronPlaceholderClasses" [attr.aria-hidden]="true"></span>
+  <span [class]="chevronPlaceholderClasses" [attr.aria-hidden]="true"></span>
+  } @if (item().icon) {
+  <span [class]="itemIconClasses" aria-hidden="true">{{ item().icon }}</span>
   }
   <span [class]="labelClasses">{{ item().label }}</span>
 </button>
 @if (hasChildren() && isExpanded()) {
-  <div [id]="groupId()" role="group" [class]="groupClasses()">
-    <div [class]="groupInnerClasses">
-      @for (child of item().children; track child; let i = $index) {
-        <dg-panel-menu-node [item]="child" [path]="childPath(i)" [depth]="depth() + 1" />
-      }
-    </div>
+<div [id]="groupId()" role="group" [class]="groupClasses()">
+  <div [class]="groupInnerClasses">
+    @for (child of item().children; track child; let i = $index) {
+    <dg-panel-menu-node
+      [item]="child"
+      [path]="childPath(i)"
+      [depth]="depth() + 1"
+    />
+    }
   </div>
+</div>
 }

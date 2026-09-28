@@ -22,6 +22,11 @@ const API: ApiTableRow[] = [
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
   { name: 'slotChar', type: 'string', default: "'_'" },
   { name: 'autoClear', type: 'boolean', default: 'true' },
+  {
+    name: 'unmaskedValueChange (output)',
+    type: 'string',
+    default: '—',
+  },
 ];
 
 @Component({
@@ -52,13 +57,19 @@ const API: ApiTableRow[] = [
             mask="(999) 999-9999"
             ariaLabel="Phone number"
             placeholder="(555) 000-0000"
+            (unmaskedValueChange)="phoneDigits.set($event)"
           />
           <p class="mt-2 text-sm text-text-muted">
             Value: <span class="font-mono">{{ phone.value || '(none)' }}</span>
           </p>
+          <p class="text-sm text-text-muted">
+            Unmasked:
+            <span class="font-mono">{{ phoneDigits() || '(none)' }}</span>
+          </p>
         </div>
         <div code>
-          &lt;dg-input-mask [formControl]="phone" mask="(999) 999-9999" /&gt;
+          &lt;dg-input-mask [formControl]="phone" mask="(999) 999-9999"
+          (unmaskedValueChange)="onDigits($event)" /&gt;
         </div>
       </docs-example>
 
@@ -112,6 +123,7 @@ export class InputMaskDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows = API;
   protected readonly phone = new FormControl<string | null>(null);
+  protected readonly phoneDigits = signal('');
   protected readonly date = new FormControl<string | null>(null);
   protected readonly serial = signal('');
   protected readonly completedCount = signal(0);

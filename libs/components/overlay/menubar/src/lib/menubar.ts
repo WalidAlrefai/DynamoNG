@@ -20,7 +20,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { DynamoBaseComponent } from '@dynamong/core/base';
-import { DynamoOverlayService, type DynamoOverlayHandle } from '@dynamong/core/overlay';
+import {
+  DynamoOverlayService,
+  type DynamoOverlayHandle,
+} from '@dynamong/core/overlay';
 import { cn } from '@dynamong/utils/class-merge';
 import { buildFlyoutPositions } from './menubar.positioning';
 import {
@@ -28,13 +31,18 @@ import {
   menubarCaretStyles,
   menubarChevronStyles,
   menubarEndStyles,
+  menubarItemIconClasses,
   menubarItemStyles,
   menubarPanelStyles,
   menubarRootStyles,
   menubarRowStyles,
   menubarStartStyles,
 } from './menubar.styles';
-import type { DynamoMenubarItem, DynamoMenubarPart, DynamoMenubarPosition } from './menubar.types';
+import type {
+  DynamoMenubarItem,
+  DynamoMenubarPart,
+  DynamoMenubarPosition,
+} from './menubar.types';
 
 interface DynamoMenubarLevel {
   items: DynamoMenubarItem[];
@@ -47,10 +55,34 @@ interface DynamoMenubarLevel {
 // (identical shape) — this codebase's established "each overlay-family
 // component keeps its own copy" precedent.
 const ROOT_POSITION_MAP: Record<DynamoMenubarPosition, ConnectedPosition> = {
-  'bottom-start': { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
-  'bottom-end': { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
-  'top-start': { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
-  'top-end': { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
+  'bottom-start': {
+    originX: 'start',
+    originY: 'bottom',
+    overlayX: 'start',
+    overlayY: 'top',
+    offsetY: 4,
+  },
+  'bottom-end': {
+    originX: 'end',
+    originY: 'bottom',
+    overlayX: 'end',
+    overlayY: 'top',
+    offsetY: 4,
+  },
+  'top-start': {
+    originX: 'start',
+    originY: 'top',
+    overlayX: 'start',
+    overlayY: 'bottom',
+    offsetY: -4,
+  },
+  'top-end': {
+    originX: 'end',
+    originY: 'top',
+    overlayX: 'end',
+    overlayY: 'bottom',
+    offsetY: -4,
+  },
 };
 const ALL_ROOT_POSITIONS: DynamoMenubarPosition[] = [
   'bottom-start',
@@ -58,7 +90,9 @@ const ALL_ROOT_POSITIONS: DynamoMenubarPosition[] = [
   'top-start',
   'top-end',
 ];
-function buildRootPositions(preferred: DynamoMenubarPosition): ConnectedPosition[] {
+function buildRootPositions(
+  preferred: DynamoMenubarPosition,
+): ConnectedPosition[] {
   return [
     ROOT_POSITION_MAP[preferred],
     ...ALL_ROOT_POSITIONS.filter((candidate) => candidate !== preferred).map(
@@ -162,8 +196,10 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   readonly openIndex = model<number | null>(null);
   readonly itemSelect = output<DynamoMenubarItem>();
 
-  private readonly barItemEls = viewChildren<ElementRef<HTMLElement>>('barItemEl');
-  private readonly panelTemplate = viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  private readonly barItemEls =
+    viewChildren<ElementRef<HTMLElement>>('barItemEl');
+  private readonly panelTemplate =
+    viewChild.required<TemplateRef<unknown>>('panelTemplate');
   private readonly overlayService = inject(DynamoOverlayService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -178,9 +214,12 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   /** Which level currently owns Up/Down/Enter/Escape. */
   protected readonly activeLevelIndex = signal(0);
   /** `flyoutHandles[k]` backs `levels()[k + 1]` — a plain stack, push/pop only. */
-  private readonly flyoutHandles: (DynamoOverlayHandle & { anchorEl: HTMLElement })[] = [];
+  private readonly flyoutHandles: (DynamoOverlayHandle & {
+    anchorEl: HTMLElement;
+  })[] = [];
   /** Backs `levels()[0]`. Tracks which bar item it's anchored to, so a sibling switch can detect the mismatch and re-anchor. */
-  private rootHandle: (DynamoOverlayHandle & { forIndex: number }) | null = null;
+  private rootHandle: (DynamoOverlayHandle & { forIndex: number }) | null =
+    null;
 
   protected readonly activeDescendantId = computed(() => {
     if (this.openIndex() === null) return null;
@@ -194,13 +233,16 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   // (same idiom as `@dynamong/toolbar`'s own `rootClasses`) — `barClasses`
   // itself is just the plain, un-overridable `role="menubar"` row.
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(menubarRootStyles, this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(menubarRootStyles, this.styleClass()),
   );
   protected readonly barClasses = menubarBarStyles;
   protected readonly startClasses = menubarStartStyles;
   protected readonly endClasses = menubarEndStyles;
   protected readonly panelClasses = menubarPanelStyles;
   protected readonly caretClasses = menubarCaretStyles;
+  protected readonly itemIconClasses = menubarItemIconClasses;
 
   constructor() {
     super();
@@ -258,11 +300,17 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
         const levelIndex = k + 1;
         const anchor = current[levelIndex]?.anchorEl;
         if (!anchor) break; // shouldn't happen — stay defensive rather than throw
-        const handle = this.overlayService.createConnectedOverlay(anchor, buildFlyoutPositions(), {
-          hasBackdrop: false, // only the level-0 dropdown gets the backdrop that closes everything
-        });
+        const handle = this.overlayService.createConnectedOverlay(
+          anchor,
+          buildFlyoutPositions(),
+          {
+            hasBackdrop: false, // only the level-0 dropdown gets the backdrop that closes everything
+          },
+        );
         handle.overlayRef.attach(
-          new TemplatePortal(this.panelTemplate(), this.viewContainerRef, { levelIndex }),
+          new TemplatePortal(this.panelTemplate(), this.viewContainerRef, {
+            levelIndex,
+          }),
         );
         this.flyoutHandles.push({ ...handle, anchorEl: anchor });
       }
@@ -285,16 +333,26 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   }
 
   protected barItemClasses(index: number, item: DynamoMenubarItem) {
-    return menubarItemStyles({ open: this.openIndex() === index, disabled: !!item.disabled });
+    return menubarItemStyles({
+      open: this.openIndex() === index,
+      disabled: !!item.disabled,
+    });
   }
 
   protected chevronClasses(index: number) {
     return menubarChevronStyles({ open: this.openIndex() === index });
   }
 
-  protected rowClasses(item: DynamoMenubarItem, levelIndex: number, index: number) {
+  protected rowClasses(
+    item: DynamoMenubarItem,
+    levelIndex: number,
+    index: number,
+  ) {
     const level = this.levels()[levelIndex];
-    return menubarRowStyles({ active: level?.activeIndex === index, disabled: !!item.disabled });
+    return menubarRowStyles({
+      active: level?.activeIndex === index,
+      disabled: !!item.disabled,
+    });
   }
 
   protected onBarItemHover(index: number): void {
@@ -337,7 +395,9 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
 
   protected onMenubarKeydown(event: KeyboardEvent): void {
     const barEls = this.barItemEls();
-    const currentIndex = barEls.findIndex((ref) => ref.nativeElement === event.target);
+    const currentIndex = barEls.findIndex(
+      (ref) => ref.nativeElement === event.target,
+    );
     if (currentIndex === -1) return;
 
     const idx = this.openIndex();
@@ -422,7 +482,10 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
         break;
       case 'Home':
         event.preventDefault();
-        this.moveActiveOnly(levelIndex, findEnabledItemIndex(level.items, -1, 1) ?? -1);
+        this.moveActiveOnly(
+          levelIndex,
+          findEnabledItemIndex(level.items, -1, 1) ?? -1,
+        );
         break;
       case 'End':
         event.preventDefault();
@@ -484,7 +547,10 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
     }
   }
 
-  private focusBarIndex(index: number | null, barEls: readonly ElementRef<HTMLElement>[]): void {
+  private focusBarIndex(
+    index: number | null,
+    barEls: readonly ElementRef<HTMLElement>[],
+  ): void {
     if (index === null) return;
     this.focusedIndex.set(index);
     barEls[index]?.nativeElement.focus();
@@ -552,7 +618,11 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
       if (item && !item.disabled && item.children?.length) {
         const childItems = item.children;
         const seededActive = findEnabledItemIndex(childItems, -1, 1) ?? -1;
-        next.push({ items: childItems, activeIndex: seededActive, anchorEl: anchor });
+        next.push({
+          items: childItems,
+          activeIndex: seededActive,
+          anchorEl: anchor,
+        });
       }
       return next;
     });
@@ -587,7 +657,9 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.closeAll());
     handle.overlayRef.attach(
-      new TemplatePortal(this.panelTemplate(), this.viewContainerRef, { levelIndex: 0 }),
+      new TemplatePortal(this.panelTemplate(), this.viewContainerRef, {
+        levelIndex: 0,
+      }),
     );
     this.rootHandle = { ...handle, forIndex: idx };
   }

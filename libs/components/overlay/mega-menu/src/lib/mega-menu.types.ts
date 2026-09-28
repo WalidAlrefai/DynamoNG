@@ -6,6 +6,8 @@
  */
 export interface DynamoMegaMenuLink {
   label: string;
+  /** Optional short glyph/text rendered before the label — e.g. a Unicode symbol or emoji. Not connected to `@dynamong/icons` (which only exports one fixed checkmark glyph today, not a general icon-selection system) — same plain-string shape as `@dynamong/menu`'s `DynamoMenuItem.icon`. */
+  icon?: string;
   disabled?: boolean;
   command?: () => void;
 }
@@ -22,6 +24,8 @@ export interface DynamoMegaMenuColumn {
  */
 export interface DynamoMegaMenuItem {
   label: string;
+  /** Optional short glyph/text rendered before the label — e.g. a Unicode symbol or emoji. Not connected to `@dynamong/icons` (which only exports one fixed checkmark glyph today, not a general icon-selection system) — same plain-string shape as `@dynamong/menu`'s `DynamoMenuItem.icon`. */
+  icon?: string;
   disabled?: boolean;
   columns?: DynamoMegaMenuColumn[];
   command?: () => void;

@@ -302,6 +302,74 @@ describe('DynamoChip', () => {
     });
   });
 
+  describe('image avatar', () => {
+    it('renders no img when image is unset', () => {
+      const { container } = renderDynamoComponent(DynamoChip);
+
+      expect(container.querySelector('img')).toBeNull();
+    });
+
+    it('renders an img with the given src when image is set', () => {
+      const { container } = renderDynamoComponent(DynamoChip, {
+        inputs: { image: '/avatars/ada.png' },
+      });
+
+      expect(container.querySelector('img')?.getAttribute('src')).toBe(
+        '/avatars/ada.png',
+      );
+    });
+
+    it('defaults alt to "" (decorative) when imageAlt is unset', () => {
+      const { container } = renderDynamoComponent(DynamoChip, {
+        inputs: { image: '/avatars/ada.png' },
+      });
+
+      expect(container.querySelector('img')?.getAttribute('alt')).toBe('');
+    });
+
+    it('reflects a custom imageAlt', () => {
+      const { container } = renderDynamoComponent(DynamoChip, {
+        inputs: { image: '/avatars/ada.png', imageAlt: 'Ada Lovelace' },
+      });
+
+      expect(container.querySelector('img')?.getAttribute('alt')).toBe(
+        'Ada Lovelace',
+      );
+    });
+
+    it.each(['sm', 'md', 'lg'] as const)(
+      'applies the size "%s" sizing class to the image',
+      (size) => {
+        const { container } = renderDynamoComponent(DynamoChip, {
+          inputs: { image: '/avatars/ada.png', size },
+        });
+
+        const sizeClass = { sm: 'h-4', md: 'h-5', lg: 'h-6' }[size];
+        expect(container.querySelector('img')?.className).toContain(sizeClass);
+      },
+    );
+
+    it('has no axe violations with image set and no imageAlt', async () => {
+      const { fixture } = renderDynamoComponent(DynamoChip, {
+        inputs: { image: '/avatars/ada.png' },
+      });
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations with image and imageAlt both set', async () => {
+      const { fixture } = renderDynamoComponent(DynamoChip, {
+        inputs: { image: '/avatars/ada.png', imageAlt: 'Ada Lovelace' },
+      });
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+  });
+
   describe('harness', () => {
     it('reads text and removability through the DynamoChipHarness', async () => {
       const { fixture } = renderDynamoComponent(ChipTestHostComponent, {

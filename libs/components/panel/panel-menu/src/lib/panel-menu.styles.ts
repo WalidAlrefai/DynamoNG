@@ -44,6 +44,11 @@ export const panelMenuChevronPlaceholderStyles =
 
 export const panelMenuLabelStyles = 'truncate';
 
+// Verbatim copy of @dynamong/menu's own menuItemIconClasses — see this
+// component's item-type doc comment for why icons are a plain string, not
+// wired to @dynamong/icons.
+export const panelMenuItemIconClasses = 'shrink-0';
+
 // The 0fr/1fr CSS grid-rows trick — copied verbatim from Tree's own
 // treeGroupStyles (itself copied from Accordion's content wrapper, then
 // Panel's) — animates from zero to a subtree's intrinsic height without

@@ -16,6 +16,7 @@ import {
   panelMenuGroupInnerStyles,
   panelMenuGroupStyles,
   panelMenuIndentRem,
+  panelMenuItemIconClasses,
   panelMenuLabelStyles,
   panelMenuRowStyles,
 } from './panel-menu.styles';
@@ -52,23 +53,40 @@ export class DynamoPanelMenuNode {
 
   private readonly rowRef = viewChild.required<ElementRef<HTMLElement>>('row');
 
-  protected readonly hasChildren = computed(() => (this.item().children?.length ?? 0) > 0);
-  protected readonly isExpanded = computed(() => this.state.expandedPaths().includes(this.path()));
-  protected readonly isActive = computed(() => this.state.activePath() === this.path());
-  protected readonly groupId = computed(() => `${this.state.rootId()}-group-${this.path()}`);
+  protected readonly hasChildren = computed(
+    () => (this.item().children?.length ?? 0) > 0,
+  );
+  protected readonly isExpanded = computed(() =>
+    this.state.expandedPaths().includes(this.path()),
+  );
+  protected readonly isActive = computed(
+    () => this.state.activePath() === this.path(),
+  );
+  protected readonly groupId = computed(
+    () => `${this.state.rootId()}-group-${this.path()}`,
+  );
 
   protected readonly rowClasses = computed(() =>
-    panelMenuRowStyles({ active: this.isActive(), disabled: this.item().disabled ?? false }),
+    panelMenuRowStyles({
+      active: this.isActive(),
+      disabled: this.item().disabled ?? false,
+    }),
   );
   protected readonly chevronClasses = computed(() =>
     panelMenuChevronStyles({ expanded: this.isExpanded() }),
   );
-  protected readonly groupClasses = computed(() => panelMenuGroupStyles({ expanded: this.isExpanded() }));
-  protected readonly indentRem = computed(() => panelMenuIndentRem(this.depth()));
+  protected readonly groupClasses = computed(() =>
+    panelMenuGroupStyles({ expanded: this.isExpanded() }),
+  );
+  protected readonly indentRem = computed(() =>
+    panelMenuIndentRem(this.depth()),
+  );
 
-  protected readonly chevronPlaceholderClasses = panelMenuChevronPlaceholderStyles;
+  protected readonly chevronPlaceholderClasses =
+    panelMenuChevronPlaceholderStyles;
   protected readonly groupInnerClasses = panelMenuGroupInnerStyles;
   protected readonly labelClasses = panelMenuLabelStyles;
+  protected readonly itemIconClasses = panelMenuItemIconClasses;
 
   constructor() {
     const destroyRef = inject(DestroyRef);

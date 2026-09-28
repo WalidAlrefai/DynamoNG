@@ -83,6 +83,25 @@ export const toastIconStyles = cva('mt-0.5 h-5 w-5 shrink-0', {
   defaultVariants: { severity: 'info' },
 });
 
+// Same h-5 w-5 footprint as toastIconStyles' SVG so swapping in a custom
+// glyph via `icon` doesn't shift the card's layout.
+export const toastCustomIconStyles = cva(
+  'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center text-base leading-none',
+  {
+    variants: {
+      severity: {
+        primary: 'text-primary',
+        secondary: 'text-secondary',
+        success: 'text-success',
+        info: 'text-info',
+        warning: 'text-warning',
+        danger: 'text-danger',
+      },
+    },
+    defaultVariants: { severity: 'info' },
+  },
+);
+
 export const toastTitleStyles = 'font-medium text-text-primary';
 export const toastMessageStyles = 'text-text-muted';
 

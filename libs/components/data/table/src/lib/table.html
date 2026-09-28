@@ -42,7 +42,7 @@
             type="button"
             [class]="sortButtonClasses"
             [disabled]="loading()"
-            (click)="toggleSort(column)"
+            (click)="toggleSort(column, $event)"
           >
             <span>{{ column.header }}</span>
             <svg
@@ -61,6 +61,11 @@
                 stroke-linejoin="round"
               />
             </svg>
+            @if (sortPriorityFor(column.field); as priority) {
+            <span [class]="sortPriorityClasses" aria-hidden="true"
+              >{{ priority }}</span
+            >
+            }
           </button>
           } @else { {{ column.header }} }
         </th>
@@ -215,7 +220,7 @@
             type="button"
             [class]="sortButtonClasses"
             [disabled]="loading()"
-            (click)="toggleSort(column)"
+            (click)="toggleSort(column, $event)"
           >
             <span>{{ column.header }}</span>
             <svg
@@ -234,6 +239,11 @@
                 stroke-linejoin="round"
               />
             </svg>
+            @if (sortPriorityFor(column.field); as priority) {
+            <span [class]="sortPriorityClasses" aria-hidden="true"
+              >{{ priority }}</span
+            >
+            }
           </button>
           } @else { {{ column.header }} }
         </div>

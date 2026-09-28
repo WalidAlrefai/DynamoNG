@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildComparator, compareValues, sortRows } from './table.sort';
+import {
+  buildComparator,
+  compareValues,
+  sortRows,
+  sortRowsMulti,
+} from './table.sort';
 import type { DynamoTableColumn } from './table.types';
 
 interface Row {
@@ -156,5 +161,62 @@ describe('sortRows', () => {
     ];
     const sorted = sortRows(tied, ageColumn, 'asc');
     expect(sorted.map((r) => r.name)).toEqual(['First', 'Second', 'Third']);
+  });
+});
+
+describe('sortRowsMulti', () => {
+  const columns = [nameColumn, ageColumn];
+
+  it('returns the same array reference when descriptors is empty', () => {
+    const rows: Row[] = [row({ name: 'Bea' }), row({ name: 'Ada' })];
+    expect(sortRowsMulti(rows, columns, [])).toBe(rows);
+  });
+
+  it('never mutates the input array', () => {
+    const rows: Row[] = [row({ name: 'Bea' }), row({ name: 'Ada' })];
+    const original = [...rows];
+    sortRowsMulti(rows, columns, [{ field: 'name', direction: 'asc' }]);
+    expect(rows).toEqual(original);
+  });
+
+  it('sorts by the primary key alone when there is only one descriptor', () => {
+    const rows: Row[] = [row({ name: 'Bea' }), row({ name: 'Ada' })];
+    const sorted = sortRowsMulti(rows, columns, [
+      { field: 'name', direction: 'asc' },
+    ]);
+    expect(sorted.map((r) => r.name)).toEqual(['Ada', 'Bea']);
+  });
+
+  it('uses the second descriptor only to break ties left by the first', () => {
+    const rows: Row[] = [
+      row({ name: 'Charlie', age: 30 }),
+      row({ name: 'Ada', age: 30 }),
+      row({ name: 'Bea', age: 20 }),
+    ];
+    const sorted = sortRowsMulti(rows, columns, [
+      { field: 'age', direction: 'asc' },
+      { field: 'name', direction: 'asc' },
+    ]);
+    // Bea (20) sorts first on age alone; Ada/Charlie (both 30) are a tie
+    // broken by name — proves the second key never overrides the first.
+    expect(sorted.map((r) => r.name)).toEqual(['Bea', 'Ada', 'Charlie']);
+  });
+
+  it('skips a descriptor whose field matches no column, without throwing', () => {
+    const rows: Row[] = [row({ name: 'Bea' }), row({ name: 'Ada' })];
+    const sorted = sortRowsMulti(rows, columns, [
+      { field: 'nonexistent', direction: 'asc' },
+      { field: 'name', direction: 'asc' },
+    ]);
+    expect(sorted.map((r) => r.name)).toEqual(['Ada', 'Bea']);
+  });
+
+  it('returns the same array reference when every descriptor is unmatched', () => {
+    const rows: Row[] = [row({ name: 'Bea' }), row({ name: 'Ada' })];
+    expect(
+      sortRowsMulti(rows, columns, [
+        { field: 'nonexistent', direction: 'asc' },
+      ]),
+    ).toBe(rows);
   });
 });

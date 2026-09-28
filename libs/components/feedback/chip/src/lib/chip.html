@@ -1,4 +1,7 @@
 <span [class]="classes()" [attr.data-testid]="'DynamoChip'">
+  @if (image()) {
+  <img [src]="image()" [alt]="imageAlt()" [class]="imageClasses()" />
+  }
   <ng-content select="[icon]" />
   <ng-content />
   @if (removable()) {

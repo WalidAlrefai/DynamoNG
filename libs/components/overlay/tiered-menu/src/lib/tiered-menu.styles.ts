@@ -54,3 +54,8 @@ export const tieredMenuItemStyles = cva(
 // Copied from Cascade Select's cascadeSelectCaretStyles — the same "branch
 // row has children" affordance.
 export const tieredMenuCaretStyles = 'h-4 w-4 shrink-0 text-text-muted';
+
+// Verbatim copy of @dynamong/menu's own menuItemIconClasses — see this
+// component's item-type doc comment for why icons are a plain string, not
+// wired to @dynamong/icons.
+export const tieredMenuItemIconClasses = 'shrink-0';

@@ -79,6 +79,7 @@ const API: ApiTableRow[] = [
         <p class="text-sm text-text-muted">
           <code class="font-mono">DynamoPanelMenuItem</code>:
           <code class="font-mono">label</code> (required),
+          <code class="font-mono">icon?</code> (a plain glyph/emoji string),
           <code class="font-mono">disabled?</code>,
           <code class="font-mono">children?</code>,
           <code class="font-mono">command?</code>.
@@ -98,6 +99,7 @@ export class PanelMenuDocPage {
   protected readonly items: DynamoPanelMenuItem[] = [
     {
       label: 'Getting Started',
+      icon: '🚀',
       children: [
         { label: 'Installation' },
         { label: 'Quick Start' },
@@ -109,6 +111,7 @@ export class PanelMenuDocPage {
     },
     {
       label: 'Components',
+      icon: '🧩',
       children: [{ label: 'Forms' }, { label: 'Overlay' }, { label: 'Data' }],
     },
     {

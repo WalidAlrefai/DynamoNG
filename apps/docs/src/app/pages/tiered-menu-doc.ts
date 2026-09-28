@@ -79,6 +79,7 @@ const API: ApiTableRow[] = [
         <p class="text-sm text-text-muted">
           <code class="font-mono">DynamoTieredMenuItem</code>:
           <code class="font-mono">label</code> (required),
+          <code class="font-mono">icon?</code> (a plain glyph/emoji string),
           <code class="font-mono">disabled?</code>,
           <code class="font-mono">children?</code>,
           <code class="font-mono">command?</code>.
@@ -94,6 +95,7 @@ export class TieredMenuDocPage {
   protected readonly items: DynamoTieredMenuItem[] = [
     {
       label: 'New',
+      icon: '📄',
       children: [
         { label: 'Document' },
         { label: 'Spreadsheet' },
@@ -101,7 +103,7 @@ export class TieredMenuDocPage {
       ],
     },
     { label: 'Export', children: [{ label: 'PDF' }, { label: 'CSV' }] },
-    { label: 'Print' },
+    { label: 'Print', icon: '🖨️' },
     { label: 'Share', disabled: true },
   ];
 }

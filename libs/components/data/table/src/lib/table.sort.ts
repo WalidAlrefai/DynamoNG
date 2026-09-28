@@ -69,3 +69,36 @@ export function sortRows<TRow>(
   if (!column || !direction) return rows;
   return [...rows].sort(buildComparator(column, direction));
 }
+
+export interface DynamoTableSortDescriptor {
+  field: string;
+  direction: DynamoTableSortDirection;
+}
+
+/**
+ * Chains per-key comparators in priority order — `descriptors[0]` is
+ * primary, each later descriptor only breaks ties left by the ones before
+ * it. A descriptor whose field no longer matches any column (e.g. removed
+ * after being sorted) is silently skipped, the same permissiveness
+ * `sortedData`'s own column lookup already has for single-column sort.
+ */
+export function sortRowsMulti<TRow>(
+  rows: readonly TRow[],
+  columns: readonly DynamoTableColumn<TRow>[],
+  descriptors: readonly DynamoTableSortDescriptor[],
+): readonly TRow[] {
+  const comparators = descriptors
+    .map((d) => {
+      const column = columns.find((c) => c.field === d.field);
+      return column ? buildComparator(column, d.direction) : null;
+    })
+    .filter((cmp): cmp is (a: TRow, b: TRow) => number => cmp !== null);
+  if (comparators.length === 0) return rows;
+  return [...rows].sort((a, b) => {
+    for (const cmp of comparators) {
+      const result = cmp(a, b);
+      if (result !== 0) return result;
+    }
+    return 0;
+  });
+}

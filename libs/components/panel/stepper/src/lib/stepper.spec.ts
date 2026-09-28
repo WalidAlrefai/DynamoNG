@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { DynamoStep } from './step';
 import { DynamoStepper } from './stepper';
 import { DynamoStepperHarness } from './stepper.harness';
+import type { DynamoStepperOrientation } from './stepper.types';
 
 @Component({
   selector: 'dg-stepper-test-host',
@@ -19,6 +20,7 @@ import { DynamoStepperHarness } from './stepper.harness';
     <dg-stepper
       [(value)]="active"
       [linear]="linear()"
+      [orientation]="orientation()"
       ariaLabel="Checkout"
       (finish)="finished.set(true)"
     >
@@ -43,6 +45,7 @@ class StepperTestHostComponent {
   readonly preferencesDisabled = signal(false);
   readonly finished = signal(false);
   readonly linear = signal(true);
+  readonly orientation = signal<DynamoStepperOrientation>('horizontal');
 }
 
 @Component({
@@ -363,6 +366,73 @@ describe('DynamoStepper', () => {
         StepperTestHostComponent,
       );
       fixture.componentInstance.preferencesDisabled.set(true);
+      fixture.detectChanges();
+      await userEvent.click(stepButton(container, 'Next'));
+      fixture.detectChanges();
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('orientation="vertical"', () => {
+    it("renders each step's own panel inside that step's own list item, not in a separate trailing block", async () => {
+      const { container, fixture } = renderDynamoComponent(
+        StepperTestHostComponent,
+      );
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.detectChanges();
+      await userEvent.click(stepButton(container, 'Next')); // mounts the preferences panel
+
+      const marker = container.querySelector(
+        '[data-testid="preferences-marker"]',
+      );
+      const preferencesButton = stepButton(container, 'Preferences');
+      expect(marker?.closest('li')).toBe(preferencesButton.closest('li'));
+    });
+
+    it('only shows the active step panel (others stay [hidden]), same lazy-mount semantics as horizontal', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        StepperTestHostComponent,
+      );
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.detectChanges();
+
+      expect(container.textContent).not.toContain('Preferences content');
+
+      await userEvent.click(stepButton(container, 'Next'));
+
+      const accountPanel = container.querySelector(
+        '[data-testid="account-marker"]',
+      )?.parentElement;
+      const preferencesPanel = container.querySelector(
+        '[data-testid="preferences-marker"]',
+      )?.parentElement;
+      expect(accountPanel?.hasAttribute('hidden')).toBe(true);
+      expect(preferencesPanel?.hasAttribute('hidden')).toBe(false);
+    });
+
+    it('moves focus with ArrowDown/ArrowUp the same way ArrowRight/ArrowLeft do', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        StepperTestHostComponent,
+      );
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.detectChanges();
+      stepButton(container, 'Account').focus();
+
+      await userEvent.keyboard('{ArrowDown}');
+      expect(document.activeElement).toBe(stepButton(container, 'Preferences'));
+
+      await userEvent.keyboard('{ArrowUp}');
+      expect(document.activeElement).toBe(stepButton(container, 'Account'));
+    });
+
+    it('has no axe violations', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        StepperTestHostComponent,
+      );
+      fixture.componentInstance.orientation.set('vertical');
       fixture.detectChanges();
       await userEvent.click(stepButton(container, 'Next'));
       fixture.detectChanges();

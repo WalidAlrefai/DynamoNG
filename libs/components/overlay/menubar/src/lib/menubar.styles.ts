@@ -87,3 +87,8 @@ export const menubarRowStyles = cva(
 // Copied from Tiered Menu's tieredMenuCaretStyles — the same "branch row has
 // children" affordance, for nested flyout rows within an open dropdown.
 export const menubarCaretStyles = 'h-4 w-4 shrink-0 text-text-muted';
+
+// Verbatim copy of @dynamong/menu's own menuItemIconClasses — see this
+// component's item-type doc comment for why icons are a plain string, not
+// wired to @dynamong/icons.
+export const menubarItemIconClasses = 'shrink-0';

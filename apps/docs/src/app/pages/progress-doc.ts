@@ -10,6 +10,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'severity-size', title: 'Severity & Size' },
+  { id: 'show-value', title: 'Show Value' },
   { id: 'indeterminate', title: 'Indeterminate' },
   { id: 'color', title: 'Custom Color' },
 ];
@@ -25,6 +26,7 @@ const API: ApiTableRow[] = [
   { name: 'ariaLabel', type: 'string | undefined', default: "'Progress'" },
   { name: 'indeterminate', type: 'boolean', default: 'false' },
   { name: 'color', type: 'string | undefined', default: 'undefined' },
+  { name: 'showValue', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -69,6 +71,17 @@ const API: ApiTableRow[] = [
           &lt;dg-progress [value]="60" severity="success" /&gt; &lt;dg-progress
           [value]="90" severity="warning" size="lg" /&gt;
         </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="show-value"
+        title="Show Value"
+        description="showValue renders the current percentage as a trailing label next to the bar."
+      >
+        <div preview>
+          <dg-progress [value]="72" [showValue]="true" ariaLabel="Progress" />
+        </div>
+        <div code>&lt;dg-progress [value]="72" [showValue]="true" /&gt;</div>
       </docs-example>
 
       <docs-example

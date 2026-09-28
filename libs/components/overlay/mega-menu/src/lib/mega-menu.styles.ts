@@ -53,6 +53,11 @@ export const megaMenuItemStyles = cva(
   },
 );
 
+// Verbatim copy of @dynamong/menu's own menuItemIconClasses — see this
+// component's item-type doc comment for why icons are a plain string, not
+// wired to @dynamong/icons.
+export const megaMenuItemIconClasses = 'shrink-0';
+
 export const megaMenuChevronStyles = cva(
   'shrink-0 transition-transform duration-200 ease-out',
   {
@@ -85,3 +90,12 @@ export const megaMenuLinkStyles = cva(
     defaultVariants: { active: false, disabled: false },
   },
 );
+
+// A link's own icon+label wrapper, nested INSIDE the `block` `megaMenuLinkStyles`
+// div above rather than making that div itself `flex` — a link with no icon
+// renders exactly one child (the label text) here, so this single-item flex
+// row wraps/sizes its text identically to the old bare interpolation; only a
+// link WITH an icon gets the side-by-side layout. Keeps every existing,
+// icon-less link's rendering byte-for-byte unchanged.
+export const megaMenuLinkContentStyles = 'flex items-center gap-1.5';
+export const megaMenuLinkIconClasses = 'shrink-0';

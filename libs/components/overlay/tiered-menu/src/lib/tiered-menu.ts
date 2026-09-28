@@ -27,6 +27,7 @@ import { buildFlyoutPositions } from './tiered-menu.positioning';
 import {
   tieredMenuCaretStyles,
   tieredMenuChevronStyles,
+  tieredMenuItemIconClasses,
   tieredMenuItemStyles,
   tieredMenuPanelStyles,
   tieredMenuTriggerStyles,
@@ -204,6 +205,7 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
   );
   protected readonly panelClasses = tieredMenuPanelStyles;
   protected readonly caretClasses = tieredMenuCaretStyles;
+  protected readonly itemIconClasses = tieredMenuItemIconClasses;
 
   constructor() {
     super();

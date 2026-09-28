@@ -34,6 +34,7 @@ const MANY_ROWS: DocEmployee[] = Array.from({ length: 5000 }, (_, i) => ({
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'sort-filter-select', title: 'Sort, Filter, Select' },
+  { id: 'multi-sort', title: 'Multi-Column Sort' },
   { id: 'expandable-rows', title: 'Expandable Rows' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
 ];
@@ -62,6 +63,7 @@ const API: ApiTableRow[] = [
   { name: 'page', type: 'number (model, 1-indexed)', default: '1' },
   { name: 'selectable', type: 'boolean', default: 'false' },
   { name: 'selected', type: 'TRow[] (model)', default: '[]' },
+  { name: 'sortMode', type: "'single' | 'multiple'", default: "'single'" },
   { name: 'filterable', type: 'boolean', default: 'false' },
   { name: 'filterText', type: 'string (model)', default: "''" },
   { name: 'virtualScroll', type: 'boolean', default: 'false' },
@@ -102,6 +104,25 @@ const API: ApiTableRow[] = [
           &lt;dg-table [columns]="columns" [data]="rows" [pageSize]="2"
           [(page)]="page" [selectable]="true" [(selected)]="selected"
           [filterable]="true" [(filterText)]="filterText" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="multi-sort"
+        title="Multi-Column Sort"
+        description='sortMode="multiple" — click a column to sort by it alone; shift-click a different column to add it as a secondary key. Try clicking Status, then shift-clicking Name to break ties between the two "Active" rows.'
+      >
+        <div preview>
+          <dg-table
+            [columns]="columns"
+            [data]="rows"
+            ariaLabel="Employees (multi-sort)"
+            sortMode="multiple"
+          />
+        </div>
+        <div code>
+          &lt;dg-table [columns]="columns" [data]="rows" sortMode="multiple"
+          /&gt;
         </div>
       </docs-example>
 

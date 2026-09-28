@@ -12,8 +12,21 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'removable', title: 'Removable' },
   { id: 'icon', title: 'Icon' },
+  { id: 'image', title: 'Image' },
   { id: 'disabled', title: 'Disabled' },
 ];
+
+// A self-contained placeholder avatar (no network dependency) — a simple
+// initial-on-a-circle SVG, encoded as a data URI.
+const PLACEHOLDER_AVATAR =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+      '<circle cx="12" cy="12" r="12" fill="#6366f1" />' +
+      '<text x="12" y="16" font-size="12" font-family="sans-serif" ' +
+      'fill="white" text-anchor="middle">A</text>' +
+      '</svg>',
+  );
 
 const API: ApiTableRow[] = [
   {
@@ -26,6 +39,8 @@ const API: ApiTableRow[] = [
   { name: 'removable', type: 'boolean', default: 'false' },
   { name: 'removeAriaLabel', type: 'string', default: "'Remove'" },
   { name: 'disabled', type: 'boolean', default: 'false' },
+  { name: 'image', type: 'string | undefined', default: 'undefined' },
+  { name: 'imageAlt', type: 'string', default: "''" },
 ];
 
 @Component({
@@ -90,6 +105,22 @@ const API: ApiTableRow[] = [
       </docs-example>
 
       <docs-example
+        exampleId="image"
+        title="Image"
+        description="image renders a small, pre-styled circular avatar ahead of the label — a dedicated leading visual distinct from the generic [icon] slot."
+      >
+        <div preview class="flex flex-wrap items-center gap-2">
+          <dg-chip severity="secondary" [image]="avatarUrl"
+            >Ada Lovelace</dg-chip
+          >
+        </div>
+        <div code>
+          &lt;dg-chip [image]="user.photoUrl"&gt;{{ '{{' }} user.name {{ '}}'
+          }}&lt;/dg-chip&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="disabled"
         title="Disabled"
         description="disabled dims the chip and disables the remove button."
@@ -112,4 +143,5 @@ const API: ApiTableRow[] = [
 export class ChipDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows = API;
+  protected readonly avatarUrl = PLACEHOLDER_AVATAR;
 }

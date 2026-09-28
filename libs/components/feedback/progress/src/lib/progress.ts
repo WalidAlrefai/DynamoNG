@@ -7,7 +7,11 @@ import {
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import type { DynamoSeverity, DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
-import { progressFillStyles, progressTrackStyles } from './progress.styles';
+import {
+  progressFillStyles,
+  progressTrackStyles,
+  progressValueLabelStyles,
+} from './progress.styles';
 import type { DynamoProgressPart } from './progress.types';
 
 @Component({
@@ -25,6 +29,9 @@ export class DynamoProgress extends DynamoBaseComponent<DynamoProgressPart> {
   readonly indeterminate = input(false);
   /** Explicit CSS color for the fill — overrides `severity` when set, mirroring `DynamoMeterItem.color`. */
   readonly color = input<string | undefined>(undefined);
+  /** Renders the current percentage as a trailing label next to the bar.
+   *  Ignored when `indeterminate` is true (there's no numeric value to show). */
+  readonly showValue = input(false);
 
   /**
    * Single source of truth for both the ARIA attrs and the fill's width —
@@ -49,5 +56,8 @@ export class DynamoProgress extends DynamoBaseComponent<DynamoProgressPart> {
       severity: this.color() ? 'none' : this.severity(),
       indeterminate: this.indeterminate(),
     }),
+  );
+  protected readonly valueLabelClasses = computed(() =>
+    progressValueLabelStyles({ size: this.size() }),
   );
 }

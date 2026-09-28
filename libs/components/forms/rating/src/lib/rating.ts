@@ -70,6 +70,12 @@ export class DynamoRating
   protected readonly displayValue = computed(
     () => this.hoverValue() ?? this.value(),
   );
+  /** Announced in place of the raw number, e.g. "3.5 out of 5 stars" — tracks
+   *  the same displayValue as aria-valuenow so hover preview and committed
+   *  value are never announced inconsistently with each other. */
+  protected readonly valueText = computed(
+    () => `${this.displayValue()} out of ${this.max()} stars`,
+  );
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()

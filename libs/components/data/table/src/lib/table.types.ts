@@ -3,6 +3,7 @@ import type { DynamoSize } from '@dynamong/core/api';
 
 export type DynamoTableSize = DynamoSize;
 export type DynamoTablePart = 'root';
+export type DynamoTableSortMode = 'single' | 'multiple';
 
 /** `'multiple'` lets any number of rows stay expanded; `'single'` is accordion-style (expanding one collapses the others). */
 export type DynamoTableExpandMode = 'multiple' | 'single';

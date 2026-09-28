@@ -6,11 +6,14 @@ import {
   renderDynamoComponent,
 } from '@dynamong/testing';
 import { fireEvent, within } from '@testing-library/dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DynamoSplitter } from './splitter';
 import { DynamoSplitterPanel } from './splitter-panel';
 import { DynamoSplitterHarness } from './splitter.harness';
-import type { DynamoSplitterOrientation } from './splitter.types';
+import type {
+  DynamoSplitterOrientation,
+  DynamoSplitterStateStorage,
+} from './splitter.types';
 
 function separator(container: HTMLElement, index = 0): HTMLElement {
   const el = within(container).getAllByRole('separator')[index];
@@ -104,6 +107,26 @@ class SplitterSinglePanelHostComponent {}
   `,
 })
 class SplitterInitialSizeHostComponent {}
+
+@Component({
+  selector: 'dg-splitter-state-key-host',
+  standalone: true,
+  imports: [DynamoSplitter, DynamoSplitterPanel],
+  template: `
+    <dg-splitter [stateKey]="stateKey()" [stateStorage]="stateStorage()">
+      <dg-splitter-panel>
+        <p>A</p>
+      </dg-splitter-panel>
+      <dg-splitter-panel>
+        <p>B</p>
+      </dg-splitter-panel>
+    </dg-splitter>
+  `,
+})
+class SplitterStateKeyHostComponent {
+  readonly stateKey = signal<string | undefined>('test-splitter');
+  readonly stateStorage = signal<DynamoSplitterStateStorage>('session');
+}
 
 describe('DynamoSplitter', () => {
   describe('creation', () => {
@@ -487,6 +510,128 @@ describe('DynamoSplitter', () => {
 
       expect(within(container).getByTestId('only-panel')).toBeTruthy();
       expect(within(container).queryAllByRole('separator')).toHaveLength(0);
+    });
+  });
+
+  describe('stateKey', () => {
+    // jsdom's localStorage/sessionStorage persist across tests in the same
+    // file otherwise.
+    beforeEach(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+    afterEach(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+
+    it('does not touch storage when stateKey is unset (regression)', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      mockContainerRect(container, 300, 0);
+      const divider = separator(container, 0);
+      fireEvent.pointerDown(divider, { clientX: 100 });
+      fireEvent.pointerMove(divider, { clientX: 130 });
+      fireEvent.pointerUp(divider);
+      fixture.detectChanges();
+
+      expect(localStorage.length).toBe(0);
+      expect(sessionStorage.length).toBe(0);
+    });
+
+    it('restores sizes from storage on mount instead of the default even split', () => {
+      sessionStorage.setItem('test-splitter', JSON.stringify([20, 80]));
+
+      const { container } = renderDynamoComponent(
+        SplitterStateKeyHostComponent,
+      );
+
+      const divider = within(container).getByRole('separator');
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(20, 1);
+    });
+
+    it.each([
+      ['missing key', undefined],
+      ['malformed JSON', 'not-json'],
+      [
+        'wrong length (stale, saved with a different panel count)',
+        JSON.stringify([10, 20, 70]),
+      ],
+      ['non-finite values', JSON.stringify([Number.NaN, 100])],
+    ])(
+      'falls back to the default even split when the stored value is %s',
+      (_label, stored) => {
+        if (stored !== undefined) {
+          sessionStorage.setItem('test-splitter', stored);
+        }
+
+        const { container } = renderDynamoComponent(
+          SplitterStateKeyHostComponent,
+        );
+
+        const divider = within(container).getByRole('separator');
+        expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+          50,
+          1,
+        );
+      },
+    );
+
+    it('persists sizes to sessionStorage after a pointer drag completes', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterStateKeyHostComponent,
+      );
+      mockContainerRect(container, 300, 0);
+      const divider = within(container).getByRole('separator');
+
+      fireEvent.pointerDown(divider, { clientX: 100 });
+      fireEvent.pointerMove(divider, { clientX: 130 });
+      fireEvent.pointerUp(divider);
+      fixture.detectChanges();
+
+      const saved = JSON.parse(sessionStorage.getItem('test-splitter') ?? '[]');
+      expect(saved[0]).toBeCloseTo(60, 1);
+      expect(localStorage.length).toBe(0);
+    });
+
+    it('persists to localStorage instead when stateStorage is "local"', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterStateKeyHostComponent,
+      );
+      fixture.componentInstance.stateStorage.set('local');
+      fixture.detectChanges();
+      mockContainerRect(container, 300, 0);
+      const divider = within(container).getByRole('separator');
+
+      fireEvent.pointerDown(divider, { clientX: 100 });
+      fireEvent.pointerMove(divider, { clientX: 130 });
+      fireEvent.pointerUp(divider);
+      fixture.detectChanges();
+
+      expect(localStorage.getItem('test-splitter')).not.toBeNull();
+      expect(sessionStorage.length).toBe(0);
+    });
+
+    it('persists sizes after a keyboard resize completes', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterStateKeyHostComponent,
+      );
+      const divider = within(container).getByRole('separator');
+      divider.focus();
+
+      fireEvent.keyDown(divider, { key: 'End' });
+      fixture.detectChanges();
+
+      const saved = JSON.parse(sessionStorage.getItem('test-splitter') ?? '[]');
+      expect(saved[0]).toBeCloseTo(100, 1);
+    });
+
+    it('has no axe violations with stateKey set', async () => {
+      const { container } = renderDynamoComponent(
+        SplitterStateKeyHostComponent,
+      );
+      await expectNoA11yViolations(container);
     });
   });
 });

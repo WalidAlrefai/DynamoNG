@@ -11,6 +11,7 @@ import {
   toastCardStyles,
   toastCloseButtonStyles,
   toastContainerStyles,
+  toastCustomIconStyles,
   toastIconStyles,
   toastMessageStyles,
   toastTitleStyles,
@@ -62,6 +63,10 @@ export class DynamoToastContainer {
 
   protected iconClasses(severity: DynamoSeverity) {
     return toastIconStyles({ severity });
+  }
+
+  protected customIconClasses(severity: DynamoSeverity) {
+    return toastCustomIconStyles({ severity });
   }
 
   protected dismiss(id: string): void {

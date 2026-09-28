@@ -39,6 +39,7 @@ protected readonly selectedDate = signal<Date | null>(null);
 | `showTime`      | `boolean`                         | `false`           | Renders hour/minute (and, with `showSeconds`, second) steppers below the calendar — see Time picker.                                                                                                                                                                          |
 | `hourFormat`    | `'12' \| '24'`                    | `'24'`            | `'12'` also renders an AM/PM toggle button next to the steppers.                                                                                                                                                                                                              |
 | `showSeconds`   | `boolean`                         | `false`           | Also renders a seconds stepper. Ignored (seconds always zeroed on commit) while `false`, even with `showTime` on.                                                                                                                                                             |
+| `showButtonBar` | `boolean`                         | `false`           | Adds a Today/Clear footer below the calendar — see Button bar.                                                                                                                                                                                                                |
 | `value`         | `Date \| null` (model)            | `null`            | Two-way bindable; also driven by Angular forms via `writeValue`.                                                                                                                                                                                                              |
 | `disabled`      | `boolean` (model)                 | `false`           | Also driven by Angular forms via `setDisabledState`.                                                                                                                                                                                                                          |
 | `open`          | `boolean` (model)                 | `false`           | Two-way bindable: `<dg-date-picker [(open)]="isOpen">`.                                                                                                                                                                                                                       |
@@ -71,6 +72,16 @@ not the previous hour) — the same "small, independent, no big rollover machine
 time picker. Opening the panel seeds the steppers from the current `value`'s hours/minutes/seconds, or from
 the current wall-clock time when there's no value yet. `inline` mode renders the steppers with no Apply
 button (there's no popup to close).
+
+## Button bar
+
+`showButtonBar` adds a Today/Clear footer below the calendar. **Today** jumps to and selects today's
+date (clamped to `min`/`max`, blocked by `readOnly` or a disabled day, same as clicking any other day
+cell). **Clear** clears the current value and, unlike selecting a day, leaves the panel open — the
+same behavior as the trigger's own `clearable` × button, which this reuses directly. When combined
+with `showTime` (non-`inline`), the button bar renders as its own bordered row above the time
+steppers/Apply footer, rather than merging into one row — kept as two simple, independent footers
+instead of restructuring the existing Apply-button layout.
 
 ## Accessibility
 

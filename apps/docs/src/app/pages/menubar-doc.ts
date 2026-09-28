@@ -61,8 +61,9 @@ const API: ApiTableRow[] = [
         </div>
         <div code>
           &lt;dg-menubar [items]="items" ariaLabel="Example"
-          (itemSelect)="onSelect($event)"&gt; &lt;span start&gt;Acme&lt;/span&gt;
-          &lt;dg-input-text end placeholder="Search…" /&gt; &lt;/dg-menubar&gt;
+          (itemSelect)="onSelect($event)"&gt; &lt;span
+          start&gt;Acme&lt;/span&gt; &lt;dg-input-text end placeholder="Search…"
+          /&gt; &lt;/dg-menubar&gt;
         </div>
       </docs-example>
 
@@ -71,6 +72,7 @@ const API: ApiTableRow[] = [
         <p class="text-sm text-text-muted">
           <code class="font-mono">DynamoMenubarItem</code>:
           <code class="font-mono">label</code> (required),
+          <code class="font-mono">icon?</code> (a plain glyph/emoji string),
           <code class="font-mono">disabled?</code>,
           <code class="font-mono">children?</code> (nested items),
           <code class="font-mono">command?</code>. A top-level item with no
@@ -90,6 +92,7 @@ export class MenubarDocPage {
   protected readonly items: DynamoMenubarItem[] = [
     {
       label: 'File',
+      icon: '📁',
       children: [
         {
           label: 'New',
@@ -106,6 +109,7 @@ export class MenubarDocPage {
     },
     {
       label: 'Edit',
+      icon: '✏️',
       children: [
         { label: 'Undo' },
         { label: 'Redo' },
@@ -122,6 +126,6 @@ export class MenubarDocPage {
         { label: 'Fullscreen' },
       ],
     },
-    { label: 'Help' },
+    { label: 'Help', icon: '❓' },
   ];
 }

@@ -16,6 +16,10 @@ import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoSplitterPanel } from './splitter-panel';
 import {
+  readSplitterSizes,
+  writeSplitterSizes,
+} from './splitter-state-storage';
+import {
   splitterDividerStyles,
   splitterPanelStyles,
   splitterRootStyles,
@@ -23,6 +27,7 @@ import {
 import type {
   DynamoSplitterOrientation,
   DynamoSplitterPart,
+  DynamoSplitterStateStorage,
 } from './splitter.types';
 
 interface DragState {
@@ -46,6 +51,14 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
   readonly step = input(5);
   /** Fires with the full sizes array once a drag or keyboard resize completes. */
   readonly resizeEnd = output<number[]>();
+  /** Opt-in — when set, panel sizes are saved to browser storage under this
+   *  key whenever a resize completes, and restored on mount instead of the
+   *  normal initialSize-driven distribution. `undefined` by default, so
+   *  every existing splitter is unaffected. */
+  readonly stateKey = input<string | undefined>(undefined);
+  /** Which storage to persist to — only consulted while `stateKey` is set.
+   *  Matches PrimeNG's own Splitter default. */
+  readonly stateStorage = input<DynamoSplitterStateStorage>('session');
 
   protected readonly panels = contentChildren(DynamoSplitterPanel);
   private readonly containerRef =
@@ -76,8 +89,21 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
     super();
     effect(() => {
       const panels = this.panels();
-      untracked(() => this.sizes.set(this.computeInitialSizes(panels)));
+      const key = this.stateKey();
+      const storageKind = this.stateStorage();
+      untracked(() => {
+        const restored = key
+          ? readSplitterSizes(key, storageKind, panels.length)
+          : null;
+        this.sizes.set(restored ?? this.computeInitialSizes(panels));
+      });
     });
+  }
+
+  private persistSizes(): void {
+    const key = this.stateKey();
+    if (!key) return;
+    writeSplitterSizes(key, this.stateStorage(), this.sizes());
   }
 
   private computeInitialSizes(
@@ -167,6 +193,7 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
     if (this.dragStart) {
       this.dragStart = null;
       this.resizeEnd.emit(this.sizes());
+      this.persistSizes();
     }
   }
 
@@ -206,6 +233,7 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
     const sizes = this.sizes();
     this.applyDelta(index, delta, [sizes[index] ?? 0, sizes[index + 1] ?? 0]);
     this.resizeEnd.emit(this.sizes());
+    this.persistSizes();
   }
 
   // Clamps so neither adjacent panel goes below its own minSize; the pair's

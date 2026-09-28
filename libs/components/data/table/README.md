@@ -33,6 +33,7 @@ protected onItemSelect(row: Person): void { ... }
 | ----------------------- | -------------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `columns`               | `DynamoTableColumn<TRow>[]` (required)                   | —                    |                                                                                                                                                                                                                              |
 | `data`                  | `readonly TRow[]` (required)                             | —                    |                                                                                                                                                                                                                              |
+| `sortMode`              | `'single' \| 'multiple'`                                 | `'single'`           | `'multiple'` lets a shift-click add/cycle a column as an extra sort key without clearing the others; a plain click always still collapses to a single key, in either mode.                                                   |
 | `size`                  | `DynamoTableSize`                                        | `'md'`               |                                                                                                                                                                                                                              |
 | `emptyMessage`          | `string`                                                 | `'No data'`          |                                                                                                                                                                                                                              |
 | `loading`               | `boolean`                                                | `false`              | Renders a spinner + message in the empty-state slot and makes sorting, selection, filtering, and pagination non-interactive. A non-empty table shows no dimming/overlay while loading — only `aria-busy` on the root reacts. |
@@ -71,6 +72,15 @@ protected onItemSelect(row: Person): void { ... }
 - `aria-busy` on the root wrapper reflects `loading`.
 
 ## Design notes
+
+**Multi-column sort.** `sortMode="multiple"` doesn't change how a plain click behaves — it still collapses to
+a single sort key, cycling ascending -> descending -> unsorted, exactly like `sortMode="single"`. Shift-click
+a _different_ sortable column to add it as a secondary (or tertiary, ...) key instead, without disturbing the
+columns already active; shift-clicking an already-active key cycles its own direction, and shift-clicking it
+past descending removes just that one key. Later keys only ever break ties left by earlier ones — they never
+override a decisive earlier comparison. Once 2+ keys are active, each sorted header shows a small numbered
+badge (1, 2, ...) next to its sort icon indicating priority; a single active key never shows one, matching
+`sortMode="single"`'s own header exactly.
 
 **Row expansion.** Pass a `TemplateRef` (obtained the same way as a column's `cellTemplate`) as `expansionTemplate`; it gets the `{ $implicit, row, index }` context. Each row gets a chevron `<button>` with `aria-expanded`/`aria-controls`, and the detail renders in a second `<tr>` spanning every column. Expansion is keyed by row identity (`trackBy` or reference), so it survives sorting, filtering and paging. It is not available with `virtualScroll` (that grid has no detail-row slot).
 

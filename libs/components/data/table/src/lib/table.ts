@@ -19,7 +19,11 @@ import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { cn } from '@dynamong/utils/class-merge';
 import { filterRows } from './table.filter';
-import { sortRows, type DynamoTableSortDirection } from './table.sort';
+import {
+  sortRowsMulti,
+  type DynamoTableSortDescriptor,
+  type DynamoTableSortDirection,
+} from './table.sort';
 import {
   tableBodyCellStyles,
   tableBodyRowStyles,
@@ -36,6 +40,7 @@ import {
   tableSelectionCellStyles,
   tableSortButtonStyles,
   tableSortIconStyles,
+  tableSortPriorityStyles,
   tableStyles,
   tableVirtualBodyRowStyles,
   tableVirtualHeaderRowStyles,
@@ -48,6 +53,7 @@ import type {
   DynamoTableExpandMode,
   DynamoTablePart,
   DynamoTableSize,
+  DynamoTableSortMode,
 } from './table.types';
 
 @Component({
@@ -195,11 +201,16 @@ export class DynamoTable<TRow = unknown>
   /** Viewport height in px when virtualized. */
   readonly virtualScrollHeight = input(400);
 
-  /** Sole source of truth for the active sort — mirrors DatePicker's single-signal pattern. */
-  protected readonly sortState = signal<{
-    field: string;
-    direction: DynamoTableSortDirection;
-  } | null>(null);
+  /** `'single'` (default) is today's click-cycle: a plain click always
+   *  collapses to just that column. `'multiple'` additionally lets a
+   *  shift-click add/cycle a column as an extra sort key without
+   *  disturbing the others — see `toggleSort`. */
+  readonly sortMode = input<DynamoTableSortMode>('single');
+
+  /** Sole source of truth for the active sort. Always an array — empty
+   *  means unsorted, one entry is single-sort (byte-for-byte today's
+   *  behavior), 2+ entries is multi-sort (`sortMode="multiple"` only). */
+  protected readonly sortState = signal<DynamoTableSortDescriptor[]>([]);
 
   /**
    * New pipeline stage, inserted BEFORE sorting: `data()` -> here ->
@@ -215,14 +226,13 @@ export class DynamoTable<TRow = unknown>
     ),
   );
 
-  /** Sorts the FILTERED set (`filteredData()`), not raw `data()` — see `filteredData` above. */
-  protected readonly sortedData = computed(() => {
-    const state = this.sortState();
-    const column = state
-      ? this.columns().find((c) => c.field === state.field)
-      : undefined;
-    return sortRows(this.filteredData(), column, state?.direction ?? null);
-  });
+  /** Sorts the FILTERED set (`filteredData()`), not raw `data()` — see
+   *  `filteredData` above. `sortRowsMulti` handles single-sort identically
+   *  to before — a one-descriptor array is just a primary key with no
+   *  tiebreakers. */
+  protected readonly sortedData = computed(() =>
+    sortRowsMulti(this.filteredData(), this.columns(), this.sortState()),
+  );
 
   /**
    * Always >= 1, even for zero rows — see `currentPage`'s doc for why this
@@ -292,6 +302,7 @@ export class DynamoTable<TRow = unknown>
   protected readonly tableClasses = tableStyles;
   protected readonly headerRowClasses = tableHeaderRowStyles;
   protected readonly sortButtonClasses = tableSortButtonStyles;
+  protected readonly sortPriorityClasses = tableSortPriorityStyles;
   protected readonly emptyCellClasses = tableEmptyCellStyles;
   protected readonly paginationWrapperClasses = tablePaginationWrapperStyles;
   protected readonly filterWrapperClasses = tableFilterWrapperStyles;
@@ -404,35 +415,63 @@ export class DynamoTable<TRow = unknown>
   }
 
   protected sortDirectionFor(field: string): DynamoTableSortDirection | 'none' {
-    const state = this.sortState();
-    return state?.field === field ? state.direction : 'none';
+    return this.sortState().find((s) => s.field === field)?.direction ?? 'none';
   }
 
   protected ariaSortFor(field: string): 'ascending' | 'descending' | null {
-    const state = this.sortState();
-    if (state?.field !== field) return null;
+    const state = this.sortState().find((s) => s.field === field);
+    if (!state) return null;
     return state.direction === 'asc' ? 'ascending' : 'descending';
   }
 
+  /** 1-indexed sort priority for the header badge; `null` when this column
+   *  isn't sorted, or when only one key is active (a lone "1" badge would
+   *  be visual noise single-sort mode already doesn't have). */
+  protected sortPriorityFor(field: string): number | null {
+    if (this.sortState().length < 2) return null;
+    const index = this.sortState().findIndex((s) => s.field === field);
+    return index === -1 ? null : index + 1;
+  }
+
   /**
-   * Click cycle: unsorted -> ascending -> descending -> unsorted. Clicking
-   * a *different* sortable column always jumps straight to ascending on
-   * the new column — single-column sort only, no memory of the previously
-   * sorted column. Also resets to page 1: changing sort order without
+   * Plain click: unsorted -> ascending -> descending -> unsorted, always
+   * collapsing to just this column regardless of how many other keys were
+   * active — single-column sort behavior, unchanged from before
+   * `sortMode` existed. Shift-click while `sortMode="multiple"` instead
+   * adds/cycles this column as an EXTRA key, leaving the others' order and
+   * direction untouched, cycling asc -> desc -> removed for that key
+   * alone. Also resets to page 1 either way: changing sort order without
    * returning to page 1 would leave a paginated table showing a
    * disorienting mid-list slice under the new order. Table owns this
    * reset directly (a plain `page.set(1)` inside a method it already
    * calls on click) rather than needing an `effect()`. Unaffected by
    * filtering: this operates on `columns()`, not row data.
    */
-  protected toggleSort(column: DynamoTableColumn<TRow>): void {
+  protected toggleSort(
+    column: DynamoTableColumn<TRow>,
+    event?: MouseEvent,
+  ): void {
     if (this.isBusy() || !column.sortable) return;
+    const additive = this.sortMode() === 'multiple' && !!event?.shiftKey;
     this.sortState.update((state) => {
-      if (state?.field !== column.field)
-        return { field: column.field, direction: 'asc' };
-      if (state.direction === 'asc')
-        return { field: column.field, direction: 'desc' };
-      return null;
+      const existingIndex = state.findIndex((s) => s.field === column.field);
+      const existing = existingIndex === -1 ? null : state[existingIndex];
+
+      if (!additive) {
+        if (!existing) return [{ field: column.field, direction: 'asc' }];
+        if (existing.direction === 'asc')
+          return [{ field: column.field, direction: 'desc' }];
+        return [];
+      }
+
+      if (!existing)
+        return [...state, { field: column.field, direction: 'asc' }];
+      if (existing.direction === 'asc') {
+        const next = [...state];
+        next[existingIndex] = { field: column.field, direction: 'desc' };
+        return next;
+      }
+      return state.filter((s) => s.field !== column.field);
     });
     this.page.set(1);
   }

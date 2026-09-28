@@ -314,6 +314,36 @@ describe('DynamoRating', () => {
       });
       await expectNoA11yViolations(container);
     });
+
+    it('sets aria-valuetext to "{value} out of {max} stars"', () => {
+      const { container } = renderDynamoComponent(DynamoRating, {
+        inputs: { value: 3, max: 7 },
+      });
+
+      const root = within(container).getByRole('slider');
+      expect(root.getAttribute('aria-valuetext')).toBe('3 out of 7 stars');
+    });
+
+    it('reflects half-star values in aria-valuetext', () => {
+      const { container } = renderDynamoComponent(DynamoRating, {
+        inputs: { value: 3.5, allowHalf: true },
+      });
+
+      const root = within(container).getByRole('slider');
+      expect(root.getAttribute('aria-valuetext')).toBe('3.5 out of 5 stars');
+    });
+
+    it('tracks the hover preview in aria-valuetext, not just the committed value', () => {
+      const { fixture, container } = renderDynamoComponent(DynamoRating, {
+        inputs: { value: 1 },
+      });
+      const root = within(container).getByRole('slider');
+
+      fireEvent.mouseEnter(star(container, 3));
+      fixture.detectChanges();
+
+      expect(root.getAttribute('aria-valuetext')).toBe('4 out of 5 stars');
+    });
   });
 
   describe('allowHalf', () => {

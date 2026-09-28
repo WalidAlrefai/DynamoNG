@@ -13,7 +13,7 @@ const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
 const API: ApiTableRow[] = [
   {
     name: 'items',
-    type: '{ label: string; href?: string }[]',
+    type: '{ label: string; href?: string; icon?: string }[]',
     default: 'required',
   },
   { name: 'ariaLabel', type: 'string | undefined', default: "'Breadcrumb'" },
@@ -33,7 +33,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Pass an items array of { label, href? }; the last item renders as the current page, items without href as plain text."
+        description="Pass an items array of { label, href?, icon? }; the last item renders as the current page, items without href as plain text."
       >
         <div preview>
           <dg-breadcrumb [items]="items" />
@@ -49,7 +49,7 @@ export class BreadcrumbDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows = API;
   protected readonly items: DynamoBreadcrumbItem[] = [
-    { label: 'Home', href: '/' },
+    { label: 'Home', href: '/', icon: '🏠' },
     { label: 'Archived' },
     { label: 'Products', href: '/products' },
     { label: 'Keyboard' },

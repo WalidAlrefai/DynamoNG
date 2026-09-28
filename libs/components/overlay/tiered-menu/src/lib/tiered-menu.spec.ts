@@ -628,4 +628,57 @@ describe('DynamoTieredMenu', () => {
       }).not.toThrow();
     });
   });
+
+  describe('icon', () => {
+    // A dedicated fixture, never reused by `getItemByText` (exact
+    // trimmed-textContent match) elsewhere in this file — an icon glyph
+    // injected into an existing fixture item would break those lookups.
+    const ICON_ITEMS: DynamoTieredMenuItem[] = [
+      { label: 'Iconed', icon: '📁' },
+      { label: 'Plain' },
+    ];
+
+    async function openIconMenu(container: HTMLElement): Promise<void> {
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+    }
+
+    it('renders no icon span when an item has no icon (regression)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ICON_ITEMS, label: 'File' },
+      });
+      await openIconMenu(container);
+      await settle(fixture);
+
+      const plainItem = getItemByText(getMenus()[0] as HTMLElement, 'Plain');
+      expect(plainItem.querySelector('span[aria-hidden="true"]')).toBeNull();
+    });
+
+    it("renders an item's icon glyph as text content before the label", async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ICON_ITEMS, label: 'File' },
+      });
+      await openIconMenu(container);
+      await settle(fixture);
+
+      const iconedItem = getItemsIn(getMenus()[0] as HTMLElement).find((el) =>
+        el.textContent?.includes('Iconed'),
+      ) as HTMLElement;
+      expect(iconedItem.textContent?.trim()).toBe('📁Iconed');
+      expect(
+        iconedItem.querySelector('span[aria-hidden="true"]')?.textContent,
+      ).toBe('📁');
+    });
+
+    it('has no axe violations with icons present', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ICON_ITEMS, label: 'File' },
+      });
+      await openIconMenu(container);
+      await settle(fixture);
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
 });

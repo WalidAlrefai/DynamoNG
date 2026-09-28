@@ -10,6 +10,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'pause-on-hover', title: 'Pause on Hover' },
+  { id: 'custom-icon', title: 'Custom Icon' },
 ];
 
 @Component({
@@ -83,6 +84,29 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="custom-icon"
+        title="Custom Icon"
+        description="icon overrides the default per-severity SVG icon with a custom glyph, e.g. an emoji."
+      >
+        <div preview class="flex flex-wrap gap-2">
+          <dg-button
+            (click)="
+              toast.show({
+                message: 'Order shipped!',
+                icon: '📦',
+                severity: 'success',
+              })
+            "
+          >
+            Show with custom icon
+          </dg-button>
+        </div>
+        <div code>
+          this.toast.show(&#123; message: 'Order shipped!', icon: '📦' &#125;);
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <table class="w-full border-collapse text-sm">
           <thead>
@@ -147,7 +171,9 @@ const EXAMPLES: DocExampleRef[] = [
           <code class="font-mono">closable?</code> (default
           <code class="font-mono">true</code>),
           <code class="font-mono">position?</code> (default
-          <code class="font-mono">'top-right'</code>).
+          <code class="font-mono">'top-right'</code>),
+          <code class="font-mono">icon?</code> (a custom text glyph overriding
+          the default per-severity icon).
         </p>
       </div>
     </docs-examples-layout>

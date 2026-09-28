@@ -38,6 +38,7 @@ import {
 import { getCachedDateTimeFormat } from './date-format-cache';
 import {
   datePickerApplyButtonStyles,
+  datePickerButtonBarButtonStyles,
   datePickerDayStyles,
   datePickerHeaderButtonStyles,
   datePickerMeridiemButtonStyles,
@@ -145,6 +146,9 @@ export class DynamoDatePicker
   readonly hourFormat = input<DynamoDatePickerHourFormat>('24');
   /** Also renders a seconds stepper — off by default (most consumers only need hour/minute). */
   readonly showSeconds = input(false);
+  /** Adds a Today/Clear footer below the calendar (and, with showTime, above/alongside
+   *  the existing Apply footer) — mirrors PrimeNG Calendar's showButtonBar. */
+  readonly showButtonBar = input(false);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<Date | null>(null);
@@ -257,6 +261,7 @@ export class DynamoDatePicker
   protected readonly timeSeparatorClasses = datePickerTimeSeparatorStyles;
   protected readonly meridiemButtonClasses = datePickerMeridiemButtonStyles;
   protected readonly applyButtonClasses = datePickerApplyButtonStyles;
+  protected readonly buttonBarButtonClasses = datePickerButtonBarButtonStyles;
 
   /** Swaps the day grid for a month/year quick-jump grid, replacing the plain prev/next-only navigation. */
   protected readonly quickJumpOpen = signal(false);
@@ -417,6 +422,14 @@ export class DynamoDatePicker
 
   protected navigateMonth(delta: number): void {
     this.moveFocus((date) => addMonths(date, delta));
+  }
+
+  /** Jumps to and selects today, clamped to min/max — reuses selectDay's existing
+   *  readOnly/disabled-day/showTime handling verbatim, same as any other day click. */
+  protected goToToday(): void {
+    this.selectDay(
+      clampToRange(startOfDay(new Date()), this.min(), this.max()),
+    );
   }
 
   protected toggleQuickJump(): void {

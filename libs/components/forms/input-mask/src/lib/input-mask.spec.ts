@@ -787,6 +787,89 @@ describe('DynamoInputMask', () => {
     });
   });
 
+  describe('unmaskedValueChange output', () => {
+    it('does not emit merely from the initial render', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoInputMask, {
+        inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' },
+      });
+      const emitted: string[] = [];
+      componentInstance.unmaskedValueChange.subscribe((value: string) =>
+        emitted.push(value),
+      );
+
+      expect(emitted).toEqual([]);
+    });
+
+    it('emits the stripped digits on a keystroke commit', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoInputMask,
+        { inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' } },
+      );
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      const emitted: string[] = [];
+      componentInstance.unmaskedValueChange.subscribe((value: string) =>
+        emitted.push(value),
+      );
+
+      typeString(input, '5551234567');
+      fixture.detectChanges();
+
+      expect(emitted).toEqual(['5551234567']);
+    });
+
+    it('emits partial digits for a partial fill, not the literal-padded display', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoInputMask,
+        { inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' } },
+      );
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      const emitted: string[] = [];
+      componentInstance.unmaskedValueChange.subscribe((value: string) =>
+        emitted.push(value),
+      );
+
+      typeString(input, '555');
+      fixture.detectChanges();
+
+      expect(emitted.at(-1)).toBe('555');
+    });
+
+    it('emits "" when autoClear clears an incomplete value on blur', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoInputMask,
+        { inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' } },
+      );
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      typeString(input, '555');
+      fixture.detectChanges();
+      const emitted: string[] = [];
+      componentInstance.unmaskedValueChange.subscribe((value: string) =>
+        emitted.push(value),
+      );
+
+      fireEvent.blur(input);
+      fixture.detectChanges();
+
+      expect(emitted.at(-1)).toBe('');
+    });
+
+    it('emits when writeValue is called directly with an externally-set value', () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        DynamoInputMask,
+        { inputs: { mask: PHONE_MASK, ariaLabel: 'Phone' } },
+      );
+      const emitted: string[] = [];
+      componentInstance.unmaskedValueChange.subscribe((value: string) =>
+        emitted.push(value),
+      );
+
+      componentInstance.writeValue('5551234567');
+      fixture.detectChanges();
+
+      expect(emitted.at(-1)).toBe('5551234567');
+    });
+  });
+
   describe('edge cases', () => {
     it('treats an empty mask as unconstrained passthrough without throwing', () => {
       const { container } = renderDynamoComponent(DynamoInputMask, {

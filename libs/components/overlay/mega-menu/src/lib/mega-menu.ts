@@ -30,7 +30,10 @@ import {
   megaMenuColumnHeaderStyles,
   megaMenuColumnStyles,
   megaMenuEndStyles,
+  megaMenuItemIconClasses,
   megaMenuItemStyles,
+  megaMenuLinkContentStyles,
+  megaMenuLinkIconClasses,
   megaMenuLinkStyles,
   megaMenuPanelStyles,
   megaMenuRootStyles,
@@ -81,7 +84,8 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
   readonly openIndex = model<number | null>(null);
   readonly linkSelect = output<DynamoMegaMenuLink>();
 
-  private readonly barItemEls = viewChildren<ElementRef<HTMLElement>>('barItemEl');
+  private readonly barItemEls =
+    viewChildren<ElementRef<HTMLElement>>('barItemEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
   private readonly overlayService = inject(DynamoOverlayService);
@@ -95,7 +99,8 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
   /** Virtual-focus position within the open panel's flattened link list; -1 = none. */
   protected readonly activeLinkIndex = signal(-1);
 
-  private panelHandle: (DynamoOverlayHandle & { forIndex: number }) | null = null;
+  private panelHandle: (DynamoOverlayHandle & { forIndex: number }) | null =
+    null;
 
   protected readonly openColumns = computed(() => {
     const idx = this.openIndex();
@@ -136,6 +141,9 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
   protected readonly panelClasses = megaMenuPanelStyles;
   protected readonly columnClasses = megaMenuColumnStyles;
   protected readonly columnHeaderClasses = megaMenuColumnHeaderStyles;
+  protected readonly itemIconClasses = megaMenuItemIconClasses;
+  protected readonly linkContentClasses = megaMenuLinkContentStyles;
+  protected readonly linkIconClasses = megaMenuLinkIconClasses;
 
   constructor() {
     super();
@@ -188,7 +196,8 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
   /** Flat index of a link, for the `active`/`aria-activedescendant` wiring in the template. */
   protected flatIndexOf(columnIndex: number, rowIndex: number): number {
     return this.flatLinks().findIndex(
-      (entry) => entry.columnIndex === columnIndex && entry.rowIndex === rowIndex,
+      (entry) =>
+        entry.columnIndex === columnIndex && entry.rowIndex === rowIndex,
     );
   }
 

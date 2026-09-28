@@ -11,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'resize-end', title: 'Resize End' },
+  { id: 'persisted', title: 'Persisted Sizes' },
 ];
 
 const API: ApiTableRow[] = [
@@ -22,6 +23,8 @@ const API: ApiTableRow[] = [
   { name: 'gutterSize', type: 'number (px)', default: '8' },
   { name: 'step', type: 'number (%)', default: '5' },
   { name: 'disabled', type: 'boolean', default: 'false' },
+  { name: 'stateKey', type: 'string | undefined', default: 'undefined' },
+  { name: 'stateStorage', type: "'local' | 'session'", default: "'session'" },
   { name: 'panel.initialSize', type: 'number (%)', default: 'even split' },
   { name: 'panel.minSize', type: 'number (%)', default: '0' },
   { name: 'resizeEnd (output)', type: 'number[]', default: '—' },
@@ -123,6 +126,34 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-splitter (resizeEnd)="onResizeEnd($event)"&gt; ...
           &lt;/dg-splitter&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="persisted"
+        title="Persisted Sizes"
+        description="stateKey saves panel sizes to sessionStorage (or localStorage with stateStorage='local') whenever a resize completes, and restores them on mount — drag the gutter below, then reload this page (a real browser reload, not just re-navigating) to see it restored."
+      >
+        <div preview class="h-32 rounded-md border border-border">
+          <dg-splitter styleClass="h-full" stateKey="docs-splitter-demo">
+            <dg-splitter-panel [minSize]="10">
+              <div
+                class="flex h-full items-center justify-center bg-surface-100 p-4"
+              >
+                A
+              </div>
+            </dg-splitter-panel>
+            <dg-splitter-panel [minSize]="10">
+              <div
+                class="flex h-full items-center justify-center bg-surface-0 p-4"
+              >
+                B
+              </div>
+            </dg-splitter-panel>
+          </dg-splitter>
+        </div>
+        <div code>
+          &lt;dg-splitter stateKey="my-layout"&gt; ... &lt;/dg-splitter&gt;
         </div>
       </docs-example>
 

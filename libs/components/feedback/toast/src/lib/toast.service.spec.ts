@@ -266,6 +266,37 @@ describe('DynamoToastService', () => {
     });
   });
 
+  describe('icon', () => {
+    it('renders the default SVG icon when icon is unset (regression)', () => {
+      service.show({ message: 'Hello' });
+
+      const card = getCards()[0];
+      // `:scope > svg` — the icon is a direct child of the card; the close
+      // button's own svg is nested one level deeper and must not match.
+      expect(card?.querySelector(':scope > svg')).not.toBeNull();
+      expect(
+        card?.querySelector(':scope > span[aria-hidden="true"]'),
+      ).toBeNull();
+    });
+
+    it('renders a span with the given glyph text when icon is set, and no direct-child svg', () => {
+      service.show({ message: 'Saved', icon: '✅' });
+
+      const card = getCards()[0];
+      expect(card?.querySelector(':scope > svg')).toBeNull();
+      const iconSpan = card?.querySelector(':scope > span[aria-hidden="true"]');
+      expect(iconSpan?.textContent).toBe('✅');
+    });
+
+    it('has no axe violations with a custom icon set', async () => {
+      service.show({ message: 'Saved', icon: '✅' });
+
+      await expect(
+        expectNoA11yViolations(getContainer() as HTMLElement),
+      ).resolves.toBeUndefined();
+    });
+  });
+
   describe('accessibility', () => {
     it('renders the container as a polite live region', () => {
       service.show({ message: 'Hello' });

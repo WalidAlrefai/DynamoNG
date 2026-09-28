@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   forwardRef,
   input,
   model,
@@ -63,12 +64,43 @@ export class DynamoInputMask
   /** Fires once, on the transition into a fully-filled mask — not on every
    *  keystroke while it stays complete. */
   readonly complete = output<string>();
+  /** The raw digits/letters of `value` with every literal mask character
+   *  stripped out (e.g. mask "(999) 999-9999" + value "(555) 123-4567" →
+   *  "5551234567"). Fires whenever `value` changes — keystroke, paste,
+   *  backspace/delete, autoClear's blur reset, an external `writeValue`, or
+   *  a plain external `[(value)]` set — mirroring `valueChange`'s own
+   *  trigger set, but never for the component's initial mount/binding. */
+  readonly unmaskedValueChange = output<string>();
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model('');
   protected readonly tokens = computed(() => this.tokenize(this.mask()));
+  private readonly unmaskedValue = computed(() =>
+    this.deriveUnmasked(this.value(), this.tokens()),
+  );
   private readonly focused = signal(false);
   private wasComplete = false;
+  private hasEmittedUnmaskedValue = false;
+
+  constructor() {
+    super();
+    // Reactively derived (rather than emitted manually at each of value's
+    // internal write sites) because a plain external `[(value)]="phone"`
+    // binding writes straight into the model() signal via Angular's own
+    // two-way-binding wiring, with no method call on this class at all —
+    // this is the only way to catch that path too. The first run (the
+    // component's initial state) is skipped so this never fires merely
+    // from mounting/binding, matching valueChange's own semantics; same
+    // skip-first-run guard shape as DatePicker's `inlineFocusReady`.
+    effect(() => {
+      const unmasked = this.unmaskedValue();
+      if (!this.hasEmittedUnmaskedValue) {
+        this.hasEmittedUnmaskedValue = true;
+        return;
+      }
+      this.unmaskedValueChange.emit(unmasked);
+    });
+  }
 
   private onChangeFn: (value: string) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
@@ -379,5 +411,17 @@ export class DynamoInputMask
     const masked = this.applyMask(withoutChar, slots);
     const caret = this.applyMask(withoutChar.slice(0, index), slots).length;
     return { masked, caret };
+  }
+
+  // masked[i] and slots[i] are always index-aligned (see applyMask), so
+  // stripping literal-slot positions is a direct index walk, no re-parsing.
+  private deriveUnmasked(masked: string, slots: MaskSlot[]): string {
+    let result = '';
+    for (let i = 0; i < masked.length; i++) {
+      if (slots[i]?.type !== 'literal') {
+        result += masked[i];
+      }
+    }
+    return result;
   }
 }

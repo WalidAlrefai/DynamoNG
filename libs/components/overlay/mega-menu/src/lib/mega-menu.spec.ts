@@ -1,6 +1,9 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -32,7 +35,10 @@ const ITEMS: DynamoMegaMenuItem[] = [
   {
     label: 'Services',
     columns: [
-      { header: 'Support', items: [{ label: 'Warranty' }, { label: 'Repair' }] },
+      {
+        header: 'Support',
+        items: [{ label: 'Warranty' }, { label: 'Repair' }],
+      },
     ],
   },
   { label: 'About', command: leafSpy },
@@ -54,7 +60,9 @@ describe('DynamoMegaMenu', () => {
         inputs: { items: ITEMS, ariaLabel: 'Main' },
       });
 
-      expect(within(container).getByRole('menubar', { name: 'Main' })).toBeTruthy();
+      expect(
+        within(container).getByRole('menubar', { name: 'Main' }),
+      ).toBeTruthy();
       expect(within(container).getAllByRole('menuitem')).toHaveLength(3);
       expect(getPanel()).toBeNull();
     });
@@ -97,7 +105,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const trigger = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const trigger = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
 
       await userEvent.click(trigger);
       await settle(fixture);
@@ -114,7 +124,9 @@ describe('DynamoMegaMenu', () => {
       const { container } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
 
       await userEvent.keyboard('{ArrowRight}');
@@ -129,7 +141,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
 
       await userEvent.keyboard('{ArrowDown}'); // opens
@@ -157,7 +171,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
       await userEvent.keyboard('{ArrowDown}');
       await settle(fixture);
@@ -173,7 +189,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
       await userEvent.keyboard('{ArrowDown}');
       await settle(fixture);
@@ -195,9 +213,9 @@ describe('DynamoMegaMenu', () => {
       await userEvent.click(items[0] as HTMLElement);
       await settle(fixture);
 
-      (within(container).getByText('Services')).dispatchEvent(
-        new MouseEvent('mouseenter', { bubbles: true }),
-      );
+      within(container)
+        .getByText('Services')
+        .dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
       await settle(fixture);
 
       expect(getPanel()?.textContent).toContain('Support');
@@ -236,7 +254,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
       await userEvent.keyboard('{ArrowDown}');
       await settle(fixture);
@@ -260,7 +280,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
       await userEvent.keyboard('{ArrowDown}'); // open, active = MacBook Air
       await settle(fixture);
@@ -278,7 +300,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
       await userEvent.keyboard('{ArrowDown}');
       await settle(fixture);
@@ -338,7 +362,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS, orientation: 'vertical' },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
 
       await userEvent.keyboard('{ArrowDown}');
@@ -393,7 +419,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
       await userEvent.keyboard('{ArrowDown}');
       await settle(fixture);
@@ -410,7 +438,9 @@ describe('DynamoMegaMenu', () => {
       const { container } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items: ITEMS },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
 
       await userEvent.keyboard('a');
@@ -421,7 +451,11 @@ describe('DynamoMegaMenu', () => {
     it('hovering a disabled sibling while open leaves the current panel', async () => {
       const items: DynamoMegaMenuItem[] = [
         { label: 'Alpha', columns: [{ items: [{ label: 'a1' }] }] },
-        { label: 'Beta', disabled: true, columns: [{ items: [{ label: 'b1' }] }] },
+        {
+          label: 'Beta',
+          disabled: true,
+          columns: [{ items: [{ label: 'b1' }] }],
+        },
       ];
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items },
@@ -447,7 +481,9 @@ describe('DynamoMegaMenu', () => {
       const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
         inputs: { items },
       });
-      const first = within(container).getAllByRole('menuitem')[0] as HTMLElement;
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
       first.focus();
       await userEvent.keyboard('{ArrowDown}');
       await settle(fixture);
@@ -474,6 +510,97 @@ describe('DynamoMegaMenu', () => {
       await userEvent.click(
         within(container).getAllByRole('menuitem')[0] as HTMLElement,
       );
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(
+          document.body.querySelector('.cdk-overlay-container') as HTMLElement,
+        ),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('icon', () => {
+    // A dedicated fixture, never reused by the exact `.textContent?.trim() ===
+    // 'MacBook Air'`-style matches elsewhere in this file — an icon glyph
+    // injected into an existing fixture item/link would break those.
+    const ICON_ITEMS: DynamoMegaMenuItem[] = [
+      {
+        label: 'Iconed Bar Item',
+        icon: '🛒',
+        columns: [
+          {
+            items: [
+              { label: 'Iconed Link', icon: '⭐' },
+              { label: 'Plain Link' },
+            ],
+          },
+        ],
+      },
+      {
+        label: 'Plain Bar Item',
+        columns: [{ items: [{ label: 'Only Link' }] }],
+      },
+    ];
+
+    function findMenuitem(
+      scope: ParentNode,
+      textFragment: string,
+    ): HTMLElement {
+      const el = Array.from(scope.querySelectorAll('[role="menuitem"]')).find(
+        (candidate) => candidate.textContent?.includes(textFragment),
+      );
+      if (!el)
+        throw new Error(`No menuitem containing "${textFragment}" found`);
+      return el as HTMLElement;
+    }
+
+    it('renders no icon span on a bar item or link with no icon (regression)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ICON_ITEMS },
+      });
+      const plainBarItem = findMenuitem(container, 'Plain Bar Item');
+      expect(plainBarItem.querySelector('span[aria-hidden="true"]')).toBeNull();
+
+      await userEvent.click(plainBarItem);
+      await settle(fixture);
+      const onlyLink = findMenuitem(getPanel() as HTMLElement, 'Only Link');
+      expect(onlyLink.querySelector('span[aria-hidden="true"]')).toBeNull();
+    });
+
+    it("renders a bar item's icon glyph before its label", () => {
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ICON_ITEMS },
+      });
+
+      const barItem = findMenuitem(container, 'Iconed Bar Item');
+      expect(barItem.textContent).toContain('🛒');
+      expect(barItem.textContent).toContain('Iconed Bar Item');
+      expect(
+        barItem.querySelector('span[aria-hidden="true"]')?.textContent,
+      ).toBe('🛒');
+    });
+
+    it("renders a panel link's icon glyph before its label, without disturbing its own rendered text", async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ICON_ITEMS },
+      });
+      await userEvent.click(findMenuitem(container, 'Iconed Bar Item'));
+      await settle(fixture);
+
+      const iconedLink = findMenuitem(getPanel() as HTMLElement, 'Iconed Link');
+      expect(iconedLink.textContent).toContain('⭐');
+      expect(iconedLink.textContent).toContain('Iconed Link');
+      expect(
+        iconedLink.querySelector('span[aria-hidden="true"]')?.textContent,
+      ).toBe('⭐');
+    });
+
+    it('has no axe violations with icons present', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ICON_ITEMS },
+      });
+      await userEvent.click(findMenuitem(container, 'Iconed Bar Item'));
       await settle(fixture);
 
       await expect(

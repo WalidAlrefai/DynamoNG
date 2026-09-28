@@ -27,7 +27,11 @@ import {
   stepperRootStyles,
   stepperStepButtonStyles,
 } from './stepper.styles';
-import type { DynamoStepperPart, DynamoStepState } from './stepper.types';
+import type {
+  DynamoStepperOrientation,
+  DynamoStepperPart,
+  DynamoStepState,
+} from './stepper.types';
 
 @Component({
   selector: 'dg-stepper',
@@ -42,6 +46,7 @@ export class DynamoStepper extends DynamoBaseComponent<DynamoStepperPart> {
   /** When false, any non-disabled step can be activated directly — the
    * "completed-or-current steps only" gate is lifted. */
   readonly linear = input(true);
+  readonly orientation = input<DynamoStepperOrientation>('horizontal');
   readonly ariaLabel = input<string | undefined>(undefined);
   readonly backLabel = input('Back');
   readonly nextLabel = input('Next');
@@ -70,9 +75,15 @@ export class DynamoStepper extends DynamoBaseComponent<DynamoStepperPart> {
       ? this.styleClass()
       : cn(stepperRootStyles, this.styleClass()),
   );
-  protected readonly listClasses = stepperListStyles;
-  protected readonly itemClasses = stepperItemStyles;
-  protected readonly panelClasses = stepperPanelStyles;
+  protected readonly listClasses = computed(() =>
+    stepperListStyles({ orientation: this.orientation() }),
+  );
+  protected readonly itemClasses = computed(() =>
+    stepperItemStyles({ orientation: this.orientation() }),
+  );
+  protected readonly panelClasses = computed(() =>
+    stepperPanelStyles({ orientation: this.orientation() }),
+  );
   protected readonly controlsClasses = stepperControlsStyles;
 
   constructor() {
@@ -150,7 +161,10 @@ export class DynamoStepper extends DynamoBaseComponent<DynamoStepperPart> {
   }
 
   protected stepButtonClasses(index: number) {
-    return stepperStepButtonStyles({ disabled: this.isDisabled(index) });
+    return stepperStepButtonStyles({
+      disabled: this.isDisabled(index),
+      orientation: this.orientation(),
+    });
   }
 
   protected circleClasses(index: number) {
@@ -164,6 +178,7 @@ export class DynamoStepper extends DynamoBaseComponent<DynamoStepperPart> {
   protected connectorClasses(index: number) {
     return stepperConnectorStyles({
       completed: this.stepState(index) === 'completed',
+      orientation: this.orientation(),
     });
   }
 
@@ -219,9 +234,11 @@ export class DynamoStepper extends DynamoBaseComponent<DynamoStepperPart> {
     let nextIndex: number | null;
     switch (event.key) {
       case 'ArrowRight':
+      case 'ArrowDown':
         nextIndex = this.findEnabledIndex(currentIndex, 1);
         break;
       case 'ArrowLeft':
+      case 'ArrowUp':
         nextIndex = this.findEnabledIndex(currentIndex, -1);
         break;
       case 'Home':
