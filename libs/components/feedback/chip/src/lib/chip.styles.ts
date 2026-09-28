@@ -106,3 +106,18 @@ export const chipRemoveButtonStyles =
   '-me-1 inline-flex shrink-0 items-center justify-center rounded-full p-0.5 ' +
   'transition-colors hover:bg-current/10 ' +
   focusRingClass;
+
+// Small circular avatar image ahead of the label — sized well below
+// @dynamong/avatar's own smallest size (32px), which is too large for an
+// inline chip context. Not built on <dg-avatar> to avoid a new tier
+// dependency for a purely cosmetic circular-image treatment (see README).
+export const chipImageStyles = cva('-ms-1 shrink-0 rounded-full object-cover', {
+  variants: {
+    size: {
+      sm: 'h-4 w-4',
+      md: 'h-5 w-5',
+      lg: 'h-6 w-6',
+    },
+  },
+  defaultVariants: { size: 'md' },
+});

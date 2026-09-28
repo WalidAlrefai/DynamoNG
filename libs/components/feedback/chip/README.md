@@ -18,18 +18,28 @@ protected onRemove(tag: Tag): void { ... }
 
 ## Inputs
 
-| Input             | Type                | Default     | Description                                                                                                                          |
-| ----------------- | ------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `severity`        | `DynamoSeverity`    | `'primary'` | `'primary' \| 'secondary' \| 'success' \| 'info' \| 'warning' \| 'danger'`.                                                          |
-| `variant`         | `DynamoChipVariant` | `'solid'`   | `'solid' \| 'outline'`.                                                                                                              |
-| `size`            | `DynamoSize`        | `'md'`      | `'sm' \| 'md' \| 'lg'`.                                                                                                              |
-| `removable`       | `boolean`           | `false`     | Shows a remove button. The chip itself is never removed from the DOM by this component — the consumer handles removal via `removed`. |
-| `removeAriaLabel` | `string`            | `'Remove'`  | `aria-label` for the remove button.                                                                                                  |
-| `disabled`        | `boolean`           | `false`     | Dims the chip and disables the remove button; the click/keyboard remove path becomes a no-op.                                        |
+| Input             | Type                  | Default     | Description                                                                                                                                                                                                                   |
+| ----------------- | --------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `severity`        | `DynamoSeverity`      | `'primary'` | `'primary' \| 'secondary' \| 'success' \| 'info' \| 'warning' \| 'danger'`.                                                                                                                                                   |
+| `variant`         | `DynamoChipVariant`   | `'solid'`   | `'solid' \| 'outline'`.                                                                                                                                                                                                       |
+| `size`            | `DynamoSize`          | `'md'`      | `'sm' \| 'md' \| 'lg'`.                                                                                                                                                                                                       |
+| `removable`       | `boolean`             | `false`     | Shows a remove button. The chip itself is never removed from the DOM by this component — the consumer handles removal via `removed`.                                                                                          |
+| `removeAriaLabel` | `string`              | `'Remove'`  | `aria-label` for the remove button.                                                                                                                                                                                           |
+| `disabled`        | `boolean`             | `false`     | Dims the chip and disables the remove button; the click/keyboard remove path becomes a no-op.                                                                                                                                 |
+| `image`           | `string \| undefined` | `undefined` | Renders a small, pre-styled circular avatar `<img src="image">` ahead of the label — a dedicated leading visual for a photo/avatar use case, distinct from the generic `[icon]` slot below (which has no styling of its own). |
+| `imageAlt`        | `string`              | `''`        | Alt text for `image`. Defaults to decorative (`''`) — the chip's own label content already carries the accessible name.                                                                                                       |
 
 Content is projected via plain `<ng-content>`. A projected `[icon]`-attributed
 element (e.g. an icon component or `<img>`) renders ahead of the label:
 `<dg-chip><dg-icon-check icon />Verified</dg-chip>`.
+
+For a photo/avatar leading visual instead, use `image` rather than the
+`[icon]` slot — it gets a dedicated circular clip and fixed size (matching
+`size`), which the generic `[icon]` slot doesn't provide on its own:
+
+```html
+<dg-chip [image]="user.photoUrl">{{ user.name }}</dg-chip>
+```
 
 ## Outputs
 
