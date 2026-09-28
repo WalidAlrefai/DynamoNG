@@ -1409,4 +1409,185 @@ describe('DynamoDatePicker', () => {
       expect((await harness.getTimeValue())?.hours).toBe(11);
     });
   });
+
+  describe('showButtonBar', () => {
+    it('renders no Today/Clear buttons when unset (regression)', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Choose a date',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(
+        within(getDialog() as HTMLElement).queryByRole('button', {
+          name: 'Today',
+        }),
+      ).toBeNull();
+      expect(
+        within(getDialog() as HTMLElement).queryByRole('button', {
+          name: 'Clear',
+        }),
+      ).toBeNull();
+    });
+
+    it('renders Today and Clear buttons when true', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { showButtonBar: true, ariaLabel: 'Choose a date' },
+      });
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Today',
+        }),
+      ).toBeTruthy();
+      expect(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Clear',
+        }),
+      ).toBeTruthy();
+    });
+
+    it('clicking Today sets value to today and closes the popup', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { showButtonBar: true, ariaLabel: 'Choose a date' } },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Today',
+        }),
+      );
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(TODAY);
+      expect(getDialog()).toBeNull();
+    });
+
+    it('clicking Today clamps to max when today falls outside the allowed range', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showButtonBar: true,
+            ariaLabel: 'Choose a date',
+            max: new Date(2026, 7, 10),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Today',
+        }),
+      );
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(new Date(2026, 7, 10));
+    });
+
+    it('clicking Today is a no-op when readOnly is true', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showButtonBar: true,
+            readOnly: true,
+            ariaLabel: 'Choose a date',
+          },
+        },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Today',
+        }),
+      );
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    it('clicking Clear clears an existing value and keeps the popup open', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showButtonBar: true,
+            ariaLabel: 'Choose a date',
+            value: new Date(2026, 7, 5),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Clear',
+        }),
+      );
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBeNull();
+      expect(getDialog()).not.toBeNull();
+    });
+
+    it('disables the Today/Clear buttons when disabled is true', async () => {
+      const { fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          showButtonBar: true,
+          inline: true,
+          ariaLabel: 'Choose a date',
+          disabled: true,
+        },
+      });
+      await settle(fixture);
+
+      const dialog = fixture.nativeElement as HTMLElement;
+      expect(
+        (
+          within(dialog).getByRole('button', {
+            name: 'Today',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      expect(
+        (
+          within(dialog).getByRole('button', {
+            name: 'Clear',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+    });
+
+    it('has no axe violations', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { showButtonBar: true, ariaLabel: 'Choose a date' },
+      });
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+  });
 });

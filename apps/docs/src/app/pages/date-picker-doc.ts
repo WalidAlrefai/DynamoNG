@@ -18,6 +18,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'clearable', title: 'Clearable' },
   { id: 'inline', title: 'Inline' },
   { id: 'time', title: 'Time Picker' },
+  { id: 'button-bar', title: 'Button Bar' },
   { id: 'range', title: 'Range Selection' },
 ];
 
@@ -34,6 +35,7 @@ const API: ApiTableRow[] = [
   { name: 'showTime', type: 'boolean', default: 'false' },
   { name: 'hourFormat', type: "'12' | '24'", default: "'24'" },
   { name: 'showSeconds', type: 'boolean', default: 'false' },
+  { name: 'showButtonBar', type: 'boolean', default: 'false' },
 ];
 
 const EMPTY_RANGE: DynamoDateRange = { start: null, end: null };
@@ -163,6 +165,23 @@ const EMPTY_RANGE: DynamoDateRange = { start: null, end: null };
       </docs-example>
 
       <docs-example
+        exampleId="button-bar"
+        title="Button Bar"
+        description="showButtonBar adds a Today/Clear footer below the calendar."
+      >
+        <div preview class="max-w-sm">
+          <dg-date-picker
+            [(value)]="buttonBarDate"
+            [showButtonBar]="true"
+            ariaLabel="Date"
+          />
+        </div>
+        <div code>
+          &lt;dg-date-picker [(value)]="date" [showButtonBar]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="range"
         title="Range Selection"
         description="dg-date-range-picker (@dynamong/date-range-picker) shares this exact input surface with dg-date-picker above — min/max, disabledDates/disabledDays, clearable, and inline all work identically. Only value differs: a DynamoDateRange ({{
@@ -199,5 +218,6 @@ export class DatePickerDocPage {
   protected readonly clearableDate = signal<Date | null>(new Date());
   protected readonly inlineDate = signal<Date | null>(null);
   protected readonly timedDate = signal<Date | null>(null);
+  protected readonly buttonBarDate = signal<Date | null>(null);
   protected readonly range = signal<DynamoDateRange>(EMPTY_RANGE);
 }

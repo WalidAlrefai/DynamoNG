@@ -97,6 +97,11 @@ export const datePickerMeridiemButtonStyles =
   'ms-1 rounded-md border border-border px-2 py-1 text-xs font-semibold text-text-primary hover:bg-surface-100 ' +
   focusRingClass;
 
+export const datePickerButtonBarButtonStyles =
+  'rounded-md px-2 py-1 text-sm font-semibold text-text-primary hover:bg-surface-100 ' +
+  'disabled:pointer-events-none disabled:opacity-40 ' +
+  focusRingClass;
+
 // Reuses the exact same primary color recipe as datePickerMonthGridButtonStyles'
 // `current` variant (bg-primary/text-on-primary/hover:bg-primary-hover) — already
 // duplicated this way across date-range-picker/split-button/button rather than

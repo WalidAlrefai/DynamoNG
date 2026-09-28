@@ -209,6 +209,27 @@
         }
       </tbody>
     </table>
+    } @if (showButtonBar()) {
+    <div
+      class="mt-2 flex items-center justify-between border-t border-border pt-2"
+    >
+      <button
+        type="button"
+        [class]="buttonBarButtonClasses"
+        [disabled]="disabled()"
+        (click)="goToToday()"
+      >
+        Today
+      </button>
+      <button
+        type="button"
+        [class]="buttonBarButtonClasses"
+        [disabled]="disabled()"
+        (click)="clearValue($event)"
+      >
+        Clear
+      </button>
+    </div>
     } @if (showTime()) {
     <div [class]="timeWrapperClasses">
       <div
