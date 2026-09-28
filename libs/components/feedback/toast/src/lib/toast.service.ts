@@ -25,6 +25,7 @@ export interface DynamoToastEntry {
   closable: boolean;
   position: DynamoToastPosition;
   phase: DynamoToastPhase;
+  icon?: string | undefined;
 }
 
 const MARGIN = '1rem';
@@ -102,6 +103,7 @@ export class DynamoToastService {
       closable: options.closable ?? true,
       position: options.position ?? 'top-right',
       phase: 'entering',
+      icon: options.icon,
     };
 
     this.toasts.update((list) => [...list, entry]);

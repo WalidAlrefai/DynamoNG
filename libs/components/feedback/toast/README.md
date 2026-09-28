@@ -39,6 +39,7 @@ export class SaveButton {
 | `duration` | `number`              | `5000`        | Milliseconds before auto-dismiss. `0` disables auto-dismiss.                                                                                                                                 |
 | `closable` | `boolean`             | `true`        | Whether the toast shows a manual close button.                                                                                                                                               |
 | `position` | `DynamoToastPosition` | `'top-right'` | One of `'top-right'`, `'top-left'`, `'bottom-right'`, `'bottom-left'`, `'top-center'`, `'bottom-center'`. Each position gets its own stacked overlay container, created lazily on first use. |
+| `icon`     | `string \| undefined` | `undefined`   | Overrides the default per-severity SVG icon with a custom glyph (e.g. an emoji or icon-font character), rendered as plain text — same approach as `DynamoBreadcrumbItem.icon`.               |
 
 ## Methods
 

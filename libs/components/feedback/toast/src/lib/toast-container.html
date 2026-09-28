@@ -5,6 +5,11 @@
     (mouseenter)="pause(toast.id)"
     (mouseleave)="resume(toast.id)"
   >
+    @if (toast.icon) {
+    <span [class]="customIconClasses(toast.severity)" aria-hidden="true"
+      >{{ toast.icon }}</span
+    >
+    } @else {
     <svg
       [class]="iconClasses(toast.severity)"
       [attr.aria-hidden]="true"
@@ -37,6 +42,7 @@
       />
       } }
     </svg>
+    }
     <div class="min-w-0 flex-1">
       @if (toast.title) {
       <p [class]="titleClasses">{{ toast.title }}</p>

@@ -19,4 +19,8 @@ export interface DynamoToastOptions {
   closable?: boolean;
   /** Which corner container the toast is added to. Defaults to `'top-right'`. */
   position?: DynamoToastPosition;
+  /** Overrides the default per-severity SVG icon with a custom glyph (e.g. an
+   *  emoji or icon-font character) — same plain-text-content approach as
+   *  `DynamoBreadcrumbItem.icon`. Unset (the default) keeps the built-in icon. */
+  icon?: string;
 }
