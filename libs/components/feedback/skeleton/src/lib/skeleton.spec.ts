@@ -115,6 +115,28 @@ describe('DynamoSkeleton', () => {
         'animate-pulse',
       );
     });
+
+    it('applies animate-skeleton-wave and the gradient classes when animation is "wave"', () => {
+      const { container } = renderDynamoComponent(DynamoSkeleton, {
+        inputs: { animation: 'wave' },
+      });
+
+      const className = container.querySelector('div')?.className;
+      expect(className).toContain('animate-skeleton-wave');
+      expect(className).toContain('bg-gradient-to-r');
+      expect(className).toContain('from-surface-200');
+      expect(className).toContain('bg-[length:200%_100%]');
+    });
+
+    it('has no axe violations when animation is "wave"', async () => {
+      const { fixture } = renderDynamoComponent(DynamoSkeleton, {
+        inputs: { animation: 'wave' },
+      });
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
   });
 
   describe('borderRadius', () => {

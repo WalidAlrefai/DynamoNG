@@ -18,6 +18,12 @@ export const skeletonStyles = cva('bg-surface-200', {
     // below, which only fires on the OS-level reduced-motion preference.
     animation: {
       pulse: 'animate-pulse motion-reduce:animate-none',
+      // A moving highlight sweeping across a gradient background — see
+      // skeleton-wave in preset.css for the underlying @keyframes. The
+      // gradient's lighter middle stop (via-surface-100) sits on top of the
+      // base bg-surface-200 color class above (different CSS properties, so
+      // they compose without conflict).
+      wave: 'animate-skeleton-wave bg-gradient-to-r from-surface-200 via-surface-100 to-surface-200 bg-[length:200%_100%] motion-reduce:animate-none',
       none: '',
     },
   },

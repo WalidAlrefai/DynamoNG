@@ -102,6 +102,26 @@
 
   --ease-standard: var(--dg-motion-ease-standard);
   --ease-emphasized: var(--dg-motion-ease-emphasized);
+
+  /* Deliberate exception to "every @theme value maps onto a --dg-* token" above —
+     there's no --dg-motion-duration-* token category in this repo yet, and this
+     is a fixed animation timing for one component (DynamoSkeleton's `wave`
+     animation), not a themeable design-token scale. */
+  --animate-skeleton-wave: skeleton-wave 1.6s linear infinite;
+}
+
+/*
+ * Repo's first custom keyframe — a moving highlight sweeping left-to-right
+ * across a gradient background, driving DynamoSkeleton's `wave` animation
+ * variant via the --animate-skeleton-wave theme entry above.
+ */
+@keyframes skeleton-wave {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
 }
 
 /*

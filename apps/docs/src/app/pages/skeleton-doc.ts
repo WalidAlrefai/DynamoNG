@@ -21,7 +21,11 @@ const API: ApiTableRow[] = [
   },
   { name: 'width', type: 'string | number | undefined', default: 'undefined' },
   { name: 'height', type: 'string | number | undefined', default: 'undefined' },
-  { name: 'animation', type: "'pulse' | 'none'", default: "'pulse'" },
+  {
+    name: 'animation',
+    type: "'pulse' | 'wave' | 'none'",
+    default: "'pulse'",
+  },
   {
     name: 'borderRadius',
     type: 'string | undefined',
@@ -74,9 +78,10 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="animation-radius"
         title="Animation & Border Radius"
-        description='animation="none" opts out of the pulse; borderRadius overrides the variant&apos;s own default rounding.'
+        description='animation="wave" sweeps a highlight across the block; animation="none" opts out entirely; borderRadius overrides the variant&apos;s own default rounding.'
       >
         <div preview class="flex max-w-sm flex-col gap-3">
+          <dg-skeleton variant="rectangular" height="3rem" animation="wave" />
           <dg-skeleton variant="rectangular" height="3rem" animation="none" />
           <dg-skeleton
             variant="rectangular"
@@ -85,8 +90,8 @@ const API: ApiTableRow[] = [
           />
         </div>
         <div code>
-          &lt;dg-skeleton animation="none" /&gt; &lt;dg-skeleton
-          borderRadius="9999px" /&gt;
+          &lt;dg-skeleton animation="wave" /&gt; &lt;dg-skeleton
+          animation="none" /&gt; &lt;dg-skeleton borderRadius="9999px" /&gt;
         </div>
       </docs-example>
 

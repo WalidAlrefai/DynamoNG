@@ -65,6 +65,7 @@ export const DYNAMO_TAILWIND_THEME_KEYS = [
   '--shadow-lg',
   '--ease-standard',
   '--ease-emphasized',
+  '--animate-skeleton-wave',
 ] as const;
 
 export type DynamoTailwindThemeKey =
