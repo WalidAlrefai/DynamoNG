@@ -502,4 +502,58 @@ describe('DynamoPanelMenu', () => {
       ).not.toThrow();
     });
   });
+
+  describe('icon', () => {
+    // A dedicated fixture, never reused by `row()`/`rowLabels()` (exact
+    // trimmed-textContent match) above — an icon glyph injected into an
+    // existing fixture item would break those lookups.
+    const ICON_ITEMS: DynamoPanelMenuItem[] = [
+      { label: 'Iconed', icon: '📁' },
+      { label: 'Plain' },
+    ];
+
+    function iconRow(container: HTMLElement, label: string): HTMLElement {
+      const rows = Array.from(
+        container.querySelectorAll<HTMLElement>('[data-node-path]'),
+      );
+      const el = rows.find((candidate) =>
+        candidate.textContent?.includes(label),
+      );
+      if (!el) throw new Error(`row not found: ${label}`);
+      return el;
+    }
+
+    it('renders no icon span when an item has no icon (regression)', () => {
+      const { container } = renderDynamoComponent(DynamoPanelMenu, {
+        inputs: { items: ICON_ITEMS },
+      });
+
+      // Every leaf row already carries an `aria-hidden="true"` chevron
+      // PLACEHOLDER span (for indentation alignment with sibling branch
+      // rows) — that one always has empty text content, unlike a real icon
+      // span, so the meaningful check is on rendered text, not span presence.
+      expect(iconRow(container, 'Plain').textContent?.trim()).toBe('Plain');
+    });
+
+    it("renders an item's icon glyph as text content before the label", () => {
+      const { container } = renderDynamoComponent(DynamoPanelMenu, {
+        inputs: { items: ICON_ITEMS },
+      });
+
+      const row = iconRow(container, 'Iconed');
+      expect(row.textContent?.trim()).toBe('📁Iconed');
+      const iconSpan = Array.from(
+        row.querySelectorAll('span[aria-hidden="true"]'),
+      ).find((el) => el.textContent === '📁');
+      expect(iconSpan).toBeTruthy();
+    });
+
+    it('has no axe violations with icons present', async () => {
+      const { container } = renderDynamoComponent(DynamoPanelMenu, {
+        inputs: { items: ICON_ITEMS },
+      });
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
 });

@@ -13,8 +13,21 @@
   (keydown)="onTriggerKeydown($event)"
 >
   <span>{{ label() }}</span>
-  <svg [class]="chevronClasses()" [attr.aria-hidden]="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+  <svg
+    [class]="chevronClasses()"
+    [attr.aria-hidden]="true"
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+  >
+    <path
+      d="M4 6l4 4 4-4"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
   </svg>
 </button>
 
@@ -29,32 +42,48 @@
 -->
 <ng-template #panelTemplate let-levelIndex="levelIndex">
   @if (levels()[levelIndex ?? 0]; as level) {
+  <div
+    [id]="panelIdForLevel(levelIndex ?? 0)"
+    role="menu"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-labelledby]="ariaLabel() ? null : triggerId"
+    [class]="panelClasses"
+  >
+    @for (item of level.items; track item; let i = $index) {
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown (see tiered-menu.ts's class doc comment on the aria-activedescendant focus model) -->
     <div
-      [id]="panelIdForLevel(levelIndex ?? 0)"
-      role="menu"
-      [attr.aria-label]="ariaLabel() ?? null"
-      [attr.aria-labelledby]="ariaLabel() ? null : triggerId"
-      [class]="panelClasses"
+      [id]="rowId(levelIndex ?? 0, i)"
+      role="menuitem"
+      tabindex="-1"
+      [attr.aria-disabled]="item.disabled ? 'true' : null"
+      [class]="itemClasses(item, levelIndex ?? 0, i)"
+      (mouseenter)="onItemHover(levelIndex ?? 0, i)"
+      (click)="onItemClick(levelIndex ?? 0, i)"
     >
-      @for (item of level.items; track item; let i = $index) {
-        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown (see tiered-menu.ts's class doc comment on the aria-activedescendant focus model) -->
-        <div
-          [id]="rowId(levelIndex ?? 0, i)"
-          role="menuitem"
-          tabindex="-1"
-          [attr.aria-disabled]="item.disabled ? 'true' : null"
-          [class]="itemClasses(item, levelIndex ?? 0, i)"
-          (mouseenter)="onItemHover(levelIndex ?? 0, i)"
-          (click)="onItemClick(levelIndex ?? 0, i)"
-        >
-          <span>{{ item.label }}</span>
-          @if (item.children?.length) {
-            <svg [class]="caretClasses" width="16" height="16" viewBox="0 0 16 16" fill="none" [attr.aria-hidden]="true">
-              <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          }
-        </div>
+      @if (item.icon) {
+      <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon }}</span>
+      }
+      <span>{{ item.label }}</span>
+      @if (item.children?.length) {
+      <svg
+        [class]="caretClasses"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        [attr.aria-hidden]="true"
+      >
+        <path
+          d="M6 4l4 4-4 4"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
       }
     </div>
+    }
+  </div>
   }
 </ng-template>

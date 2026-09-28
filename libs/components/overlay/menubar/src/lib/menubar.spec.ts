@@ -1,7 +1,10 @@
 import { Component, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { expectNoA11yViolations, renderDynamoComponent } from '@dynamong/testing';
+import {
+  expectNoA11yViolations,
+  renderDynamoComponent,
+} from '@dynamong/testing';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoMenubar } from './menubar';
@@ -15,7 +18,10 @@ const ITEMS: DynamoMenubarItem[] = [
   {
     label: 'File',
     children: [
-      { label: 'New', children: [{ label: 'Document' }, { label: 'Spreadsheet' }] },
+      {
+        label: 'New',
+        children: [{ label: 'Document' }, { label: 'Spreadsheet' }],
+      },
       { label: 'Export', children: [{ label: 'PDF' }, { label: 'CSV' }] },
       { label: 'Import', disabled: true, children: [{ label: 'From URL' }] },
       { label: 'Print' },
@@ -39,7 +45,9 @@ function getBarItems(container: HTMLElement): HTMLElement[] {
 }
 
 function getBarItemByText(container: HTMLElement, text: string): HTMLElement {
-  const item = getBarItems(container).find((el) => el.textContent?.trim() === text);
+  const item = getBarItems(container).find(
+    (el) => el.textContent?.trim() === text,
+  );
   if (!item) throw new Error(`No bar item with text "${text}" found`);
   return item;
 }
@@ -77,7 +85,11 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   selector: 'dg-menubar-test-host',
   standalone: true,
   imports: [DynamoMenubar],
-  template: `<dg-menubar [items]="items" ariaLabel="Main menu" (itemSelect)="lastSelected.set($event.label)" />`,
+  template: `<dg-menubar
+    [items]="items"
+    ariaLabel="Main menu"
+    (itemSelect)="lastSelected.set($event.label)"
+  />`,
 })
 class MenubarTestHostComponent {
   readonly items = ITEMS;
@@ -102,15 +114,14 @@ class MenubarProjectionTestHostComponent {
 describe('DynamoMenubar', () => {
   describe('creation', () => {
     it('renders a menubar with one button per top-level item', () => {
-      const { container } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
 
       expect(getBarItems(container)).toHaveLength(4);
-      expect(getBarItems(container).map((el) => el.textContent?.trim())).toEqual([
-        'File',
-        'Edit',
-        'Settings',
-        'Help',
-      ]);
+      expect(
+        getBarItems(container).map((el) => el.textContent?.trim()),
+      ).toEqual(['File', 'Edit', 'Settings', 'Help']);
     });
 
     it('does not render any panel until a dropdown opens', () => {
@@ -122,28 +133,44 @@ describe('DynamoMenubar', () => {
 
   describe('content projection', () => {
     it('renders projected [start] and [end] content', () => {
-      const { container } = renderDynamoComponent(MenubarProjectionTestHostComponent);
+      const { container } = renderDynamoComponent(
+        MenubarProjectionTestHostComponent,
+      );
 
-      expect(container.querySelector('[data-testid="DynamoMenubar-start"] img[alt="Acme"]')).toBeTruthy();
       expect(
-        container.querySelector('[data-testid="DynamoMenubar-end"] input[aria-label="Search"]'),
+        container.querySelector(
+          '[data-testid="DynamoMenubar-start"] img[alt="Acme"]',
+        ),
+      ).toBeTruthy();
+      expect(
+        container.querySelector(
+          '[data-testid="DynamoMenubar-end"] input[aria-label="Search"]',
+        ),
       ).toBeTruthy();
     });
 
     it('never places projected content inside the role="menubar" element', () => {
-      const { container } = renderDynamoComponent(MenubarProjectionTestHostComponent);
+      const { container } = renderDynamoComponent(
+        MenubarProjectionTestHostComponent,
+      );
 
-      const children = Array.from(container.querySelectorAll('[role="menubar"] > *'));
+      const children = Array.from(
+        container.querySelectorAll('[role="menubar"] > *'),
+      );
       expect(children.every((el) => el.tagName === 'BUTTON')).toBe(true);
     });
 
     it('has no axe violations with content projected into both slots', async () => {
-      const { container } = renderDynamoComponent(MenubarProjectionTestHostComponent);
+      const { container } = renderDynamoComponent(
+        MenubarProjectionTestHostComponent,
+      );
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
 
     it('typing into a projected [end] input does not trigger the menubar keydown handler', async () => {
-      const { container } = renderDynamoComponent(MenubarProjectionTestHostComponent);
+      const { container } = renderDynamoComponent(
+        MenubarProjectionTestHostComponent,
+      );
       const search = container.querySelector<HTMLInputElement>(
         '[data-testid="DynamoMenubar-end"] input',
       )!;
@@ -157,14 +184,18 @@ describe('DynamoMenubar', () => {
 
   describe('default behavior', () => {
     it('defaults to no open dropdown and position bottom-start', () => {
-      const { componentInstance } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { componentInstance } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
 
       expect(componentInstance.openIndex()).toBeNull();
       expect(componentInstance.position()).toBe('bottom-start');
     });
 
     it('only the first bar item is in the tab sequence', () => {
-      const { container } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
       const items = getBarItems(container);
 
       expect(items[0]?.tabIndex).toBe(0);
@@ -172,11 +203,15 @@ describe('DynamoMenubar', () => {
     });
 
     it('no bar item carries aria-activedescendant while the bar is closed', () => {
-      const { container } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
 
-      expect(getBarItems(container).every((el) => el.getAttribute('aria-activedescendant') === null)).toBe(
-        true,
-      );
+      expect(
+        getBarItems(container).every(
+          (el) => el.getAttribute('aria-activedescendant') === null,
+        ),
+      ).toBe(true);
     });
 
     it('applies just styleClass when unstyled is set', () => {
@@ -184,13 +219,17 @@ describe('DynamoMenubar', () => {
         inputs: { items: ITEMS, unstyled: true, styleClass: 'my-bar' },
       });
 
-      expect(container.querySelector('[data-testid="DynamoMenubar"]')?.className).toBe('my-bar');
+      expect(
+        container.querySelector('[data-testid="DynamoMenubar"]')?.className,
+      ).toBe('my-bar');
     });
   });
 
   describe('roving tabindex (closed bar)', () => {
     it('ArrowRight moves the roving tabindex to the next item, wrapping past the end', async () => {
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
       const items = getBarItems(container);
 
       items[0]?.focus();
@@ -206,7 +245,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('ArrowLeft from the first item wraps to the last enabled item', async () => {
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
       getBarItems(container)[0]?.focus();
 
       await userEvent.keyboard('{ArrowLeft}');
@@ -216,7 +257,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('Home/End jump to the first/last enabled item', async () => {
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
       getBarItems(container)[1]?.focus();
 
       await userEvent.keyboard('{End}');
@@ -229,7 +272,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('a disabled top-level item is never focused', async () => {
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
       getBarItems(container)[1]?.focus(); // Edit
 
       await userEvent.keyboard('{ArrowRight}'); // Settings is disabled — skip to Help
@@ -243,7 +288,9 @@ describe('DynamoMenubar', () => {
     it('clicking a leaf top-level item invokes command directly, with no panel', async () => {
       const command = vi.fn();
       const items: DynamoMenubarItem[] = [{ label: 'Help', command }];
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items } });
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items },
+      });
 
       await userEvent.click(getBarItemByText(container, 'Help'));
       await settle(fixture);
@@ -253,17 +300,23 @@ describe('DynamoMenubar', () => {
     });
 
     it('clicking a branch item opens its dropdown', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'Edit'));
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(1);
-      expect(getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim())).toEqual(['Undo', 'Redo']);
+      expect(
+        getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim()),
+      ).toEqual(['Undo', 'Redo']);
     });
 
     it('clicking a branch item again closes its dropdown', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
       const editItem = getBarItemByText(container, 'Edit');
 
       await userEvent.click(editItem);
@@ -275,7 +328,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('clicking a leaf row emits itemSelect and closes the dropdown', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'Edit'));
       await settle(fixture);
@@ -287,7 +342,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('clicking a disabled top-level item does nothing', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'Settings'));
       await settle(fixture);
@@ -298,7 +355,9 @@ describe('DynamoMenubar', () => {
 
   describe('multi-level drill-down', () => {
     it('hovering a branch row opens a nested flyout showing its children', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -306,14 +365,15 @@ describe('DynamoMenubar', () => {
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(2);
-      expect(getRowsIn(getMenus()[1]!).map((el) => el.textContent?.trim())).toEqual([
-        'Document',
-        'Spreadsheet',
-      ]);
+      expect(
+        getRowsIn(getMenus()[1]!).map((el) => el.textContent?.trim()),
+      ).toEqual(['Document', 'Spreadsheet']);
     });
 
     it('drills 3 levels deep and commits the deep leaf', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -330,8 +390,10 @@ describe('DynamoMenubar', () => {
   });
 
   describe('sibling-switch', () => {
-    it("hovering a sibling branch row (within a level) collapses the previous flyout", async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+    it('hovering a sibling branch row (within a level) collapses the previous flyout', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -343,11 +405,15 @@ describe('DynamoMenubar', () => {
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(2);
-      expect(getRowsIn(getMenus()[1]!).map((el) => el.textContent?.trim())).toEqual(['PDF', 'CSV']);
+      expect(
+        getRowsIn(getMenus()[1]!).map((el) => el.textContent?.trim()),
+      ).toEqual(['PDF', 'CSV']);
     });
 
     it('hovering a sibling top-level item while one dropdown is open switches directly to it', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -355,12 +421,16 @@ describe('DynamoMenubar', () => {
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(1);
-      expect(getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim())).toEqual(['Undo', 'Redo']);
+      expect(
+        getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim()),
+      ).toEqual(['Undo', 'Redo']);
       expect(document.activeElement?.textContent?.trim()).toBe('Edit');
     });
 
     it('ArrowRight at level 0 on a leaf row jumps to and opens the next top-level dropdown', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -370,12 +440,16 @@ describe('DynamoMenubar', () => {
 
       await settle(fixture);
       expect(getMenus()).toHaveLength(1);
-      expect(getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim())).toEqual(['Undo', 'Redo']);
+      expect(
+        getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim()),
+      ).toEqual(['Undo', 'Redo']);
       expect(document.activeElement?.textContent?.trim()).toBe('Edit');
     });
 
     it('ArrowLeft at level 0 always jumps to the previous top-level dropdown', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'Edit'));
       await settle(fixture); // active row is Undo (a leaf)
@@ -387,7 +461,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('sibling-switching wraps across the bar and skips disabled top-level items', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'Help')); // Help is a leaf — but let's open File instead
       await settle(fixture);
@@ -402,8 +478,12 @@ describe('DynamoMenubar', () => {
     });
 
     it('sibling-switching is a no-op when there is only one top-level item', async () => {
-      const items: DynamoMenubarItem[] = [{ label: 'Solo', children: [{ label: 'X' }] }];
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items } });
+      const items: DynamoMenubarItem[] = [
+        { label: 'Solo', children: [{ label: 'X' }] },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items },
+      });
 
       await userEvent.click(getBarItemByText(container, 'Solo')); // active row X is a leaf
       await settle(fixture);
@@ -411,13 +491,17 @@ describe('DynamoMenubar', () => {
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(1);
-      expect(getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim())).toEqual(['X']);
+      expect(
+        getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim()),
+      ).toEqual(['X']);
     });
   });
 
   describe('keyboard navigation', () => {
-    it('ArrowDown opens a branch item\'s dropdown', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+    it("ArrowDown opens a branch item's dropdown", async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
       getBarItemByText(container, 'File').focus();
 
       await userEvent.keyboard('{ArrowDown}');
@@ -427,7 +511,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('ArrowDown on a leaf top-level item is a no-op', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
       getBarItemByText(container, 'Help').focus();
 
       await userEvent.keyboard('{ArrowDown}');
@@ -437,7 +523,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('ArrowUp/ArrowDown move within the open level without wrapping', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File')); // active is New (index 0)
       await settle(fixture);
@@ -450,7 +538,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('Enter on a branch row drills in rather than committing', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File')); // active is New
       await settle(fixture);
@@ -462,7 +552,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('ArrowRight drills into a branch row, ArrowLeft backs out one level', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -476,7 +568,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('Enter on a leaf commits, closes everything, and refocuses the same top-level item', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -493,7 +587,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('Escape closes every open level and refocuses the same top-level item, never a sibling', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -509,14 +605,20 @@ describe('DynamoMenubar', () => {
     });
 
     it('Tab closes the open dropdown without trapping focus', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
       expect(getMenus()).toHaveLength(1);
 
       getBarItemByText(container, 'File').dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+        new KeyboardEvent('keydown', {
+          key: 'Tab',
+          bubbles: true,
+          cancelable: true,
+        }),
       );
       await settle(fixture);
 
@@ -524,7 +626,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('Home/End jump to the first/last enabled row within an open level', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File')); // active is New (0)
       await settle(fixture);
@@ -547,7 +651,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('Enter on a closed branch item opens its dropdown', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
       getBarItemByText(container, 'File').focus();
 
       await userEvent.keyboard('{Enter}');
@@ -559,7 +665,9 @@ describe('DynamoMenubar', () => {
     it('Enter on a closed leaf item invokes its command directly', async () => {
       const command = vi.fn();
       const items: DynamoMenubarItem[] = [{ label: 'Help', command }];
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items } });
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items },
+      });
       getBarItemByText(container, 'Help').focus();
 
       await userEvent.keyboard('{Enter}');
@@ -570,7 +678,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('an unhandled key on the closed bar does nothing', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
       getBarItemByText(container, 'File').focus();
 
       await userEvent.keyboard('z');
@@ -581,7 +691,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('an unhandled key while a dropdown is open does nothing', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -592,7 +704,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('ArrowRight on a leaf row below level 0 is a no-op (no sibling concept beneath the root dropdown)', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -604,16 +718,17 @@ describe('DynamoMenubar', () => {
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(2);
-      expect(getRowsIn(getMenus()[1]!).map((el) => el.textContent?.trim())).toEqual([
-        'Document',
-        'Spreadsheet',
-      ]);
+      expect(
+        getRowsIn(getMenus()[1]!).map((el) => el.textContent?.trim()),
+      ).toEqual(['Document', 'Spreadsheet']);
     });
   });
 
   describe('disabled items', () => {
     it('a disabled branch row does not open its children on hover or ArrowRight', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -624,7 +739,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('skips disabled rows during ArrowDown navigation within a level', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File')); // New (0)
       await settle(fixture);
@@ -639,7 +756,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('clicking a disabled row directly does nothing', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -651,7 +770,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('hovering a disabled sibling top-level item does nothing', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -666,14 +787,25 @@ describe('DynamoMenubar', () => {
   describe('user interactions', () => {
     it('supports interaction through the DynamoMenubarHarness', async () => {
       const { fixture } = renderDynamoComponent(MenubarTestHostComponent);
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoMenubarHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoMenubarHarness,
+      );
 
-      expect(await harness.getTopLevelLabels()).toEqual(['File', 'Edit', 'Settings', 'Help']);
+      expect(await harness.getTopLevelLabels()).toEqual([
+        'File',
+        'Edit',
+        'Settings',
+        'Help',
+      ]);
       expect(await harness.isOpen()).toBe(false);
 
       await harness.drillInto('File', 'New');
       await settle(fixture);
-      expect(await harness.getVisibleLabelsAtLevel(1)).toEqual(['Document', 'Spreadsheet']);
+      expect(await harness.getVisibleLabelsAtLevel(1)).toEqual([
+        'Document',
+        'Spreadsheet',
+      ]);
 
       await harness.selectPath('File', 'Export', 'CSV');
       await settle(fixture);
@@ -684,7 +816,10 @@ describe('DynamoMenubar', () => {
 
     it('commits a single-label leaf top-level item directly through the harness', async () => {
       const { fixture } = renderDynamoComponent(MenubarTestHostComponent);
-      const harness = await TestbedHarnessEnvironment.harnessForFixture(fixture, DynamoMenubarHarness);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoMenubarHarness,
+      );
 
       await harness.selectPath('Help');
       await settle(fixture);
@@ -696,8 +831,12 @@ describe('DynamoMenubar', () => {
   describe('output events', () => {
     it("emits itemSelect and invokes the item's command() on commit", async () => {
       const command = vi.fn();
-      const items: DynamoMenubarItem[] = [{ label: 'File', children: [{ label: 'Save', command }] }];
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items } });
+      const items: DynamoMenubarItem[] = [
+        { label: 'File', children: [{ label: 'Save', command }] },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items },
+      });
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -710,7 +849,9 @@ describe('DynamoMenubar', () => {
 
   describe('backdrop', () => {
     it('renders exactly one backdrop regardless of how many levels are open', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
@@ -718,18 +859,24 @@ describe('DynamoMenubar', () => {
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(2);
-      expect(document.querySelectorAll('.cdk-overlay-backdrop')).toHaveLength(1);
+      expect(document.querySelectorAll('.cdk-overlay-backdrop')).toHaveLength(
+        1,
+      );
     });
 
     it('clicking the backdrop while several levels deep closes everything', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
       await userEvent.keyboard('{ArrowRight}');
       await settle(fixture);
 
-      const backdrop = document.querySelector('.cdk-overlay-backdrop') as HTMLElement;
+      const backdrop = document.querySelector(
+        '.cdk-overlay-backdrop',
+      ) as HTMLElement;
       backdrop.click();
       await settle(fixture);
 
@@ -737,25 +884,33 @@ describe('DynamoMenubar', () => {
     });
 
     it('switching to a sibling top-level item keeps exactly one backdrop', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
 
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
       fireHover(getBarItemByText(container, 'Edit'));
       await settle(fixture);
 
-      expect(document.querySelectorAll('.cdk-overlay-backdrop')).toHaveLength(1);
+      expect(document.querySelectorAll('.cdk-overlay-backdrop')).toHaveLength(
+        1,
+      );
     });
   });
 
   describe('accessibility', () => {
     it('has no axe violations when closed', async () => {
-      const { container } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
 
     it('has no axe violations with a dropdown and a nested flyout open', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
       await userEvent.click(getBarItemByText(container, 'File'));
       await settle(fixture);
       await userEvent.keyboard('{ArrowRight}');
@@ -771,7 +926,9 @@ describe('DynamoMenubar', () => {
     });
 
     it('binds role="combobox" and aria-activedescendant only on the currently-open bar item', async () => {
-      const { container, fixture } = renderDynamoComponent(MenubarTestHostComponent);
+      const { container, fixture } = renderDynamoComponent(
+        MenubarTestHostComponent,
+      );
       const fileItem = getBarItemByText(container, 'File');
       const editItem = getBarItemByText(container, 'Edit');
 
@@ -782,7 +939,9 @@ describe('DynamoMenubar', () => {
       expect(editItem.getAttribute('role')).toBe('menuitem');
       const activeId = fileItem.getAttribute('aria-activedescendant');
       expect(activeId).toBeTruthy();
-      expect(document.getElementById(activeId!)?.textContent?.trim()).toBe('New');
+      expect(document.getElementById(activeId!)?.textContent?.trim()).toBe(
+        'New',
+      );
 
       await userEvent.click(fileItem); // close
       await settle(fixture);
@@ -794,7 +953,9 @@ describe('DynamoMenubar', () => {
 
   describe('state changes', () => {
     it('opens the given dropdown when openIndex is set programmatically', async () => {
-      const { fixture, setInputs } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { fixture, setInputs } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
 
       setInputs({ openIndex: 0 });
       await settle(fixture);
@@ -803,21 +964,29 @@ describe('DynamoMenubar', () => {
     });
 
     it('re-anchors the dropdown when openIndex switches to a different top-level item', async () => {
-      const { fixture, setInputs } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { fixture, setInputs } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
 
       setInputs({ openIndex: 0 });
       await settle(fixture);
-      expect(getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim())).toContain('Print');
+      expect(
+        getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim()),
+      ).toContain('Print');
 
       setInputs({ openIndex: 1 });
       await settle(fixture);
 
       expect(getMenus()).toHaveLength(1);
-      expect(getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim())).toEqual(['Undo', 'Redo']);
+      expect(
+        getRowsIn(getMenus()[0]!).map((el) => el.textContent?.trim()),
+      ).toEqual(['Undo', 'Redo']);
     });
 
     it('an out-of-range openIndex seeds an empty level and attaches no overlay, without throwing', async () => {
-      const { fixture, setInputs } = renderDynamoComponent(DynamoMenubar, { inputs: { items: ITEMS } });
+      const { fixture, setInputs } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
 
       await expect(async () => {
         setInputs({ openIndex: 99 });
@@ -831,10 +1000,20 @@ describe('DynamoMenubar', () => {
       const items: DynamoMenubarItem[] = [
         {
           label: 'Menu',
-          children: [{ label: 'Sub', children: [{ label: 'A', disabled: true }, { label: 'B', disabled: true }] }],
+          children: [
+            {
+              label: 'Sub',
+              children: [
+                { label: 'A', disabled: true },
+                { label: 'B', disabled: true },
+              ],
+            },
+          ],
         },
       ];
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items } });
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items },
+      });
       const menuItem = getBarItemByText(container, 'Menu');
 
       await userEvent.click(menuItem);
@@ -864,7 +1043,9 @@ describe('DynamoMenubar', () => {
         { label: 'A', disabled: true },
         { label: 'B', disabled: true },
       ];
-      const { container, fixture } = renderDynamoComponent(DynamoMenubar, { inputs: { items } });
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items },
+      });
 
       await expect(async () => {
         getBarItems(container)[0]?.focus();
@@ -877,6 +1058,95 @@ describe('DynamoMenubar', () => {
       expect(() => {
         renderDynamoComponent(DynamoMenubar, { inputs: { items: [] } });
       }).not.toThrow();
+    });
+  });
+
+  describe('icon', () => {
+    // A dedicated fixture, never reused by any exact-text-match helper above
+    // (getBarItemByText/getRowByText both match on exact trimmed
+    // textContent) — an icon glyph injected into an existing fixture item
+    // would break those lookups elsewhere in this file.
+    const ICON_ITEMS: DynamoMenubarItem[] = [
+      {
+        label: 'Iconed',
+        icon: '📁',
+        children: [{ label: 'Sub Iconed', icon: '⚙️' }],
+      },
+      { label: 'Plain', children: [{ label: 'Sub Plain' }] },
+    ];
+
+    it('renders no icon span when an item has no icon (regression)', () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ICON_ITEMS },
+      });
+
+      const plainItem = getBarItems(container).find(
+        (el) => el.textContent?.trim() === 'Plain',
+      ) as HTMLElement;
+      expect(plainItem.querySelector('span[aria-hidden="true"]')).toBeNull();
+    });
+
+    it("renders a bar item's icon glyph as text content before the label", () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ICON_ITEMS },
+      });
+
+      const iconedItem = getBarItems(container).find((el) =>
+        el.textContent?.includes('Iconed'),
+      ) as HTMLElement;
+      expect(iconedItem.textContent?.trim()).toBe('📁Iconed');
+      expect(
+        iconedItem.querySelector('span[aria-hidden="true"]')?.textContent,
+      ).toBe('📁');
+    });
+
+    it("renders a dropdown row's icon glyph, and the row's accessible name is still just the label", async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ICON_ITEMS },
+      });
+
+      await userEvent.click(
+        getBarItems(container).find((el) =>
+          el.textContent?.includes('Iconed'),
+        ) as HTMLElement,
+      );
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+      const row = getRowsIn(menu).find((el) =>
+        el.textContent?.includes('Sub Iconed'),
+      ) as HTMLElement;
+
+      expect(row.querySelector('span[aria-hidden="true"]')?.textContent).toBe(
+        '⚙️',
+      );
+      expect(row.getAttribute('aria-disabled')).not.toBe('true');
+    });
+
+    it('has no axe violations with icons present, closed', async () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ICON_ITEMS },
+      });
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations with an icon-bearing dropdown open', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ICON_ITEMS },
+      });
+      await userEvent.click(
+        getBarItems(container).find((el) =>
+          el.textContent?.includes('Iconed'),
+        ) as HTMLElement,
+      );
+      await settle(fixture);
+
+      // Same pattern as the existing "dropdown and nested flyout open" axe
+      // test — scan each portaled menu individually, never the bar
+      // container while one of its items holds role="combobox".
+      for (const menu of getMenus()) {
+        await expect(expectNoA11yViolations(menu)).resolves.toBeUndefined();
+      }
     });
   });
 });

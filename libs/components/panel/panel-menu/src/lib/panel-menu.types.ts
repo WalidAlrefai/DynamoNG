@@ -12,6 +12,8 @@ export type DynamoPanelMenuPart = 'root' | 'row' | 'chevron' | 'group';
  */
 export interface DynamoPanelMenuItem {
   label: string;
+  /** Optional short glyph/text rendered before the label — e.g. a Unicode symbol or emoji. Not connected to `@dynamong/icons` (which only exports one fixed checkmark glyph today, not a general icon-selection system) — same plain-string shape as `@dynamong/menu`'s `DynamoMenuItem.icon`. */
+  icon?: string;
   disabled?: boolean;
   children?: DynamoPanelMenuItem[];
   /** Invoked when this item is committed (only meaningful on a leaf — an item with no `children`). */

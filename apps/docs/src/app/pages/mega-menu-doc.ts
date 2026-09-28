@@ -11,12 +11,13 @@ import {
 const ITEMS: DynamoMegaMenuItem[] = [
   {
     label: 'Products',
+    icon: '🛍️',
     columns: [
       {
         header: 'Laptops',
         items: [
-          { label: 'MacBook Air' },
-          { label: 'MacBook Pro' },
+          { label: 'MacBook Air', icon: '💻' },
+          { label: 'MacBook Pro', icon: '💻' },
           { label: 'Compare models' },
         ],
       },
@@ -98,7 +99,20 @@ const API: ApiTableRow[] = [
         <div code>&lt;dg-mega-menu [items]="items" ariaLabel="Main" /&gt;</div>
       </docs-example>
 
-      <docs-api-table api [rows]="apiRows" />
+      <div api class="space-y-3">
+        <docs-api-table [rows]="apiRows" />
+        <p class="text-sm text-text-muted">
+          <code class="font-mono">DynamoMegaMenuItem</code>:
+          <code class="font-mono">label</code> (required),
+          <code class="font-mono">icon?</code> (a plain glyph/emoji string),
+          <code class="font-mono">disabled?</code>,
+          <code class="font-mono">columns?</code>,
+          <code class="font-mono">command?</code>. Each
+          <code class="font-mono">DynamoMegaMenuLink</code> inside a column's
+          <code class="font-mono">items</code> also accepts
+          <code class="font-mono">icon?</code>.
+        </p>
+      </div>
     </docs-examples-layout>
   `,
 })
