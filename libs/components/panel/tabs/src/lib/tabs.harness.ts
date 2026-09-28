@@ -34,4 +34,25 @@ export class DynamoTabsHarness extends ComponentHarness {
     const panel = await this.panelLocator();
     return panel ? (await panel.text()).trim() : null;
   }
+
+  /** Clicks the given tab's own close affordance — throws if that tab isn't `closable`. */
+  async closeTabByLabel(label: string): Promise<void> {
+    const tabs = await this.tabLocators();
+    for (const tab of tabs) {
+      if ((await tab.text()).trim() === label) {
+        const tabId = await tab.getAttribute('id');
+        const closeEl = await this.locatorForOptional(
+          `[data-tab-close="${tabId}"]`,
+        )();
+        if (!closeEl) {
+          throw new Error(
+            `Tab "${label}" is not closable — is \`closable\` set on it?`,
+          );
+        }
+        await closeEl.click();
+        return;
+      }
+    }
+    throw new Error(`No tab with label "${label}" found`);
+  }
 }

@@ -17,43 +17,60 @@ child `<dg-tab>` content rather than an `items` input.
 
 ## Inputs
 
-| Input            | Type                          | Default     | Description                                                                                                                             |
-| ---------------- | ----------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`          | `string \| undefined` (model) | `undefined` | Two-way bindable: `<dg-tabs [(value)]="active">`.                                                                                       |
-| `activation`     | `DynamoTabsActivation`        | `'manual'`  | `'manual'`: arrow keys move focus only, `Enter`/`Space`/click activates. `'automatic'`: arrow-key focus movement activates immediately. |
-| `scrollable`     | `boolean`                     | `false`     | Lets the tablist scroll horizontally instead of wrapping — for more tabs than fit on one line.                                          |
-| `showNavigators` | `boolean`                     | `true`      | Shows prev/next scroll buttons flanking the tablist. Only rendered when `scrollable` is true.                                           |
-| `ariaLabel`      | `string \| undefined`         | `undefined` |                                                                                                                                         |
+| Input            | Type                          | Default        | Description                                                                                                                             |
+| ---------------- | ----------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`          | `string \| undefined` (model) | `undefined`    | Two-way bindable: `<dg-tabs [(value)]="active">`.                                                                                       |
+| `activation`     | `DynamoTabsActivation`        | `'manual'`     | `'manual'`: arrow keys move focus only, `Enter`/`Space`/click activates. `'automatic'`: arrow-key focus movement activates immediately. |
+| `scrollable`     | `boolean`                     | `false`        | Lets the tablist scroll horizontally instead of wrapping — for more tabs than fit on one line.                                          |
+| `showNavigators` | `boolean`                     | `true`         | Shows prev/next scroll buttons flanking the tablist. Only rendered when `scrollable` is true.                                           |
+| `ariaLabel`      | `string \| undefined`         | `undefined`    |                                                                                                                                         |
+| `orientation`    | `DynamoTabsOrientation`       | `'horizontal'` | `'vertical'` stacks the tablist as a side rail with content to the end, instead of a row above the content.                             |
+| `verticalWidth`  | `number`                      | `200`          | Rail width in px — only consulted while `orientation` is `'vertical'`; there's no natural intrinsic width for a side rail.              |
 
 ### `<dg-tab>` inputs
 
-| Input      | Type                | Default | Description                        |
-| ---------- | ------------------- | ------- | ---------------------------------- |
-| `value`    | `string` (required) | —       | Matched against the tabs' `value`. |
-| `label`    | `string` (required) | —       | Tab button text.                   |
-| `disabled` | `boolean`           | `false` |                                    |
+| Input      | Type                | Default | Description                                                              |
+| ---------- | ------------------- | ------- | ------------------------------------------------------------------------ |
+| `value`    | `string` (required) | —       | Matched against the tabs' `value`.                                       |
+| `label`    | `string` (required) | —       | Tab button text.                                                         |
+| `disabled` | `boolean`           | `false` |                                                                          |
+| `closable` | `boolean`           | `false` | Renders a close (×) affordance on this tab's header — see Closable tabs. |
 
 ## Outputs
 
-| Output        | Payload               | Fires when                                                                                                                                                     |
-| ------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `valueChange` | `string \| undefined` | `value` changes (auto-generated by `model()`) — including the automatic fallback to the first enabled tab whenever the active tab becomes invalid or disabled. |
+| Output        | Payload               | Fires when                                                                                                                                                                                                                                                     |
+| ------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `valueChange` | `string \| undefined` | `value` changes (auto-generated by `model()`) — including the automatic fallback to the first enabled tab whenever the active tab becomes invalid or disabled.                                                                                                 |
+| `tabClose`    | `string`              | A closable tab's close affordance is clicked, or `Delete`/`Backspace` is pressed while it's focused — payload is that tab's `value`. `DynamoTabs` never removes anything itself; the consumer removes it from their own data (e.g. filtering an `@for` array). |
 
 ## Accessibility
 
 - `role="tablist"` with `role="tab"` buttons (`aria-selected`, `aria-controls`, `aria-disabled`, roving `tabindex`) and `role="tabpanel"` content regions (`aria-labelledby`), mounted lazily on first activation and kept mounted (hidden, not destroyed) afterward.
-- Keyboard: `ArrowLeft`/`ArrowRight` move focus (wrapping, skipping disabled tabs), `Home`/`End` jump to the first/last enabled tab. In `'automatic'` mode, arrow-key focus movement also activates the newly focused tab; in `'manual'` mode (the default), activation requires `Enter`/`Space`/click.
+- Keyboard: `ArrowLeft`/`ArrowRight`/`ArrowDown`/`ArrowUp` all move focus (wrapping, skipping disabled tabs) regardless of `orientation` — both direction pairs are always live, never gated on it (same "both pairs always live" posture as Carousel's own orientation-aware arrow keys). `Home`/`End` jump to the first/last enabled tab. In `'automatic'` mode, arrow-key focus movement also activates the newly focused tab; in `'manual'` mode (the default), activation requires `Enter`/`Space`/click. `Delete`/`Backspace` closes the focused tab when it's `closable`.
+
+## Closable tabs
+
+Set `closable` on a `<dg-tab>` to render a close (×) affordance on its header. Clicking it — or pressing
+`Delete`/`Backspace` while that tab is focused — fires `(tabClose)` with the tab's `value`; `DynamoTabs`
+never removes anything itself, since tabs are the consumer's own content-projected data (same
+"consumer owns removal" posture as this codebase's other closable-item components). The close affordance is
+deliberately **not** a focusable element of its own (no `tabindex`, no `role="button"`) — nesting a second
+interactive/tab-role element directly under `role="tablist"` violates its `aria-required-children` ARIA
+constraint (only `role="tab"` may live directly under it), so it's mouse-only, with the tab's own
+`aria-keyshortcuts="Delete"` announcing the keyboard equivalent to assistive tech. This mirrors the W3C ARIA
+Authoring Practices Guide's own "Tabs with Delete Buttons" pattern.
 
 ## Design notes
 
-`scrollable`/`showNavigators` let the tablist scroll horizontally instead of
-wrapping. The scroll-nav buttons are plain native `<button>`s, not
-`dg-button`: Tabs is `tier:0` and can't take on a `tier:1` dependency just
-for two scroll buttons. A separate "select on focus" mode was considered
-and left out — already covered by this component's own `activation` input
-(`'automatic'` mode is the same "focus activates" behavior). A separate
-lazy-mount opt-in was also left out: this component already always
-lazy-mounts panels on first activation.
+`scrollable`/`showNavigators` let the tablist scroll horizontally (or, while
+`orientation` is `'vertical'`, vertically) instead of wrapping. The
+scroll-nav buttons are plain native `<button>`s, not `dg-button`: Tabs is
+`tier:0` and can't take on a `tier:1` dependency just for two scroll
+buttons. A separate "select on focus" mode was considered and left out —
+already covered by this component's own `activation` input (`'automatic'`
+mode is the same "focus activates" behavior). A separate lazy-mount opt-in
+was also left out: this component already always lazy-mounts panels on
+first activation.
 
 ## Tier / dependencies
 

@@ -8,6 +8,7 @@ import {
   effect,
   input,
   model,
+  output,
   viewChild,
   viewChildren,
 } from '@angular/core';
@@ -15,14 +16,20 @@ import { DynamoBaseComponent } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoTab } from './tab';
 import {
+  tabsCloseButtonStyles,
   tabsPanelStyles,
   tabsRootStyles,
   tabsScrollNavButtonStyles,
+  tabsScrollNavIconStyles,
   tabsTablistRowStyles,
   tabsTablistStyles,
   tabsTabStyles,
 } from './tabs.styles';
-import type { DynamoTabsActivation, DynamoTabsPart } from './tabs.types';
+import type {
+  DynamoTabsActivation,
+  DynamoTabsOrientation,
+  DynamoTabsPart,
+} from './tabs.types';
 
 @Component({
   selector: 'dg-tabs',
@@ -41,6 +48,16 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
   /** Prev/next scroll buttons, shown only when `scrollable` is true. */
   readonly showNavigators = input(true);
   readonly ariaLabel = input<string | undefined>(undefined);
+  readonly orientation = input<DynamoTabsOrientation>('horizontal');
+  /** Rail width in px — only consulted while `orientation` is `'vertical'`;
+   *  there's no natural intrinsic width for a side rail (same reasoning as
+   *  Slider's/Carousel's own `verticalHeight`). */
+  readonly verticalWidth = input(200);
+  /** Fires with the closed tab's `value` when its close button is clicked.
+   *  `DynamoTabs` never removes anything itself — content-projected
+   *  `<dg-tab>`s are the consumer's own data; they remove it (e.g. from an
+   *  `@for`), same as every other closable-item pattern in this codebase. */
+  readonly tabClose = output<string>();
 
   protected readonly tabs = contentChildren(DynamoTab);
   private readonly tabButtons =
@@ -64,14 +81,30 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
   });
 
   protected readonly rootClasses = computed(() =>
-    this.unstyled() ? this.styleClass() : cn(tabsRootStyles, this.styleClass()),
+    this.unstyled()
+      ? this.styleClass()
+      : cn(
+          tabsRootStyles({ orientation: this.orientation() }),
+          this.styleClass(),
+        ),
   );
-  protected readonly tablistRowClasses = tabsTablistRowStyles;
+  protected readonly tablistRowClasses = computed(() =>
+    tabsTablistRowStyles({ orientation: this.orientation() }),
+  );
   protected readonly tablistClasses = computed(() =>
-    tabsTablistStyles({ scrollable: this.scrollable() }),
+    tabsTablistStyles({
+      orientation: this.orientation(),
+      scrollable: this.scrollable(),
+    }),
   );
-  protected readonly panelClasses = tabsPanelStyles;
+  protected readonly panelClasses = computed(() =>
+    tabsPanelStyles({ orientation: this.orientation() }),
+  );
   protected readonly scrollNavButtonClasses = tabsScrollNavButtonStyles;
+  protected readonly scrollNavIconClasses = computed(() =>
+    tabsScrollNavIconStyles({ orientation: this.orientation() }),
+  );
+  protected readonly closeButtonClasses = tabsCloseButtonStyles;
 
   constructor() {
     super();
@@ -110,6 +143,7 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
 
   protected tabClasses(tab: DynamoTab) {
     return tabsTabStyles({
+      orientation: this.orientation(),
       active: this.isActive(tab),
       disabled: tab.disabled(),
     });
@@ -139,6 +173,11 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
     this.tabButtons()[index]?.nativeElement.focus();
   }
 
+  protected onCloseClick(event: Event, tab: DynamoTab): void {
+    event.stopPropagation();
+    this.tabClose.emit(tab.value());
+  }
+
   protected onTablistKeydown(event: KeyboardEvent): void {
     const buttons = this.tabButtons();
     const currentIndex = buttons.findIndex(
@@ -151,9 +190,11 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
     let nextIndex: number | null;
     switch (event.key) {
       case 'ArrowRight':
+      case 'ArrowDown':
         nextIndex = this.findEnabledIndex(currentIndex, 1);
         break;
       case 'ArrowLeft':
+      case 'ArrowUp':
         nextIndex = this.findEnabledIndex(currentIndex, -1);
         break;
       case 'Home':
@@ -162,6 +203,15 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
       case 'End':
         nextIndex = this.findEnabledIndex(0, -1);
         break;
+      case 'Delete':
+      case 'Backspace': {
+        const tab = this.tabs()[currentIndex];
+        if (tab?.closable()) {
+          event.preventDefault();
+          this.tabClose.emit(tab.value());
+        }
+        return;
+      }
       default:
         return;
     }
@@ -199,9 +249,18 @@ export class DynamoTabs extends DynamoBaseComponent<DynamoTabsPart> {
   // finding that `behavior: 'smooth'` can silently no-op in some automated/
   // nested-scroller contexts.
   protected scrollTablist(direction: -1 | 1): void {
-    this.tablistRef()?.nativeElement.scrollBy?.({
-      left: direction * 160,
-      behavior: 'auto',
-    });
+    const amount = direction * 160;
+    this.tablistRef()?.nativeElement.scrollBy?.(
+      this.orientation() === 'vertical'
+        ? { top: amount, behavior: 'auto' }
+        : { left: amount, behavior: 'auto' },
+    );
+  }
+
+  protected scrollNavAriaLabel(direction: -1 | 1): string {
+    if (this.orientation() === 'vertical') {
+      return direction === -1 ? 'Scroll tabs up' : 'Scroll tabs down';
+    }
+    return direction === -1 ? 'Scroll tabs left' : 'Scroll tabs right';
   }
 }

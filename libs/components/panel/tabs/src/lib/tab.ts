@@ -25,6 +25,10 @@ export class DynamoTab {
   readonly value = input.required<string>();
   readonly label = input.required<string>();
   readonly disabled = input(false);
+  /** Renders a close (×) button on this tab's header and lets `(tabClose)`
+   *  fire for it — `DynamoTabs` owns the actual button/click handling since
+   *  `DynamoTab` renders no DOM of its own. */
+  readonly closable = input(false);
 
   readonly contentTemplate =
     viewChild.required<TemplateRef<unknown>>('content');
