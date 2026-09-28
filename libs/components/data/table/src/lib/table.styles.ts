@@ -42,6 +42,12 @@ export const tableSortIconStyles = cva(
   },
 );
 
+// Numbered priority badge shown next to a column's sort icon once 2+ sort
+// keys are active (sortMode="multiple", after a shift-click) — the same
+// small-pill idiom as other severity/state badges in this codebase.
+export const tableSortPriorityStyles =
+  'inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-on-primary';
+
 // `selected` variant added for v2 row selection. The component binds this
 // per-row via a method (`bodyRowClasses(row)`), not a plain constant,
 // since selection state varies row-to-row.

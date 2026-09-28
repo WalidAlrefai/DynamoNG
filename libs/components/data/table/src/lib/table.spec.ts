@@ -11,7 +11,7 @@ import {
   expectNoA11yViolations,
   renderDynamoComponent,
 } from '@dynamong/testing';
-import { within } from '@testing-library/dom';
+import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoTable } from './table';
@@ -66,6 +66,7 @@ const ITEM_COLUMNS: DynamoTableColumn<Item>[] = [
     [(filterText)]="filterText"
     [noMatchesMessage]="noMatchesMessage()"
     [loading]="loading()"
+    [sortMode]="sortMode()"
   />`,
 })
 class TableTestHostComponent {
@@ -84,6 +85,7 @@ class TableTestHostComponent {
   readonly filterText = model('');
   readonly noMatchesMessage = input('No matching rows');
   readonly loading = input(false);
+  readonly sortMode = input<'single' | 'multiple'>('single');
 }
 
 @Component({
@@ -364,6 +366,128 @@ describe('DynamoTable', () => {
     });
   });
 
+  describe('sortMode="multiple"', () => {
+    it('a plain click still collapses to a single key, same as sortMode="single"', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { sortMode: 'multiple' } },
+      );
+      const nameHeader = within(container).getByRole('button', {
+        name: 'Name',
+      });
+      const ageHeader = within(container).getByRole('button', { name: 'Age' });
+
+      nameHeader.click();
+      fixture.detectChanges();
+      ageHeader.click();
+      fixture.detectChanges();
+
+      expect(
+        getHeaderCells(container)[0]?.getAttribute('aria-sort'),
+      ).toBeNull();
+      expect(getHeaderCells(container)[1]?.getAttribute('aria-sort')).toBe(
+        'ascending',
+      );
+      expect(getColumnValues(container, 1)).toEqual(['25', '30', '40']);
+    });
+
+    it('shift-click adds a second key without clearing the first', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { sortMode: 'multiple' } },
+      );
+      const nameHeader = within(container).getByRole('button', {
+        name: 'Name',
+      });
+      const ageHeader = within(container).getByRole('button', { name: 'Age' });
+
+      nameHeader.click();
+      fixture.detectChanges();
+      fireEvent.click(ageHeader, { shiftKey: true });
+      fixture.detectChanges();
+
+      expect(getHeaderCells(container)[0]?.getAttribute('aria-sort')).toBe(
+        'ascending',
+      );
+      expect(getHeaderCells(container)[1]?.getAttribute('aria-sort')).toBe(
+        'ascending',
+      );
+    });
+
+    it('shift-clicking an already-active key cycles its own direction without disturbing others', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { sortMode: 'multiple' } },
+      );
+      const nameHeader = within(container).getByRole('button', {
+        name: 'Name',
+      });
+      const ageHeader = within(container).getByRole('button', { name: 'Age' });
+      nameHeader.click();
+      fixture.detectChanges();
+      fireEvent.click(ageHeader, { shiftKey: true });
+      fixture.detectChanges();
+
+      fireEvent.click(ageHeader, { shiftKey: true });
+      fixture.detectChanges();
+
+      expect(getHeaderCells(container)[0]?.getAttribute('aria-sort')).toBe(
+        'ascending',
+      );
+      expect(getHeaderCells(container)[1]?.getAttribute('aria-sort')).toBe(
+        'descending',
+      );
+    });
+
+    it('shift-clicking a key through descending removes just that key', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { sortMode: 'multiple' } },
+      );
+      const nameHeader = within(container).getByRole('button', {
+        name: 'Name',
+      });
+      const ageHeader = within(container).getByRole('button', { name: 'Age' });
+      nameHeader.click();
+      fixture.detectChanges();
+      fireEvent.click(ageHeader, { shiftKey: true }); // age: asc
+      fixture.detectChanges();
+      fireEvent.click(ageHeader, { shiftKey: true }); // age: desc
+      fixture.detectChanges();
+
+      fireEvent.click(ageHeader, { shiftKey: true }); // age: removed
+
+      fixture.detectChanges();
+      expect(getHeaderCells(container)[0]?.getAttribute('aria-sort')).toBe(
+        'ascending',
+      );
+      expect(
+        getHeaderCells(container)[1]?.getAttribute('aria-sort'),
+      ).toBeNull();
+    });
+
+    it('shows a priority badge only once 2+ keys are active', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+        { inputs: { sortMode: 'multiple' } },
+      );
+      const nameHeader = within(container).getByRole('button', {
+        name: 'Name',
+      });
+      const ageHeader = within(container).getByRole('button', { name: 'Age' });
+
+      nameHeader.click();
+      fixture.detectChanges();
+      expect(nameHeader.textContent).not.toMatch(/[12]/);
+
+      fireEvent.click(ageHeader, { shiftKey: true });
+      fixture.detectChanges();
+
+      expect(nameHeader.textContent).toContain('1');
+      expect(ageHeader.textContent).toContain('2');
+    });
+  });
+
   describe('conditional rendering', () => {
     it('renders a single empty-state row spanning all columns when data is empty', () => {
       const { container } = renderDynamoComponent<DynamoTable<Person>>(
@@ -405,6 +529,23 @@ describe('DynamoTable', () => {
       await harness.sortBy('Name');
 
       expect(await harness.getColumnText(0)).toEqual(['Ada', 'Bea', 'Charlie']);
+    });
+
+    it('supports adding a second sort key through the harness (additive: true)', async () => {
+      const { fixture } = renderDynamoComponent(TableTestHostComponent, {
+        inputs: { sortMode: 'multiple' },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTableHarness,
+      );
+
+      await harness.sortBy('Age');
+      await harness.sortBy('Name', { additive: true });
+
+      // Age ascending is primary; Name only breaks ties — no two people
+      // share an age here, so the result equals a plain age sort.
+      expect(await harness.getColumnText(1)).toEqual(['25', '30', '40']);
     });
   });
 

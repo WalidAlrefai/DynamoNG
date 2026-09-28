@@ -44,10 +44,19 @@ export class DynamoTableHarness extends ComponentHarness {
     'tbody td[colspan]:not([data-detail-cell])',
   );
 
-  async sortBy(header: string): Promise<void> {
+  /** `additive: true` shift-clicks — adds/cycles this column as an extra
+   *  sort key under `sortMode="multiple"` instead of collapsing to it alone. */
+  async sortBy(
+    header: string,
+    options?: { additive?: boolean },
+  ): Promise<void> {
     for (const button of await this.headerButtonLocators()) {
       if ((await button.text()).trim() === header) {
-        await button.click();
+        if (options?.additive) {
+          await button.click({ shift: true });
+        } else {
+          await button.click();
+        }
         return;
       }
     }
