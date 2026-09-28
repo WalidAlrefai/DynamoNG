@@ -665,6 +665,33 @@ describe('DynamoCarousel', () => {
       expect(track.style.transform).not.toContain('translateX');
     });
 
+    // Regression test for a real bug: without `h-full` on the track while
+    // vertical, its height stays CSS-indeterminate (a block box's `height:
+    // auto` shrinks to content, unlike `width: auto`, which already fills
+    // the parent — the axis asymmetry that let horizontal "just work" with
+    // no explicit sizing). Every slide's percentage flex-basis, and the
+    // percentage-based translateY step, both silently resolved against that
+    // wrong, content-sized height instead of the real viewport height —
+    // visually collapsing every slide into one and landing on empty space
+    // after any move. jsdom can't compute real layout to catch this
+    // directly, so this only asserts the fix's class is present/absent —
+    // the real bug was only visible in an actual browser.
+    it('gives the track a definite height while vertical (h-full)', () => {
+      const { container } = renderDynamoComponent(
+        CarouselOrientationHostComponent,
+      );
+      const track = viewport(container).querySelector('.flex') as HTMLElement;
+
+      expect(track.className).toContain('h-full');
+    });
+
+    it('does not give the track h-full while horizontal (regression)', () => {
+      const { container } = renderDynamoComponent(CarouselTestHostComponent);
+      const track = viewport(container).querySelector('.flex') as HTMLElement;
+
+      expect(track.className).not.toContain('h-full');
+    });
+
     it('moves prev/next with ArrowUp/ArrowDown, and ArrowLeft/ArrowRight still work too', async () => {
       const { container, componentInstance } = renderDynamoComponent(
         CarouselOrientationHostComponent,

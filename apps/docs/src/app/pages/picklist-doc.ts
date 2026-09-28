@@ -16,6 +16,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'readonly', title: 'Read-only' },
+  { id: 'filterable', title: 'Filterable' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
 ];
 
@@ -30,6 +31,15 @@ const API: ApiTableRow[] = [
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'disabled', type: 'boolean', default: 'false' },
   { name: 'readOnly', type: 'boolean', default: 'false' },
+  { name: 'filterable', type: 'boolean', default: 'false' },
+  { name: 'sourceFilterText', type: 'string (model)', default: "''" },
+  { name: 'targetFilterText', type: 'string (model)', default: "''" },
+  { name: 'filterPlaceholder', type: 'string', default: "'Search...'" },
+  {
+    name: 'noResultsMessage',
+    type: 'string',
+    default: "'No matching options'",
+  },
   { name: 'virtualScroll', type: 'boolean', default: 'false' },
   { name: 'virtualScrollItemSize', type: 'number', default: '36' },
   { name: 'virtualScrollHeight', type: 'number', default: '320' },
@@ -94,6 +104,26 @@ const MANY_SOURCE: DynamoSelectOption<string>[] = Array.from(
       </docs-example>
 
       <docs-example
+        exampleId="filterable"
+        title="Filterable"
+        description="filterable shows a per-panel search box that narrows that panel's rows by label — filtering one panel disables its own drag-and-drop but leaves the other panel unaffected."
+      >
+        <div preview class="flex flex-col gap-3">
+          <dg-picklist
+            [(source)]="filterableSource"
+            [(target)]="filterableTarget"
+            sourceLabel="Available"
+            targetLabel="Selected"
+            [filterable]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-picklist [(source)]="available" [(target)]="selected"
+          [filterable]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="virtual-scroll"
         title="Virtual Scroll"
         description="Set virtualScroll for large source/target arrays — only a small rendered window mounts per panel. Drag-and-drop is disabled while virtualized; use the move buttons or ▲/▼ keyboard reorder instead."
@@ -148,5 +178,17 @@ export class PicklistDocPage {
   ]);
   protected readonly readonlyTarget = signal<DynamoSelectOption<string>[]>([
     { label: 'TypeScript', value: 'ts' },
+  ]);
+
+  protected readonly filterableSource = signal<DynamoSelectOption<string>[]>([
+    { label: 'Rust', value: 'rust' },
+    { label: 'Go', value: 'go' },
+    { label: 'Python', value: 'py' },
+    { label: 'Ruby', value: 'ruby' },
+    { label: 'Kotlin', value: 'kotlin' },
+  ]);
+  protected readonly filterableTarget = signal<DynamoSelectOption<string>[]>([
+    { label: 'TypeScript', value: 'ts' },
+    { label: 'JavaScript', value: 'js' },
   ]);
 }

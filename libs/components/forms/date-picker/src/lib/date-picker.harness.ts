@@ -50,4 +50,43 @@ export class DynamoDatePickerHarness extends ComponentHarness {
     }
     throw new Error(`No enabled day button with text "${dayOfMonth}" found`);
   }
+
+  private async readSpinbuttonValue(label: string): Promise<number | null> {
+    const field = await this.documentRootLocatorFactory().locatorForOptional(
+      `[role="spinbutton"][aria-label="${label}"]`,
+    )();
+    const raw = await field?.getAttribute('aria-valuenow');
+    return raw === undefined || raw === null ? null : Number(raw);
+  }
+
+  /** Reads the current hour/minute/second spinbuttons — `null` if `showTime` isn't rendering them (panel closed, or `showTime` off). `seconds` is `null` unless `showSeconds` is also on. */
+  async getTimeValue(): Promise<{
+    hours: number;
+    minutes: number;
+    seconds: number | null;
+  } | null> {
+    const hours = await this.readSpinbuttonValue('Hour');
+    const minutes = await this.readSpinbuttonValue('Minute');
+    if (hours === null || minutes === null) return null;
+    const seconds = await this.readSpinbuttonValue('Second');
+    return { hours, minutes, seconds };
+  }
+
+  /** Clicks the increment/decrement button for the given time field. Throws if `showTime` isn't rendering it. */
+  async stepTime(
+    field: 'hour' | 'minute' | 'second',
+    direction: 'up' | 'down',
+  ): Promise<void> {
+    const verb = direction === 'up' ? 'Increment' : 'Decrement';
+    const ariaLabel = `${verb} ${field}`;
+    const button = await this.documentRootLocatorFactory().locatorForOptional(
+      `[aria-label="${ariaLabel}"]`,
+    )();
+    if (!button) {
+      throw new Error(
+        `No "${ariaLabel}" button found — is \`showTime\` set (and \`showSeconds\` if stepping seconds)?`,
+      );
+    }
+    await button.click();
+  }
 }

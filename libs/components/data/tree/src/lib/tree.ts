@@ -19,6 +19,7 @@ import {
 } from '@dynamong/utils/typeahead';
 import { filterTree } from './tree.filter';
 import { DynamoTreeItem } from './tree-item';
+import { isTreeNodeExpandable } from './tree-node';
 import {
   collectCascadeIds,
   computeNodeCheckState,
@@ -66,6 +67,12 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
   readonly nodeActivate = output<DynamoTreeNode>();
   /** Fires once per node a user directly checks/unchecks with the full node object — not once per cascaded descendant. */
   readonly itemSelect = output<DynamoTreeNode>();
+  /** Fires when a node is expanded and it's expandable (`leaf: false` or
+   *  has `children`) but has no `children` loaded yet — the consumer's cue
+   *  to fetch and patch them into their own `items()` array. Never fires
+   *  again for that node once it has `children` (whether patched in by the
+   *  consumer, or the node was never lazy to begin with). */
+  readonly nodeExpand = output<DynamoTreeNode>();
 
   /**
    * Opt-in global filter. `false` (default) renders no search UI at all —
@@ -185,7 +192,7 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
     this.treeState.activeId = () => this.activeEntryId();
     this.treeState.checkState = (node) =>
       computeNodeCheckState(node, this.selectedSet());
-    this.treeState.toggleExpanded = (id) => this.toggleExpanded(id);
+    this.treeState.toggleExpanded = (node) => this.toggleExpanded(node);
     this.treeState.toggleChecked = (node) => this.toggleChecked(node);
     this.treeState.setActive = (id) => this.activeIdSignal.set(id);
     this.treeState.activate = (node) => {
@@ -240,10 +247,10 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
         if (!entry) {
           return;
         }
-        const hasChildren = (entry.node.children?.length ?? 0) > 0;
+        const hasChildren = isTreeNodeExpandable(entry.node);
         const isExpanded = this.isEffectivelyExpanded(entry.node.id);
         if (hasChildren && !isExpanded) {
-          this.toggleExpanded(entry.node.id);
+          this.toggleExpanded(entry.node);
         } else if (hasChildren && isExpanded) {
           const child = entries[currentIndex + 1];
           if (child?.parentId === entry.node.id) {
@@ -261,10 +268,10 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
         if (!entry) {
           return;
         }
-        const hasChildren = (entry.node.children?.length ?? 0) > 0;
+        const hasChildren = isTreeNodeExpandable(entry.node);
         const isExpanded = this.isEffectivelyExpanded(entry.node.id);
         if (hasChildren && isExpanded) {
-          this.toggleExpanded(entry.node.id);
+          this.toggleExpanded(entry.node);
         } else if (entry.parentId !== undefined) {
           const parentIndex = entries.findIndex(
             (candidate) => candidate.node.id === entry.parentId,
@@ -376,16 +383,24 @@ export class DynamoTree extends DynamoBaseComponent<DynamoTreePart> {
     this.filterText.set(value);
   }
 
-  private toggleExpanded(id: string): void {
-    if (this.isBusy()) {
+  private toggleExpanded(node: DynamoTreeNode): void {
+    if (this.isBusy() || node.loading) {
       return;
     }
     const current = this.expandedIds();
+    const willExpand = !current.includes(node.id);
     this.expandedIds.set(
-      current.includes(id)
-        ? current.filter((existing) => existing !== id)
-        : [...current, id],
+      willExpand
+        ? [...current, node.id]
+        : current.filter((existing) => existing !== node.id),
     );
+    if (
+      willExpand &&
+      isTreeNodeExpandable(node) &&
+      (node.children?.length ?? 0) === 0
+    ) {
+      this.nodeExpand.emit(node);
+    }
   }
 
   private toggleChecked(node: DynamoTreeNode): void {

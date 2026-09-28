@@ -37,18 +37,31 @@ import {
 } from './date-picker.calendar';
 import { getCachedDateTimeFormat } from './date-format-cache';
 import {
+  datePickerApplyButtonStyles,
   datePickerDayStyles,
   datePickerHeaderButtonStyles,
+  datePickerMeridiemButtonStyles,
   datePickerMonthGridButtonStyles,
   datePickerPanelStyles,
   datePickerQuickJumpButtonStyles,
+  datePickerTimeFieldStyles,
+  datePickerTimeSeparatorStyles,
+  datePickerTimeStepButtonStyles,
+  datePickerTimeValueStyles,
+  datePickerTimeWrapperStyles,
   datePickerTriggerStyles,
   datePickerWeekdayStyles,
 } from './date-picker.styles';
 import type {
+  DynamoDatePickerHourFormat,
   DynamoDatePickerPart,
   DynamoDatePickerSize,
 } from './date-picker.types';
+
+/** Wraps `n` into `[0, m)` — e.g. `wrapMod(23 + 1, 24) === 0`. */
+function wrapMod(n: number, m: number): number {
+  return ((n % m) + m) % m;
+}
 
 // Preferred corner first (bottom-start), the other three as CDK collision
 // fallbacks — same shape as DynamoMenu's position list, but DatePicker has
@@ -125,6 +138,13 @@ export class DynamoDatePicker
   readonly clearable = input(false);
   /** Renders the calendar directly in the page, with no trigger button or overlay — for embedding the picker permanently rather than behind a popup. */
   readonly inline = input(false);
+  /** Renders hour/minute (and optionally second) steppers below the calendar. Selecting a day no longer
+   *  closes the popup while this is on — an Apply button does that instead — since the panel now has more
+   *  for the user to do (set the time) before they're done. */
+  readonly showTime = input(false);
+  readonly hourFormat = input<DynamoDatePickerHourFormat>('24');
+  /** Also renders a seconds stepper — off by default (most consumers only need hour/minute). */
+  readonly showSeconds = input(false);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<Date | null>(null);
@@ -147,6 +167,10 @@ export class DynamoDatePicker
 
   /** Sole source of truth for both the visible month and the roving-focus cursor. */
   protected readonly focusedDate = signal<Date>(startOfDay(new Date()));
+  /** Time-of-day for `showTime` mode — deliberately separate from `focusedDate`,
+   *  which stays `startOfDay`-truncated everywhere else (grid nav, `clampToRange`,
+   *  `isSameDay` comparisons) regardless of `showTime`. */
+  protected readonly timeOfDay = signal({ hours: 0, minutes: 0, seconds: 0 });
   protected readonly visibleMonth = computed(() =>
     startOfMonth(this.focusedDate()),
   );
@@ -162,11 +186,18 @@ export class DynamoDatePicker
 
   protected readonly triggerLabel = computed(() => {
     const value = this.value();
-    return value
-      ? getCachedDateTimeFormat(this.config.locale, {
-          dateStyle: 'medium',
-        }).format(value)
-      : this.placeholder();
+    if (!value) return this.placeholder();
+    const dateStr = getCachedDateTimeFormat(this.config.locale, {
+      dateStyle: 'medium',
+    }).format(value);
+    if (!this.showTime()) return dateStr;
+    const timeStr = getCachedDateTimeFormat(this.config.locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      ...(this.showSeconds() ? { second: '2-digit' as const } : {}),
+      hour12: this.hourFormat() === '12',
+    }).format(value);
+    return `${dateStr}, ${timeStr}`;
   });
   protected readonly monthLabel = computed(() =>
     getCachedDateTimeFormat(this.config.locale, {
@@ -182,6 +213,25 @@ export class DynamoDatePicker
       .slice(0, 7)
       .map((day) => formatter.format(day));
   });
+
+  protected readonly displayHour = computed(() => {
+    const hours = this.timeOfDay().hours;
+    if (this.hourFormat() === '24') return hours;
+    const h12 = hours % 12;
+    return h12 === 0 ? 12 : h12;
+  });
+  protected readonly hourDisplay = computed(() =>
+    String(this.displayHour()).padStart(2, '0'),
+  );
+  protected readonly minuteDisplay = computed(() =>
+    String(this.timeOfDay().minutes).padStart(2, '0'),
+  );
+  protected readonly secondDisplay = computed(() =>
+    String(this.timeOfDay().seconds).padStart(2, '0'),
+  );
+  protected readonly meridiem = computed(() =>
+    this.timeOfDay().hours < 12 ? 'AM' : 'PM',
+  );
 
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
@@ -200,6 +250,13 @@ export class DynamoDatePicker
   protected readonly clearButtonClasses = selectClearButtonStyles;
   protected readonly quickJumpButtonClasses = datePickerQuickJumpButtonStyles;
   protected readonly monthGridButtonClasses = datePickerMonthGridButtonStyles;
+  protected readonly timeWrapperClasses = datePickerTimeWrapperStyles;
+  protected readonly timeFieldClasses = datePickerTimeFieldStyles;
+  protected readonly timeStepButtonClasses = datePickerTimeStepButtonStyles;
+  protected readonly timeValueClasses = datePickerTimeValueStyles;
+  protected readonly timeSeparatorClasses = datePickerTimeSeparatorStyles;
+  protected readonly meridiemButtonClasses = datePickerMeridiemButtonStyles;
+  protected readonly applyButtonClasses = datePickerApplyButtonStyles;
 
   /** Swaps the day grid for a month/year quick-jump grid, replacing the plain prev/next-only navigation. */
   protected readonly quickJumpOpen = signal(false);
@@ -260,8 +317,12 @@ export class DynamoDatePicker
     // the current value the way opening the popup does.
     effect(() => {
       if (!this.inline()) return;
-      const anchor = this.value() ?? startOfDay(new Date());
+      const currentValue = this.value();
+      const anchor = currentValue ?? startOfDay(new Date());
       this.focusedDate.set(clampToRange(anchor, this.min(), this.max()));
+      if (this.showTime()) {
+        this.seedTimeOfDay(currentValue);
+      }
     });
 
     this.destroyRef.onDestroy(() => this.destroyOverlay());
@@ -317,9 +378,26 @@ export class DynamoDatePicker
 
   protected openPanel(): void {
     if (this.disabled()) return;
-    const anchor = this.value() ?? startOfDay(new Date());
+    const currentValue = this.value();
+    const anchor = currentValue ?? startOfDay(new Date());
     this.focusedDate.set(clampToRange(anchor, this.min(), this.max()));
+    if (this.showTime()) {
+      this.seedTimeOfDay(currentValue);
+    }
     this.open.set(true);
+  }
+
+  /** Seeds `timeOfDay` from `source`'s own hours/minutes/seconds, or from the
+   *  current wall-clock time if `source` is null — same "anchor from value,
+   *  else now" idiom `openPanel`/the inline-sync effect already use for
+   *  `focusedDate`. */
+  private seedTimeOfDay(source: Date | null): void {
+    const base = source ?? new Date();
+    this.timeOfDay.set({
+      hours: base.getHours(),
+      minutes: base.getMinutes(),
+      seconds: this.showSeconds() ? base.getSeconds() : 0,
+    });
   }
 
   protected close(): void {
@@ -330,7 +408,11 @@ export class DynamoDatePicker
   protected selectDay(day: Date): void {
     if (this.readOnly() || this.isDisabled(day)) return;
     this.focusedDate.set(day);
-    this.commit(day);
+    if (this.showTime()) {
+      this.applyValue(this.composeDateTime(day, this.timeOfDay()));
+    } else {
+      this.commit(day);
+    }
   }
 
   protected navigateMonth(delta: number): void {
@@ -468,8 +550,75 @@ export class DynamoDatePicker
 
   private commit(day: Date): void {
     const normalized = startOfDay(day);
-    this.value.set(normalized);
-    this.onChangeFn(normalized);
+    this.applyValue(normalized);
+    this.close();
+    if (!this.inline()) {
+      this.triggerEl().nativeElement.focus();
+    }
+  }
+
+  private applyValue(date: Date): void {
+    this.value.set(date);
+    this.onChangeFn(date);
+  }
+
+  private composeDateTime(
+    day: Date,
+    time: { hours: number; minutes: number; seconds: number },
+  ): Date {
+    const result = new Date(day);
+    result.setHours(
+      time.hours,
+      time.minutes,
+      this.showSeconds() ? time.seconds : 0,
+      0,
+    );
+    return result;
+  }
+
+  protected stepHour(delta: number): void {
+    if (this.readOnly()) return;
+    this.timeOfDay.update((t) => ({
+      ...t,
+      hours: wrapMod(t.hours + delta, 24),
+    }));
+    this.commitTime();
+  }
+
+  protected stepMinute(delta: number): void {
+    if (this.readOnly()) return;
+    this.timeOfDay.update((t) => ({
+      ...t,
+      minutes: wrapMod(t.minutes + delta, 60),
+    }));
+    this.commitTime();
+  }
+
+  protected stepSecond(delta: number): void {
+    if (this.readOnly()) return;
+    this.timeOfDay.update((t) => ({
+      ...t,
+      seconds: wrapMod(t.seconds + delta, 60),
+    }));
+    this.commitTime();
+  }
+
+  protected toggleMeridiem(): void {
+    if (this.readOnly()) return;
+    this.timeOfDay.update((t) => ({ ...t, hours: (t.hours + 12) % 24 }));
+    this.commitTime();
+  }
+
+  private commitTime(): void {
+    const base = this.value() ?? this.focusedDate();
+    this.applyValue(this.composeDateTime(base, this.timeOfDay()));
+  }
+
+  /** Closes the popup after `showTime` editing — equivalent to clicking the
+   *  trigger again or pressing Escape, just more discoverable; `value` is
+   *  already live-synced by the steppers/day click, so there's nothing left
+   *  to commit here. */
+  protected applyAndClose(): void {
     this.close();
     if (!this.inline()) {
       this.triggerEl().nativeElement.focus();

@@ -1,13 +1,14 @@
 <div [class]="rootClasses()">
-  <div [class]="tablistRowClasses">
+  <div [class]="tablistRowClasses()">
     @if (scrollable() && showNavigators()) {
     <button
       type="button"
       [class]="scrollNavButtonClasses({ disabled: false })"
-      aria-label="Scroll tabs left"
+      [attr.aria-label]="scrollNavAriaLabel(-1)"
       (click)="scrollTablist(-1)"
     >
       <svg
+        [class]="scrollNavIconClasses()"
         [attr.aria-hidden]="true"
         width="14"
         height="14"
@@ -31,6 +32,7 @@
       [id]="tabsId"
       [class]="tablistClasses()"
       [attr.aria-label]="ariaLabel() ?? null"
+      [style.width.px]="orientation() === 'vertical' ? verticalWidth() : null"
       (keydown)="onTablistKeydown($event)"
     >
       @for (tab of tabs(); track tab; let i = $index) {
@@ -42,11 +44,42 @@
         [attr.aria-controls]="panelId(i)"
         [attr.aria-selected]="isActive(tab)"
         [attr.aria-disabled]="tab.disabled() ? 'true' : null"
+        [attr.aria-keyshortcuts]="tab.closable() ? 'Delete' : null"
         [tabindex]="isActive(tab) ? 0 : -1"
         [class]="tabClasses(tab)"
         (click)="onTabClick(tab, i)"
       >
-        {{ tab.label() }}
+        {{ tab.label() }} @if (tab.closable()) {
+        <!--
+          Deliberately NOT a `role="tab"` sibling under the tablist, and NOT
+          its own focusable `role="button"` — either would violate
+          `role="tablist"`'s aria-required-children constraint (only
+          `role="tab"` may live directly under it). It's a mouse-only click
+          target nested inside the tab itself; keyboard users close the
+          focused tab with Delete/Backspace instead (`onTablistKeydown`,
+          announced via this tab's own `aria-keyshortcuts` above).
+        -->
+        <span
+          [class]="closeButtonClasses"
+          [attr.aria-hidden]="true"
+          [attr.data-tab-close]="tabId(i)"
+          (click)="onCloseClick($event, tab)"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            [attr.aria-hidden]="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </span>
+        }
       </button>
       }
     </div>
@@ -54,10 +87,11 @@
     <button
       type="button"
       [class]="scrollNavButtonClasses({ disabled: false })"
-      aria-label="Scroll tabs right"
+      [attr.aria-label]="scrollNavAriaLabel(1)"
       (click)="scrollTablist(1)"
     >
       <svg
+        [class]="scrollNavIconClasses()"
         [attr.aria-hidden]="true"
         width="14"
         height="14"
@@ -83,7 +117,7 @@
     [id]="panelId(i)"
     [attr.aria-labelledby]="tabId(i)"
     [hidden]="!isActive(tab)"
-    [class]="panelClasses"
+    [class]="panelClasses()"
     tabindex="0"
   >
     <ng-container [ngTemplateOutlet]="tab.contentTemplate()" />

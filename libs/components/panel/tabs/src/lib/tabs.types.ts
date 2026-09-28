@@ -1,2 +1,4 @@
 export type DynamoTabsActivation = 'manual' | 'automatic';
-export type DynamoTabsPart = 'root' | 'tablist' | 'tab' | 'panel';
+export type DynamoTabsOrientation = 'horizontal' | 'vertical';
+export type DynamoTabsPart =
+  'root' | 'tablist' | 'tab' | 'panel' | 'tabItem' | 'closeButton';

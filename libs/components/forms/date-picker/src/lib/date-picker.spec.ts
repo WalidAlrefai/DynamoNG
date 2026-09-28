@@ -1070,4 +1070,343 @@ describe('DynamoDatePicker', () => {
       expect(getDialog()).not.toBeNull();
     });
   });
+
+  describe('showTime', () => {
+    function getSpinbutton(label: string): HTMLElement {
+      const el = getDialog()?.querySelector(
+        `[role="spinbutton"][aria-label="${label}"]`,
+      );
+      if (!el) throw new Error(`No spinbutton found for "${label}"`);
+      return el as HTMLElement;
+    }
+
+    it('renders no time controls when showTime is unset (regression)', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Choose a date',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getDialog()?.querySelector('[role="spinbutton"]')).toBeNull();
+      expect(
+        within(getDialog() as HTMLElement).queryByRole('button', {
+          name: 'Apply',
+        }),
+      ).toBeNull();
+    });
+
+    it('selecting a day keeps the popup open and sets value to that day at the seeded time (midnight, no prior value)', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { showTime: true, ariaLabel: 'Choose a date' } },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(getDayButtonByText('19'));
+      await settle(fixture);
+
+      expect(getDialog()).not.toBeNull();
+      expect(componentInstance.value()).toEqual(new Date(2026, 7, 19, 0, 0, 0));
+    });
+
+    it('seeds the steppers from an existing value when opened', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          showTime: true,
+          ariaLabel: 'Choose a date',
+          value: new Date(2026, 7, 19, 14, 37, 0),
+        },
+      });
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getSpinbutton('Hour').getAttribute('aria-valuenow')).toBe('14');
+      expect(getSpinbutton('Minute').getAttribute('aria-valuenow')).toBe('37');
+    });
+
+    it('increments/decrements the hour, wrapping at the 24-hour boundary', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showTime: true,
+            ariaLabel: 'Choose a date',
+            value: new Date(2026, 7, 19, 23, 0, 0),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Increment hour',
+        }),
+      );
+
+      expect(componentInstance.value()).toEqual(new Date(2026, 7, 19, 0, 0, 0));
+      expect(getSpinbutton('Hour').getAttribute('aria-valuenow')).toBe('0');
+    });
+
+    it('increments/decrements the minute, wrapping at the 60-minute boundary', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showTime: true,
+            ariaLabel: 'Choose a date',
+            value: new Date(2026, 7, 19, 10, 0, 0),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Decrement minute',
+        }),
+      );
+
+      // Each field wraps independently (no cross-field carry) — the hour
+      // stays 10, only the minute wraps from 0 to 59.
+      expect(componentInstance.value()).toEqual(
+        new Date(2026, 7, 19, 10, 59, 0),
+      );
+    });
+
+    it('hourFormat "12" displays 12 for hour 0, and the AM/PM toggle flips by 12 hours', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showTime: true,
+            hourFormat: '12',
+            ariaLabel: 'Choose a date',
+            value: new Date(2026, 7, 19, 0, 30, 0),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getSpinbutton('Hour').getAttribute('aria-valuetext')).toBe('12');
+      const meridiemButton = within(getDialog() as HTMLElement).getByRole(
+        'button',
+        { name: 'AM' },
+      );
+
+      await userEvent.click(meridiemButton);
+
+      expect(componentInstance.value()).toEqual(
+        new Date(2026, 7, 19, 12, 30, 0),
+      );
+    });
+
+    it('showSeconds renders a third stepper and preserves seconds on the committed value', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showTime: true,
+            showSeconds: true,
+            ariaLabel: 'Choose a date',
+            value: new Date(2026, 7, 19, 10, 0, 45),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getSpinbutton('Second').getAttribute('aria-valuenow')).toBe('45');
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Increment second',
+        }),
+      );
+
+      expect(componentInstance.value()).toEqual(
+        new Date(2026, 7, 19, 10, 0, 46),
+      );
+    });
+
+    it('zeroes out seconds on the committed value when showSeconds is off', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showTime: true,
+            ariaLabel: 'Choose a date',
+            value: new Date(2026, 7, 19, 10, 0, 45),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Increment minute',
+        }),
+      );
+
+      expect(componentInstance.value()).toEqual(
+        new Date(2026, 7, 19, 10, 1, 0),
+      );
+    });
+
+    it('clicking Apply closes the popup and refocuses the trigger', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { showTime: true, ariaLabel: 'Choose a date' },
+      });
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Apply',
+        }),
+      );
+      await settle(fixture);
+
+      expect(getDialog()).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('readOnly blocks the time steppers from changing the value', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showTime: true,
+            readOnly: true,
+            ariaLabel: 'Choose a date',
+            value: new Date(2026, 7, 19, 10, 0, 0),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Increment hour',
+        }),
+      );
+
+      expect(componentInstance.value()).toEqual(
+        new Date(2026, 7, 19, 10, 0, 0),
+      );
+    });
+
+    it('includes a formatted time segment in the trigger label', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          showTime: true,
+          ariaLabel: 'Choose a date',
+          value: new Date(2026, 7, 19, 14, 5, 0),
+        },
+      });
+
+      const label = within(container).getByRole('button').textContent?.trim();
+      expect(label).toContain(formatMedium(new Date(2026, 7, 19)));
+      expect(label).toMatch(/2:05\s*PM|14:05/);
+    });
+
+    it('inline mode renders working time steppers with no Apply button', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            showTime: true,
+            inline: true,
+            value: new Date(2026, 7, 19, 10, 0, 0),
+          },
+        },
+      );
+
+      expect(
+        within(container).queryByRole('button', { name: 'Apply' }),
+      ).toBeNull();
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Increment hour' }),
+      );
+
+      expect(componentInstance.value()).toEqual(
+        new Date(2026, 7, 19, 11, 0, 0),
+      );
+    });
+
+    it('has no axe violations with showTime', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { showTime: true, ariaLabel: 'Choose a date' },
+      });
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations with showTime, hourFormat "12", and showSeconds', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          showTime: true,
+          hourFormat: '12',
+          showSeconds: true,
+          ariaLabel: 'Choose a date',
+        },
+      });
+      const trigger = within(container).getByRole('button');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+
+    it('supports getTimeValue/stepTime through the DynamoDatePickerHarness', async () => {
+      const { fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          showTime: true,
+          ariaLabel: 'Choose a date',
+          value: new Date(2026, 7, 19, 10, 0, 0),
+        },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoDatePickerHarness,
+      );
+      await harness.open();
+      await settle(fixture);
+
+      expect(await harness.getTimeValue()).toEqual({
+        hours: 10,
+        minutes: 0,
+        seconds: null,
+      });
+
+      await harness.stepTime('hour', 'up');
+
+      expect((await harness.getTimeValue())?.hours).toBe(11);
+    });
+  });
 });

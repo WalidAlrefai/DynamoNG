@@ -13,6 +13,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'disabled', title: 'Disabled' },
   { id: 'life', title: 'Life' },
   { id: 'ellipsis', title: 'Show on Ellipsis' },
+  { id: 'mouse-track', title: 'Mouse Track' },
 ];
 
 const API: ApiTableRow[] = [
@@ -28,6 +29,9 @@ const API: ApiTableRow[] = [
   { name: 'disabled', type: 'boolean', default: 'false' },
   { name: 'life', type: 'number | undefined', default: 'undefined' },
   { name: 'showOnEllipsis', type: 'boolean', default: 'false' },
+  { name: 'mouseTrack', type: 'boolean', default: 'false' },
+  { name: 'mouseTrackOffsetX', type: 'number', default: '12' },
+  { name: 'mouseTrackOffsetY', type: 'number', default: '12' },
 ];
 
 @Component({
@@ -130,6 +134,26 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-tooltip content="..." [showOnEllipsis]="true"&gt; &lt;div
           class="truncate"&gt;...&lt;/div&gt; &lt;/dg-tooltip&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="mouse-track"
+        title="Mouse Track"
+        description="mouseTrack follows the cursor instead of anchoring to a fixed side — try moving the pointer across the box below."
+      >
+        <div preview class="p-4">
+          <dg-tooltip content="Following the cursor" [mouseTrack]="true">
+            <div
+              class="flex h-32 w-64 items-center justify-center rounded-md border border-dashed border-border text-sm text-text-muted"
+            >
+              Move your mouse over this box
+            </div>
+          </dg-tooltip>
+        </div>
+        <div code>
+          &lt;dg-tooltip content="..." [mouseTrack]="true"&gt; ...
+          &lt;/dg-tooltip&gt;
         </div>
       </docs-example>
 

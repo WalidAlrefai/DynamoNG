@@ -92,6 +92,13 @@ function chevron(container: HTMLElement, id: string): HTMLElement {
   return el as HTMLElement;
 }
 
+function chevronSpinner(
+  container: HTMLElement,
+  id: string,
+): HTMLElement | null {
+  return row(container, id).querySelector('[data-testid="chevron-spinner"]');
+}
+
 function checkboxInput(container: HTMLElement, id: string): HTMLInputElement {
   const el = row(container, id).querySelector('input[type="checkbox"]');
   if (!el) {
@@ -838,6 +845,189 @@ describe('DynamoTree', () => {
       await expect(
         expectNoA11yViolations(fixture.nativeElement),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('lazy loading', () => {
+    function lazyItems(): DynamoTreeNode[] {
+      return [{ id: 'lazy', label: 'Lazy folder', leaf: false }];
+    }
+
+    it('renders a chevron for a leaf:false node with no children (unlike a plain childless node)', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: lazyItems() },
+      });
+
+      expect(chevron(container, 'lazy')).toBeTruthy();
+      expect(row(container, 'lazy').getAttribute('aria-expanded')).toBe(
+        'false',
+      );
+    });
+
+    it('expanding it adds the id to expandedIds and emits nodeExpand with the full node', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: lazyItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.nodeExpand.subscribe((node) => emitted.push(node));
+
+      await userEvent.click(chevron(container, 'lazy'));
+
+      expect(componentInstance.expandedIds()).toEqual(['lazy']);
+      expect(emitted).toEqual([lazyItems()[0]]);
+    });
+
+    it('collapsing it again does not re-emit nodeExpand', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: lazyItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.nodeExpand.subscribe((node) => emitted.push(node));
+      await userEvent.click(chevron(container, 'lazy'));
+
+      await userEvent.click(chevron(container, 'lazy'));
+
+      expect(componentInstance.expandedIds()).toEqual([]);
+      expect(emitted).toHaveLength(1);
+    });
+
+    it('does not re-emit nodeExpand once the consumer has patched real children into the node', async () => {
+      @Component({
+        selector: 'dg-tree-lazy-host',
+        standalone: true,
+        imports: [DynamoTree],
+        template: `
+          <dg-tree
+            [items]="items()"
+            [(expandedIds)]="expanded"
+            (nodeExpand)="onNodeExpand($event)"
+          />
+        `,
+      })
+      class TreeLazyHostComponent {
+        readonly items = signal<DynamoTreeNode[]>(lazyItems());
+        readonly expanded = model<string[]>([]);
+        readonly expandEvents: DynamoTreeNode[] = [];
+
+        onNodeExpand(node: DynamoTreeNode): void {
+          this.expandEvents.push(node);
+          this.items.set([
+            { ...node, children: [{ id: 'fetched', label: 'Fetched.txt' }] },
+          ]);
+        }
+      }
+
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        TreeLazyHostComponent,
+      );
+      await userEvent.click(chevron(container, 'lazy'));
+      fixture.detectChanges();
+      expect(row(container, 'fetched')).toBeTruthy();
+      expect(componentInstance.expandEvents).toHaveLength(1);
+
+      await userEvent.click(chevron(container, 'lazy')); // collapse
+      await userEvent.click(chevron(container, 'lazy')); // expand again
+
+      expect(componentInstance.expandEvents).toHaveLength(1);
+    });
+
+    it('shows a loading spinner instead of a chevron while node.loading is true', () => {
+      const { container } = renderDynamoComponent(DynamoTree, {
+        inputs: {
+          items: [
+            { id: 'lazy', label: 'Lazy folder', leaf: false, loading: true },
+          ],
+        },
+      });
+
+      expect(chevronSpinner(container, 'lazy')).toBeTruthy();
+      expect(
+        row(container, 'lazy').querySelector('[data-testid="chevron"]'),
+      ).toBeNull();
+    });
+
+    it('ignores ArrowLeft on an expanded node while it is loading (no collapse, no re-emit)', async () => {
+      @Component({
+        selector: 'dg-tree-lazy-loading-host',
+        standalone: true,
+        imports: [DynamoTree],
+        template: `
+          <dg-tree
+            [items]="items()"
+            [(expandedIds)]="expanded"
+            (nodeExpand)="onNodeExpand($event)"
+          />
+        `,
+      })
+      class TreeLazyLoadingHostComponent {
+        readonly items = signal<DynamoTreeNode[]>(lazyItems());
+        readonly expanded = model<string[]>([]);
+        readonly expandEvents: DynamoTreeNode[] = [];
+
+        onNodeExpand(node: DynamoTreeNode): void {
+          this.expandEvents.push(node);
+          this.items.set([{ ...node, loading: true }]);
+        }
+      }
+
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeLazyLoadingHostComponent,
+      );
+      await userEvent.click(chevron(container, 'lazy')); // expand -> fires nodeExpand -> host sets loading: true
+      row(container, 'lazy').focus();
+
+      await userEvent.keyboard('{ArrowLeft}');
+
+      expect(componentInstance.expanded()).toEqual(['lazy']);
+      expect(componentInstance.expandEvents).toHaveLength(1);
+    });
+
+    it('expands and emits nodeExpand via ArrowRight, exactly like a chevron click', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoTree,
+        { inputs: { items: lazyItems() } },
+      );
+      const emitted: DynamoTreeNode[] = [];
+      componentInstance.nodeExpand.subscribe((node) => emitted.push(node));
+      row(container, 'lazy').focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+
+      expect(componentInstance.expandedIds()).toEqual(['lazy']);
+      expect(emitted).toHaveLength(1);
+    });
+
+    it('has no axe violations with a leaf:false node, collapsed and expanded-with-spinner', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTree, {
+        inputs: { items: lazyItems(), ariaLabel: 'Files' },
+      });
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+
+      await userEvent.click(chevron(container, 'lazy'));
+      fixture.detectChanges();
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+
+    it('supports isNodeLoading through the DynamoTreeHarness', async () => {
+      const { fixture } = renderDynamoComponent(DynamoTree, {
+        inputs: {
+          items: [
+            { id: 'lazy', label: 'Lazy folder', leaf: false, loading: true },
+          ],
+        },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTreeHarness,
+      );
+
+      expect(await harness.isNodeLoading('lazy')).toBe(true);
     });
   });
 });

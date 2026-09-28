@@ -87,6 +87,59 @@ class TabsDynamicHostComponent {
   ]);
 }
 
+@Component({
+  selector: 'dg-tabs-vertical-host',
+  standalone: true,
+  imports: [DynamoTabs, DynamoTab],
+  template: `
+    <dg-tabs
+      [(value)]="activeTab"
+      [orientation]="'vertical'"
+      [verticalWidth]="220"
+      ariaLabel="Account settings"
+    >
+      <dg-tab value="profile" label="Profile">Profile content</dg-tab>
+      <dg-tab value="settings" label="Settings">Settings content</dg-tab>
+      <dg-tab value="billing" label="Billing">Billing content</dg-tab>
+    </dg-tabs>
+  `,
+})
+class TabsVerticalHostComponent {
+  readonly activeTab = model<string | undefined>(undefined);
+}
+
+@Component({
+  selector: 'dg-tabs-closable-host',
+  standalone: true,
+  imports: [DynamoTabs, DynamoTab],
+  template: `
+    <dg-tabs [(value)]="activeTab" (tabClose)="onTabClose($event)">
+      @for (item of items(); track item.value) {
+        <dg-tab
+          [value]="item.value"
+          [label]="item.label"
+          [closable]="item.closable"
+          >{{ item.label }} content</dg-tab
+        >
+      }
+    </dg-tabs>
+  `,
+})
+class TabsClosableHostComponent {
+  readonly activeTab = model<string | undefined>(undefined);
+  readonly items = signal([
+    { value: 'a', label: 'A', closable: true },
+    { value: 'b', label: 'B', closable: true },
+    { value: 'c', label: 'C', closable: false },
+  ]);
+  readonly closed: string[] = [];
+
+  onTabClose(value: string): void {
+    this.closed.push(value);
+    this.items.update((current) => current.filter((i) => i.value !== value));
+  }
+}
+
 describe('DynamoTabs', () => {
   describe('creation', () => {
     it('renders a tablist with one tab per projected dg-tab', () => {
@@ -543,6 +596,199 @@ describe('DynamoTabs', () => {
           ) as HTMLElement,
         ),
       ).resolves.not.toThrow();
+    });
+  });
+
+  describe('orientation', () => {
+    it('defaults to "horizontal" (regression guard)', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoTabs);
+
+      expect(componentInstance.orientation()).toBe('horizontal');
+    });
+
+    it('renders and behaves identically to today when left at "horizontal"', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TabsTestHostComponent,
+      );
+
+      await userEvent.click(
+        within(container).getByRole('tab', { name: 'Billing' }),
+      );
+
+      expect(componentInstance.activeTab()).toBe('billing');
+      expect(
+        within(container).getByRole('tab', { name: 'Billing' }).tagName,
+      ).toBe('BUTTON');
+    });
+
+    it('moves focus with ArrowDown/ArrowUp exactly like ArrowRight/ArrowLeft', async () => {
+      const { container } = renderDynamoComponent(TabsVerticalHostComponent);
+      const profileTab = within(container).getByRole('tab', {
+        name: 'Profile',
+      });
+      profileTab.focus();
+
+      await userEvent.keyboard('{ArrowDown}');
+      expect(document.activeElement).toBe(
+        within(container).getByRole('tab', { name: 'Settings' }),
+      );
+
+      await userEvent.keyboard('{ArrowUp}');
+      expect(document.activeElement).toBe(profileTab);
+    });
+
+    it('still moves focus with ArrowRight/ArrowLeft while vertical (both pairs always live)', async () => {
+      const { container } = renderDynamoComponent(TabsVerticalHostComponent);
+      const profileTab = within(container).getByRole('tab', {
+        name: 'Profile',
+      });
+      profileTab.focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+      expect(document.activeElement).toBe(
+        within(container).getByRole('tab', { name: 'Settings' }),
+      );
+    });
+
+    it('sets the tablist inline width from verticalWidth while vertical', () => {
+      const { container } = renderDynamoComponent(TabsVerticalHostComponent);
+
+      expect(
+        (within(container).getByRole('tablist') as HTMLElement).style.width,
+      ).toBe('220px');
+    });
+
+    it('leaves the tablist with no inline width while horizontal', () => {
+      const { container } = renderDynamoComponent(TabsTestHostComponent);
+
+      expect(
+        (within(container).getByRole('tablist') as HTMLElement).style.width,
+      ).toBe('');
+    });
+
+    it('has no axe violations in vertical orientation', async () => {
+      const { fixture } = renderDynamoComponent(TabsVerticalHostComponent);
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('closable', () => {
+    function closeAffordance(
+      container: HTMLElement,
+      label: string,
+    ): HTMLElement {
+      const tab = within(container).getByRole('tab', { name: label });
+      const el = tab.querySelector('[data-tab-close]');
+      if (!el) throw new Error(`No close affordance found on tab "${label}"`);
+      return el as HTMLElement;
+    }
+
+    it('renders no close affordance on a tab that is not closable', () => {
+      const { container } = renderDynamoComponent(TabsClosableHostComponent);
+      const tabC = within(container).getByRole('tab', { name: 'C' });
+
+      expect(tabC.querySelector('[data-tab-close]')).toBeNull();
+    });
+
+    it('renders a close affordance on a closable tab, and announces the shortcut via aria-keyshortcuts', () => {
+      const { container } = renderDynamoComponent(TabsClosableHostComponent);
+      const tabA = within(container).getByRole('tab', { name: 'A' });
+
+      expect(tabA.querySelector('[data-tab-close]')).toBeTruthy();
+      expect(tabA.getAttribute('aria-keyshortcuts')).toBe('Delete');
+    });
+
+    it("clicking a closable tab's close affordance emits tabClose with its value, without selecting it", async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TabsClosableHostComponent,
+      );
+
+      await userEvent.click(closeAffordance(container, 'B'));
+
+      expect(componentInstance.closed).toEqual(['b']);
+      expect(componentInstance.activeTab()).toBe('a');
+    });
+
+    it('actually removes the tab once the consumer filters it out of their own array', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TabsClosableHostComponent,
+      );
+
+      await userEvent.click(closeAffordance(container, 'A'));
+
+      expect(within(container).queryByRole('tab', { name: 'A' })).toBeNull();
+      expect(within(container).getAllByRole('tab')).toHaveLength(2);
+      // The active-tab fallback effect re-selects a remaining enabled tab.
+      expect(componentInstance.activeTab()).toBeTruthy();
+      expect(componentInstance.activeTab()).not.toBe('a');
+    });
+
+    it('closes the focused closable tab on Delete', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TabsClosableHostComponent,
+      );
+      within(container).getByRole('tab', { name: 'A' }).focus();
+
+      await userEvent.keyboard('{Delete}');
+
+      expect(componentInstance.closed).toEqual(['a']);
+    });
+
+    it('closes the focused closable tab on Backspace', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TabsClosableHostComponent,
+      );
+      within(container).getByRole('tab', { name: 'B' }).focus();
+
+      await userEvent.keyboard('{Backspace}');
+
+      expect(componentInstance.closed).toEqual(['b']);
+    });
+
+    it('does nothing on Delete/Backspace when the focused tab is not closable', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TabsClosableHostComponent,
+      );
+      within(container).getByRole('tab', { name: 'C' }).focus();
+
+      await userEvent.keyboard('{Delete}{Backspace}');
+
+      expect(componentInstance.closed).toEqual([]);
+    });
+
+    it('has no axe violations with closable tabs rendered', async () => {
+      const { fixture } = renderDynamoComponent(TabsClosableHostComponent);
+
+      await expect(
+        expectNoA11yViolations(fixture.nativeElement),
+      ).resolves.toBeUndefined();
+    });
+
+    it('supports closeTabByLabel through the DynamoTabsHarness', async () => {
+      const { fixture, componentInstance } = renderDynamoComponent(
+        TabsClosableHostComponent,
+      );
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTabsHarness,
+      );
+
+      await harness.closeTabByLabel('A');
+
+      expect(componentInstance.closed).toEqual(['a']);
+    });
+
+    it('throws from closeTabByLabel when that tab is not closable', async () => {
+      const { fixture } = renderDynamoComponent(TabsClosableHostComponent);
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTabsHarness,
+      );
+
+      await expect(harness.closeTabByLabel('C')).rejects.toThrow();
     });
   });
 });

@@ -9,7 +9,9 @@ export type DynamoPicklistPart =
   | 'option'
   | 'checkbox'
   | 'moveButtons'
-  | 'reorderButtons';
+  | 'reorderButtons'
+  | 'filter'
+  | 'no-results';
 
 // DynamoSelectOption (label/value/disabled?/group?) already lives in
 // @dynamong/core/api and is reused as-is by Select/MultiSelect/Pagination/

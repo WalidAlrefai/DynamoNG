@@ -3,7 +3,8 @@
   tabindex="-1"
   [class]="triggerClasses()"
   [attr.aria-describedby]="isVisible() ? contentId : null"
-  (mouseenter)="onMouseEnter()"
+  (mouseenter)="onMouseEnter($event)"
+  (mousemove)="onMouseMove($event)"
   (mouseleave)="onMouseLeave()"
   (focusin)="onFocusIn()"
   (focusout)="onFocusOut()"
@@ -14,7 +15,8 @@
 
 <ng-template #tooltipTemplate>
   <div role="tooltip" [id]="contentId" [class]="panelClasses()">
-    {{ content() }}
+    {{ content() }} @if (!mouseTrack()) {
     <div [class]="arrowClasses()" [attr.aria-hidden]="true"></div>
+    }
   </div>
 </ng-template>

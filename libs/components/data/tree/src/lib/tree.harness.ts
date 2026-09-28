@@ -33,6 +33,14 @@ export class DynamoTreeHarness extends ComponentHarness {
     await row.click();
   }
 
+  /** True while that node's chevron slot shows a loading spinner instead of a chevron. */
+  async isNodeLoading(id: string): Promise<boolean> {
+    const spinner = await this.locatorForOptional(
+      `[data-node-id="${id}"] [data-testid="chevron-spinner"]`,
+    )();
+    return spinner !== null;
+  }
+
   private readonly filterInputLocator = this.locatorForOptional(
     'input[type="search"]',
   );

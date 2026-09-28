@@ -27,6 +27,25 @@ function getTrigger(container: HTMLElement): HTMLElement {
   return container.querySelector('span') as HTMLElement;
 }
 
+// GlobalPositionStrategy (used by mouseTrack) marks its host with
+// `.cdk-global-overlay-wrapper` and expresses left/top as marginLeft/
+// marginTop on the pane itself (flexbox-positioned within that wrapper),
+// not literal left/top — distinct from the default FlexibleConnectedPosition
+// Strategy's own styling, so this only ever matches mouseTrack.
+function getMouseTrackWrapper(): HTMLElement | null {
+  return document.body.querySelector('.cdk-global-overlay-wrapper');
+}
+
+function getMouseTrackOffset(): { left: string; top: string } | null {
+  const wrapper = getMouseTrackWrapper();
+  const pane = wrapper?.querySelector(
+    '.cdk-overlay-pane',
+  ) as HTMLElement | null;
+  return pane
+    ? { left: pane.style.marginLeft, top: pane.style.marginTop }
+    : null;
+}
+
 // The show/hide timers run via a plain `setTimeout`, outside any Angular-tracked
 // call stack — flushing that timer (a real setTimeout(0)) doesn't by itself
 // guarantee Angular's zoneless scheduler has re-rendered the template yet, so an
@@ -505,6 +524,168 @@ describe('DynamoTooltip', () => {
       fixture.destroy();
 
       expect(getPanel()).toBeNull();
+    });
+  });
+
+  describe('mouseTrack', () => {
+    it('renders the arrow and positions via the connected overlay by default (regression)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0 },
+      });
+
+      getTrigger(container).dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('[aria-hidden="true"]')).not.toBeNull();
+      expect(getMouseTrackWrapper()).toBeNull();
+    });
+
+    it('positions the panel at the cursor (plus the offset) on mouseenter, with no arrow', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: {
+          content: 'Hint',
+          showDelay: 0,
+          mouseTrack: true,
+          mouseTrackOffsetX: 10,
+          mouseTrackOffsetY: 20,
+        },
+      });
+
+      getTrigger(container).dispatchEvent(
+        new MouseEvent('mouseenter', {
+          bubbles: true,
+          clientX: 100,
+          clientY: 200,
+        }),
+      );
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('[aria-hidden="true"]')).toBeNull();
+      const offset = getMouseTrackOffset();
+      expect(offset?.left).toBe('110px');
+      expect(offset?.top).toBe('220px');
+    });
+
+    it('repositions on mousemove while visible', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0, mouseTrack: true },
+      });
+      const trigger = getTrigger(container);
+
+      trigger.dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true, clientX: 0, clientY: 0 }),
+      );
+      await settle(fixture);
+
+      trigger.dispatchEvent(
+        new MouseEvent('mousemove', {
+          bubbles: true,
+          clientX: 50,
+          clientY: 60,
+        }),
+      );
+
+      const offset = getMouseTrackOffset();
+      expect(offset?.left).toBe('62px');
+      expect(offset?.top).toBe('72px');
+    });
+
+    it("falls back to the trigger element's center when shown via focus", async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0, mouseTrack: true },
+      });
+      const trigger = getTrigger(container);
+      trigger.getBoundingClientRect = () =>
+        ({
+          left: 100,
+          top: 200,
+          width: 40,
+          height: 20,
+          right: 140,
+          bottom: 220,
+          x: 100,
+          y: 200,
+          toJSON: () => '',
+        }) as DOMRect;
+
+      trigger.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await settle(fixture);
+
+      const offset = getMouseTrackOffset();
+      expect(offset?.left).toBe('132px');
+      expect(offset?.top).toBe('222px');
+    });
+
+    it('still auto-hides via life while tracking the mouse', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0, mouseTrack: true, life: 50 },
+      });
+      const trigger = getTrigger(container);
+
+      trigger.dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true, clientX: 0, clientY: 0 }),
+      );
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      fixture.detectChanges();
+      expect(getPanel()).toBeNull();
+    });
+
+    it('still respects disabled while tracking the mouse', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: {
+          content: 'Hint',
+          showDelay: 0,
+          mouseTrack: true,
+          disabled: true,
+        },
+      });
+
+      getTrigger(container).dispatchEvent(
+        new MouseEvent('mouseenter', {
+          bubbles: true,
+          clientX: 0,
+          clientY: 0,
+        }),
+      );
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
+    });
+
+    it('supports interaction through the DynamoTooltipHarness', async () => {
+      const { fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0, mouseTrack: true },
+      });
+      const harness = await TestbedHarnessEnvironment.harnessForFixture(
+        fixture,
+        DynamoTooltipHarness,
+      );
+
+      await harness.show();
+      await settle(fixture);
+      expect(await harness.isVisible()).toBe(true);
+      expect(await harness.getPanelText()).toBe('Hint');
+      await harness.hide();
+      await settle(fixture);
+      expect(await harness.isVisible()).toBe(false);
+    });
+
+    it('has no axe violations while visible with mouseTrack', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTooltip, {
+        inputs: { content: 'Hint', showDelay: 0, mouseTrack: true },
+      });
+
+      getTrigger(container).dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true, clientX: 0, clientY: 0 }),
+      );
+      await settle(fixture);
+
+      await expectNoA11yViolations(getPanel() as HTMLElement);
     });
   });
 });

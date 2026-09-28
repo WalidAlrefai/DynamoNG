@@ -16,6 +16,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type {
   ConnectedPosition,
   ConnectionPositionPair,
+  GlobalPositionStrategy,
+  OverlayRef,
 } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { DynamoBaseComponent } from '@dynamong/core/base';
@@ -122,6 +124,18 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
   readonly life = input<number | undefined>(undefined);
   /** Only shows the tooltip when the trigger's own text is actually truncated (`scrollWidth > offsetWidth`) — e.g. an ellipsis-overflowed table cell. */
   readonly showOnEllipsis = input(false);
+  /**
+   * Positions the panel near the cursor instead of anchored to a fixed side
+   * of the trigger — useful over a large/irregular hit area (a chart, a
+   * canvas, a wide row) where a fixed anchor reads oddly as the pointer
+   * moves. `position` is ignored while this is on. A keyboard-triggered
+   * show (no cursor position to use) falls back to the trigger element's
+   * own bounding-rect center.
+   */
+  readonly mouseTrack = input(false);
+  /** Px offset from the cursor to the panel's top-left corner — only consulted while `mouseTrack` is true. */
+  readonly mouseTrackOffsetX = input(12);
+  readonly mouseTrackOffsetY = input(12);
 
   protected readonly contentId = this.idGenerator.next('dg-tooltip');
   protected readonly isVisible = signal(false);
@@ -140,6 +154,16 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
   private showTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private hideTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private lifeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  // A separate, parallel overlay path for `mouseTrack` — kept fully
+  // independent of `overlayHandle` above (a `FlexibleConnectedPositionStrategy`,
+  // a different shape entirely) so the cursor-following mode can't affect
+  // the default anchored behavior. Only one path is ever exercised per
+  // tooltip instance in practice.
+  private mouseTrackOverlayRef: OverlayRef | null = null;
+  private mouseTrackStrategy: GlobalPositionStrategy | null = null;
+  private lastMouseX = 0;
+  private lastMouseY = 0;
 
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
@@ -162,7 +186,7 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
     // afterward if CDK ends up flipping to a different side on collision.
     effect(() => {
       const preferred = this.position();
-      if (this.overlayHandle && this.isVisible()) {
+      if (!this.mouseTrack() && this.overlayHandle && this.isVisible()) {
         this.resolvedPosition.set(preferred);
         this.overlayHandle.positionStrategy.withPositions(
           buildPositions(preferred),
@@ -181,8 +205,18 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
     this.destroyRef.onDestroy(() => this.destroyOverlay());
   }
 
-  protected onMouseEnter(): void {
+  protected onMouseEnter(event: MouseEvent): void {
+    this.lastMouseX = event.clientX;
+    this.lastMouseY = event.clientY;
     if (this.usesHover()) this.show();
+  }
+
+  protected onMouseMove(event: MouseEvent): void {
+    this.lastMouseX = event.clientX;
+    this.lastMouseY = event.clientY;
+    if (this.mouseTrack() && this.isVisible()) {
+      this.updateMouseTrackPosition();
+    }
   }
 
   protected onMouseLeave(): void {
@@ -190,7 +224,16 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
   }
 
   protected onFocusIn(): void {
-    if (this.usesFocus()) this.show();
+    if (this.usesFocus()) {
+      if (this.mouseTrack()) {
+        // No cursor position exists for a keyboard-triggered show — fall
+        // back to the trigger's own center point.
+        const rect = this.triggerEl().nativeElement.getBoundingClientRect();
+        this.lastMouseX = rect.left + rect.width / 2;
+        this.lastMouseY = rect.top + rect.height / 2;
+      }
+      this.show();
+    }
   }
 
   protected onFocusOut(): void {
@@ -260,6 +303,20 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
     }
     this.resolvedPosition.set(this.position());
 
+    if (this.mouseTrack()) {
+      this.attachMouseTrackOverlay();
+    } else {
+      this.attachConnectedOverlay();
+    }
+    this.isVisible.set(true);
+
+    const life = this.life();
+    if (life !== undefined) {
+      this.lifeTimeoutId = setTimeout(() => this.hide(true), life);
+    }
+  }
+
+  private attachConnectedOverlay(): void {
     if (!this.overlayHandle) {
       const handle = this.overlayService.createConnectedOverlay(
         this.triggerEl().nativeElement,
@@ -283,16 +340,48 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
     if (!this.overlayHandle.overlayRef.hasAttached()) {
       this.overlayHandle.overlayRef.attach(this.portal);
     }
-    this.isVisible.set(true);
+  }
 
-    const life = this.life();
-    if (life !== undefined) {
-      this.lifeTimeoutId = setTimeout(() => this.hide(true), life);
+  private attachMouseTrackOverlay(): void {
+    if (!this.mouseTrackOverlayRef) {
+      let strategy!: GlobalPositionStrategy;
+      this.mouseTrackOverlayRef = this.overlayService.createGlobalOverlay(
+        (s) => {
+          strategy = s;
+        },
+      );
+      this.mouseTrackStrategy = strategy;
+    }
+    this.updateMouseTrackPosition();
+
+    if (!this.portal) {
+      this.portal = new TemplatePortal(
+        this.tooltipTemplate(),
+        this.viewContainerRef,
+      );
+    }
+
+    if (!this.mouseTrackOverlayRef.hasAttached()) {
+      this.mouseTrackOverlayRef.attach(this.portal);
     }
   }
 
+  private updateMouseTrackPosition(): void {
+    if (!this.mouseTrackStrategy || !this.mouseTrackOverlayRef) {
+      return;
+    }
+    this.mouseTrackStrategy
+      .left(`${this.lastMouseX + this.mouseTrackOffsetX()}px`)
+      .top(`${this.lastMouseY + this.mouseTrackOffsetY()}px`);
+    this.mouseTrackOverlayRef.updatePosition();
+  }
+
   private detachOverlay(): void {
-    if (this.overlayHandle?.overlayRef.hasAttached()) {
+    if (this.mouseTrack()) {
+      if (this.mouseTrackOverlayRef?.hasAttached()) {
+        this.mouseTrackOverlayRef.detach();
+      }
+    } else if (this.overlayHandle?.overlayRef.hasAttached()) {
       this.overlayHandle.overlayRef.detach();
     }
     this.isVisible.set(false);
@@ -302,6 +391,9 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
     this.clearTimers();
     this.overlayHandle?.overlayRef.dispose();
     this.overlayHandle = null;
+    this.mouseTrackOverlayRef?.dispose();
+    this.mouseTrackOverlayRef = null;
+    this.mouseTrackStrategy = null;
     this.portal = null;
   }
 }

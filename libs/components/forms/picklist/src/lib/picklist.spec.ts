@@ -6,7 +6,7 @@ import {
   renderDynamoComponent,
 } from '@dynamong/testing';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
-import { within } from '@testing-library/dom';
+import { fireEvent, within } from '@testing-library/dom';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoPicklist } from './picklist';
 import { DynamoPicklistHarness } from './picklist.harness';
@@ -53,6 +53,15 @@ const MANY_SOURCE: DynamoSelectOption<string>[] = Array.from(
   (_, i) => ({ label: `Option ${i + 1}`, value: `option-${i + 1}` }),
 );
 
+// "e" matches One/Three but not Two — a clean way to exercise "one item
+// hidden between two visible ones" without relying on substrings that
+// accidentally match more/fewer items than intended.
+const FILTER_SOURCE: DynamoSelectOption<string>[] = [
+  { label: 'One', value: '1' },
+  { label: 'Two', value: '2' },
+  { label: 'Three', value: '3' },
+];
+
 function dispatchKey(target: HTMLElement, key: string): void {
   target.dispatchEvent(
     new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
@@ -66,6 +75,24 @@ function panelListEl(
   return container.querySelector(
     `[data-part="${side}Panel"] [role="listbox"]`,
   ) as HTMLElement;
+}
+
+function panelFilterInput(
+  container: HTMLElement,
+  side: 'source' | 'target',
+): HTMLInputElement {
+  return container.querySelector(
+    `[data-part="${side}Panel"] input[type="search"]`,
+  ) as HTMLInputElement;
+}
+
+function panelRowTexts(
+  container: HTMLElement,
+  side: 'source' | 'target',
+): string[] {
+  return Array.from(
+    container.querySelectorAll(`[data-part="${side}Panel"] [role="option"]`),
+  ).map((el) => el.textContent?.trim() ?? '');
 }
 
 function dropEvent(
@@ -855,16 +882,17 @@ describe('DynamoPicklist', () => {
       expect(container.querySelectorAll('dg-virtual-scroll')).toHaveLength(2);
     });
 
-    it('makes dropListDisabled() true while virtualized, independent of disabled/readOnly', () => {
+    it('makes sourceDropListDisabled()/targetDropListDisabled() true while virtualized, independent of disabled/readOnly', () => {
       const { componentInstance } = renderDynamoComponent(DynamoPicklist, {
         inputs: { source: SOURCE, target: TARGET, virtualScroll: true },
       });
 
-      expect(
-        (
-          componentInstance as unknown as { dropListDisabled: () => boolean }
-        ).dropListDisabled(),
-      ).toBe(true);
+      const instance = componentInstance as unknown as {
+        sourceDropListDisabled: () => boolean;
+        targetDropListDisabled: () => boolean;
+      };
+      expect(instance.sourceDropListDisabled()).toBe(true);
+      expect(instance.targetDropListDisabled()).toBe(true);
     });
 
     it('still allows checkbox selection while virtualized', async () => {
@@ -996,6 +1024,310 @@ describe('DynamoPicklist', () => {
       await settle(fixture);
 
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('filter', () => {
+    it('renders no filter box by default', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET },
+      });
+
+      expect(container.querySelector('input[type="search"]')).toBeNull();
+    });
+
+    it('narrows the source panel independently of the target panel', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, filterable: true },
+      });
+
+      fireEvent.input(panelFilterInput(container, 'source'), {
+        target: { value: 'go' },
+      });
+      fixture.detectChanges();
+
+      expect(panelRowTexts(container, 'source')).toEqual(['Go']);
+      expect(panelRowTexts(container, 'target')).toEqual(['TypeScript']);
+    });
+
+    it('narrows the target panel independently of the source panel', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: SOURCE, filterable: true },
+      });
+
+      fireEvent.input(panelFilterInput(container, 'target'), {
+        target: { value: 'py' },
+      });
+      fixture.detectChanges();
+
+      expect(panelRowTexts(container, 'target')).toEqual(['Python']);
+      expect(panelRowTexts(container, 'source')).toEqual([
+        'Rust',
+        'Go',
+        'Python',
+      ]);
+    });
+
+    it('restores all rows once the query is cleared', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, filterable: true },
+      });
+      const input = panelFilterInput(container, 'source');
+
+      fireEvent.input(input, { target: { value: 'go' } });
+      fixture.detectChanges();
+      fireEvent.input(input, { target: { value: '' } });
+      fixture.detectChanges();
+
+      expect(panelRowTexts(container, 'source')).toEqual([
+        'Rust',
+        'Go',
+        'Python',
+      ]);
+    });
+
+    it('shows the no-results message only when that panel non-empty but the filter matched nothing', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, filterable: true },
+      });
+
+      expect(within(container).queryByRole('status')).toBeNull();
+
+      fireEvent.input(panelFilterInput(container, 'source'), {
+        target: { value: 'zzz' },
+      });
+      fixture.detectChanges();
+
+      expect(within(container).getByRole('status').textContent).toBe(
+        'No matching options',
+      );
+    });
+
+    it('does not show the no-results message for a genuinely empty panel', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: [], target: TARGET, filterable: true },
+      });
+
+      expect(within(container).queryByRole('status')).toBeNull();
+    });
+
+    it("keyboard navigation only visits that panel's filtered/visible rows", () => {
+      // "e" matches One/Three but not Two — ArrowDown from One should land
+      // on Three directly, not the hidden Two.
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoPicklist<string>
+      >(DynamoPicklist, {
+        inputs: { source: FILTER_SOURCE, target: [], filterable: true },
+      });
+      const input = panelFilterInput(container, 'source');
+      fireEvent.input(input, { target: { value: 'e' } });
+      fixture.detectChanges();
+      // Typing already activates the first match (One) — confirm that,
+      // then one ArrowDown should land on Three, skipping the hidden Two.
+      expect(componentInstance['sourceActiveValue']()).toBe('1');
+
+      dispatchKey(panelListEl(container, 'source'), 'ArrowDown');
+      fixture.detectChanges();
+
+      expect(componentInstance['sourceActiveValue']()).toBe('3');
+    });
+
+    it('makes sourceDropListDisabled()/targetDropListDisabled() true only for the panel whose own filter is active', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoPicklist<string>
+      >(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, filterable: true },
+      });
+      const instance = componentInstance as unknown as {
+        sourceDropListDisabled: () => boolean;
+        targetDropListDisabled: () => boolean;
+      };
+
+      fireEvent.input(panelFilterInput(container, 'source'), {
+        target: { value: 'go' },
+      });
+      fixture.detectChanges();
+      expect(instance.sourceDropListDisabled()).toBe(true);
+      expect(instance.targetDropListDisabled()).toBe(false);
+
+      fireEvent.input(panelFilterInput(container, 'source'), {
+        target: { value: '' },
+      });
+      fixture.detectChanges();
+      expect(instance.sourceDropListDisabled()).toBe(false);
+    });
+
+    it('reorder buttons still move the active item in the full array while that panel is filtered', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: [], target: FILTER_SOURCE, filterable: true },
+        },
+      );
+      const input = panelFilterInput(container, 'target');
+      fireEvent.input(input, { target: { value: 'e' } }); // One, Three visible; Two hidden
+      fixture.detectChanges();
+
+      within(container).getByRole('option', { name: 'One' }).click();
+      fixture.detectChanges();
+      within(container)
+        .getByRole('button', { name: 'Move down in Selected' })
+        .click();
+      fixture.detectChanges();
+
+      // One moved past the hidden Two in the full array...
+      expect(componentInstance.target().map((o) => o.value)).toEqual([
+        '2',
+        '1',
+        '3',
+      ]);
+      // ...but the filtered/visible order is unaffected, since filtering
+      // preserves relative order among visible rows.
+      expect(panelRowTexts(container, 'target')).toEqual(['One', 'Three']);
+    });
+
+    it("Escape in a panel's filter box clears that panel's query", () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, filterable: true },
+      });
+      const input = panelFilterInput(container, 'source');
+      fireEvent.input(input, { target: { value: 'go' } });
+      fixture.detectChanges();
+
+      dispatchKey(input, 'Escape');
+      fixture.detectChanges();
+
+      expect(panelRowTexts(container, 'source')).toEqual([
+        'Rust',
+        'Go',
+        'Python',
+      ]);
+    });
+
+    it('has no axe violations with both filter boxes rendered', async () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, filterable: true },
+      });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations with a no-results message rendered', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, filterable: true },
+      });
+      fireEvent.input(panelFilterInput(container, 'source'), {
+        target: { value: 'zzz' },
+      });
+      fixture.detectChanges();
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+
+    describe('via DynamoPicklistHarness', () => {
+      it('drives the filter box and reports no-results/drag-disabled state per panel', async () => {
+        const { fixture } = renderDynamoComponent(DynamoPicklist, {
+          inputs: { source: SOURCE, target: TARGET, filterable: true },
+        });
+        const harness = await TestbedHarnessEnvironment.harnessForFixture(
+          fixture,
+          DynamoPicklistHarness,
+        );
+
+        expect(await harness.hasNoResults('source')).toBe(false);
+        await harness.setFilterText('source', 'go');
+        fixture.detectChanges();
+
+        expect(await harness.getFilterText('source')).toBe('go');
+        expect(await harness.getLabels('source')).toEqual(['Go']);
+        expect(await harness.isDragDisabled('source')).toBe(true);
+        expect(await harness.isDragDisabled('target')).toBe(false);
+
+        await harness.setFilterText('source', 'zzz');
+        fixture.detectChanges();
+        expect(await harness.hasNoResults('source')).toBe(true);
+      });
+
+      it('throws from setFilterText when filterable is off', async () => {
+        const { fixture } = renderDynamoComponent(DynamoPicklist, {
+          inputs: { source: SOURCE, target: TARGET },
+        });
+        const harness = await TestbedHarnessEnvironment.harnessForFixture(
+          fixture,
+          DynamoPicklistHarness,
+        );
+
+        await expect(harness.setFilterText('source', 'go')).rejects.toThrow();
+      });
+    });
+  });
+
+  describe('filter + virtual scroll combined', () => {
+    it('filters the virtualized set (filteredSource feeds [items], not the raw source())', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: {
+            source: MANY_SOURCE,
+            target: [],
+            filterable: true,
+            virtualScroll: true,
+          },
+        },
+      );
+      await settle(fixture);
+
+      fireEvent.input(panelFilterInput(container, 'source'), {
+        target: { value: 'Option 1' },
+      });
+      await settle(fixture);
+
+      // Matches "Option 1", "Option 10".."Option 19" — 11 total. Asserted
+      // against the logical filtered set, not DOM-rendered row count — the
+      // virtualized viewport only ever mounts however many rows fit, not
+      // every match.
+      expect(componentInstance['filteredSource']()).toHaveLength(11);
+      expect(
+        container.querySelector('[data-part="sourcePanel"] dg-virtual-scroll'),
+      ).not.toBeNull();
+    });
+
+    it('drag stays disabled while filtering, even with virtualScroll off', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: SOURCE, target: TARGET, filterable: true },
+        },
+      );
+      fireEvent.input(panelFilterInput(container, 'source'), {
+        target: { value: 'go' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        (
+          componentInstance as unknown as {
+            sourceDropListDisabled: () => boolean;
+          }
+        ).sourceDropListDisabled(),
+      ).toBe(true);
+    });
+
+    it('drag stays disabled while virtualized, even with filterable off', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoPicklist, {
+        inputs: {
+          source: SOURCE,
+          target: TARGET,
+          virtualScroll: true,
+        },
+      });
+
+      expect(
+        (
+          componentInstance as unknown as {
+            sourceDropListDisabled: () => boolean;
+          }
+        ).sourceDropListDisabled(),
+      ).toBe(true);
     });
   });
 });

@@ -10,6 +10,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { DynamoCheckbox } from '@dynamong/checkbox';
+import { DynamoSpinner } from '@dynamong/spinner';
+import { isTreeNodeExpandable } from './tree-node';
 import { DynamoTreeState } from './tree-state';
 import {
   treeChevronButtonStyles,
@@ -34,7 +36,7 @@ import type { DynamoTreeNode } from './tree.types';
   selector: 'dg-tree-item',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoCheckbox, DynamoTreeItem],
+  imports: [DynamoCheckbox, DynamoSpinner, DynamoTreeItem],
   templateUrl: './tree-item.html',
 })
 export class DynamoTreeItem {
@@ -49,8 +51,8 @@ export class DynamoTreeItem {
   private readonly checkboxHost =
     viewChild<ElementRef<HTMLElement>>('checkboxHost');
 
-  protected readonly hasChildren = computed(
-    () => (this.node().children?.length ?? 0) > 0,
+  protected readonly isExpandable = computed(() =>
+    isTreeNodeExpandable(this.node()),
   );
   // While a filter is active, every retained node renders expanded
   // regardless of `expandedIds` — `filterTree` already pruned the tree
@@ -152,10 +154,10 @@ export class DynamoTreeItem {
 
   protected onChevronClick(event: Event): void {
     event.stopPropagation();
-    if (!this.hasChildren()) {
+    if (!this.isExpandable() || this.node().loading) {
       return;
     }
-    this.state.toggleExpanded(this.node().id);
+    this.state.toggleExpanded(this.node());
   }
 
   protected onCheckboxContainerClick(event: Event): void {

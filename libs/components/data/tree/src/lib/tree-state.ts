@@ -28,7 +28,7 @@ export class DynamoTreeState {
     'unchecked';
 
   handleKeydown: (event: KeyboardEvent) => void = () => undefined;
-  toggleExpanded: (id: string) => void = () => undefined;
+  toggleExpanded: (node: DynamoTreeNode) => void = () => undefined;
   toggleChecked: (node: DynamoTreeNode) => void = () => undefined;
   setActive: (id: string) => void = () => undefined;
   activate: (node: DynamoTreeNode) => void = () => undefined;

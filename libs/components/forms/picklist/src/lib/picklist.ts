@@ -15,14 +15,22 @@ import {
   moveItemInArray,
   type CdkDragDrop,
 } from '@angular/cdk/drag-drop';
+import { FormsModule } from '@angular/forms';
 import { DynamoBaseComponent } from '@dynamong/core/base';
 import { DynamoCheckIcon } from '@dynamong/icons';
+import { DynamoInputText } from '@dynamong/input-text';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
+import { filterPicklistOptions } from './picklist-option-filter';
 import { findEnabledPicklistIndex } from './picklist-option-nav';
 import {
   picklistButtonStyles,
+  picklistFilterFieldWrapperStyles,
+  picklistFilterIconStyles,
+  picklistFilterInputExtraClasses,
+  picklistFilterWrapperStyles,
   picklistMoveButtonColumnStyles,
+  picklistNoResultsStyles,
   picklistOptionCheckboxStyles,
   picklistOptionStyles,
   picklistPanelHeaderStyles,
@@ -51,6 +59,8 @@ import type {
     CdkDrag,
     DynamoCheckIcon,
     DynamoVirtualScroll,
+    DynamoInputText,
+    FormsModule,
   ],
   templateUrl: './picklist.html',
 })
@@ -72,6 +82,16 @@ export class DynamoPicklist<
   readonly readOnly = input(false);
   readonly sourceLabel = input('Available');
   readonly targetLabel = input('Selected');
+
+  /** Shows a per-panel search box that narrows that panel's rows by label. */
+  readonly filterable = input(false);
+  /** Two-way bindable filter query for the source panel. */
+  readonly sourceFilterText = model('');
+  /** Two-way bindable filter query for the target panel. */
+  readonly targetFilterText = model('');
+  readonly filterPlaceholder = input('Search...');
+  /** Shown when a panel is non-empty but its filter matched nothing — distinct from a genuinely empty panel, which renders no message. */
+  readonly noResultsMessage = input('No matching options');
 
   /**
    * Opt-in — renders each panel's option list through
@@ -99,8 +119,17 @@ export class DynamoPicklist<
 
   protected readonly sourceSelected = signal<Set<TValue>>(new Set());
   protected readonly targetSelected = signal<Set<TValue>>(new Set());
-  protected readonly sourceActiveIndex = signal(-1);
-  protected readonly targetActiveIndex = signal(-1);
+
+  /**
+   * Value-keyed, NOT index-keyed, because rendering is no longer 1:1 with
+   * `source()`/`target()` once `filterable` is in play — mirrors
+   * `DynamoOrderList`'s own `activeValue`/`activeIndex` split.
+   * `sourceActiveIndex`/`targetActiveIndex` below are derived purely so
+   * `canMoveUp`/`canMoveDown`/`reorder` keep reading a full-array position
+   * exactly as before.
+   */
+  protected readonly sourceActiveValue = signal<TValue | null>(null);
+  protected readonly targetActiveValue = signal<TValue | null>(null);
 
   // Template-ref-scoped (not a type-only `viewChild(DynamoVirtualScroll)`)
   // because both panels can be virtualized simultaneously — a type-only
@@ -121,6 +150,75 @@ export class DynamoPicklist<
   protected readonly canMoveAllRight = computed(() => this.source().length > 0);
   protected readonly canMoveAllLeft = computed(() => this.target().length > 0);
 
+  // --- filtering ---
+
+  protected readonly filteredSource = computed(() =>
+    filterPicklistOptions(this.source(), this.sourceFilterText()),
+  );
+  protected readonly filteredTarget = computed(() =>
+    filterPicklistOptions(this.target(), this.targetFilterText()),
+  );
+
+  // `cdkDropListData` needs a mutable array type (CDK's own typing), unlike
+  // `filteredSource()`/`filteredTarget()` (deliberately `readonly`, matching
+  // `filterPicklistOptions`'s pure-function signature) — a fresh shallow
+  // copy is harmless since `onDropped` never trusts CDK's in-place mutation
+  // anyway, only reads `previousIndex`/`currentIndex`.
+  protected readonly cdkSourceItems = computed(() => [
+    ...this.filteredSource(),
+  ]);
+  protected readonly cdkTargetItems = computed(() => [
+    ...this.filteredTarget(),
+  ]);
+
+  protected readonly isSourceFilterActive = computed(
+    () => this.filterable() && this.sourceFilterText().trim().length > 0,
+  );
+  protected readonly isTargetFilterActive = computed(
+    () => this.filterable() && this.targetFilterText().trim().length > 0,
+  );
+
+  protected readonly showSourceNoResults = computed(
+    () =>
+      this.filterable() &&
+      this.source().length > 0 &&
+      this.filteredSource().length === 0,
+  );
+  protected readonly showTargetNoResults = computed(
+    () =>
+      this.filterable() &&
+      this.target().length > 0 &&
+      this.filteredTarget().length === 0,
+  );
+
+  /** Full-array position of the active item, or -1. Nothing writes to this directly — see `sourceActiveValue`. */
+  protected readonly sourceActiveIndex = computed(() => {
+    const active = this.sourceActiveValue();
+    return active === null
+      ? -1
+      : this.source().findIndex((option) => option.value === active);
+  });
+  protected readonly targetActiveIndex = computed(() => {
+    const active = this.targetActiveValue();
+    return active === null
+      ? -1
+      : this.target().findIndex((option) => option.value === active);
+  });
+
+  /** Position of the active item within the currently-rendered (filtered) panel — what keyboard nav and virtual-scroll's `scrollToIndex` operate on. */
+  protected readonly sourceActiveFilteredIndex = computed(() => {
+    const active = this.sourceActiveValue();
+    return active === null
+      ? -1
+      : this.filteredSource().findIndex((option) => option.value === active);
+  });
+  protected readonly targetActiveFilteredIndex = computed(() => {
+    const active = this.targetActiveValue();
+    return active === null
+      ? -1
+      : this.filteredTarget().findIndex((option) => option.value === active);
+  });
+
   protected readonly rootClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
@@ -132,6 +230,12 @@ export class DynamoPicklist<
   protected readonly panelTitleClasses = picklistPanelTitleStyles;
   protected readonly moveButtonColumnClasses = picklistMoveButtonColumnStyles;
   protected readonly reorderButtonRowClasses = picklistReorderButtonRowStyles;
+  protected readonly filterWrapperClasses = picklistFilterWrapperStyles;
+  protected readonly filterFieldWrapperClasses =
+    picklistFilterFieldWrapperStyles;
+  protected readonly filterIconClasses = picklistFilterIconStyles;
+  protected readonly filterInputExtraClasses = picklistFilterInputExtraClasses;
+  protected readonly noResultsClasses = picklistNoResultsStyles;
 
   // Trivial today (Picklist has no grouping concept to guard against, unlike
   // Listbox's isVirtualized), but kept as its own computed so both panels
@@ -139,9 +243,29 @@ export class DynamoPicklist<
   // them independently.
   protected readonly isVirtualized = computed(() => this.virtualScroll());
 
-  /** Gates BOTH panels' `cdkDropList` off entirely while virtualized — see `virtualScroll`'s own doc comment for why. Folded together with the existing `disabled()`/`readOnly()` gating into one boolean for `[cdkDropListDisabled]`. */
-  protected readonly dropListDisabled = computed(
-    () => this.disabled() || this.readOnly() || this.isVirtualized(),
+  /**
+   * Gates each panel's own `cdkDropList` off — both as a drag origin and a
+   * drop target — while virtualized (see `virtualScroll`'s own doc comment
+   * for why) or while THAT panel's own filter is active: a filtered panel's
+   * rendered indices no longer match its full-array positions, and CDK's
+   * `previousIndex`/`currentIndex` are computed from the mounted (filtered)
+   * subset, not the full array `onDropped()` assumes — for either side of a
+   * transfer. Folded together with `disabled()`/`readOnly()` into one
+   * boolean per panel for `[cdkDropListDisabled]`.
+   */
+  protected readonly sourceDropListDisabled = computed(
+    () =>
+      this.disabled() ||
+      this.readOnly() ||
+      this.isVirtualized() ||
+      this.isSourceFilterActive(),
+  );
+  protected readonly targetDropListDisabled = computed(
+    () =>
+      this.disabled() ||
+      this.readOnly() ||
+      this.isVirtualized() ||
+      this.isTargetFilterActive(),
   );
 
   /** `dg-virtual-scroll`'s own fixed-height viewport is the sole scrolling region while virtualized — this `<ul>` must not also scroll (no double scrollbar). */
@@ -238,8 +362,8 @@ export class DynamoPicklist<
     }
     fromModel.set(fromModel().filter((o) => !predicate(o)));
     toModel.set([...toModel(), ...moving]);
-    (from === 'source' ? this.sourceActiveIndex : this.targetActiveIndex).set(
-      -1,
+    (from === 'source' ? this.sourceActiveValue : this.targetActiveValue).set(
+      null,
     );
   }
 
@@ -312,10 +436,9 @@ export class DynamoPicklist<
     if (this.disabled() || this.readOnly()) {
       return;
     }
-    const activeSig =
-      side === 'source' ? this.sourceActiveIndex : this.targetActiveIndex;
     const listModel = side === 'source' ? this.source : this.target;
-    const idx = activeSig();
+    const idx =
+      side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex();
     const target = idx + direction;
     if (idx < 0 || target < 0 || target >= listModel().length) {
       return;
@@ -323,21 +446,35 @@ export class DynamoPicklist<
     const next = [...listModel()];
     moveItemInArray(next, idx, target);
     listModel.set(next);
-    activeSig.set(target);
-    this.scrollActiveIntoView(side, target);
+    // activeValue is unchanged — the moved item is the one that was already
+    // active; activeIndex/activeFilteredIndex (derived) pick up its new
+    // position automatically.
+    this.scrollActiveIntoView(side);
+  }
+
+  private setActiveValue(side: DynamoPicklistSide, value: TValue | null): void {
+    (side === 'source' ? this.sourceActiveValue : this.targetActiveValue).set(
+      value,
+    );
   }
 
   /**
-   * Scrolls the virtualized viewport so `index` is actually rendered.
-   * Called only from keyboard-driven moves (Arrow/Home/End nav and the
-   * ▲/▼ reorder buttons) — deliberately NOT from the `(mouseenter)="...
-   * ActiveIndex.set(i)"` hover handlers, since CDK's `scrollToIndex` is an
+   * Scrolls the virtualized viewport so the active item is actually
+   * rendered, at its position within the currently-filtered list. Called
+   * only from keyboard-driven moves (Arrow/Home/End nav and the ▲/▼ reorder
+   * buttons) — deliberately NOT from the `(mouseenter)="...ActiveValue.set(
+   * option.value)"` hover handlers, since CDK's `scrollToIndex` is an
    * unconditional jump-to-top (not "only scroll if out of view"), which
    * would visibly jerk the list on every hover — same fix already applied
    * in Listbox.
    */
-  private scrollActiveIntoView(side: DynamoPicklistSide, index: number): void {
-    if (!this.isVirtualized() || index < 0) return;
+  private scrollActiveIntoView(side: DynamoPicklistSide): void {
+    if (!this.isVirtualized()) return;
+    const index =
+      side === 'source'
+        ? this.sourceActiveFilteredIndex()
+        : this.targetActiveFilteredIndex();
+    if (index < 0) return;
     const ref =
       side === 'source'
         ? this.sourceVirtualScrollRef()
@@ -345,7 +482,11 @@ export class DynamoPicklist<
     ref?.scrollToIndex(index);
   }
 
-  // --- keyboard nav within a panel, mirrors Listbox's onKeydown shape ---
+  // --- keyboard nav within a panel, mirrors OrderList's onKeydown shape.
+  // Navigates the filtered view, never the raw source()/target() — safe
+  // unconditionally, since filteredSource()/filteredTarget() are
+  // reference-identical to source()/target() whenever that side's filter
+  // is blank. ---
 
   protected onPanelKeydown(
     event: KeyboardEvent,
@@ -354,49 +495,112 @@ export class DynamoPicklist<
     if (this.disabled()) {
       return;
     }
-    const options = side === 'source' ? this.source() : this.target();
-    const activeSig =
-      side === 'source' ? this.sourceActiveIndex : this.targetActiveIndex;
+    const options =
+      side === 'source' ? this.filteredSource() : this.filteredTarget();
+    const activeFilteredIndex =
+      side === 'source'
+        ? this.sourceActiveFilteredIndex()
+        : this.targetActiveFilteredIndex();
 
     switch (event.key) {
       case 'ArrowDown': {
         event.preventDefault();
-        const next = findEnabledPicklistIndex(options, activeSig(), 1);
+        const next = findEnabledPicklistIndex(options, activeFilteredIndex, 1);
         if (next !== null) {
-          activeSig.set(next);
-          this.scrollActiveIntoView(side, next);
+          this.setActiveValue(side, options[next]?.value ?? null);
+          this.scrollActiveIntoView(side);
         }
         break;
       }
       case 'ArrowUp': {
         event.preventDefault();
-        const next = findEnabledPicklistIndex(options, activeSig(), -1);
+        const next = findEnabledPicklistIndex(options, activeFilteredIndex, -1);
         if (next !== null) {
-          activeSig.set(next);
-          this.scrollActiveIntoView(side, next);
+          this.setActiveValue(side, options[next]?.value ?? null);
+          this.scrollActiveIntoView(side);
         }
         break;
       }
       case 'Home': {
         event.preventDefault();
-        const next = findEnabledPicklistIndex(options, -1, 1) ?? -1;
-        activeSig.set(next);
-        this.scrollActiveIntoView(side, next);
+        const next = findEnabledPicklistIndex(options, -1, 1);
+        this.setActiveValue(
+          side,
+          next !== null ? (options[next]?.value ?? null) : null,
+        );
+        this.scrollActiveIntoView(side);
         break;
       }
       case 'End': {
         event.preventDefault();
-        const next = findEnabledPicklistIndex(options, 0, -1) ?? -1;
-        activeSig.set(next);
-        this.scrollActiveIntoView(side, next);
+        const next = findEnabledPicklistIndex(options, 0, -1);
+        this.setActiveValue(
+          side,
+          next !== null ? (options[next]?.value ?? null) : null,
+        );
+        this.scrollActiveIntoView(side);
         break;
       }
       case 'Enter':
       case ' ': {
         event.preventDefault();
-        const option = options[activeSig()];
+        const option = options[activeFilteredIndex];
         if (option) {
           this.toggleSelected(side, option);
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  // --- filter box, mirrors OrderList's onFilterInputChange/onFilterKeydown ---
+
+  protected onFilterInputChange(side: DynamoPicklistSide, value: string): void {
+    (side === 'source' ? this.sourceFilterText : this.targetFilterText).set(
+      value,
+    );
+    // filteredSource()/filteredTarget() are read AFTER the set above, so
+    // they already reflect the new query (signals recompute synchronously
+    // on read).
+    const options =
+      side === 'source' ? this.filteredSource() : this.filteredTarget();
+    const next = findEnabledPicklistIndex(options, -1, 1);
+    this.setActiveValue(
+      side,
+      next !== null ? (options[next]?.value ?? null) : null,
+    );
+  }
+
+  protected onFilterKeydown(
+    side: DynamoPicklistSide,
+    event: KeyboardEvent,
+  ): void {
+    switch (event.key) {
+      case 'Escape':
+        event.preventDefault();
+        (side === 'source' ? this.sourceFilterText : this.targetFilterText).set(
+          '',
+        );
+        break;
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        event.preventDefault();
+        const options =
+          side === 'source' ? this.filteredSource() : this.filteredTarget();
+        const activeFilteredIndex =
+          side === 'source'
+            ? this.sourceActiveFilteredIndex()
+            : this.targetActiveFilteredIndex();
+        const next = findEnabledPicklistIndex(
+          options,
+          activeFilteredIndex,
+          event.key === 'ArrowDown' ? 1 : -1,
+        );
+        if (next !== null) {
+          this.setActiveValue(side, options[next]?.value ?? null);
+          this.scrollActiveIntoView(side);
         }
         break;
       }
@@ -410,14 +614,13 @@ export class DynamoPicklist<
   protected optionClasses(
     side: DynamoPicklistSide,
     option: DynamoSelectOption<TValue>,
-    index: number,
   ): string {
     return picklistOptionStyles({
       active:
-        index ===
+        option.value ===
         (side === 'source'
-          ? this.sourceActiveIndex()
-          : this.targetActiveIndex()),
+          ? this.sourceActiveValue()
+          : this.targetActiveValue()),
       selected: this.isSelected(side, option),
       disabled: !!option.disabled,
     });

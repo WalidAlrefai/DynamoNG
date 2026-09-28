@@ -59,6 +59,18 @@ export const picklistMoveButtonColumnStyles = 'flex flex-col gap-2 pt-8';
 
 export const picklistReorderButtonRowStyles = 'flex items-center gap-1';
 
+// Mirrors Listbox's/OrderList's own filter-box styles — reimplemented
+// locally rather than imported, matching this component's existing
+// precedent (see `picklistButtonStyles` below and `picklist-option-nav.ts`'s
+// doc comment) of not cross-importing between sibling type:component
+// packages.
+export const picklistFilterWrapperStyles = 'border-b border-border p-2';
+export const picklistFilterFieldWrapperStyles = 'relative min-w-0 flex-1';
+export const picklistFilterIconStyles =
+  'pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-text-muted';
+export const picklistFilterInputExtraClasses = 'pe-8';
+export const picklistNoResultsStyles = 'px-4 py-2 text-sm text-text-muted';
+
 // Hand-rolled bare <button> chrome, same reasoning as Password's toggle
 // button / Chips Input's remove-chip button — no @dynamong/button import
 // (would force a tier bump for zero benefit here).
