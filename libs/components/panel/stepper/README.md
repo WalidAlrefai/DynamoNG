@@ -24,14 +24,15 @@ protected onFinish(): void { ... }
 
 ## Inputs
 
-| Input         | Type                          | Default     | Description                                                                                                                          |
-| ------------- | ----------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`       | `string \| undefined` (model) | `undefined` | Two-way bindable: `<dg-stepper [(value)]="active">`.                                                                                 |
-| `linear`      | `boolean`                     | `true`      | When `false`, any non-disabled step can be activated directly by clicking it — the "completed-or-current steps only" gate is lifted. |
-| `ariaLabel`   | `string \| undefined`         | `undefined` |                                                                                                                                      |
-| `backLabel`   | `string`                      | `'Back'`    |                                                                                                                                      |
-| `nextLabel`   | `string`                      | `'Next'`    |                                                                                                                                      |
-| `finishLabel` | `string`                      | `'Finish'`  | Shown on the Next button in place of `nextLabel` while on the last step.                                                             |
+| Input         | Type                          | Default        | Description                                                                                                                                 |
+| ------------- | ----------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`       | `string \| undefined` (model) | `undefined`    | Two-way bindable: `<dg-stepper [(value)]="active">`.                                                                                        |
+| `linear`      | `boolean`                     | `true`         | When `false`, any non-disabled step can be activated directly by clicking it — the "completed-or-current steps only" gate is lifted.        |
+| `orientation` | `'horizontal' \| 'vertical'`  | `'horizontal'` | Vertical renders each step's own panel directly under that step's own header, interleaved in the step list, instead of below the whole row. |
+| `ariaLabel`   | `string \| undefined`         | `undefined`    |                                                                                                                                             |
+| `backLabel`   | `string`                      | `'Back'`       |                                                                                                                                             |
+| `nextLabel`   | `string`                      | `'Next'`       |                                                                                                                                             |
+| `finishLabel` | `string`                      | `'Finish'`     | Shown on the Next button in place of `nextLabel` while on the last step.                                                                    |
 
 ### `<dg-step>` inputs
 
@@ -51,19 +52,26 @@ protected onFinish(): void { ... }
 ## Accessibility
 
 - `<nav [aria-label]>` wrapping an `<ol>` of step buttons; each is a real `<button>` with `aria-current="step"` on the active one and `aria-disabled` when gated or skippable. Panels carry `aria-labelledby` pointing at their step button, are mounted lazily on first activation, and stay mounted (hidden) afterward.
-- Keyboard on the step list: `ArrowLeft`/`ArrowRight` move focus (wrapping) between step buttons — unrestricted, so any step's label can be inspected — and `Home`/`End` jump to the first/last enabled step. Only `Enter`/`Space` (native button activation) enforces the "completed-or-current steps only" gate; arrow-key focus movement never skips ahead of it.
+- Keyboard on the step list: `ArrowLeft`/`ArrowRight` (and, unconditionally regardless of orientation, `ArrowUp`/`ArrowDown`) move focus (wrapping) between step buttons — unrestricted, so any step's label can be inspected — and `Home`/`End` jump to the first/last enabled step. Only `Enter`/`Space` (native button activation) enforces the "completed-or-current steps only" gate; arrow-key focus movement never skips ahead of it.
 - Back is disabled on the first step; Next advances to the next non-disabled step, or emits `finish` from the last one.
 
 ## Design notes
 
 `linear` defaults to `true` to preserve this component's original gated
 behavior, matching its "linear, gated wizard" design; set it to `false` for
-free navigation. A vertical orientation was considered and left out: a
-vertical layout typically interleaves each step's content directly under
-its own header, but this component renders one shared content panel below
-the whole step row — supporting vertical would mean restructuring that
-shared-panel layout into a per-step one, a disproportionate redesign with
-no existing precedent.
+free navigation.
+
+`orientation` reverses an earlier design decision, worth calling out
+explicitly: a vertical layout was previously left out on the premise that
+this component rendered "one shared content panel below the whole step
+row." That premise didn't hold up — each step's content was already its own
+lazily-mounted, independently `[hidden]`-toggled panel (`<dg-step>` exposes
+its own template + activation latch, the same mechanism `DynamoTabs` uses
+for its panels); only the panel's _DOM placement_ was shared (always
+rendered in one block after the step row). `orientation="vertical"` simply
+moves each step's own panel to render inside that step's own list item
+instead — a template-placement change, not a content-projection redesign.
+`orientation="horizontal"` (the default) is unaffected byte-for-byte.
 
 ## Tier / dependencies
 

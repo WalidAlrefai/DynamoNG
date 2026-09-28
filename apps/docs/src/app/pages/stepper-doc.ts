@@ -9,6 +9,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'non-linear', title: 'Non-Linear' },
+  { id: 'vertical', title: 'Vertical' },
 ];
 
 @Component({
@@ -74,6 +75,34 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="vertical"
+        title="Vertical"
+        description="orientation='vertical' renders each step's own content directly under its own header, interleaved in the step list, instead of below the whole row."
+      >
+        <div preview>
+          <dg-stepper
+            [(value)]="verticalActiveStep"
+            orientation="vertical"
+            ariaLabel="Checkout, vertical"
+          >
+            <dg-step value="account" label="Account">
+              <p class="text-text-primary">Create your account details.</p>
+            </dg-step>
+            <dg-step value="preferences" label="Preferences">
+              <p class="text-text-primary">Set your preferences.</p>
+            </dg-step>
+            <dg-step value="confirm" label="Confirm">
+              <p class="text-text-primary">Review and confirm.</p>
+            </dg-step>
+          </dg-stepper>
+        </div>
+        <div code>
+          &lt;dg-stepper [(value)]="active" orientation="vertical"&gt; ...
+          &lt;/dg-stepper&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <table class="w-full border-collapse text-sm">
           <thead>
@@ -106,6 +135,12 @@ const EXAMPLES: DocExampleRef[] = [
               <td class="py-2 font-mono">true</td>
             </tr>
             <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">dg-stepper</td>
+              <td class="py-2 pr-4 font-mono">orientation</td>
+              <td class="py-2 pr-4 font-mono">'horizontal' | 'vertical'</td>
+              <td class="py-2 font-mono">'horizontal'</td>
+            </tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">dg-step</td>
               <td class="py-2 pr-4 font-mono">value / label</td>
               <td class="py-2 pr-4 font-mono">string (required)</td>
@@ -127,4 +162,5 @@ export class StepperDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly activeStep = signal<string | undefined>('account');
   protected readonly freeActiveStep = signal<string | undefined>('account');
+  protected readonly verticalActiveStep = signal<string | undefined>('account');
 }
