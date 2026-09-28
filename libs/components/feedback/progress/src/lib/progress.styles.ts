@@ -20,6 +20,27 @@ export const progressTrackStyles = cva(
   },
 );
 
+// Trailing value label shown next to the bar via `showValue` — a sibling
+// element rather than an inside-the-bar overlay (see progress.ts) because
+// the track heights above are far too thin (6-10px) to legibly host text,
+// and there's no single text color that reads well against both the
+// colored fill and the neutral unfilled track. Mirrors the same
+// text-text-muted treatment DynamoMeterGroup uses for its own adjacent
+// value labels (meterGroupLegendValueStyles).
+export const progressValueLabelStyles = cva(
+  'shrink-0 font-medium tabular-nums text-text-muted',
+  {
+    variants: {
+      size: {
+        sm: 'text-xs',
+        md: 'text-sm',
+        lg: 'text-base',
+      },
+    },
+    defaultVariants: { size: 'md' },
+  },
+);
+
 export const progressFillStyles = cva(
   'h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none',
   {

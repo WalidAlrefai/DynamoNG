@@ -1,3 +1,25 @@
+@if (showValue() && !indeterminate()) {
+<div class="flex items-center gap-2">
+  <div
+    role="progressbar"
+    [class]="trackClasses()"
+    [attr.aria-valuenow]="clampedValue()"
+    [attr.aria-valuemin]="0"
+    [attr.aria-valuemax]="100"
+    [attr.aria-label]="ariaLabel() ?? 'Progress'"
+  >
+    <!-- The one deliberate exception to "only .styles.ts holds visual values"
+    in this component — width is a continuous 0-100 value with no discrete
+    class variant that could express it. -->
+    <div
+      [class]="fillClasses()"
+      [style.width.%]="clampedValue()"
+      [style.background-color]="color() || null"
+    ></div>
+  </div>
+  <span [class]="valueLabelClasses()">{{ clampedValue() }}%</span>
+</div>
+} @else {
 <div
   role="progressbar"
   [class]="trackClasses()"
@@ -16,3 +38,4 @@
     [style.background-color]="color() || null"
   ></div>
 </div>
+}

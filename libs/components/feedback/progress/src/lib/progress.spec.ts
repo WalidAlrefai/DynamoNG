@@ -210,6 +210,70 @@ describe('DynamoProgress', () => {
     });
   });
 
+  describe('showValue', () => {
+    it('defaults to false', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoProgress);
+      expect(componentInstance.showValue()).toBe(false);
+    });
+
+    it('renders no value label when showValue is unset', () => {
+      const { container } = renderDynamoComponent(DynamoProgress, {
+        inputs: { value: 40 },
+      });
+
+      expect(container.textContent?.trim()).toBe('');
+    });
+
+    it.each([
+      { value: -20, expected: '0%' },
+      { value: 40, expected: '40%' },
+      { value: 150, expected: '100%' },
+    ])(
+      'renders a $expected label for value=$value when showValue is true',
+      ({ value, expected }) => {
+        const { container } = renderDynamoComponent(DynamoProgress, {
+          inputs: { value, showValue: true },
+        });
+
+        expect(container.textContent?.trim()).toBe(expected);
+      },
+    );
+
+    it('suppresses the label when indeterminate is also true', () => {
+      const { container } = renderDynamoComponent(DynamoProgress, {
+        inputs: { value: 40, showValue: true, indeterminate: true },
+      });
+
+      expect(container.textContent?.trim()).toBe('');
+      const track = within(container).getByRole('progressbar');
+      expect(track.hasAttribute('aria-valuenow')).toBe(false);
+    });
+
+    it.each(['sm', 'md', 'lg'] as const)(
+      'applies the size "%s" sizing class to the label',
+      (size) => {
+        const { container } = renderDynamoComponent(DynamoProgress, {
+          inputs: { value: 40, showValue: true, size },
+        });
+
+        const sizeClass = { sm: 'text-xs', md: 'text-sm', lg: 'text-base' }[
+          size
+        ];
+        const label = container.querySelector(
+          '[role="progressbar"] + span',
+        ) as HTMLElement;
+        expect(label.className).toContain(sizeClass);
+      },
+    );
+
+    it('has no axe violations when showValue is true', async () => {
+      const { container } = renderDynamoComponent(DynamoProgress, {
+        inputs: { value: 55, showValue: true },
+      });
+      await expectNoA11yViolations(container);
+    });
+  });
+
   describe('edge cases', () => {
     it('renders a 0% fill without throwing at value=0', () => {
       const { container } = renderDynamoComponent(DynamoProgress, {
