@@ -10,6 +10,7 @@ import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DynamoDatePicker } from './date-picker';
+import { formatDate, inferFormatFromLocale } from './date-picker-format';
 import { DynamoDatePickerHarness } from './date-picker.harness';
 
 // Fixed "today" for every test — a plain midweek Wednesday, not on any
@@ -19,6 +20,14 @@ const TODAY = new Date(2026, 7, 19);
 
 function formatMedium(date: Date): string {
   return new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(date);
+}
+
+// The trigger's date-only (non-showTime) display/typed text uses the
+// locale-inferred short token format (via `activeFormatParts`), not the
+// spelled-out `formatMedium` style above — computed the same way the
+// component does, rather than hardcoded, to avoid ICU-version brittleness.
+function formatShort(date: Date): string {
+  return formatDate(date, inferFormatFromLocale('en'));
 }
 
 // The CDK overlay portals `role="dialog"` content into a `.cdk-overlay-container`
@@ -53,6 +62,20 @@ function getDayButtonByText(text: string): HTMLButtonElement {
 async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
   fixture.detectChanges();
+}
+
+// Opens the panel via ArrowDown at the trigger rather than a click — unlike
+// a click (which deliberately leaves focus on the input so typing stays
+// possible right after clicking in, see `onTriggerClick`'s doc comment), a
+// keyboard open moves focus into the day grid, same as before Phase 1. Tests
+// that assert on grid roving focus need this, not a click-to-open.
+async function openViaKeyboard(
+  trigger: HTMLElement,
+  fixture: ComponentFixture<unknown>,
+): Promise<void> {
+  trigger.focus();
+  await userEvent.keyboard('{ArrowDown}');
+  await settle(fixture);
 }
 
 @Component({
@@ -90,6 +113,39 @@ class DatePickerReactiveFormHostComponent {
   readonly control = new FormControl<Date | null>(null);
 }
 
+@Component({
+  selector: 'dg-date-picker-multi-test-host',
+  standalone: true,
+  imports: [DynamoDatePicker],
+  template: `
+    <dg-date-picker
+      selectionMode="multiple"
+      [(values)]="values"
+      [(open)]="isOpen"
+      ariaLabel="Choose dates"
+      placeholder="Choose dates"
+    />
+  `,
+})
+class DatePickerMultiTestHostComponent {
+  readonly values = model<Date[]>([]);
+  readonly isOpen = model(false);
+}
+
+@Component({
+  selector: 'dg-date-picker-multi-reactive-form-host',
+  standalone: true,
+  imports: [DynamoDatePicker, ReactiveFormsModule],
+  template: `<dg-date-picker
+    selectionMode="multiple"
+    [formControl]="control"
+    ariaLabel="Choose dates"
+  />`,
+})
+class DatePickerMultiReactiveFormHostComponent {
+  readonly control = new FormControl<Date[]>([]);
+}
+
 describe('DynamoDatePicker', () => {
   beforeEach(() => {
     // Only fake `Date` — `settle()` below relies on a real `setTimeout` to
@@ -108,7 +164,7 @@ describe('DynamoDatePicker', () => {
       const { container } = renderDynamoComponent(DatePickerTestHostComponent);
 
       expect(
-        within(container).getByRole('button', { name: 'Choose a date' }),
+        within(container).getByRole('combobox', { name: 'Choose a date' }),
       ).toBeTruthy();
     });
 
@@ -133,9 +189,10 @@ describe('DynamoDatePicker', () => {
         inputs: { placeholder: 'Pick a day' },
       });
 
-      expect(within(container).getByRole('button').textContent?.trim()).toBe(
-        'Pick a day',
-      );
+      expect(within(container).getByPlaceholderText('Pick a day')).toBeTruthy();
+      expect(
+        (within(container).getByRole('combobox') as HTMLInputElement).value,
+      ).toBe('');
     });
   });
 
@@ -148,8 +205,8 @@ describe('DynamoDatePicker', () => {
 
       expect(componentInstance.value()).toEqual(new Date(2026, 7, 19));
       expect(
-        within(bareContainer).getByRole('button').textContent?.trim(),
-      ).toBe(formatMedium(new Date(2026, 7, 19)));
+        (within(bareContainer).getByRole('combobox') as HTMLInputElement).value,
+      ).toBe(formatShort(new Date(2026, 7, 19)));
     });
 
     it('disables the trigger when disabled is true', () => {
@@ -158,7 +215,7 @@ describe('DynamoDatePicker', () => {
       });
 
       expect(
-        (within(container).getByRole('button') as HTMLButtonElement).disabled,
+        (within(container).getByRole('combobox') as HTMLInputElement).disabled,
       ).toBe(true);
     });
 
@@ -172,12 +229,291 @@ describe('DynamoDatePicker', () => {
     );
   });
 
+  describe('typable input / format / mask', () => {
+    it('is a real textbox with no value when empty, and shows typed text live without committing', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { ariaLabel: 'Choose a date' } },
+      );
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+
+      await userEvent.type(trigger, '08');
+
+      expect(trigger.value).toBe('08');
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    it('commits a valid typed date on Enter, closes the panel, and clears the draft', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { ariaLabel: 'Choose a date' } },
+      );
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+
+      await userEvent.type(trigger, formatShort(new Date(2026, 7, 19)));
+      await userEvent.keyboard('{Enter}');
+
+      expect(componentInstance.value()).toEqual(new Date(2026, 7, 19));
+      expect(getDialog()).toBeNull();
+    });
+
+    it('leaves an invalid typed draft untouched on Enter (no commit)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { ariaLabel: 'Choose a date' } },
+      );
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+
+      await userEvent.type(trigger, 'not a date');
+      await userEvent.keyboard('{Enter}');
+
+      expect(componentInstance.value()).toBeNull();
+      expect(trigger.value).toBe('not a date');
+    });
+
+    it('commits a valid typed date on blur', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { ariaLabel: 'Choose a date' } },
+      );
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+
+      await userEvent.type(trigger, formatShort(new Date(2026, 7, 19)));
+      await userEvent.tab();
+
+      expect(componentInstance.value()).toEqual(new Date(2026, 7, 19));
+    });
+
+    it('reverts an invalid typed draft to the canonical formatted value on blur', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            ariaLabel: 'Choose a date',
+            value: new Date(2026, 7, 19),
+          },
+        },
+      );
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+
+      await userEvent.clear(trigger);
+      await userEvent.type(trigger, 'garbage');
+      await userEvent.tab();
+
+      expect(componentInstance.value()).toEqual(new Date(2026, 7, 19));
+      expect(trigger.value).toBe(formatShort(new Date(2026, 7, 19)));
+    });
+
+    it('formats and parses against an explicit dateFormat', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            ariaLabel: 'Choose a date',
+            dateFormat: 'yyyy-mm-dd',
+            value: new Date(2026, 7, 19),
+          },
+        },
+      );
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+      expect(trigger.value).toBe('2026-08-19');
+
+      await userEvent.clear(trigger);
+      await userEvent.type(trigger, '2027-01-05');
+      await userEvent.tab();
+
+      expect(componentInstance.value()).toEqual(new Date(2027, 0, 5));
+    });
+
+    it('applies a digit mask as the user types a fixed-width format', async () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          dateFormat: 'mm/dd/yyyy',
+          mask: true,
+        },
+      });
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+
+      await userEvent.type(trigger, '08192026');
+
+      expect(trigger.value).toBe('08/19/2026');
+    });
+
+    it('forces the input read-only-for-typing while showTime is on (v1 scope cut)', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', showTime: true },
+      });
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+
+      expect(trigger.readOnly).toBe(true);
+    });
+
+    it('clicking the input to open the panel keeps focus on the input, not the day grid (so typing stays possible)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date' },
+      });
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getDialog()).not.toBeNull();
+      expect(document.activeElement).toBe(trigger);
+
+      await userEvent.type(trigger, '08');
+      expect(trigger.value).toBe('08');
+    });
+  });
+
+  describe('passthrough (pt)', () => {
+    it('merges pt.root attrs onto the trigger wrapper and pt.trigger class onto the trigger button', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          pt: {
+            root: { 'data-testid': 'root-el' },
+            trigger: { class: 'ring-2' },
+          },
+        },
+      });
+
+      expect(container.querySelector('[data-testid="root-el"]')).not.toBeNull();
+      // pt.trigger targets the wrapper div (border/bg/focus-ring box), not
+      // the combobox `<input>` itself, which only carries layout-reset
+      // classes — same wrapper/inner split `@dynamong/select`'s trigger uses.
+      expect(
+        within(container).getByRole('combobox').parentElement?.className,
+      ).toContain('ring-2');
+    });
+
+    it('merges pt.panel class onto the dialog and pt.day class onto every day button', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          pt: { panel: { class: 'panel-pt' }, day: { class: 'day-pt' } },
+        },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getDialog()?.className).toContain('panel-pt');
+      expect(getDayButtonByText('19').className).toContain('day-pt');
+    });
+
+    it('merges pt.time-field class onto the time steppers and pt.apply-button class onto Apply', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          showTime: true,
+          pt: {
+            'time-field': { class: 'time-field-pt' },
+            'apply-button': { class: 'apply-pt' },
+          },
+        },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const dialog = getDialog();
+      expect(dialog?.querySelector('[role="spinbutton"]')?.className).toContain(
+        'time-field-pt',
+      );
+      expect(
+        within(dialog as HTMLElement).getByRole('button', { name: 'Apply' })
+          .className,
+      ).toContain('apply-pt');
+    });
+  });
+
+  describe('variant / fluid', () => {
+    it('applies w-full and bg-surface-0 by default', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker);
+      const className =
+        within(container).getByRole('combobox').parentElement?.className ?? '';
+      expect(className).toContain('w-full');
+      expect(className).toContain('bg-surface-0');
+    });
+
+    it('drops w-full when fluid is false', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { fluid: false },
+      });
+      expect(
+        within(container).getByRole('combobox').parentElement?.className,
+      ).not.toContain('w-full');
+    });
+
+    it('applies filled background and drops the outlined background when variant is filled', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { variant: 'filled' },
+      });
+      const className =
+        within(container).getByRole('combobox').parentElement?.className ?? '';
+      expect(className).toContain('bg-surface-100');
+      expect(className).not.toContain('bg-surface-0');
+    });
+  });
+
+  describe('ariaDescribedby', () => {
+    it('reflects onto the trigger when set, and omits it otherwise', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoDatePicker);
+      expect(
+        within(container)
+          .getByRole('combobox')
+          .getAttribute('aria-describedby'),
+      ).toBeNull();
+
+      setInputs({ ariaDescribedby: 'date-help' });
+      expect(
+        within(container)
+          .getByRole('combobox')
+          .getAttribute('aria-describedby'),
+      ).toBe('date-help');
+    });
+  });
+
+  describe('locale', () => {
+    it('overrides the injected config locale for the formatted trigger text', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { value: new Date(2026, 7, 19), locale: 'en-GB' },
+      });
+
+      const expected = formatDate(
+        new Date(2026, 7, 19),
+        inferFormatFromLocale('en-GB'),
+      );
+      expect(
+        (within(container).getByRole('combobox') as HTMLInputElement).value,
+      ).toBe(expected);
+    });
+  });
+
   describe('output events', () => {
     it('updates the bound [(value)] model when a day is selected', async () => {
       const { container, fixture, componentInstance } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -194,7 +530,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture, componentInstance } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
 
@@ -213,7 +549,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
 
@@ -223,13 +559,16 @@ describe('DynamoDatePicker', () => {
       expect(getDialog()).not.toBeNull();
     });
 
-    it.each(['{ArrowDown}', '{Enter}', ' '])(
+    // No ' ' case any more — the trigger is a real textbox now, so Space
+    // types a literal space instead of opening the panel (intentional
+    // behavior change, see onTriggerKeydown's doc comment).
+    it.each(['{ArrowDown}', '{Enter}'])(
       'opens the dialog on "%s" at the trigger',
       async (key) => {
         const { container, fixture } = renderDynamoComponent(
           DatePickerTestHostComponent,
         );
-        const trigger = within(container).getByRole('button', {
+        const trigger = within(container).getByRole('combobox', {
           name: 'Choose a date',
         });
         trigger.focus();
@@ -245,11 +584,10 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
-      await userEvent.click(trigger);
-      await settle(fixture);
+      await openViaKeyboard(trigger, fixture);
 
       expect(document.activeElement?.textContent?.trim()).toBe('19');
     });
@@ -258,7 +596,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture, componentInstance } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -276,7 +614,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture, componentInstance } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -294,7 +632,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -321,11 +659,10 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
-      await userEvent.click(trigger);
-      await settle(fixture);
+      await openViaKeyboard(trigger, fixture);
 
       await userEvent.keyboard(key);
 
@@ -336,11 +673,10 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
-      await userEvent.click(trigger);
-      await settle(fixture);
+      await openViaKeyboard(trigger, fixture);
       expect(getDialog()?.textContent).toContain('August 2026');
 
       await userEvent.keyboard('{PageUp}');
@@ -354,11 +690,10 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
-      await userEvent.click(trigger);
-      await settle(fixture);
+      await openViaKeyboard(trigger, fixture);
 
       await userEvent.keyboard('{Shift>}{PageUp}{/Shift}');
       expect(getDialog()?.textContent).toContain('August 2025');
@@ -373,7 +708,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -398,11 +733,10 @@ describe('DynamoDatePicker', () => {
         DatePickerTestHostComponent,
       );
       componentInstance.min.set(new Date(2026, 7, 15));
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
-      await userEvent.click(trigger);
-      await settle(fixture);
+      await openViaKeyboard(trigger, fixture);
 
       await userEvent.keyboard(
         '{ArrowLeft}{ArrowLeft}{ArrowLeft}{ArrowLeft}{ArrowLeft}',
@@ -418,11 +752,10 @@ describe('DynamoDatePicker', () => {
         DatePickerTestHostComponent,
       );
       componentInstance.max.set(new Date(2026, 7, 20));
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
-      await userEvent.click(trigger);
-      await settle(fixture);
+      await openViaKeyboard(trigger, fixture);
 
       await userEvent.keyboard('{ArrowRight}');
       expect(document.activeElement?.textContent?.trim()).toBe('20');
@@ -436,7 +769,7 @@ describe('DynamoDatePicker', () => {
         DatePickerTestHostComponent,
       );
       componentInstance.max.set(new Date(2026, 7, 15));
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -473,7 +806,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -486,7 +819,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
 
@@ -494,7 +827,12 @@ describe('DynamoDatePicker', () => {
       await userEvent.click(trigger);
       await settle(fixture);
       expect(getDialog()).not.toBeNull();
-      await userEvent.click(trigger);
+
+      // A second click on the input itself does NOT close it (unlike the
+      // old button's toggle-on-click) — clicking back into the field to fix
+      // a typo shouldn't snap the calendar shut. Escape is the input's own
+      // explicit close path; the icon button's toggle() is the other.
+      await userEvent.keyboard('{Escape}');
       await settle(fixture);
       expect(getDialog()).toBeNull();
     });
@@ -505,7 +843,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
@@ -523,7 +861,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -539,7 +877,7 @@ describe('DynamoDatePicker', () => {
         DatePickerTestHostComponent,
       );
       componentInstance.value.set(new Date(2026, 7, 19));
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -556,7 +894,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -571,7 +909,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -591,7 +929,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -616,7 +954,7 @@ describe('DynamoDatePicker', () => {
       container: HTMLElement,
       fixture: ComponentFixture<unknown>,
     ): Promise<void> {
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -722,12 +1060,396 @@ describe('DynamoDatePicker', () => {
     });
   });
 
+  describe('view: "month"', () => {
+    it('renders a 12-month grid instead of the day table, with no Previous/Next month toggle', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', view: 'month' },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await openViaKeyboard(trigger, fixture);
+
+      const dialog = getDialog() as HTMLElement;
+      expect(dialog.querySelector('table[role="grid"]')).toBeNull();
+      expect(
+        within(dialog).queryByRole('button', { name: 'Previous month' }),
+      ).toBeNull();
+      expect(within(dialog).getByText('Aug')).toBeTruthy();
+    });
+
+    it('is read-only-for-typing (no format/mask grammar built for month view)', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', view: 'month' },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLInputElement).readOnly,
+      ).toBe(true);
+    });
+
+    it('shows the month+year of the current value in the trigger', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          view: 'month',
+          value: new Date(2026, 7, 19),
+        },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLInputElement).value,
+      ).toBe('August 2026');
+    });
+
+    it('commits the first of the clicked month and closes the panel', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { ariaLabel: 'Choose a date', view: 'month' } },
+      );
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByText('Dec'),
+      );
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(new Date(2026, 11, 1));
+      expect(getDialog()).toBeNull();
+    });
+
+    it('steps the header year with Previous/Next year, independent of navigating months', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', view: 'month' },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const dialog = getDialog() as HTMLElement;
+      expect(dialog.textContent).toContain('2026');
+
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: 'Next year' }),
+      );
+      // Not `.toContain('2027')` — a December click target's own button text
+      // could coincidentally overlap; check the specific header span instead.
+      expect(dialog.querySelector('.text-sm.font-semibold')?.textContent).toBe(
+        '2027',
+      );
+    });
+
+    it('disables a month that falls entirely outside min/max', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          view: 'month',
+          max: new Date(2026, 5, 30),
+        },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(
+        (
+          within(getDialog() as HTMLElement).getByText(
+            'Aug',
+          ) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+    });
+
+    it('has no axe violations', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', view: 'month' },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('view: "year"', () => {
+    it('renders a 12-year grid instead of the day table', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          view: 'year',
+          value: new Date(2026, 7, 19),
+        },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const dialog = getDialog() as HTMLElement;
+      expect(dialog.querySelector('table[role="grid"]')).toBeNull();
+      expect(within(dialog).getByText('2026')).toBeTruthy();
+    });
+
+    it('shows just the year of the current value in the trigger', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          view: 'year',
+          value: new Date(2026, 7, 19),
+        },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLInputElement).value,
+      ).toBe('2026');
+    });
+
+    it('commits January 1 of the clicked year and closes the panel', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            ariaLabel: 'Choose a date',
+            view: 'year',
+            value: new Date(2026, 7, 19),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      // 2016-2027 is the rendered block for a 2026 focusedDate
+      // (floor(2026/12)*12 = 2016) — 2020 falls inside it.
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByText('2020'),
+      );
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(new Date(2020, 0, 1));
+      expect(getDialog()).toBeNull();
+    });
+
+    it('steps a full 12-year block with Previous/Next years', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          view: 'year',
+          value: new Date(2026, 7, 19),
+        },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const dialog = getDialog() as HTMLElement;
+      const label = () =>
+        dialog.querySelector('.text-sm.font-semibold')?.textContent;
+      const firstBlockLabel = label();
+      expect(firstBlockLabel).toBe('2016 - 2027');
+
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: 'Next years' }),
+      );
+
+      expect(label()).toBe('2028 - 2039');
+      expect(label()).not.toBe(firstBlockLabel);
+    });
+
+    it('disables a year that falls entirely outside min/max', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          view: 'year',
+          value: new Date(2026, 7, 19),
+          max: new Date(2026, 11, 31),
+        },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(
+        (
+          within(getDialog() as HTMLElement).getByText(
+            '2027',
+          ) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+    });
+
+    it('has no axe violations', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', view: 'year' },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('numberOfMonths', () => {
+    it('renders a single grid with no per-grid label by default', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date' },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await openViaKeyboard(trigger, fixture);
+
+      const dialog = getDialog() as HTMLElement;
+      expect(dialog.querySelectorAll('table[role="grid"]')).toHaveLength(1);
+      expect(dialog.textContent).not.toContain('August 2026September 2026');
+    });
+
+    it('renders numberOfMonths grids side by side, each labeled with its own month', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', numberOfMonths: 2 },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await openViaKeyboard(trigger, fixture);
+
+      const dialog = getDialog() as HTMLElement;
+      const tables = dialog.querySelectorAll('table[role="grid"]');
+      expect(tables).toHaveLength(2);
+      expect((tables[0] as HTMLElement).getAttribute('aria-label')).toBe(
+        'August 2026',
+      );
+      expect((tables[1] as HTMLElement).getAttribute('aria-label')).toBe(
+        'September 2026',
+      );
+      expect(getDayButtons()).toHaveLength(84);
+    });
+
+    it('dims a date as outsideMonth only in the grid it does not belong to', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', numberOfMonths: 2 },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await openViaKeyboard(trigger, fixture);
+
+      const tables = (getDialog() as HTMLElement).querySelectorAll(
+        'table[role="grid"]',
+      );
+      const augustTable = tables[0] as HTMLElement;
+      const septemberTable = tables[1] as HTMLElement;
+      // August 1, 2026 is a Saturday, so August's own grid also shows
+      // July 26-31 as leading (outsideMonth) days *before* August's real
+      // dates — search from the end so this matches August's real 31, not
+      // July's leading one (which the DOM sees first).
+      const augustDay31 = Array.from(augustTable.querySelectorAll('button'))
+        .reverse()
+        .find((btn) => btn.textContent?.trim() === '31') as HTMLButtonElement;
+      const septemberLeadingDay31 = Array.from(
+        septemberTable.querySelectorAll('button'),
+      ).find((btn) => btn.textContent?.trim() === '31') as HTMLButtonElement;
+
+      // Aug 31 in August's own grid is a normal (non-dimmed) day...
+      expect(augustDay31.className).not.toContain('text-text-muted');
+      // ...but the same date leaking into September's leading row is dimmed
+      // there, since it's outside *that* grid's own month.
+      expect(septemberLeadingDay31.className).toContain('text-text-muted');
+    });
+
+    it('shifts the whole window by one month on Previous/Next, not by numberOfMonths', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', numberOfMonths: 2 },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await openViaKeyboard(trigger, fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Next month',
+        }),
+      );
+
+      const tables = (getDialog() as HTMLElement).querySelectorAll(
+        'table[role="grid"]',
+      );
+      expect((tables[0] as HTMLElement).getAttribute('aria-label')).toBe(
+        'September 2026',
+      );
+      expect((tables[1] as HTMLElement).getAttribute('aria-label')).toBe(
+        'October 2026',
+      );
+    });
+
+    it('roving focus crossing a month boundary re-anchors the whole window and lands on the non-dimmed (owned) cell', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', numberOfMonths: 2 },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await openViaKeyboard(trigger, fixture);
+
+      // Today (Aug 19, 2026) + 7 + 7 = Sep 2 — outside August. `visibleMonth`
+      // tracks `focusedDate` directly (same pre-existing single-month
+      // behavior: the anchor follows the roving cursor), so the whole window
+      // re-anchors to [September, October] rather than staying pinned at
+      // [August, September] with focus merely "crossing into grid 2".
+      await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+
+      const allTables = (getDialog() as HTMLElement).querySelectorAll(
+        'table[role="grid"]',
+      );
+      expect((allTables[0] as HTMLElement).getAttribute('aria-label')).toBe(
+        'September 2026',
+      );
+      expect((allTables[1] as HTMLElement).getAttribute('aria-label')).toBe(
+        'October 2026',
+      );
+      // Focus lands on the *owned* (non-dimmed) September 2 in the first
+      // grid, not some dimmed spillover rendering.
+      expect(document.activeElement?.textContent?.trim()).toBe('2');
+      expect((document.activeElement as HTMLElement)?.className).not.toContain(
+        'text-text-muted',
+      );
+      expect(
+        (allTables[0] as HTMLElement).contains(document.activeElement),
+      ).toBe(true);
+    });
+
+    it('respects max across every rendered grid', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          ariaLabel: 'Choose a date',
+          numberOfMonths: 2,
+          max: new Date(2026, 7, 25),
+        },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await openViaKeyboard(trigger, fixture);
+
+      const septemberTable = (getDialog() as HTMLElement).querySelectorAll(
+        'table[role="grid"]',
+      )[1] as HTMLElement;
+      const sep1 = Array.from(septemberTable.querySelectorAll('button')).find(
+        (btn) => btn.textContent?.trim() === '1',
+      ) as HTMLButtonElement;
+      expect(sep1.disabled).toBe(true);
+    });
+
+    it('has no axe violations with multiple months', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { ariaLabel: 'Choose a date', numberOfMonths: 3 },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await openViaKeyboard(trigger, fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+  });
+
   describe('readOnly', () => {
     it('still opens the dialog when the trigger is clicked', async () => {
       const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
         inputs: { readOnly: true },
       });
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
 
       await userEvent.click(trigger);
       await settle(fixture);
@@ -739,9 +1461,8 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
         inputs: { readOnly: true },
       });
-      const trigger = within(container).getByRole('button');
-      await userEvent.click(trigger);
-      await settle(fixture);
+      const trigger = within(container).getByRole('combobox');
+      await openViaKeyboard(trigger, fixture);
       expect(getDialog()?.textContent).toContain('August 2026');
 
       await userEvent.keyboard('{PageUp}');
@@ -756,7 +1477,7 @@ describe('DynamoDatePicker', () => {
         DynamoDatePicker,
         { inputs: { readOnly: true } },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -772,8 +1493,8 @@ describe('DynamoDatePicker', () => {
         inputs: { readOnly: true },
       });
       const trigger = within(container).getByRole(
-        'button',
-      ) as HTMLButtonElement;
+        'combobox',
+      ) as HTMLInputElement;
 
       expect(trigger.getAttribute('aria-readonly')).toBe('true');
       expect(trigger.disabled).toBe(false);
@@ -823,7 +1544,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
         inputs: { disabledDates: [new Date(2026, 7, 20)] },
       });
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -836,7 +1557,7 @@ describe('DynamoDatePicker', () => {
         // 2026-08-16 is a Sunday, 2026-08-22 is a Saturday.
         inputs: { disabledDays: [0, 6] },
       });
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -850,7 +1571,7 @@ describe('DynamoDatePicker', () => {
         DynamoDatePicker,
         { inputs: { disabledDates: [new Date(2026, 7, 20)] } },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -944,7 +1665,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -959,7 +1680,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -984,16 +1705,16 @@ describe('DynamoDatePicker', () => {
       fixture.componentInstance.writeValue(new Date(2026, 7, 19));
       fixture.detectChanges();
 
-      expect(within(container).getByRole('button').textContent?.trim()).toBe(
-        formatMedium(new Date(2026, 7, 19)),
-      );
+      expect(
+        (within(container).getByRole('combobox') as HTMLInputElement).value,
+      ).toBe(formatShort(new Date(2026, 7, 19)));
     });
 
     it('propagates a selection to a bound reactive FormControl (registerOnChange)', async () => {
       const { container, fixture, componentInstance } = renderDynamoComponent(
         DatePickerReactiveFormHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -1010,7 +1731,7 @@ describe('DynamoDatePicker', () => {
         DatePickerReactiveFormHostComponent,
       );
       expect(componentInstance.control.touched).toBe(false);
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -1031,7 +1752,7 @@ describe('DynamoDatePicker', () => {
       fixture.detectChanges();
 
       expect(
-        (within(container).getByRole('button') as HTMLButtonElement).disabled,
+        (within(container).getByRole('combobox') as HTMLInputElement).disabled,
       ).toBe(true);
     });
   });
@@ -1041,7 +1762,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
 
@@ -1060,7 +1781,7 @@ describe('DynamoDatePicker', () => {
       );
       componentInstance.min.set(new Date(2026, 7, 25));
       componentInstance.max.set(new Date(2026, 7, 10));
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
 
@@ -1084,7 +1805,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -1103,7 +1824,7 @@ describe('DynamoDatePicker', () => {
         DynamoDatePicker,
         { inputs: { showTime: true, ariaLabel: 'Choose a date' } },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1122,7 +1843,7 @@ describe('DynamoDatePicker', () => {
           value: new Date(2026, 7, 19, 14, 37, 0),
         },
       });
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1141,7 +1862,7 @@ describe('DynamoDatePicker', () => {
           },
         },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1166,7 +1887,7 @@ describe('DynamoDatePicker', () => {
           },
         },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1195,7 +1916,7 @@ describe('DynamoDatePicker', () => {
           },
         },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1224,7 +1945,7 @@ describe('DynamoDatePicker', () => {
           },
         },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1252,7 +1973,7 @@ describe('DynamoDatePicker', () => {
           },
         },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1271,7 +1992,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
         inputs: { showTime: true, ariaLabel: 'Choose a date' },
       });
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1298,7 +2019,7 @@ describe('DynamoDatePicker', () => {
           },
         },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1322,7 +2043,9 @@ describe('DynamoDatePicker', () => {
         },
       });
 
-      const label = within(container).getByRole('button').textContent?.trim();
+      const label = (
+        within(container).getByRole('combobox') as HTMLInputElement
+      ).value;
       expect(label).toContain(formatMedium(new Date(2026, 7, 19)));
       expect(label).toMatch(/2:05\s*PM|14:05/);
     });
@@ -1356,7 +2079,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
         inputs: { showTime: true, ariaLabel: 'Choose a date' },
       });
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1374,7 +2097,7 @@ describe('DynamoDatePicker', () => {
           ariaLabel: 'Choose a date',
         },
       });
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1415,7 +2138,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(
         DatePickerTestHostComponent,
       );
-      const trigger = within(container).getByRole('button', {
+      const trigger = within(container).getByRole('combobox', {
         name: 'Choose a date',
       });
       await userEvent.click(trigger);
@@ -1437,7 +2160,7 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
         inputs: { showButtonBar: true, ariaLabel: 'Choose a date' },
       });
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1458,7 +2181,7 @@ describe('DynamoDatePicker', () => {
         DynamoDatePicker,
         { inputs: { showButtonBar: true, ariaLabel: 'Choose a date' } },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1484,7 +2207,7 @@ describe('DynamoDatePicker', () => {
           },
         },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1509,7 +2232,7 @@ describe('DynamoDatePicker', () => {
           },
         },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1534,7 +2257,7 @@ describe('DynamoDatePicker', () => {
           },
         },
       );
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 
@@ -1581,7 +2304,348 @@ describe('DynamoDatePicker', () => {
       const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
         inputs: { showButtonBar: true, ariaLabel: 'Choose a date' },
       });
-      const trigger = within(container).getByRole('button');
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('selectionMode: "multiple"', () => {
+    it('toggles a day in and out of [(values)], keeping the panel open both times', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DatePickerMultiTestHostComponent,
+      );
+      const trigger = within(container).getByRole('combobox', {
+        name: 'Choose dates',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(getDayButtonByText('19'));
+      await settle(fixture);
+      expect(componentInstance.values()).toEqual([new Date(2026, 7, 19)]);
+      expect(getDialog()).not.toBeNull();
+
+      await userEvent.click(getDayButtonByText('19'));
+      await settle(fixture);
+      expect(componentInstance.values()).toEqual([]);
+      expect(getDialog()).not.toBeNull();
+    });
+
+    it('accumulates multiple non-adjacent days in ascending order regardless of click order', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DatePickerMultiTestHostComponent,
+      );
+      const trigger = within(container).getByRole('combobox', {
+        name: 'Choose dates',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(getDayButtonByText('19'));
+      await settle(fixture);
+      await userEvent.click(getDayButtonByText('5'));
+      await settle(fixture);
+
+      expect(componentInstance.values()).toEqual([
+        new Date(2026, 7, 5),
+        new Date(2026, 7, 19),
+      ]);
+    });
+
+    it('reflects multi-selection via aria-selected on the day cells', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DatePickerMultiTestHostComponent,
+      );
+      const trigger = within(container).getByRole('combobox', {
+        name: 'Choose dates',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(getDayButtonByText('19'));
+      await settle(fixture);
+
+      expect(
+        getDayButtonByText('19').closest('td')?.getAttribute('aria-selected'),
+      ).toBe('true');
+    });
+
+    it('shows an empty trigger with 0 selected, a comma-joined list with 1-2 selected, and a count with 3+', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DatePickerMultiTestHostComponent,
+      );
+      const trigger = within(container).getByRole(
+        'combobox',
+      ) as HTMLInputElement;
+      expect(trigger.value).toBe('');
+
+      componentInstance.values.set([new Date(2026, 7, 5)]);
+      fixture.detectChanges();
+      expect(trigger.value).toBe(formatShort(new Date(2026, 7, 5)));
+
+      componentInstance.values.set([
+        new Date(2026, 7, 5),
+        new Date(2026, 7, 19),
+      ]);
+      fixture.detectChanges();
+      expect(trigger.value).toBe(
+        `${formatShort(new Date(2026, 7, 5))}, ${formatShort(new Date(2026, 7, 19))}`,
+      );
+
+      componentInstance.values.set([
+        new Date(2026, 7, 1),
+        new Date(2026, 7, 5),
+        new Date(2026, 7, 19),
+      ]);
+      fixture.detectChanges();
+      expect(trigger.value).toBe('3 dates selected');
+    });
+
+    it('the trigger stays read-only for typing', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { selectionMode: 'multiple', ariaLabel: 'Choose dates' },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLInputElement).readOnly,
+      ).toBe(true);
+    });
+
+    it('shows the clear button once any date is selected, keyed off values().length', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          selectionMode: 'multiple',
+          clearable: true,
+          ariaLabel: 'Choose dates',
+          values: [],
+        },
+      });
+      expect(
+        within(container).queryByRole('button', { name: 'Clear selection' }),
+      ).toBeNull();
+
+      setInputs({ values: [new Date(2026, 7, 19)] });
+      expect(
+        within(container).getByRole('button', { name: 'Clear selection' }),
+      ).toBeTruthy();
+    });
+
+    it('the clear button empties values() instead of touching value()', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            selectionMode: 'multiple',
+            clearable: true,
+            ariaLabel: 'Choose dates',
+            values: [new Date(2026, 7, 5), new Date(2026, 7, 19)],
+          },
+        },
+      );
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Clear selection' }),
+      );
+
+      expect(componentInstance.values()).toEqual([]);
+    });
+
+    it('"Today" adds today if absent and is a no-op if already selected (not a toggle)', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            selectionMode: 'multiple',
+            showButtonBar: true,
+            ariaLabel: 'Choose dates',
+          },
+        },
+      );
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const todayButton = () =>
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Today',
+        });
+
+      await userEvent.click(todayButton());
+      await settle(fixture);
+      expect(componentInstance.values()).toEqual([TODAY]);
+
+      await userEvent.click(todayButton());
+      await settle(fixture);
+      expect(componentInstance.values()).toEqual([TODAY]);
+    });
+
+    it('round-trips an array value through writeValue/registerOnChange via a reactive FormControl', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DatePickerMultiReactiveFormHostComponent,
+      );
+      componentInstance.control.setValue([new Date(2026, 7, 19)]);
+      fixture.detectChanges();
+
+      expect(
+        (within(container).getByRole('combobox') as HTMLInputElement).value,
+      ).toBe(formatShort(new Date(2026, 7, 19)));
+
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+      await userEvent.click(getDayButtonByText('5'));
+      await settle(fixture);
+
+      expect(componentInstance.control.value).toEqual([
+        new Date(2026, 7, 5),
+        new Date(2026, 7, 19),
+      ]);
+    });
+
+    it('has no axe violations', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { selectionMode: 'multiple', ariaLabel: 'Choose dates' },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('view: "time"', () => {
+    function getSpinbutton(label: string): HTMLElement {
+      const el = getDialog()?.querySelector(
+        `[role="spinbutton"][aria-label="${label}"]`,
+      );
+      if (!el) throw new Error(`No spinbutton found for "${label}"`);
+      return el as HTMLElement;
+    }
+
+    it('renders only the time steppers and an Apply button — no calendar grid or header', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { view: 'time', ariaLabel: 'Choose a date' },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const dialog = getDialog() as HTMLElement;
+      expect(dialog.querySelector('table[role="grid"]')).toBeNull();
+      expect(dialog.querySelector('[role="spinbutton"]')).not.toBeNull();
+      expect(
+        within(dialog).getByRole('button', { name: 'Apply' }),
+      ).toBeTruthy();
+    });
+
+    it('shows just the formatted time in the trigger, never a date', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: {
+          view: 'time',
+          ariaLabel: 'Choose a date',
+          value: new Date(2026, 7, 19, 14, 37, 0),
+        },
+      });
+      const text = (within(container).getByRole('combobox') as HTMLInputElement)
+        .value;
+      expect(text).not.toContain('2026');
+      expect(text).not.toContain('19');
+    });
+
+    it('the trigger stays read-only for typing', () => {
+      const { container } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { view: 'time', ariaLabel: 'Choose a date' },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLInputElement).readOnly,
+      ).toBe(true);
+    });
+
+    it('stepping the hour live-updates value(), preserving today as the date part when unset', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        { inputs: { view: 'time', ariaLabel: 'Choose a date' } },
+      );
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Increment hour',
+        }),
+      );
+
+      expect(componentInstance.value()).toEqual(new Date(2026, 7, 19, 1, 0, 0));
+    });
+
+    it("stepping the minute preserves an existing value's date part", async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDatePicker,
+        {
+          inputs: {
+            view: 'time',
+            ariaLabel: 'Choose a date',
+            value: new Date(2026, 5, 1, 10, 0, 0),
+          },
+        },
+      );
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Increment minute',
+        }),
+      );
+
+      expect(componentInstance.value()).toEqual(new Date(2026, 5, 1, 10, 1, 0));
+      expect(getSpinbutton('Minute').getAttribute('aria-valuenow')).toBe('1');
+    });
+
+    it('Apply closes the panel and refocuses the trigger', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { view: 'time', ariaLabel: 'Choose a date' },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await userEvent.click(
+        within(getDialog() as HTMLElement).getByRole('button', {
+          name: 'Apply',
+        }),
+      );
+      await settle(fixture);
+
+      expect(getDialog()).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('falls back to a "Choose a time" dialog aria-label when ariaLabel is unset', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { view: 'time' },
+      });
+      const trigger = within(container).getByRole('combobox');
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getDialog()?.getAttribute('aria-label')).toBe('Choose a time');
+    });
+
+    it('has no axe violations', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDatePicker, {
+        inputs: { view: 'time', ariaLabel: 'Choose a date' },
+      });
+      const trigger = within(container).getByRole('combobox');
       await userEvent.click(trigger);
       await settle(fixture);
 

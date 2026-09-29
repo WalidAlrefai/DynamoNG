@@ -3,16 +3,23 @@ import {
   controlSizeVariants,
   focusRingClass,
   focusRingInvalidClass,
+  focusRingWithinClass,
   overlayPanelClass,
 } from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — date-picker.html only ever binds `[class]="...Classes()"` or
 // a plain exported string constant.
+//
+// Styles the WRAPPER div, not the typable `<input>` itself — same split
+// `@dynamong/select`'s `selectTriggerStyles`/`selectTriggerButtonStyles`
+// already use: the wrapper also hosts the calendar-icon button and an
+// optional clear button as the input's *siblings*, so the visible chrome
+// (border/bg/size/focus ring) lives here and reacts to the input's focus via
+// `focus-within`, since the wrapper itself is never the focused element.
 export const datePickerTriggerStyles = cva(
-  'flex w-full items-center justify-between gap-2 rounded-md border bg-surface-0 ' +
-    'text-start text-text-primary transition-colors disabled:pointer-events-none disabled:opacity-60 ' +
-    focusRingClass,
+  'flex items-center gap-1 rounded-md border text-text-primary transition-colors ' +
+    focusRingWithinClass,
   {
     variants: {
       size: controlSizeVariants,
@@ -21,12 +28,58 @@ export const datePickerTriggerStyles = cva(
         true: 'border-danger ' + focusRingInvalidClass,
         false: 'border-border',
       },
+      variant: {
+        outlined: 'bg-surface-0',
+        filled: 'bg-surface-100 border-transparent',
+      },
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
+      disabled: {
+        true: 'pointer-events-none opacity-60',
+        false: '',
+      },
     },
-    defaultVariants: { size: 'md', invalid: false },
+    defaultVariants: {
+      size: 'md',
+      invalid: false,
+      variant: 'outlined',
+      fluid: true,
+      disabled: false,
+    },
   },
 );
 
-export const datePickerPanelStyles = 'z-dropdown w-72 p-3 ' + overlayPanelClass;
+// The actual typable element inside the wrapper — transparent and unstyled
+// beyond layout, since the wrapper already provides the visible
+// border/background/padding/height (via its own `size` variant).
+export const datePickerTriggerInputStyles =
+  'min-w-0 flex-1 bg-transparent text-start text-text-primary outline-none ' +
+  'placeholder:text-text-muted disabled:cursor-not-allowed';
+
+export const datePickerTriggerIconButtonStyles =
+  'flex h-6 w-6 shrink-0 items-center justify-center rounded text-text-muted ' +
+  'transition-colors hover:text-text-primary disabled:pointer-events-none ' +
+  focusRingClass;
+
+export const datePickerPanelStyles = cva(
+  'z-dropdown p-3 ' + overlayPanelClass,
+  {
+    variants: {
+      // `numberOfMonths > 1` needs `w-auto` to grow with however many
+      // `w-64` month grids render side by side, instead of clipping them to
+      // the single-month default's fixed width.
+      multiMonth: {
+        true: 'w-auto',
+        false: 'w-72',
+      },
+    },
+    defaultVariants: { multiMonth: false },
+  },
+);
+
+export const datePickerMonthGridWidthClass = 'w-64';
 
 export const datePickerHeaderButtonStyles =
   'flex h-8 w-8 items-center justify-center rounded-md text-text-primary hover:bg-surface-100 ' +
