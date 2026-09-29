@@ -9,7 +9,10 @@ import {
 } from '@angular/core';
 import { cn } from '@dynamong/utils/class-merge';
 import { inputTextStyles } from './input-text.styles';
-import type { DynamoInputTextSize, DynamoInputTextVariant } from './input-text.types';
+import type {
+  DynamoInputTextSize,
+  DynamoInputTextVariant,
+} from './input-text.types';
 
 /**
  * Attribute-directive form of InputText — applies InputText's styling classes
@@ -61,7 +64,11 @@ export class DynamoInputTextDirective {
 
     effect(() => {
       if (this.invalid()) {
-        this.renderer.setAttribute(this.el.nativeElement, 'aria-invalid', 'true');
+        this.renderer.setAttribute(
+          this.el.nativeElement,
+          'aria-invalid',
+          'true',
+        );
       } else {
         this.renderer.removeAttribute(this.el.nativeElement, 'aria-invalid');
       }

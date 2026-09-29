@@ -105,16 +105,28 @@ describe('parseDateString — 2-digit year pivot', () => {
 
 describe('inferFormatFromLocale', () => {
   it('puts month before day for en-US', () => {
-    const parts = inferFormatFromLocale('en-US').filter((p) => p.type === 'token');
-    const monthIndex = parts.findIndex((p) => p.type === 'token' && p.token === 'mm');
-    const dayIndex = parts.findIndex((p) => p.type === 'token' && p.token === 'dd');
+    const parts = inferFormatFromLocale('en-US').filter(
+      (p) => p.type === 'token',
+    );
+    const monthIndex = parts.findIndex(
+      (p) => p.type === 'token' && p.token === 'mm',
+    );
+    const dayIndex = parts.findIndex(
+      (p) => p.type === 'token' && p.token === 'dd',
+    );
     expect(monthIndex).toBeLessThan(dayIndex);
   });
 
   it('puts day before month for en-GB', () => {
-    const parts = inferFormatFromLocale('en-GB').filter((p) => p.type === 'token');
-    const monthIndex = parts.findIndex((p) => p.type === 'token' && p.token === 'mm');
-    const dayIndex = parts.findIndex((p) => p.type === 'token' && p.token === 'dd');
+    const parts = inferFormatFromLocale('en-GB').filter(
+      (p) => p.type === 'token',
+    );
+    const monthIndex = parts.findIndex(
+      (p) => p.type === 'token' && p.token === 'mm',
+    );
+    const dayIndex = parts.findIndex(
+      (p) => p.type === 'token' && p.token === 'dd',
+    );
     expect(dayIndex).toBeLessThan(monthIndex);
   });
 

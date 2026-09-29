@@ -35,7 +35,8 @@ export function parseFormatTokens(format: string): FormatPart[] {
 /** Whether every token in `parts` has a fixed width — required for `mask`. */
 export function isFixedWidthFormat(parts: FormatPart[]): boolean {
   return parts.every(
-    (part) => part.type === 'literal' || part.token !== 'd' && part.token !== 'm',
+    (part) =>
+      part.type === 'literal' || (part.token !== 'd' && part.token !== 'm'),
   );
 }
 
@@ -58,7 +59,9 @@ function tokenValue(date: Date, token: DatePickerFormatToken): string {
 
 export function formatDate(date: Date, parts: FormatPart[]): string {
   return parts
-    .map((part) => (part.type === 'literal' ? part.text : tokenValue(date, part.token)))
+    .map((part) =>
+      part.type === 'literal' ? part.text : tokenValue(date, part.token),
+    )
     .join('');
 }
 
@@ -73,7 +76,10 @@ function resolveTwoDigitYear(yy: number): number {
  * calendar-invalid date (e.g. day 31 in February — validated by round-tripping
  * through `Date` and checking the parts stuck).
  */
-export function parseDateString(text: string, parts: FormatPart[]): Date | null {
+export function parseDateString(
+  text: string,
+  parts: FormatPart[],
+): Date | null {
   let day: number | undefined;
   let month: number | undefined;
   let year: number | undefined;
@@ -81,7 +87,8 @@ export function parseDateString(text: string, parts: FormatPart[]): Date | null 
 
   for (const part of parts) {
     if (part.type === 'literal') {
-      if (text.slice(cursor, cursor + part.text.length) !== part.text) return null;
+      if (text.slice(cursor, cursor + part.text.length) !== part.text)
+        return null;
       cursor += part.text.length;
       continue;
     }
@@ -109,7 +116,8 @@ export function parseDateString(text: string, parts: FormatPart[]): Date | null 
     }
   }
   if (cursor !== text.length) return null;
-  if (day === undefined || month === undefined || year === undefined) return null;
+  if (day === undefined || month === undefined || year === undefined)
+    return null;
   if (month < 1 || month > 12 || day < 1) return null;
 
   const result = new Date(year, month - 1, day);
@@ -132,9 +140,9 @@ export function parseDateString(text: string, parts: FormatPart[]): Date | null 
  */
 export function inferFormatFromLocale(locale: string): FormatPart[] {
   const reference = new Date(2000, 0, 1);
-  const intlParts = new Intl.DateTimeFormat(locale, { dateStyle: 'short' }).formatToParts(
-    reference,
-  );
+  const intlParts = new Intl.DateTimeFormat(locale, {
+    dateStyle: 'short',
+  }).formatToParts(reference);
   const parts: FormatPart[] = [];
   for (const part of intlParts) {
     switch (part.type) {
@@ -145,7 +153,10 @@ export function inferFormatFromLocale(locale: string): FormatPart[] {
         parts.push({ type: 'token', token: 'mm' });
         break;
       case 'year':
-        parts.push({ type: 'token', token: part.value.length >= 4 ? 'yyyy' : 'yy' });
+        parts.push({
+          type: 'token',
+          token: part.value.length >= 4 ? 'yyyy' : 'yy',
+        });
         break;
       default:
         parts.push({ type: 'literal', text: part.value });
@@ -154,7 +165,9 @@ export function inferFormatFromLocale(locale: string): FormatPart[] {
   return parts;
 }
 
-type MaskSlot = { type: 'digit'; token: DatePickerFormatToken } | { type: 'literal'; char: string };
+type MaskSlot =
+  | { type: 'digit'; token: DatePickerFormatToken }
+  | { type: 'literal'; char: string };
 
 function buildMaskSlots(parts: FormatPart[]): MaskSlot[] {
   const slots: MaskSlot[] = [];
@@ -164,7 +177,8 @@ function buildMaskSlots(parts: FormatPart[]): MaskSlot[] {
       continue;
     }
     const width = part.token === 'yyyy' ? 4 : 2;
-    for (let i = 0; i < width; i++) slots.push({ type: 'digit', token: part.token });
+    for (let i = 0; i < width; i++)
+      slots.push({ type: 'digit', token: part.token });
   }
   return slots;
 }
