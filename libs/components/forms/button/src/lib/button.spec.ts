@@ -379,6 +379,273 @@ describe('DynamoButton', () => {
     });
   });
 
+  describe('icon / iconPos', () => {
+    @Component({
+      selector: 'dg-button-icon-default-host',
+      standalone: true,
+      imports: [DynamoButton],
+      template: `<dg-button
+        ><span icon data-testid="icon">*</span>Save</dg-button
+      >`,
+    })
+    class ButtonIconDefaultHostComponent {}
+
+    @Component({
+      selector: 'dg-button-icon-pos-host',
+      standalone: true,
+      imports: [DynamoButton],
+      template: `<dg-button [iconPos]="iconPos()" [loading]="loading()"
+        ><span icon data-testid="icon">*</span>Save</dg-button
+      >`,
+    })
+    class ButtonIconPosHostComponent {
+      readonly iconPos = input<'left' | 'right' | 'top' | 'bottom'>('left');
+      readonly loading = input(false);
+    }
+
+    it('renders no icon-slot content when nothing is projected into [icon] (regression)', () => {
+      const { container } = renderDynamoComponent(ButtonTestHostComponent);
+
+      expect(container.querySelector('[icon]')).toBeNull();
+    });
+
+    it('defaults iconPos to "left", rendering the icon ahead of the label', () => {
+      const { container } = renderDynamoComponent(
+        ButtonIconDefaultHostComponent,
+      );
+
+      const button = within(container).getByRole('button');
+      expect(button.textContent?.trim().startsWith('*')).toBe(true);
+      expect(container.querySelector('[data-testid="icon"]')).not.toBeNull();
+    });
+
+    it('iconPos "right" visually reorders the icon after the label via CSS order (DOM/projection order stays fixed)', () => {
+      const { container } = renderDynamoComponent(ButtonIconPosHostComponent, {
+        inputs: { iconPos: 'right' },
+      });
+
+      // DOM order is unaffected by iconPos — Angular content projection
+      // requires a single fixed `<ng-content select="[icon]">` location, so
+      // reordering is achieved via the wrapper's `order-last` class instead.
+      const button = within(container).getByRole('button');
+      expect(button.textContent?.trim().startsWith('*')).toBe(true);
+
+      const icon = container.querySelector(
+        '[data-testid="icon"]',
+      ) as HTMLElement;
+      const wrapper = icon.parentElement as HTMLElement;
+      expect(wrapper.className).toContain('order-last');
+    });
+
+    it('iconPos "top" applies flex-col', () => {
+      const { container } = renderDynamoComponent(ButtonIconPosHostComponent, {
+        inputs: { iconPos: 'top' },
+      });
+      expect(within(container).getByRole('button').className).toContain(
+        'flex-col',
+      );
+    });
+
+    it.each(['top', 'bottom'] as const)(
+      'iconPos "%s" replaces the fixed size height with h-auto/min-h so stacked content is not clipped',
+      (iconPos) => {
+        const { container } = renderDynamoComponent(
+          ButtonIconPosHostComponent,
+          { inputs: { iconPos } },
+        );
+
+        const classes = within(container)
+          .getByRole('button')
+          .className.split(' ');
+        expect(classes).toContain('h-auto');
+        expect(classes).toContain('min-h-10');
+        expect(classes).not.toContain('h-10');
+      },
+    );
+
+    it('iconPos "bottom" applies flex-col', () => {
+      const { container } = renderDynamoComponent(ButtonIconPosHostComponent, {
+        inputs: { iconPos: 'bottom' },
+      });
+      expect(within(container).getByRole('button').className).toContain(
+        'flex-col',
+      );
+    });
+
+    it('iconPos "left"/"right" do not apply flex-col', () => {
+      const { container } = renderDynamoComponent(ButtonIconPosHostComponent, {
+        inputs: { iconPos: 'left' },
+      });
+      expect(within(container).getByRole('button').className).not.toContain(
+        'flex-col',
+      );
+    });
+
+    it('loading swaps in the spinner in place of the icon slot, regardless of iconPos', () => {
+      const { container } = renderDynamoComponent(ButtonIconPosHostComponent, {
+        inputs: { iconPos: 'right', loading: true },
+      });
+
+      expect(container.querySelector('[data-testid="icon"]')).toBeNull();
+      expect(within(container).getByRole('button').textContent?.trim()).toBe(
+        'Save',
+      );
+    });
+  });
+
+  describe('variant "link"', () => {
+    it('has no background class and underlines on hover', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { variant: 'link' },
+      });
+
+      const className = within(container).getByRole('button').className;
+      expect(className).toContain('hover:underline');
+      expect(className).not.toContain('bg-primary');
+      expect(className).not.toContain('hover:bg-primary');
+    });
+  });
+
+  describe('raised', () => {
+    it('defaults to false, omitting shadow-md', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+      expect(within(container).getByRole('button').className).not.toContain(
+        'shadow-md',
+      );
+    });
+
+    it('applies shadow-md when true', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { raised: true },
+      });
+      expect(within(container).getByRole('button').className).toContain(
+        'shadow-md',
+      );
+    });
+
+    it('composes with variant "text" (Raised Text)', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { raised: true, variant: 'text' },
+      });
+      const className = within(container).getByRole('button').className;
+      expect(className).toContain('shadow-md');
+      expect(className).toContain('bg-transparent');
+    });
+  });
+
+  describe('rounded', () => {
+    it('defaults to false, keeping rounded-md', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+      expect(within(container).getByRole('button').className).toContain(
+        'rounded-md',
+      );
+    });
+
+    it('applies rounded-full and removes rounded-md when true', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { rounded: true },
+      });
+      const className = within(container).getByRole('button').className;
+      expect(className).toContain('rounded-full');
+      expect(className).not.toContain('rounded-md');
+    });
+  });
+
+  describe('iconOnly', () => {
+    it.each([
+      { size: 'sm', width: 'w-8' },
+      { size: 'md', width: 'w-10' },
+      { size: 'lg', width: 'w-12' },
+    ] as const)(
+      'applies a square width ($width) and px-0 for size "$size"',
+      ({ size, width }) => {
+        const { container } = renderDynamoComponent(DynamoButton, {
+          inputs: { iconOnly: true, size },
+        });
+        const className = within(container).getByRole('button').className;
+        expect(className).toContain(width);
+        expect(className).toContain('px-0');
+      },
+    );
+
+    it('has no axe violations for an icon-only button with ariaLabel', async () => {
+      @Component({
+        selector: 'dg-button-icon-only-host',
+        standalone: true,
+        imports: [DynamoButton],
+        template: `<dg-button [iconOnly]="true" ariaLabel="Close"
+          ><span icon>*</span></dg-button
+        >`,
+      })
+      class ButtonIconOnlyHostComponent {}
+
+      const { container } = renderDynamoComponent(ButtonIconOnlyHostComponent);
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('pt (passthrough)', () => {
+    it('merges pt.root.class into the button className alongside the built-in classes', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { pt: { root: { class: 'ring-2 ring-danger' } } },
+      });
+
+      const className = within(container).getByRole('button').className;
+      expect(className).toContain('ring-2');
+      expect(className).toContain('ring-danger');
+      expect(className).toContain('bg-primary');
+    });
+
+    it('merges pt.root.class even when unstyled is true, alongside styleClass', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: {
+          unstyled: true,
+          styleClass: 'custom-only',
+          pt: { root: { class: 'extra-pt-class' } },
+        },
+      });
+
+      const className = within(container).getByRole('button').className;
+      expect(className).toContain('custom-only');
+      expect(className).toContain('extra-pt-class');
+    });
+
+    it('sets an arbitrary pt.root attribute on the native button', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { pt: { root: { 'data-testid': 'save-button' } } },
+      });
+
+      expect(
+        within(container).getByRole('button').getAttribute('data-testid'),
+      ).toBe('save-button');
+    });
+
+    it('clears a previously-set pt.root attribute when pt changes', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoButton, {
+        inputs: { pt: { root: { 'data-testid': 'save-button' } } },
+      });
+      expect(
+        within(container).getByRole('button').hasAttribute('data-testid'),
+      ).toBe(true);
+
+      setInputs({ pt: { root: {} } });
+
+      expect(
+        within(container).getByRole('button').hasAttribute('data-testid'),
+      ).toBe(false);
+    });
+
+    it('has no axe violations with pt set', async () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: {
+          ariaLabel: 'Save',
+          pt: { root: { 'data-testid': 'save-button' } },
+        },
+      });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
   describe('accessibility', () => {
     it('has no axe violations in its default state', async () => {
       const { container } = renderDynamoComponent(ButtonTestHostComponent);
