@@ -1,9 +1,60 @@
-<div #triggerEl [class]="triggerClasses()">
+<div #triggerEl [class]="triggerClasses()" [dgPt]="ptFor('root')">
+  @if (editable()) {
+  <input
+    type="text"
+    role="combobox"
+    [id]="triggerId"
+    [class]="triggerButtonClasses()"
+    [disabled]="isDisabled()"
+    [readOnly]="readOnly()"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="isOpen() ? listboxId : null"
+    [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
+    [attr.aria-readonly]="readOnly() ? 'true' : null"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [dgPt]="ptFor('trigger')"
+    [placeholder]="placeholder()"
+    [value]="editableDisplayText()"
+    (input)="onEditableInput($event)"
+    (click)="onTriggerClick()"
+    (keydown)="onTriggerKeydown($event)"
+    (blur)="onEditableBlur()"
+  />
+  <button
+    type="button"
+    tabindex="-1"
+    [class]="triggerIconButtonClasses"
+    [disabled]="isDisabled()"
+    aria-label="Open options"
+    (click)="toggle()"
+  >
+    <svg
+      [class]="chevronClasses()"
+      [attr.aria-hidden]="true"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      [dgPt]="ptFor('chevron')"
+    >
+      <path
+        d="M4 6l4 4 4-4"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
+  } @else {
   <button
     type="button"
     role="combobox"
     [id]="triggerId"
-    [class]="triggerButtonClasses"
+    [class]="triggerButtonClasses()"
     [disabled]="isDisabled()"
     aria-haspopup="listbox"
     [attr.aria-expanded]="isOpen()"
@@ -13,19 +64,27 @@
     [attr.aria-readonly]="readOnly() ? 'true' : null"
     [attr.aria-busy]="loading() ? 'true' : null"
     [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [dgPt]="ptFor('trigger')"
     (click)="toggle()"
     (keydown)="onTriggerKeydown($event)"
   >
     @if (loading()) {
     <dg-spinner size="sm" />
-    } {{ selectedLabel() }}
+    } @if (selectedTemplate(); as tpl) {
+    <ng-container
+      [ngTemplateOutlet]="tpl"
+      [ngTemplateOutletContext]="{ $implicit: selectedOption() }"
+    />
+    } @else { {{ selectedLabel() }} }
   </button>
-  @if (clearable() && selectedOption()) {
+  } @if (clearable() && selectedOption()) {
   <button
     type="button"
-    [class]="clearButtonClasses"
+    [class]="clearButtonClasses()"
     [disabled]="isDisabled() || readOnly()"
     aria-label="Clear selection"
+    [dgPt]="ptFor('clear')"
     (click)="clearValue($event)"
   >
     <svg
@@ -42,7 +101,7 @@
       />
     </svg>
   </button>
-  }
+  } @if (!editable()) {
   <svg
     [class]="chevronClasses()"
     [attr.aria-hidden]="true"
@@ -50,6 +109,7 @@
     height="16"
     viewBox="0 0 16 16"
     fill="none"
+    [dgPt]="ptFor('chevron')"
   >
     <path
       d="M4 6l4 4 4-4"
@@ -59,6 +119,7 @@
       stroke-linejoin="round"
     />
   </svg>
+  }
 </div>
 
 <ng-template #panelTemplate>
@@ -70,6 +131,7 @@
           type="search"
           size="sm"
           [styleClass]="filterInputExtraClasses"
+          [pt]="{ input: ptFor('filterInput') }"
           [ngModel]="filterText()"
           (ngModelChange)="onFilterInputChange($event)"
           (keydown)="onFilterKeydown($event)"
@@ -98,14 +160,16 @@
     <ul
       [id]="listboxId"
       role="listbox"
-      [class]="isVirtualized() ? '' : listboxClasses"
+      [class]="isVirtualized() ? '' : listboxClasses()"
       [attr.aria-label]="ariaLabel() ?? 'Options'"
+      [dgPt]="ptFor('listbox')"
     >
       @if (isVirtualized()) {
       <dg-virtual-scroll
         [items]="visibleOptions()"
         [itemSize]="virtualScrollItemSize()"
         [height]="virtualScrollHeight()"
+        (scrolledIndexChange)="scrolledIndexChange.emit($event)"
       >
         <ng-template let-option let-i="index">
           <li
@@ -113,21 +177,45 @@
             role="option"
             tabindex="-1"
             [attr.aria-selected]="isSelected(option)"
-            [attr.aria-disabled]="option.disabled ? 'true' : null"
+            [attr.aria-disabled]="(option.disabled || readOnly()) ? 'true' : null"
             [class]="optionClasses(option, i)"
+            [dgPt]="ptFor('option')"
             (click)="selectOption(option)"
             (keydown.enter)="selectOption(option)"
             (keydown.space)="selectOption(option)"
             (mouseenter)="activeIndex.set(i)"
           >
-            {{ option.label }}
+            @if (selectedIndicator() === 'checkbox') {
+            <span
+              [class]="checkboxIndicatorClasses(option)"
+              [attr.aria-hidden]="true"
+            >
+              @if (isSelected(option)) {
+              <dg-icon-check size="sm" />
+              }
+            </span>
+            } @if (optionTemplate(); as tpl) {
+            <ng-container
+              [ngTemplateOutlet]="tpl"
+              [ngTemplateOutletContext]="{ $implicit: option }"
+            />
+            } @else {
+            <span>{{ option.label }}</span>
+            } @if (selectedIndicator() === 'checkmark' && isSelected(option)) {
+            <dg-icon-check size="sm" [attr.aria-hidden]="true" />
+            }
           </li>
         </ng-template>
       </dg-virtual-scroll>
       } @else { @for (item of renderItems(); track entryKey(item)) { @if
       (item.kind === 'heading') {
-      <li role="presentation" [class]="groupHeadingClasses">
-        {{ item.label }}
+      <li role="presentation" [class]="groupHeadingClasses()">
+        @if (groupTemplate(); as tpl) {
+        <ng-container
+          [ngTemplateOutlet]="tpl"
+          [ngTemplateOutletContext]="{ $implicit: item.label }"
+        />
+        } @else { {{ item.label }} }
       </li>
       } @else {
       <li
@@ -135,14 +223,33 @@
         role="option"
         tabindex="-1"
         [attr.aria-selected]="isSelected(item.option)"
-        [attr.aria-disabled]="item.option.disabled ? 'true' : null"
+        [attr.aria-disabled]="(item.option.disabled || readOnly()) ? 'true' : null"
         [class]="optionClasses(item.option, item.index)"
+        [dgPt]="ptFor('option')"
         (click)="selectOption(item.option)"
         (keydown.enter)="selectOption(item.option)"
         (keydown.space)="selectOption(item.option)"
         (mouseenter)="activeIndex.set(item.index)"
       >
-        {{ item.option.label }}
+        @if (selectedIndicator() === 'checkbox') {
+        <span
+          [class]="checkboxIndicatorClasses(item.option)"
+          [attr.aria-hidden]="true"
+        >
+          @if (isSelected(item.option)) {
+          <dg-icon-check size="sm" />
+          }
+        </span>
+        } @if (optionTemplate(); as tpl) {
+        <ng-container
+          [ngTemplateOutlet]="tpl"
+          [ngTemplateOutletContext]="{ $implicit: item.option }"
+        />
+        } @else {
+        <span>{{ item.option.label }}</span>
+        } @if (selectedIndicator() === 'checkmark' && isSelected(item.option)) {
+        <dg-icon-check size="sm" [attr.aria-hidden]="true" />
+        }
       </li>
       } } } @if (showNoResults()) {
       <li role="presentation" [class]="noResultsClasses">

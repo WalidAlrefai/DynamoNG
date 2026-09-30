@@ -45,14 +45,25 @@ export function flattenGroupedOptions<T>(
   return groups.flatMap((group) => group.options);
 }
 
-/** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled option index. Returns `null` if every option is disabled or the list is empty. Generalizes `DynamoSelect`'s and `DynamoMenu`'s identical private implementations. */
+/**
+ * Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled option index.
+ * Returns `null` if every option is disabled or the list is empty. Generalizes `DynamoSelect`'s
+ * and `DynamoMenu`'s identical private implementations.
+ *
+ * `from = -1` is the "nothing active yet" sentinel. With `delta > 0` the very first step
+ * (`(-1 + 1 + length) % length`) already lands on `0`, so that case works without help — but with
+ * `delta < 0` the same math lands on `length - 2`, skipping the true last index (`length - 1`).
+ * Normalizing `from` to `options.length` when both conditions hold makes the first step land on
+ * `length - 1` instead, matching what callers actually mean by "no active index yet, find the
+ * extreme in the delta direction".
+ */
 export function findEnabledIndex<T>(
   options: readonly DynamoSelectOption<T>[],
   from: number,
   delta: number,
 ): number | null {
   if (options.length === 0) return null;
-  let index = from;
+  let index = from < 0 && delta < 0 ? options.length : from;
   for (let step = 0; step < options.length; step++) {
     index = (index + delta + options.length) % options.length;
     if (!options[index]?.disabled) {
