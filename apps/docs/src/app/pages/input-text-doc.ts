@@ -317,13 +317,12 @@ const API: ApiTableRow[] = [
         <div class="max-w-sm rounded-lg border border-border p-4">
           <input
             dgInputText
-            variant="filled"
             aria-label="Coupon code"
             placeholder="Coupon code"
           />
         </div>
         <div class="rounded-md bg-surface-100 p-3 text-sm font-mono">
-          &lt;input dgInputText variant="filled" aria-label="Coupon code"
+          &lt;input dgInputText aria-label="Coupon code"
           placeholder="Coupon code" /&gt;
         </div>
       </section>
