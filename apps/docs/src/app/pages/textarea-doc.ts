@@ -224,8 +224,8 @@ const EXAMPLES: DocExampleRef[] = [
           ></textarea>
         </div>
         <div class="rounded-md bg-surface-100 p-3 text-sm font-mono">
-          &lt;textarea dgTextarea [autoResize]="true"
-          aria-label="Coupon notes" /&gt;
+          &lt;textarea dgTextarea [autoResize]="true" aria-label="Coupon notes"
+          /&gt;
         </div>
       </section>
 

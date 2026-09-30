@@ -322,8 +322,8 @@ const API: ApiTableRow[] = [
           />
         </div>
         <div class="rounded-md bg-surface-100 p-3 text-sm font-mono">
-          &lt;input dgInputText aria-label="Coupon code"
-          placeholder="Coupon code" /&gt;
+          &lt;input dgInputText aria-label="Coupon code" placeholder="Coupon
+          code" /&gt;
         </div>
       </section>
 
