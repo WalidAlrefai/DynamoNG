@@ -1,6 +1,9 @@
 import { DynamoIdGenerator } from '@dynamong/core/a11y';
 import { DYNAMONG_CONFIG } from '@dynamong/core/config';
-import type { DynamoPassThrough } from '@dynamong/core/api';
+import type {
+  DynamoPassThrough,
+  DynamoPassThroughAttrs,
+} from '@dynamong/core/api';
 import { Directive, inject, input } from '@angular/core';
 
 /**
@@ -26,7 +29,7 @@ export abstract class DynamoBaseComponent<TPart extends string = 'root'> {
   protected readonly idGenerator = inject(DynamoIdGenerator);
 
   /** Merges `pt()[part]` attributes into a template binding target; returns `{}` when unset. */
-  protected ptFor(part: TPart): Record<string, unknown> {
+  protected ptFor(part: TPart): DynamoPassThroughAttrs {
     return this.pt()?.[part] ?? {};
   }
 }

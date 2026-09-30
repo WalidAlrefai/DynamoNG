@@ -11,15 +11,23 @@ import {
   viewChild,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { textareaStyles } from './textarea.styles';
-import type { DynamoTextareaPart, DynamoTextareaSize } from './textarea.types';
+import type {
+  DynamoTextareaPart,
+  DynamoTextareaSize,
+  DynamoTextareaVariant,
+} from './textarea.types';
 
 @Component({
   selector: 'dg-textarea',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoPassThroughDirective],
   templateUrl: './textarea.html',
   providers: [
     {
@@ -34,13 +42,22 @@ export class DynamoTextarea
   implements ControlValueAccessor
 {
   readonly size = input<DynamoTextareaSize>('md');
+  readonly variant = input<DynamoTextareaVariant>('outlined');
+  /** Fills the width of its container. Defaults `true` to match InputText/DatePicker's own default
+   *  (and this component's own prior always-full-width behavior); set `false` for intrinsic sizing. */
+  readonly fluid = input(true);
   readonly placeholder = input('');
   readonly invalid = input(false);
   readonly rows = input(3);
-  /** Grows the textarea's height to fit its content, up to the element's CSS `max-height`. */
+  /** Mirrors `rows` — sets the native `cols` attribute. Unset (native default) unless provided. */
+  readonly cols = input<number | undefined>(undefined);
+  /** Grows the textarea's height to fit its content, up to `max-h-96` by default (overridable via
+   *  `styleClass`/`pt.textarea.class`, which wins through `cn()`/twMerge). */
   readonly autoResize = input(false);
   /** Accessible name for the textarea when no visible `<label>` wraps it. */
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Associates the textarea with an external help/error message element via `aria-describedby`. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
   /** HTML `readonly` semantics: the current value stays visible and the control
@@ -64,16 +81,30 @@ export class DynamoTextarea
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
 
+  // Textarea is a single bare `<textarea>` (no wrapper element, unlike
+  // InputText) — `pt.root` and `pt.textarea` are both folded into this one
+  // element's classes since there's nowhere else for `pt.root` to land. Only
+  // `pt.textarea`'s non-class attrs are applied via `[dgPt]` in the template
+  // (see textarea.html) — `pt.root`'s attrs aren't applicable here, only its
+  // `class` is honored. Documented explicitly in the README.
   protected readonly textareaClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(
+          this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('textarea').class,
+        )
       : cn(
           textareaStyles({
             size: this.size(),
             invalid: this.invalid(),
+            variant: this.variant(),
+            fluid: this.fluid(),
             autoResize: this.autoResize(),
           }),
           this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('textarea').class,
         ),
   );
 

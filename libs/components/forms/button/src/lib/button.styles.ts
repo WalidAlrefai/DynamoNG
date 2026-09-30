@@ -29,6 +29,10 @@ export const buttonStyles = cva(
         solid: '',
         outline: 'bg-transparent border',
         text: 'bg-transparent',
+        // Never gets a hover background (unlike `text`'s `hover:bg-*/10`) —
+        // colored text with an underline on hover only, matching PrimeNG's
+        // Link button.
+        link: 'bg-transparent',
       },
       // `w-full` alone (not `flex`) — the base `inline-flex` already lets an
       // explicit width stretch the button; switching display modes risks a
@@ -37,9 +41,30 @@ export const buttonStyles = cva(
         true: 'w-full',
         false: '',
       },
+      raised: {
+        true: 'shadow-md',
+        false: '',
+      },
+      // Base class above already has `rounded-md` unconditionally; `cn()`'s
+      // `twMerge` resolves the conflict since this variant's class is
+      // appended after the base string in the final concatenation.
+      rounded: {
+        true: 'rounded-full',
+        false: '',
+      },
+      // Empty placeholder — only exists so the compoundVariants below can key
+      // off it per size; the actual classes live in those compoundVariants.
+      iconOnly: {
+        true: '',
+        false: '',
+      },
     },
     compoundVariants: [
       { size: 'lg', class: 'px-6' },
+
+      { size: 'sm', iconOnly: true, class: 'w-8 px-0' },
+      { size: 'md', iconOnly: true, class: 'w-10 px-0' },
+      { size: 'lg', iconOnly: true, class: 'w-12 px-0' },
 
       {
         severity: 'primary',
@@ -55,6 +80,11 @@ export const buttonStyles = cva(
         severity: 'primary',
         variant: 'text',
         class: 'text-primary hover:bg-primary/10',
+      },
+      {
+        severity: 'primary',
+        variant: 'link',
+        class: 'text-primary underline-offset-4 hover:underline',
       },
 
       {
@@ -72,6 +102,11 @@ export const buttonStyles = cva(
         variant: 'text',
         class: 'text-secondary hover:bg-secondary/10',
       },
+      {
+        severity: 'secondary',
+        variant: 'link',
+        class: 'text-secondary underline-offset-4 hover:underline',
+      },
 
       {
         severity: 'success',
@@ -87,6 +122,11 @@ export const buttonStyles = cva(
         severity: 'success',
         variant: 'text',
         class: 'text-success hover:bg-success/10',
+      },
+      {
+        severity: 'success',
+        variant: 'link',
+        class: 'text-success underline-offset-4 hover:underline',
       },
 
       {
@@ -104,6 +144,11 @@ export const buttonStyles = cva(
         variant: 'text',
         class: 'text-info hover:bg-info/10',
       },
+      {
+        severity: 'info',
+        variant: 'link',
+        class: 'text-info underline-offset-4 hover:underline',
+      },
 
       {
         severity: 'warning',
@@ -119,6 +164,11 @@ export const buttonStyles = cva(
         severity: 'warning',
         variant: 'text',
         class: 'text-warning hover:bg-warning/10',
+      },
+      {
+        severity: 'warning',
+        variant: 'link',
+        class: 'text-warning underline-offset-4 hover:underline',
       },
 
       {
@@ -136,12 +186,33 @@ export const buttonStyles = cva(
         variant: 'text',
         class: 'text-danger hover:bg-danger/10',
       },
+      {
+        severity: 'danger',
+        variant: 'link',
+        class: 'text-danger underline-offset-4 hover:underline',
+      },
     ],
     defaultVariants: {
       severity: 'primary',
       size: 'md',
       variant: 'solid',
       fullWidth: false,
+      raised: false,
+      rounded: false,
+      iconOnly: false,
     },
   },
 );
+
+// Visually merges adjacent <dg-button> children into one connected control —
+// a plain CSS-only wrapper, no coupling to DynamoButton's own TS API. Reaches
+// one level deeper than avatarGroupRootStyles' bare [&>*] since the styled
+// box (border/rounded-md) lives on Button's inner <button>, not <dg-button>
+// itself. `relative`+`focus-visible:z-10` are scoped to grouped buttons only
+// (not added to buttonStyles' own base), so ungrouped buttons are unaffected.
+export const buttonGroupRootStyles =
+  'inline-flex ' +
+  '[&>dg-button>button]:relative [&>dg-button>button]:rounded-none [&>dg-button>button]:focus-visible:z-10 ' +
+  '[&>dg-button:not(:first-child)>button]:-ms-px ' +
+  '[&>dg-button:first-child>button]:rounded-s-md ' +
+  '[&>dg-button:last-child>button]:rounded-e-md';

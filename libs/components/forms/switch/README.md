@@ -16,13 +16,23 @@ protected notificationsEnabled = signal(false);
 
 ## Inputs
 
-| Input       | Type                  | Default     | Description                                                                                                                                                |
-| ----------- | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checked`   | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `writeValue`.                                                                                           |
-| `disabled`  | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                     |
-| `readOnly`  | `boolean`             | `false`     | HTML `readonly` semantics: the switch stays visible/focusable, but toggling is blocked. Unlike `disabled`, doesn't dim it or remove it from the tab order. |
-| `size`      | `DynamoSwitchSize`    | `'md'`      |                                                                                                                                                            |
-| `ariaLabel` | `string \| undefined` | `undefined` | Accessible name for the native switch when no visible label content is projected.                                                                          |
+| Input             | Type                  | Default     | Description                                                                                                                                                |
+| ----------------- | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`         | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `writeValue`.                                                                                           |
+| `disabled`        | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                     |
+| `readOnly`        | `boolean`             | `false`     | HTML `readonly` semantics: the switch stays visible/focusable, but toggling is blocked. Unlike `disabled`, doesn't dim it or remove it from the tab order. |
+| `size`            | `DynamoSwitchSize`    | `'md'`      |                                                                                                                                                            |
+| `invalid`         | `boolean`             | `false`     | Applies error styling and sets `aria-invalid`.                                                                                                             |
+| `name`            | `string \| undefined` | `undefined` | Native `name` attribute, for plain (non-Angular-managed) form submission.                                                                                  |
+| `ariaLabel`       | `string \| undefined` | `undefined` | Accessible name for the native switch when no visible label content is projected.                                                                          |
+| `ariaDescribedby` | `string \| undefined` | `undefined` | Associates the native switch with an external help/error message element via `aria-describedby`.                                                           |
+
+**Not added** (documented, deliberate scope cuts):
+`variant` (`outlined`/`filled`) — the unchecked track is already `bg-surface-200` (deliberately
+distinct from the page background), not `bg-surface-0` like Checkbox/Radio, so there's no clean
+outlined/filled distinction left to add. A public `inputId` override — no other DynamoNG component
+(including Checkbox/Radio) exposes one; internal-only `idGenerator` IDs are a deliberate codebase-wide
+convention, not a Switch-specific gap.
 
 ## Outputs
 
@@ -33,7 +43,14 @@ protected notificationsEnabled = signal(false);
 
 ## Accessibility
 
-- Renders a native `<input type="checkbox" role="switch">` (visually hidden via `sr-only`) inside a `<label>`, with `aria-checked`/`aria-readonly` kept in sync — native checkbox keyboard behavior (Space to toggle) and label association come from the browser for free.
+- Renders a native `<input type="checkbox" role="switch">` (visually hidden via `sr-only`) inside a `<label>`, with `aria-checked`/`aria-readonly`/`aria-invalid`/`aria-describedby` kept in sync — native checkbox keyboard behavior (Space to toggle) and label association come from the browser for free.
+
+## Passthrough (`pt`)
+
+`pt.root` merges onto the outer `<label>`, `pt.input` onto the native (visually-hidden) `<input>`,
+`pt.track`/`pt.thumb` onto the two track/thumb `<span>`s, `pt.label` onto the text `<span>`. `class` is
+merged into each part's own built-in classes; every other key is set as a literal DOM attribute via
+`@dynamong/core/base`'s `DynamoPassThroughDirective`.
 
 ## Tier / dependencies
 

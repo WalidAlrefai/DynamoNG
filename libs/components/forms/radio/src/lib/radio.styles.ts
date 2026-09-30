@@ -1,5 +1,8 @@
 import { cva } from 'class-variance-authority';
-import { focusRingPeerClass } from '@dynamong/utils/styles';
+import {
+  focusRingInvalidClass,
+  focusRingPeerClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — radio.html only ever binds `[class]="...Classes()"`.
@@ -33,8 +36,30 @@ export const radioCircleStyles = cva(
         true: 'bg-surface-0 border-primary',
         false: 'bg-surface-0 border-border',
       },
+      // Only affects the *unchecked* look, same posture as Checkbox's own
+      // `checkboxBoxStyles` variant/compoundVariants split.
+      variant: {
+        outlined: '',
+        filled: '',
+      },
+      invalid: {
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: '',
+      },
     },
-    defaultVariants: { size: 'md', checked: false },
+    compoundVariants: [
+      {
+        checked: false,
+        variant: 'filled',
+        class: 'bg-surface-100 border-transparent',
+      },
+    ],
+    defaultVariants: {
+      size: 'md',
+      checked: false,
+      variant: 'outlined',
+      invalid: false,
+    },
   },
 );
 

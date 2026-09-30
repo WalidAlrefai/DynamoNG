@@ -1,25 +1,29 @@
-<label [class]="rootClasses()" [for]="inputId">
+<label [class]="rootClasses()" [for]="inputId" [dgPt]="ptFor('root')">
   <input
     type="checkbox"
-    class="peer sr-only"
+    [class]="inputClasses()"
     [id]="inputId"
+    [name]="name() ?? null"
     [checked]="checked()"
     [indeterminate]="indeterminate()"
     [disabled]="disabled()"
     [attr.aria-checked]="indeterminate() ? 'mixed' : null"
     [attr.aria-label]="ariaLabel() ?? null"
     [attr.aria-labelledby]="ariaLabelledBy() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
     [attr.aria-readonly]="readOnly() ? 'true' : null"
+    [dgPt]="ptFor('input')"
     (change)="onNativeChange($event)"
   />
-  <span [class]="boxClasses()" [attr.aria-hidden]="true">
+  <span [class]="boxClasses()" [attr.aria-hidden]="true" [dgPt]="ptFor('box')">
     @if (indeterminate()) {
     <span [class]="indeterminateDashClasses()"></span>
     } @else if (checked()) {
     <dg-icon-check [size]="size()" />
     }
   </span>
-  <span class="text-sm">
+  <span [class]="labelClasses()" [dgPt]="ptFor('label')">
     <ng-content />
   </span>
 </label>

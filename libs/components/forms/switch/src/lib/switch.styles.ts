@@ -1,5 +1,8 @@
 import { cva } from 'class-variance-authority';
-import { focusRingPeerClass } from '@dynamong/utils/styles';
+import {
+  focusRingInvalidClass,
+  focusRingPeerClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — switch.html only ever binds `[class]="...Classes()"`.
@@ -39,8 +42,12 @@ export const switchTrackStyles = cva(
         // not just a bordered rectangle the same color as its surroundings.
         false: 'bg-surface-200 border-border',
       },
+      invalid: {
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: '',
+      },
     },
-    defaultVariants: { size: 'md', checked: false },
+    defaultVariants: { size: 'md', checked: false, invalid: false },
   },
 );
 

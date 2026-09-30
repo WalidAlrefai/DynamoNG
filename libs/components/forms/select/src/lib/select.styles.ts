@@ -19,7 +19,7 @@ import {
 // button's focus via `focus-within`, since the wrapper itself is never
 // the focused element.
 export const selectTriggerStyles = cva(
-  'flex w-full items-center gap-2 rounded-md border bg-surface-0 text-text-primary ' +
+  'flex items-center gap-2 rounded-md border text-text-primary ' +
     'transition-colors ' +
     focusRingWithinClass,
   {
@@ -29,20 +29,45 @@ export const selectTriggerStyles = cva(
         true: 'border-danger ' + focusRingInvalidClass,
         false: 'border-border',
       },
+      variant: {
+        outlined: 'bg-surface-0',
+        filled: 'bg-surface-100 border-transparent',
+      },
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
       disabled: {
         true: 'pointer-events-none opacity-60',
         false: '',
       },
     },
-    defaultVariants: { size: 'md', invalid: false, disabled: false },
+    defaultVariants: {
+      size: 'md',
+      invalid: false,
+      variant: 'outlined',
+      fluid: true,
+      disabled: false,
+    },
   },
 );
 
 // The actual `role="combobox"` element inside the wrapper — transparent and
 // unstyled beyond layout, since the wrapper already provides the visible
-// border/background/padding.
+// border/background/padding. Shared as-is by the `editable` mode's `<input>`.
 export const selectTriggerButtonStyles =
   'min-w-0 flex-1 truncate bg-transparent text-start outline-none disabled:cursor-not-allowed';
+
+// `editable` mode's dedicated open/close affordance — once the trigger is a
+// real typable `<input>`, its own click only ever *opens* (see
+// `onTriggerClick`, mirrors DatePicker's identical reasoning: closing on a
+// click into the field the user is actively typing in would be surprising),
+// so this button is what actually toggles closed again on click, same as
+// the whole trigger button already does in the non-editable mode.
+export const selectTriggerIconButtonStyles =
+  'flex h-6 w-6 shrink-0 items-center justify-center rounded text-text-muted ' +
+  'transition-colors hover:text-text-primary disabled:pointer-events-none ' +
+  focusRingClass;
 
 // `ms-auto` pins the chevron to the end of the trigger row. In
 // `DynamoSelect` this is a no-op — the inner combobox `<button>` already has
@@ -141,6 +166,27 @@ export const selectNoResultsStyles = 'px-4 py-2 text-sm text-text-muted';
 // `text-on-primary` fill) — a full-strength solid fill on a whole row is too
 // visually loud for a listbox scanned repeatedly; the soft tint reads as a
 // clear highlight without the harsh contrast jump.
+// A decorative-only check indicator for `selectedIndicator: 'checkbox'`, NOT
+// `<dg-checkbox>` — that component's native `<input>` is independently
+// focusable (Tab-reachable), which would add a phantom tab stop inside each
+// `role="option"` <li> and break the listbox's single-tab-stop/virtual-focus
+// model. Mirrors `@dynamong/multi-select`'s own identical
+// `multiSelectOptionCheckboxStyles` exactly, so the visual language stays
+// consistent between the two sibling components — rendered with the real
+// `DynamoCheckIcon` (a stateless, non-focusable icon component).
+export const selectCheckboxIndicatorStyles = cva(
+  'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+  {
+    variants: {
+      checked: {
+        true: 'bg-primary border-primary text-on-primary',
+        false: 'bg-surface-0 border-border text-transparent',
+      },
+    },
+    defaultVariants: { checked: false },
+  },
+);
+
 export const selectOptionStyles = cva(
   'flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-text-primary',
   {

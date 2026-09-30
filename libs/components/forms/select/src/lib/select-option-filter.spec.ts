@@ -90,4 +90,23 @@ describe('findEnabledIndex', () => {
     ];
     expect(findEnabledIndex(allDisabled, -1, 1)).toBeNull();
   });
+
+  // Regression test: `from = -1` (the "nothing active yet" sentinel) with a
+  // *negative* delta used to land one short of the true last index —
+  // `(-1 + -1 + length) % length` computes `length - 2`, not `length - 1`.
+  // Stepping forward from `-1` happened to work by coincidence
+  // (`(-1 + 1 + length) % length === 0`), which is why this only ever
+  // surfaced for Arrow Up, never Arrow Down.
+  it('finds the true last enabled option when scanning backwards from the unset (-1) sentinel', () => {
+    expect(findEnabledIndex(OPTIONS, -1, -1)).toBe(2);
+  });
+
+  it('finds the last enabled option scanning backwards from the sentinel, skipping a disabled last option', () => {
+    const trailingDisabled: DynamoSelectOption<string>[] = [
+      { label: 'A', value: 'a' },
+      { label: 'B', value: 'b' },
+      { label: 'C', value: 'c', disabled: true },
+    ];
+    expect(findEnabledIndex(trailingDisabled, -1, -1)).toBe(1);
+  });
 });

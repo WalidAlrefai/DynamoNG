@@ -5,7 +5,7 @@ export class DynamoDatePickerHarness extends ComponentHarness {
   static hostSelector = 'dg-date-picker';
 
   private readonly triggerLocator = this.locatorFor(
-    'button[aria-haspopup="dialog"]',
+    'input[aria-haspopup="dialog"]',
   );
   // The calendar panel is portaled outside dg-date-picker's own host subtree
   // by CDK Overlay, so it must be located from the document root, same
@@ -22,8 +22,14 @@ export class DynamoDatePickerHarness extends ComponentHarness {
     await (await this.triggerLocator()).click();
   }
 
+  /** The trigger's currently displayed text — its typed/formatted `value`,
+   *  or the `placeholder` attribute when empty (mirrors what's visually
+   *  shown, same as the pre-typable-input trigger's rendered text). */
   async getTriggerText(): Promise<string> {
-    return (await this.triggerLocator()).text();
+    const trigger = await this.triggerLocator();
+    const value = (await trigger.getProperty<string>('value')) ?? '';
+    if (value) return value;
+    return (await trigger.getAttribute('placeholder')) ?? '';
   }
 
   async isOpen(): Promise<boolean> {

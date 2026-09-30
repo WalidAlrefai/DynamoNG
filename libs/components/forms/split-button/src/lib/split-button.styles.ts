@@ -36,6 +36,7 @@ export const splitButtonTriggerStyles = cva(
         solid: '',
         outline: 'bg-transparent border',
         text: 'bg-transparent',
+        link: 'bg-transparent',
       },
     },
     compoundVariants: [
@@ -54,6 +55,11 @@ export const splitButtonTriggerStyles = cva(
         variant: 'text',
         class: 'text-primary hover:bg-primary/10',
       },
+      {
+        severity: 'primary',
+        variant: 'link',
+        class: 'text-primary underline-offset-4 hover:underline',
+      },
 
       {
         severity: 'secondary',
@@ -69,6 +75,11 @@ export const splitButtonTriggerStyles = cva(
         severity: 'secondary',
         variant: 'text',
         class: 'text-secondary hover:bg-secondary/10',
+      },
+      {
+        severity: 'secondary',
+        variant: 'link',
+        class: 'text-secondary underline-offset-4 hover:underline',
       },
 
       {
@@ -86,6 +97,11 @@ export const splitButtonTriggerStyles = cva(
         variant: 'text',
         class: 'text-success hover:bg-success/10',
       },
+      {
+        severity: 'success',
+        variant: 'link',
+        class: 'text-success underline-offset-4 hover:underline',
+      },
 
       {
         severity: 'info',
@@ -101,6 +117,11 @@ export const splitButtonTriggerStyles = cva(
         severity: 'info',
         variant: 'text',
         class: 'text-info hover:bg-info/10',
+      },
+      {
+        severity: 'info',
+        variant: 'link',
+        class: 'text-info underline-offset-4 hover:underline',
       },
 
       {
@@ -118,6 +139,11 @@ export const splitButtonTriggerStyles = cva(
         variant: 'text',
         class: 'text-warning hover:bg-warning/10',
       },
+      {
+        severity: 'warning',
+        variant: 'link',
+        class: 'text-warning underline-offset-4 hover:underline',
+      },
 
       {
         severity: 'danger',
@@ -133,6 +159,11 @@ export const splitButtonTriggerStyles = cva(
         severity: 'danger',
         variant: 'text',
         class: 'text-danger hover:bg-danger/10',
+      },
+      {
+        severity: 'danger',
+        variant: 'link',
+        class: 'text-danger underline-offset-4 hover:underline',
       },
     ],
     defaultVariants: {

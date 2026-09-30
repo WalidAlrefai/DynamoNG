@@ -1,5 +1,8 @@
 import { cva } from 'class-variance-authority';
-import { focusRingPeerClass } from '@dynamong/utils/styles';
+import {
+  focusRingInvalidClass,
+  focusRingPeerClass,
+} from '@dynamong/utils/styles';
 
 // The only place Tailwind utility classes are allowed to live for this
 // component — checkbox.html only ever binds `[class]="...Classes()"`.
@@ -35,8 +38,31 @@ export const checkboxBoxStyles = cva(
         true: 'bg-primary border-primary text-on-primary',
         false: 'bg-surface-0 border-border text-transparent',
       },
+      // Only affects the *unchecked* look — checked always stays the same
+      // primary fill regardless of variant, matching PrimeNG's own checked
+      // treatment (see the compoundVariants entry below).
+      variant: {
+        outlined: '',
+        filled: '',
+      },
+      invalid: {
+        true: 'border-danger ' + focusRingInvalidClass,
+        false: '',
+      },
     },
-    defaultVariants: { size: 'md', checked: false },
+    compoundVariants: [
+      {
+        checked: false,
+        variant: 'filled',
+        class: 'bg-surface-100 border-transparent',
+      },
+    ],
+    defaultVariants: {
+      size: 'md',
+      checked: false,
+      variant: 'outlined',
+      invalid: false,
+    },
   },
 );
 

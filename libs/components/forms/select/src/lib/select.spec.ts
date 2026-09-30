@@ -107,6 +107,50 @@ class SelectReactiveFormHostComponent {
   readonly control = new FormControl<string | null>(null);
 }
 
+@Component({
+  selector: 'dg-select-templates-host',
+  standalone: true,
+  imports: [DynamoSelect],
+  template: `
+    <dg-select
+      [options]="options"
+      [(value)]="value"
+      ariaLabel="Choose an option"
+    >
+      <ng-template #optionTemplate let-option>
+        <span data-testid="custom-option">{{ option.label }} (custom)</span>
+      </ng-template>
+      <ng-template #selectedTemplate let-option>
+        <span data-testid="custom-selected">{{
+          option ? option.label + ' (chosen)' : 'Nothing yet'
+        }}</span>
+      </ng-template>
+    </dg-select>
+  `,
+})
+class SelectTemplatesHostComponent {
+  readonly options = THREE_OPTIONS;
+  readonly value = model<string | null>(null);
+}
+
+@Component({
+  selector: 'dg-select-group-template-host',
+  standalone: true,
+  imports: [DynamoSelect],
+  template: `
+    <dg-select [options]="options" ariaLabel="Choose an item">
+      <ng-template #groupTemplate let-label>
+        <strong data-testid="custom-group">{{ label }} —</strong>
+      </ng-template>
+    </dg-select>
+  `,
+})
+class SelectGroupTemplateHostComponent {
+  readonly options: DynamoSelectOption<string>[] = [
+    { label: 'Ava', value: 'ava', group: 'Team' },
+  ];
+}
+
 describe('DynamoSelect', () => {
   describe('creation', () => {
     it('renders a combobox trigger button', () => {
@@ -1275,6 +1319,594 @@ describe('DynamoSelect', () => {
       }
 
       expect(true).toBe(true);
+    });
+
+    // Regression test for the activeIndex-recovery effect: opening with
+    // every option disabled leaves activeIndex at -1; once one becomes
+    // enabled while the panel stays open, the effect should recover it
+    // instead of leaving aria-activedescendant pointing at nothing.
+    it('recovers activeIndex once a previously all-disabled option list gets an enabled option, while staying open', async () => {
+      const allDisabled: DynamoSelectOption<string>[] = [
+        { label: 'First', value: 'first', disabled: true },
+        { label: 'Second', value: 'second', disabled: true },
+      ];
+      const { container, fixture, componentInstance, setInputs } =
+        renderDynamoComponent(DynamoSelect, {
+          inputs: { options: allDisabled },
+        });
+      const trigger = within(container).getByRole('combobox');
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      expect(componentInstance['activeIndex']()).toBe(-1);
+
+      setInputs({
+        options: [
+          { label: 'First', value: 'first', disabled: true },
+          { label: 'Second', value: 'second', disabled: false },
+        ],
+      });
+      await settle(fixture);
+
+      expect(componentInstance['activeIndex']()).toBe(1);
+      expect(trigger.getAttribute('aria-activedescendant')).toBe(
+        getOptionByText('Second').id,
+      );
+    });
+
+    it('recovers activeIndex when the actively-highlighted option is removed while the panel stays open', async () => {
+      const { container, fixture, componentInstance, setInputs } =
+        renderDynamoComponent(DynamoSelect, {
+          inputs: { options: THREE_OPTIONS },
+        });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      trigger.focus();
+      // Opening already auto-focuses index 0, so two more ArrowDowns reach index 2.
+      await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+      expect(componentInstance['activeIndex']()).toBe(2);
+
+      setInputs({ options: THREE_OPTIONS.slice(0, 2) });
+      await settle(fixture);
+
+      expect(componentInstance['activeIndex']()).toBeLessThan(2);
+    });
+  });
+
+  describe('selectedIndicator', () => {
+    it('defaults to none, rendering no indicator icon at all', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, value: 'option-1' },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('svg')).toBeNull();
+    });
+
+    it('renders a checkmark on the selected option only, in "checkmark" mode', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          value: 'option-1',
+          selectedIndicator: 'checkmark',
+        },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getOptionByText('Option 1').querySelector('svg')).not.toBeNull();
+      expect(getOptionByText('Option 2').querySelector('svg')).toBeNull();
+    });
+
+    it('renders a checkbox-look indicator on every option, checked only for the selected one, in "checkbox" mode', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          value: 'option-1',
+          selectedIndicator: 'checkbox',
+        },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      const selectedOption = getOptionByText('Option 1');
+      const unselectedOption = getOptionByText('Option 2');
+      expect(
+        selectedOption.querySelector('span[aria-hidden="true"]'),
+      ).not.toBeNull();
+      expect(
+        selectedOption.querySelector('span[aria-hidden="true"] svg'),
+      ).not.toBeNull();
+      expect(
+        unselectedOption.querySelector('span[aria-hidden="true"] svg'),
+      ).toBeNull();
+    });
+
+    it('the checkbox-look indicator is aria-hidden and not independently focusable (no nested interactive control)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          selectedIndicator: 'checkbox',
+        },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      const indicator = getOptionByText('Option 1').querySelector(
+        'span[aria-hidden="true"]',
+      );
+      expect(indicator?.querySelector('input, button')).toBeNull();
+    });
+  });
+
+  describe('editable', () => {
+    it('defaults to false, rendering the plain combobox button (no native input)', () => {
+      const { container } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLElement).tagName,
+      ).toBe('BUTTON');
+    });
+
+    it('renders a real typable <input role="combobox"> when editable is true', () => {
+      const { container } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, editable: true },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLElement).tagName,
+      ).toBe('INPUT');
+    });
+
+    it('shows the selected option label as the input value, empty (placeholder-showing) when unset', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, editable: true },
+      });
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+      expect(input.value).toBe('');
+
+      setInputs({ value: 'option-2' });
+      expect(input.value).toBe('Option 2');
+    });
+
+    it('overrides matchOverlayWidthToTrigger to true while editable, false otherwise', () => {
+      const { componentInstance, setInputs } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS } },
+      );
+      expect(componentInstance['matchOverlayWidthToTrigger']()).toBe(false);
+
+      setInputs({ editable: true });
+      expect(componentInstance['matchOverlayWidthToTrigger']()).toBe(true);
+    });
+
+    it('typing updates the input value live without committing anything yet', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, editable: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Custom');
+
+      expect(input.value).toBe('Custom');
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    it('Space types a literal space instead of selecting the highlighted option', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, editable: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      // userEvent.type() clicks (opens the panel, highlighting the first
+      // option) before typing — Space must still type literally rather than
+      // selecting that highlighted option.
+      await userEvent.type(input, 'a b');
+
+      expect(input.value).toBe('a b');
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    it('commits a non-matching typed value directly as value on blur', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, editable: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Something custom');
+      input.blur();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('Something custom');
+    });
+
+    it('selects the matching option properly (not the raw string) when typed text matches its label exactly, on blur', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, editable: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Option 2');
+      input.blur();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('option-2');
+    });
+
+    it('commits a non-matching typed value directly as value on Enter once the panel is dismissed, without picking the highlighted option', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, editable: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      // Typing opens the panel (via the click-to-focus) and highlights the
+      // first option — Escape dismisses it without touching the typed draft,
+      // so the following Enter has nothing highlighted to fall back to and
+      // commits the raw text instead.
+      await userEvent.type(input, 'Something custom');
+      await userEvent.keyboard('{Escape}');
+      await settle(fixture);
+      await userEvent.keyboard('{Enter}');
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('Something custom');
+      expect(getPanel()).toBeNull();
+    });
+
+    it('Enter selects the actively-highlighted option instead of committing the draft, once arrow-keyed onto one', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, editable: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      // Typing opens the panel (click-to-focus), which already highlights
+      // "Option 1"; ArrowDown moves the highlight on to "Option 2" — Enter
+      // must select that highlighted option, not commit the typed text.
+      await userEvent.type(input, 'Something not matching');
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+      await userEvent.keyboard('{Enter}');
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('option-2');
+    });
+
+    it('clearing an empty-after-editing draft on blur clears the value, same as the clear button', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            editable: true,
+            value: 'option-1',
+          },
+        },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+      input.focus();
+      await userEvent.clear(input);
+      input.blur();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBeNull();
+    });
+
+    it('a pristine (never-typed-in) trigger ignores Enter/blur commit entirely — falls through to normal open/close behavior', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            editable: true,
+            value: 'option-1',
+          },
+        },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+      input.focus();
+      await userEvent.keyboard('{Enter}');
+      await settle(fixture);
+
+      // Enter on a pristine trigger (closed, nothing typed) opens the panel
+      // like normal — it must NOT have cleared/altered the existing value.
+      expect(componentInstance.value()).toBe('option-1');
+      expect(getPanel()).not.toBeNull();
+    });
+
+    it('clicking the input opens the panel without ever closing it while already open', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, editable: true } },
+      );
+      const input = within(container).getByRole('combobox');
+
+      await userEvent.click(input);
+      await settle(fixture);
+      expect(componentInstance['isOpen']()).toBe(true);
+
+      await userEvent.click(input);
+      await settle(fixture);
+      expect(componentInstance['isOpen']()).toBe(true);
+    });
+
+    it('clicking the separate icon button toggles the panel open and closed', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, editable: true } },
+      );
+      const iconButton = within(container).getByRole('button', {
+        name: 'Open options',
+      });
+
+      await userEvent.click(iconButton);
+      await settle(fixture);
+      expect(componentInstance['isOpen']()).toBe(true);
+
+      await userEvent.click(iconButton);
+      await settle(fixture);
+      expect(componentInstance['isOpen']()).toBe(false);
+    });
+
+    it('the clear button clears both the value and any in-progress typed draft', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            editable: true,
+            clearable: true,
+            value: 'option-1',
+          },
+        },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+      await userEvent.type(input, ' extra');
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Clear selection' }),
+      );
+
+      expect(componentInstance.value()).toBeNull();
+      expect(input.value).toBe('');
+    });
+
+    it('a direct mouse click on an option overrides any stale typed draft', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS, editable: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+      await userEvent.click(input);
+      await settle(fixture);
+      await userEvent.type(input, 'stale partial text');
+
+      await userEvent.click(getOptionByText('Option 3'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('option-3');
+      expect(input.value).toBe('Option 3');
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = renderDynamoComponent(DynamoSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          editable: true,
+          ariaLabel: 'Country',
+        },
+      });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('custom templates', () => {
+    it('renders the option template instead of plain text when provided', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SelectTemplatesHostComponent,
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      const option = getPanel()?.querySelector('[data-testid="custom-option"]');
+      expect(option?.textContent).toContain('Option 1 (custom)');
+    });
+
+    it('renders the selected-value template on the trigger instead of selectedLabel', () => {
+      const { container } = renderDynamoComponent(SelectTemplatesHostComponent);
+
+      expect(within(container).getByTestId('custom-selected').textContent).toBe(
+        'Nothing yet',
+      );
+    });
+
+    it('passes the selected option into the selected-value template once a value is set', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        SelectTemplatesHostComponent,
+      );
+      componentInstance.value.set('option-2');
+      fixture.detectChanges();
+
+      expect(within(container).getByTestId('custom-selected').textContent).toBe(
+        'Option 2 (chosen)',
+      );
+    });
+
+    it('renders the group-heading template instead of plain text when provided', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SelectGroupTemplateHostComponent,
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      const heading = getPanel()?.querySelector('[data-testid="custom-group"]');
+      expect(heading?.textContent).toContain('Team —');
+    });
+
+    it('falls back to plain text for options/groups/selected-value when no templates are provided', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, value: 'option-1' },
+      });
+
+      expect(within(container).getByRole('combobox').textContent?.trim()).toBe(
+        'Option 1',
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getOptionByText('Option 2')).toBeTruthy();
+    });
+  });
+
+  describe('passthrough (pt)', () => {
+    it('merges pt class onto every part: root/trigger/chevron/clear/listbox/group/option/filterInput', async () => {
+      const groupedWithFilter: DynamoSelectOption<string>[] = [
+        { label: 'Ava', value: 'ava', group: 'Team' },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: {
+          options: groupedWithFilter,
+          clearable: true,
+          value: 'ava',
+          filterable: true,
+          pt: {
+            root: { class: 'pt-root' },
+            trigger: { class: 'pt-trigger' },
+            chevron: { class: 'pt-chevron' },
+            clear: { class: 'pt-clear' },
+            listbox: { class: 'pt-listbox' },
+            group: { class: 'pt-group' },
+            option: { class: 'pt-option' },
+            filterInput: { class: 'pt-filter-input' },
+          },
+        },
+      });
+
+      expect(container.querySelector('div')?.classList).toContain('pt-root');
+      expect(within(container).getByRole('combobox').classList).toContain(
+        'pt-trigger',
+      );
+      expect(container.querySelector('div > svg')?.classList).toContain(
+        'pt-chevron',
+      );
+      expect(
+        within(container).getByRole('button', { name: 'Clear selection' })
+          .classList,
+      ).toContain('pt-clear');
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.classList).toContain('pt-listbox');
+      expect(
+        getPanel()?.querySelector('[role="presentation"]')?.classList,
+      ).toContain('pt-group');
+      expect(getOptionByText('Ava').classList).toContain('pt-option');
+      // The filter box is a sibling of the `<ul role="listbox">`, not a
+      // descendant of it — query the whole overlay container instead.
+      expect(getOverlayContainer().querySelector('input')?.classList).toContain(
+        'pt-filter-input',
+      );
+    });
+  });
+
+  describe('variant / fluid / ariaDescribedby', () => {
+    it('defaults variant to outlined and fluid to true', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: THREE_OPTIONS } },
+      );
+      expect(componentInstance.variant()).toBe('outlined');
+      expect(componentInstance.fluid()).toBe(true);
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('applies a different background for the filled variant', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, variant: 'outlined' },
+      });
+      const outlinedClasses = container.querySelector('div')?.className;
+
+      setInputs({ variant: 'filled' });
+      const filledClasses = container.querySelector('div')?.className;
+
+      expect(outlinedClasses).not.toBe(filledClasses);
+    });
+
+    it('drops w-full when fluid is set to false', () => {
+      const { container } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, fluid: false },
+      });
+      expect(container.querySelector('div')?.className).not.toContain('w-full');
+    });
+
+    it('forwards ariaDescribedby to the trigger', () => {
+      const { container } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, ariaDescribedby: 'help-text' },
+      });
+      expect(
+        within(container)
+          .getByRole('combobox')
+          .getAttribute('aria-describedby'),
+      ).toBe('help-text');
+    });
+  });
+
+  describe('lazy virtual scroll (scrolledIndexChange)', () => {
+    const MANY_OPTIONS: DynamoSelectOption<string>[] =
+      createMockSelectOptions(50);
+
+    it('forwards scrolledIndexChange from the underlying dg-virtual-scroll while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoSelect,
+        { inputs: { options: MANY_OPTIONS, virtualScroll: true } },
+      );
+      const emitted: number[] = [];
+      componentInstance.scrolledIndexChange.subscribe((i) => emitted.push(i));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const viewportDebugEl = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      );
+      const viewport =
+        viewportDebugEl.componentInstance as DynamoVirtualScroll<unknown>;
+      viewport.scrolledIndexChange.emit(7);
+
+      // CDK's viewport also emits an initial index (0) on its own attach —
+      // assert the forwarded value arrived rather than an exact array, to
+      // stay robust to that implementation detail.
+      expect(emitted).toContain(7);
+    });
+  });
+
+  describe('aria-disabled on options while readOnly', () => {
+    it('marks every option aria-disabled while readOnly, even ones not individually disabled', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoSelect, {
+        inputs: { options: THREE_OPTIONS, readOnly: true },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      for (const option of getOptions()) {
+        expect(option.getAttribute('aria-disabled')).toBe('true');
+      }
     });
   });
 });

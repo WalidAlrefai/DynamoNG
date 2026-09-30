@@ -1,6 +1,7 @@
 <button
   [type]="type()"
   [class]="classes()"
+  [dgPt]="ptFor('root')"
   [disabled]="isDisabled()"
   [attr.aria-busy]="loading() ? 'true' : null"
   [attr.aria-label]="ariaLabel() ?? null"
@@ -10,8 +11,12 @@
   [attr.aria-pressed]="ariaPressed() ?? null"
   [attr.tabindex]="tabIndexOverride() ?? null"
 >
-  @if (loading()) {
-  <dg-spinner size="sm" />
-  }
+  <span [class]="iconWrapperClasses()">
+    @if (loading()) {
+    <dg-spinner size="sm" />
+    } @else {
+    <ng-content select="[icon]" />
+    }
+  </span>
   <ng-content />
 </button>

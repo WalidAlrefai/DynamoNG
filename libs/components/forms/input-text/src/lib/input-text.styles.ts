@@ -8,7 +8,7 @@ import {
 // The only place Tailwind utility classes are allowed to live for this
 // component — input-text.html only ever binds `[class]="inputClasses()"`.
 export const inputTextStyles = cva(
-  'block w-full rounded-md border bg-surface-0 text-text-primary transition-colors ' +
+  'block rounded-md border text-text-primary transition-colors ' +
     'placeholder:text-text-muted ' +
     focusRingClass +
     ' disabled:pointer-events-none disabled:opacity-60',
@@ -20,10 +20,20 @@ export const inputTextStyles = cva(
         true: 'border-danger ' + focusRingInvalidClass,
         false: 'border-border',
       },
+      variant: {
+        outlined: 'bg-surface-0',
+        filled: 'bg-surface-100 border-transparent',
+      },
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
     },
     defaultVariants: {
       size: 'md',
       invalid: false,
+      variant: 'outlined',
+      fluid: true,
     },
   },
 );

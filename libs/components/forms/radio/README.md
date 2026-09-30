@@ -49,14 +49,18 @@ doesn't happen automatically:
 
 ## Inputs
 
-| Input       | Type                  | Default     | Description                                                                      |
-| ----------- | --------------------- | ----------- | -------------------------------------------------------------------------------- |
-| `name`      | `string` (required)   | —           | Shared across sibling radios to form a group.                                    |
-| `value`     | `string`              | `''`        |                                                                                  |
-| `checked`   | `boolean` (model)     | `false`     | Two-way bindable — see the grouped-usage caveat above.                           |
-| `disabled`  | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.           |
-| `size`      | `DynamoRadioSize`     | `'md'`      |                                                                                  |
-| `ariaLabel` | `string \| undefined` | `undefined` | Accessible name for the native radio when no visible label content is projected. |
+| Input             | Type                                            | Default      | Description                                                                                                                                                                                                                                                       |
+| ----------------- | ----------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`            | `string` (required)                             | —            | Shared across sibling radios to form a group.                                                                                                                                                                                                                     |
+| `value`           | `string`                                        | `''`         |                                                                                                                                                                                                                                                                   |
+| `checked`         | `boolean` (model)                               | `false`      | Two-way bindable — see the grouped-usage caveat above.                                                                                                                                                                                                            |
+| `disabled`        | `boolean` (model)                               | `false`      | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                                                                                            |
+| `readOnly`        | `boolean`                                       | `false`      | HTML `readonly` semantics — the current selection stays visible and the input stays focusable/tabbable, but selecting is blocked. Unlike `disabled`, does not remove the control from the tab order or dim its appearance. Mirrors `DynamoCheckbox`'s `readOnly`. |
+| `size`            | `DynamoRadioSize`                               | `'md'`       |                                                                                                                                                                                                                                                                   |
+| `variant`         | `DynamoRadioVariant` (`'outlined' \| 'filled'`) | `'outlined'` | `'filled'` swaps the outlined look for a filled surface background while unchecked.                                                                                                                                                                               |
+| `invalid`         | `boolean`                                       | `false`      | Applies error styling and sets `aria-invalid`.                                                                                                                                                                                                                    |
+| `ariaLabel`       | `string \| undefined`                           | `undefined`  | Accessible name for the native radio when no visible label content is projected.                                                                                                                                                                                  |
+| `ariaDescribedby` | `string \| undefined`                           | `undefined`  | Associates the native radio with an external help/error message element via `aria-describedby`.                                                                                                                                                                   |
 
 ## Outputs
 
@@ -68,6 +72,25 @@ doesn't happen automatically:
 ## Accessibility
 
 - Renders a real native `<input type="radio">` (visually hidden via `sr-only`) inside a `<label>`, so native radio semantics, keyboard behavior (arrow-key movement within a `name` group, Space to select), and label association all come from the browser for free.
+- `aria-invalid="true"` is set while `invalid` is true, `aria-readonly="true"` while `readOnly` is true, `aria-describedby` reflects `ariaDescribedby`.
+
+## Registry form-root scoping
+
+`DynamoRadioControlRegistry` (a root-level singleton, since native radio grouping is itself
+document-wide by `name`) keeps `formControlName`/`[formControl]`/`[(ngModel)]`-bound sibling radios in
+sync — mirroring Angular's own `RadioControlRegistry`. It now also mirrors that registry's form-root
+scoping: two radios only sync each other's selection if they resolve the **same** `AbstractControl.root`
+(each radio optionally injects its own `NgControl` to find this), so two independent reactive-forms
+radio groups elsewhere in the app that happen to reuse the same `name` no longer cross-contaminate each
+other's selection. Radios using the plain split-binding group pattern (no `NgControl` at all) fall back
+to the original name-only match, unaffected by this.
+
+## Passthrough (`pt`)
+
+`pt.root` merges onto the outer `<label>`, `pt.input` onto the native (visually-hidden) `<input>`,
+`pt.circle` onto the visual circle `<span>`, `pt.label` onto the text `<span>`. `class` is merged into
+each part's own built-in classes; every other key is set as a literal DOM attribute via
+`@dynamong/core/base`'s `DynamoPassThroughDirective`.
 
 ## Tier / dependencies
 

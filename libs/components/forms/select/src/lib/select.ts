@@ -4,20 +4,25 @@ import {
   ElementRef,
   TemplateRef,
   computed,
+  contentChild,
   effect,
   forwardRef,
   input,
   model,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { FormsModule } from '@angular/forms';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoInputText } from '@dynamong/input-text';
+import { DynamoCheckIcon } from '@dynamong/icons';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import type { DynamoSelectOption } from '@dynamong/core/api';
+import { DynamoPassThroughDirective } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   createTypeaheadBuffer,
@@ -33,6 +38,7 @@ import {
   groupSelectOptions,
 } from './select-option-filter';
 import {
+  selectCheckboxIndicatorStyles,
   selectChevronStyles,
   selectClearButtonStyles,
   selectFilterFieldWrapperStyles,
@@ -46,12 +52,15 @@ import {
   selectPanelWrapperStyles,
   selectPanelWrapperVirtualStyles,
   selectTriggerButtonStyles,
+  selectTriggerIconButtonStyles,
   selectTriggerStyles,
 } from './select.styles';
 import type {
   DynamoSelectPart,
   DynamoSelectPosition,
+  DynamoSelectSelectedIndicator,
   DynamoSelectSize,
+  DynamoSelectVariant,
 } from './select.types';
 
 /** One rendered row inside the panel: either a group heading (`role="presentation"`) or a selectable option. `index` is the option's position within `visibleOptions()` — the flat, post-filter/post-group list keyboard nav and `aria-activedescendant` operate over. */
@@ -63,7 +72,15 @@ type DynamoSelectRenderItem<TValue> =
   selector: 'dg-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DynamoInputText, DynamoSpinner, DynamoVirtualScroll],
+  imports: [
+    FormsModule,
+    NgTemplateOutlet,
+    DynamoInputText,
+    DynamoCheckIcon,
+    DynamoSpinner,
+    DynamoVirtualScroll,
+    DynamoPassThroughDirective,
+  ],
   templateUrl: './select.html',
   providers: [
     {
@@ -80,7 +97,13 @@ export class DynamoSelect<TValue = unknown>
   readonly options = input.required<DynamoSelectOption<TValue>[]>();
   readonly placeholder = input('Select an option');
   readonly size = input<DynamoSelectSize>('md');
+  readonly variant = input<DynamoSelectVariant>('outlined');
+  /** Fills the width of its container. Defaults `true` to match every existing consumer's
+   *  assumption of a full-width trigger; set `false` for PrimeNG-style intrinsic sizing. */
+  readonly fluid = input(true);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Associates the trigger with an external help/error message element via `aria-describedby`. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<TValue | null>(null);
   /** Fires once per direct user selection (click or keyboard Enter/Space on an option) with the full option object — not from `writeValue`/programmatic `value` changes. */
@@ -119,12 +142,39 @@ export class DynamoSelect<TValue = unknown>
   readonly virtualScrollItemSize = input(36);
   /** Viewport height in px when virtualized — matches `selectPanelWrapperStyles`' own `max-h-60` (240px) so the virtualized panel is roughly the same size as today's CSS-scrolled one. */
   readonly virtualScrollHeight = input(240);
+  readonly selectedIndicator = input<DynamoSelectSelectedIndicator>('none');
+  /** Converts the trigger from a plain `<button>` into a real typable `<input>` — typing commits an
+   *  arbitrary value directly (not required to match an option), matching PrimeNG's actual "Editable"
+   *  Select semantics (distinct from `filterable`, which narrows options but still requires picking
+   *  one). Mutually exclusive with `filterable` in v1 (documented, not runtime-guarded) — typing in
+   *  the trigger never also filters the panel. Only meaningful when `TValue` is/accepts `string`,
+   *  since a committed free-text value is always a raw string. */
+  readonly editable = input(false);
+  /** Forwarded 1:1 from `@dynamong/virtual-scroll`'s own `scrolledIndexChange` — the index of the
+   *  first item considered "in view" after each scroll. A consumer can use this to drive its own
+   *  lazy-load fetch as the index nears `options().length`. Only meaningful while `isVirtualized()`. */
+  readonly scrolledIndexChange = output<number>();
 
   private readonly triggerEl =
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
   private readonly virtualScrollRef = viewChild(DynamoVirtualScroll);
+
+  /** Optional per-option custom rendering — falls back to plain `{{ option.label }}` text when unset. */
+  protected readonly optionTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoSelectOption<TValue> }>>(
+      'optionTemplate',
+    );
+  /** Optional custom group-heading rendering — falls back to plain `{{ label }}` text when unset. */
+  protected readonly groupTemplate =
+    contentChild<TemplateRef<{ $implicit: string }>>('groupTemplate');
+  /** Optional custom rendering for the trigger's own selected-value display — falls back to
+   *  `selectedLabel()` (plain text) when unset. Receives `null` while nothing is selected. */
+  protected readonly selectedTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoSelectOption<TValue> | null }>>(
+      'selectedTemplate',
+    );
 
   protected readonly triggerId = this.idGenerator.next('dg-select-trigger');
   protected readonly listboxId = this.idGenerator.next('dg-select-listbox');
@@ -138,6 +188,9 @@ export class DynamoSelect<TValue = unknown>
   };
   /** Only consulted on the trigger's own keydown, and only while `!filterable()` — a filterable panel moves focus into its own filter input, which has its own keydown handler and never reaches this buffer. */
   private readonly typeahead = createTypeaheadBuffer();
+  /** Non-null while the user has typed something not yet committed — only meaningful while
+   *  `editable()`. Mirrors DatePicker's identical `typedDraft` idiom. */
+  protected readonly editableDraft = signal<string | null>(null);
 
   protected readonly filteredOptions = computed(() =>
     filterSelectOptions(this.options(), this.filterText()),
@@ -196,33 +249,56 @@ export class DynamoSelect<TValue = unknown>
 
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
           selectTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
+            variant: this.variant(),
+            fluid: this.fluid(),
             disabled: this.isDisabled(),
           }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
-  protected readonly triggerButtonClasses = selectTriggerButtonStyles;
-  protected readonly chevronClasses = computed(() =>
-    selectChevronStyles({ open: this.isOpen() }),
+  protected readonly triggerButtonClasses = computed(() =>
+    cn(selectTriggerButtonStyles, this.ptFor('trigger').class),
   );
-  protected readonly clearButtonClasses = selectClearButtonStyles;
+  /** `editable` mode's dedicated open/close icon button — see
+   *  `selectTriggerIconButtonStyles`'s own doc comment for why it exists. */
+  protected readonly triggerIconButtonClasses = selectTriggerIconButtonStyles;
+  /** Only meaningful while `editable()`. Falls back to the selected option's label, or `''` when
+   *  nothing's selected (never `placeholder()` itself — that's shown via the native `placeholder`
+   *  attribute instead, same "draft-or-derived" idiom as DatePicker's `inputText`). */
+  protected readonly editableDisplayText = computed(
+    () => this.editableDraft() ?? this.selectedOption()?.label ?? '',
+  );
+  protected readonly chevronClasses = computed(() =>
+    cn(
+      selectChevronStyles({ open: this.isOpen() }),
+      this.ptFor('chevron').class,
+    ),
+  );
+  protected readonly clearButtonClasses = computed(() =>
+    cn(selectClearButtonStyles, this.ptFor('clear').class),
+  );
   /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
   protected readonly panelWrapperClasses = computed(() =>
     this.isVirtualized()
       ? selectPanelWrapperVirtualStyles
       : selectPanelWrapperStyles,
   );
-  protected readonly listboxClasses = selectListboxStyles;
+  protected readonly listboxClasses = computed(() =>
+    cn(selectListboxStyles, this.ptFor('listbox').class),
+  );
   protected readonly filterWrapperClasses = selectFilterWrapperStyles;
   protected readonly filterFieldWrapperClasses = selectFilterFieldWrapperStyles;
   protected readonly filterIconClasses = selectFilterIconStyles;
   protected readonly filterInputExtraClasses = selectFilterInputExtraClasses;
-  protected readonly groupHeadingClasses = selectGroupHeadingStyles;
+  protected readonly groupHeadingClasses = computed(() =>
+    cn(selectGroupHeadingStyles, this.ptFor('group').class),
+  );
   protected readonly noResultsClasses = selectNoResultsStyles;
 
   constructor() {
@@ -236,7 +312,33 @@ export class DynamoSelect<TValue = unknown>
       }
     });
 
+    // Re-validates `activeIndex` if `options()` changes while the panel stays
+    // open (e.g. an async-loaded list swap, or a disabled flag flipping) —
+    // without this, a stale index could point past the end of the new list
+    // or at a since-disabled row (or stay stuck at -1 even after previously
+    // all-disabled options become enabled), and `aria-activedescendant`
+    // would reference a nonexistent/mismatched option id. Self-terminating:
+    // the write only fires when `recovered` actually differs from the
+    // current value, so a no-op pass never re-triggers itself.
+    effect(() => {
+      if (!this.isOpen()) return;
+      const options = this.visibleOptions();
+      const current = this.activeIndex();
+      const isInvalid =
+        current < 0 || current >= options.length || options[current]?.disabled;
+      if (!isInvalid) return;
+      const recovered = findEnabledIndex(options, -1, 1) ?? -1;
+      if (recovered !== current) this.activeIndex.set(recovered);
+    });
+
     this.destroyRef.onDestroy(() => this.destroyOverlay());
+  }
+
+  /** Matches the panel's width to the trigger's while `editable()` — same reasoning
+   *  `@dynamong/autocomplete` already uses this base-class hook for: a typed-into trigger expects a
+   *  width-matched panel. Non-editable mode keeps the base class's fixed-width default. */
+  protected override matchOverlayWidthToTrigger(): boolean {
+    return this.editable();
   }
 
   protected triggerElRef(): ElementRef<HTMLElement> {
@@ -265,15 +367,25 @@ export class DynamoSelect<TValue = unknown>
     option: DynamoSelectOption<TValue>,
     index: number,
   ): string {
-    return selectOptionStyles({
-      active: index === this.activeIndex(),
-      selected: this.isSelected(option),
-      disabled: !!option.disabled,
-    });
+    return cn(
+      selectOptionStyles({
+        active: index === this.activeIndex(),
+        selected: this.isSelected(option),
+        disabled: !!option.disabled,
+      }),
+      this.ptFor('option').class,
+    );
   }
 
   protected isSelected(option: DynamoSelectOption<TValue>): boolean {
     return option.value === this.value();
+  }
+
+  /** Only meaningful while `selectedIndicator() === 'checkbox'`. */
+  protected checkboxIndicatorClasses(
+    option: DynamoSelectOption<TValue>,
+  ): string {
+    return selectCheckboxIndicatorStyles({ checked: this.isSelected(option) });
   }
 
   protected toggle(): void {
@@ -311,6 +423,11 @@ export class DynamoSelect<TValue = unknown>
     if (option.disabled || this.readOnly()) return;
     this.value.set(option.value);
     this.onChangeFn(option.value);
+    // Clears any stale typed draft — a direct mouse-click selection (which
+    // never goes through `commitEditableDraft`) must still make
+    // `editableDisplayText` re-derive from the newly-selected option, not
+    // keep showing whatever partial text was typed before the click.
+    this.editableDraft.set(null);
     this.itemSelect.emit(option);
     this.close();
   }
@@ -320,6 +437,56 @@ export class DynamoSelect<TValue = unknown>
     if (this.isDisabled() || this.readOnly()) return;
     this.value.set(null);
     this.onChangeFn(null);
+    this.editableDraft.set(null);
+  }
+
+  /** Clicking the typable input always ensures the panel is open — never closes it (unlike the icon
+   *  button's `toggle()`) — so clicking back into the field to fix a typo, once it's already open,
+   *  doesn't unexpectedly snap the panel shut. Mirrors DatePicker's identical `onTriggerClick`. */
+  protected onTriggerClick(): void {
+    if (!this.isOpen()) this.openList();
+  }
+
+  protected onEditableInput(event: Event): void {
+    this.editableDraft.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onEditableBlur(): void {
+    this.commitEditableDraft();
+    this.onTouchedFn();
+  }
+
+  /**
+   * Commits the typed draft: an empty draft clears the value (same as `clearValue`); text matching an
+   * existing option's label selects that option properly (a real typed `value`, not a raw string);
+   * anything else commits the raw string directly as `value` — the "editable" free-text behavior
+   * PrimeNG's own Select has. The `as unknown as TValue` cast is intentionally local to this one
+   * method: the public `value` contract stays `TValue | null` throughout, but a committed free-text
+   * value is always a raw string, so `editable` is only meaningful when `TValue` is/accepts `string`
+   * (documented in the README). No-op if nothing's been typed (`editableDraft() === null`) — e.g. a
+   * pristine trigger receiving Enter/blur falls through to whatever that action normally does instead.
+   */
+  private commitEditableDraft(): void {
+    const draft = this.editableDraft();
+    if (draft === null) return;
+    const trimmed = draft.trim();
+    this.editableDraft.set(null);
+    if (trimmed === '') {
+      if (this.value() !== null) {
+        this.value.set(null);
+        this.onChangeFn(null);
+      }
+      return;
+    }
+    const matched = this.options().find((option) => option.label === trimmed);
+    if (matched) {
+      this.selectOption(matched);
+    } else {
+      const next = trimmed as unknown as TValue;
+      this.value.set(next);
+      this.onChangeFn(next);
+      this.close();
+    }
   }
 
   protected onFilterInputChange(value: string): void {
@@ -387,9 +554,34 @@ export class DynamoSelect<TValue = unknown>
           this.scrollActiveIntoView();
         }
         break;
-      case 'Enter':
       case ' ':
+        // A real textbox once `editable()` — Space must type a literal
+        // space (e.g. a multi-word free-text value), not act as a select
+        // key. Intentional behavior difference from the non-editable
+        // button trigger, same posture DatePicker's Phase 1 already took.
+        if (this.editable()) return;
         event.preventDefault();
+        if (this.isOpen()) {
+          const active = this.visibleOptions()[this.activeIndex()];
+          if (active) this.selectOption(active);
+        } else {
+          this.openList();
+        }
+        break;
+      case 'Enter':
+        event.preventDefault();
+        // Enter while a real option is actively highlighted (the user
+        // arrow-keyed into the list) still selects it, even in editable
+        // mode — only falls through to committing the typed draft when
+        // nothing's highlighted (closed trigger, or open with no active row).
+        if (
+          this.editable() &&
+          this.editableDraft() !== null &&
+          (!this.isOpen() || this.activeIndex() < 0)
+        ) {
+          this.commitEditableDraft();
+          break;
+        }
         if (this.isOpen()) {
           const active = this.visibleOptions()[this.activeIndex()];
           if (active) this.selectOption(active);
@@ -410,10 +602,12 @@ export class DynamoSelect<TValue = unknown>
   }
 
   /**
-   * Typeahead only applies to the closed-trigger/non-filterable path — once
-   * `filterable()` is true, opening the panel moves focus into the separate
-   * filter `<input>` (its own `onFilterKeydown` handler), so this branch
-   * simply never fires for a filterable Select while a filter box exists.
+   * Typeahead only applies to the closed-trigger/non-filterable,
+   * non-editable path — once `filterable()` is true, opening the panel
+   * moves focus into the separate filter `<input>` (its own
+   * `onFilterKeydown` handler); once `editable()` is true, typing goes
+   * straight to the real trigger `<input>`'s own value via
+   * `onEditableInput` instead. Either way this branch simply never fires.
    */
   private handleTypeahead(event: KeyboardEvent): void {
     if (
@@ -421,7 +615,8 @@ export class DynamoSelect<TValue = unknown>
       event.ctrlKey ||
       event.metaKey ||
       event.altKey ||
-      this.filterable()
+      this.filterable() ||
+      this.editable()
     ) {
       return;
     }

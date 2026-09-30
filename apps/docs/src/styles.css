@@ -17,10 +17,20 @@
  * never themes). Every other `--dg-*` consumer already keys off `.dark`
  * automatically; this is the one spot nothing did.
  */
+/*
+ * The app shell (app.html) is a fixed `h-screen` layout with its own
+ * internal `overflow-y-auto` panes (the nav list, the main content area) —
+ * html/body themselves were never meant to scroll. Without this, an
+ * occasional outer page scrollbar could still appear alongside an inner
+ * pane's own scrollbar (e.g. from sub-pixel height rounding), showing up as
+ * a stray/double scroll. `overflow: hidden` on both keeps the outer
+ * document itself locked, so only the shell's own internal panes scroll.
+ */
 html,
 body {
   background-color: var(--dg-color-surface-0);
   color: var(--dg-color-text-primary);
+  overflow: hidden;
 }
 
 /*
