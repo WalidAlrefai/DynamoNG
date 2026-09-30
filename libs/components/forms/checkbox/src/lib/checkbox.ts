@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoPassThroughDirective } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoCheckIcon } from '@dynamong/icons';
 import {
@@ -15,13 +16,17 @@ import {
   checkboxIndeterminateDashStyles,
   checkboxRootStyles,
 } from './checkbox.styles';
-import type { DynamoCheckboxPart, DynamoCheckboxSize } from './checkbox.types';
+import type {
+  DynamoCheckboxPart,
+  DynamoCheckboxSize,
+  DynamoCheckboxVariant,
+} from './checkbox.types';
 
 @Component({
   selector: 'dg-checkbox',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoCheckIcon],
+  imports: [DynamoCheckIcon, DynamoPassThroughDirective],
   templateUrl: './checkbox.html',
   providers: [
     {
@@ -43,10 +48,16 @@ export class DynamoCheckbox
   /** HTML `readonly` semantics: the current state stays visible and the input stays focusable/tabbable, but toggling is blocked. Unlike `disabled`, does not remove the control from the tab order or dim its appearance. */
   readonly readOnly = input(false);
   readonly size = input<DynamoCheckboxSize>('md');
+  readonly variant = input<DynamoCheckboxVariant>('outlined');
+  readonly invalid = input(false);
+  /** Native `name` attribute, for plain (non-Angular-managed) form submission. */
+  readonly name = input<string | undefined>(undefined);
   /** Accessible name for the native checkbox when no visible label content is projected. */
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Accessible name via reference to an external label element, mirroring `ariaLabel`'s forwarding. */
   readonly ariaLabelledBy = input<string | undefined>(undefined);
+  /** Associates the native checkbox with an external help/error message element via `aria-describedby`. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
 
   private onChangeFn: (value: boolean) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
@@ -59,10 +70,11 @@ export class DynamoCheckbox
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
           checkboxRootStyles({ disabled: this.disabled() }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
 
@@ -70,11 +82,27 @@ export class DynamoCheckbox
   // stays styled even when `unstyled` is set — unlike button's purely cosmetic
   // color/variant classes, without this the checkbox would have no affordance.
   protected readonly boxClasses = computed(() =>
-    checkboxBoxStyles({ size: this.size(), checked: this.checked() }),
+    cn(
+      checkboxBoxStyles({
+        size: this.size(),
+        checked: this.checked(),
+        variant: this.variant(),
+        invalid: this.invalid(),
+      }),
+      this.ptFor('box').class,
+    ),
   );
 
   protected readonly indeterminateDashClasses = computed(() =>
     checkboxIndeterminateDashStyles({ size: this.size() }),
+  );
+
+  protected readonly labelClasses = computed(() =>
+    cn('text-sm', this.ptFor('label').class),
+  );
+
+  protected readonly inputClasses = computed(() =>
+    cn('peer sr-only', this.ptFor('input').class),
   );
 
   protected onNativeChange(event: Event): void {

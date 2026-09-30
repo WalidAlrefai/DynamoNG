@@ -29,10 +29,29 @@ export class DynamoRadioControlRegistry {
       if (
         other !== radio &&
         other.name() === radio.name() &&
-        other.isFormsControlled()
+        other.isFormsControlled() &&
+        this.isSameGroup(other, radio)
       ) {
         other.writeValue(radio.value());
       }
     }
+  }
+
+  /**
+   * Mirrors Angular's own `RadioControlRegistry._isSameGroup`: when *both*
+   * radios resolve a form root (i.e. each is bound via `formControlName`/
+   * `[formControl]`/`[(ngModel)]` directly on its own host element), they
+   * must share the same root to be considered the same group — this is what
+   * stops two unrelated reactive-forms radio groups elsewhere in the app
+   * that happen to reuse the same `name` from cross-contaminating each
+   * other's selection. If either side resolves no root at all (the plain
+   * split-binding pattern has no `NgControl`), fall back to the original
+   * name-only match so that usage is unaffected.
+   */
+  private isSameGroup(a: DynamoRadio, b: DynamoRadio): boolean {
+    const rootA = a.formRoot();
+    const rootB = b.formRoot();
+    if (!rootA || !rootB) return true;
+    return rootA === rootB;
   }
 }

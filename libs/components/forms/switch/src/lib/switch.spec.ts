@@ -392,6 +392,79 @@ describe('DynamoSwitch', () => {
     });
   });
 
+  describe('passthrough (pt)', () => {
+    it('merges pt.root/input/track/thumb/label classes onto their respective elements', () => {
+      const { container } = renderDynamoComponent(DynamoSwitch, {
+        inputs: {
+          pt: {
+            root: { class: 'ring-root' },
+            input: { class: 'ring-input' },
+            track: { class: 'ring-track' },
+            thumb: { class: 'ring-thumb' },
+            label: { class: 'ring-label' },
+          },
+        },
+      });
+
+      expect(container.querySelector('label')?.classList).toContain(
+        'ring-root',
+      );
+      expect(within(container).getByRole('switch').classList).toContain(
+        'ring-input',
+      );
+      expect(container.querySelectorAll('span')[0]?.classList).toContain(
+        'ring-track',
+      );
+      expect(container.querySelectorAll('span')[1]?.classList).toContain(
+        'ring-thumb',
+      );
+      expect(container.querySelectorAll('span')[2]?.classList).toContain(
+        'ring-label',
+      );
+    });
+  });
+
+  describe('invalid / name / ariaDescribedby', () => {
+    it('reflects invalid as aria-invalid on the native input', () => {
+      const { container } = renderDynamoComponent(DynamoSwitch, {
+        inputs: { invalid: true },
+      });
+      expect(
+        within(container).getByRole('switch').getAttribute('aria-invalid'),
+      ).toBe('true');
+    });
+
+    it('applies a different track class while invalid', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoSwitch, {
+        inputs: { invalid: false },
+      });
+      const validClasses = container.querySelectorAll('span')[0]?.className;
+
+      setInputs({ invalid: true });
+      const invalidClasses = container.querySelectorAll('span')[0]?.className;
+
+      expect(validClasses).not.toBe(invalidClasses);
+    });
+
+    it('forwards name to the native input', () => {
+      const { container } = renderDynamoComponent(DynamoSwitch, {
+        inputs: { name: 'notifications' },
+      });
+      expect(
+        (within(container).getByRole('switch') as HTMLInputElement).name,
+      ).toBe('notifications');
+    });
+
+    it('forwards ariaDescribedby to the native input', () => {
+      const { container } = renderDynamoComponent(DynamoSwitch, {
+        inputs: { ariaDescribedby: 'help-text' },
+      });
+      expect(
+        within(container).getByRole('switch').getAttribute('aria-describedby'),
+      ).toBe('help-text');
+    });
+  });
+
   describe('edge cases', () => {
     it('renders with no projected label content without throwing', () => {
       const { container } = renderDynamoComponent(DynamoSwitch);

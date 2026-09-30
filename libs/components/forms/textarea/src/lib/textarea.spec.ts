@@ -219,6 +219,94 @@ describe('DynamoTextarea', () => {
     });
   });
 
+  describe('passthrough (pt)', () => {
+    it('merges pt.root and pt.textarea class onto the native textarea', () => {
+      const { container } = renderDynamoComponent(DynamoTextarea, {
+        inputs: {
+          pt: {
+            root: { class: 'root-marker' },
+            textarea: { class: 'textarea-marker' },
+          },
+        },
+      });
+      const textarea = within(container).getByRole('textbox');
+      expect(textarea.classList).toContain('root-marker');
+      expect(textarea.classList).toContain('textarea-marker');
+    });
+
+    it('applies pt.textarea non-class attrs via [dgPt]', () => {
+      const { container } = renderDynamoComponent(DynamoTextarea, {
+        inputs: { pt: { textarea: { 'data-testid': 'bio' } } },
+      });
+      expect(
+        within(container).getByRole('textbox').getAttribute('data-testid'),
+      ).toBe('bio');
+    });
+  });
+
+  describe('variant / fluid / cols / ariaDescribedby', () => {
+    it('defaults variant to outlined and fluid to true', () => {
+      const { container, componentInstance } =
+        renderDynamoComponent(DynamoTextarea);
+      expect(componentInstance.variant()).toBe('outlined');
+      expect(componentInstance.fluid()).toBe(true);
+      expect(within(container).getByRole('textbox').className).toContain(
+        'w-full',
+      );
+    });
+
+    it('applies a different background for the filled variant', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoTextarea, {
+        inputs: { variant: 'outlined' },
+      });
+      const outlinedClasses = within(container).getByRole('textbox').className;
+
+      setInputs({ variant: 'filled' });
+      const filledClasses = within(container).getByRole('textbox').className;
+
+      expect(outlinedClasses).not.toBe(filledClasses);
+    });
+
+    it('drops w-full when fluid is set to false', () => {
+      const { container } = renderDynamoComponent(DynamoTextarea, {
+        inputs: { fluid: false },
+      });
+      expect(within(container).getByRole('textbox').className).not.toContain(
+        'w-full',
+      );
+    });
+
+    it('reflects cols onto the native textarea, and omits the attribute when unset', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoTextarea);
+      expect(within(container).getByRole('textbox').hasAttribute('cols')).toBe(
+        false,
+      );
+
+      setInputs({ cols: 40 });
+      expect(
+        (within(container).getByRole('textbox') as HTMLTextAreaElement).cols,
+      ).toBe(40);
+    });
+
+    it('forwards ariaDescribedby to the native textarea', () => {
+      const { container } = renderDynamoComponent(DynamoTextarea, {
+        inputs: { ariaDescribedby: 'help-text' },
+      });
+      expect(
+        within(container).getByRole('textbox').getAttribute('aria-describedby'),
+      ).toBe('help-text');
+    });
+
+    it('bounds autoResize growth with a default max-height class', () => {
+      const { container } = renderDynamoComponent(DynamoTextarea, {
+        inputs: { autoResize: true },
+      });
+      expect(within(container).getByRole('textbox').className).toContain(
+        'max-h-96',
+      );
+    });
+  });
+
   describe('resized output', () => {
     it('emits when autoResize adjusts height as content is typed', async () => {
       const { container, componentInstance } = renderDynamoComponent(

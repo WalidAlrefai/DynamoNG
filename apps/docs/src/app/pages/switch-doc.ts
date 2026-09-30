@@ -12,9 +12,11 @@ import switchApiRows from '../generated/api/switch.json';
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'sizes', title: 'Sizes' },
+  { id: 'invalid', title: 'Invalid' },
   { id: 'disabled', title: 'Disabled' },
   { id: 'readonly', title: 'Read-only' },
   { id: 'reactive-forms', title: 'Reactive Forms' },
+  { id: 'accessibility', title: 'Accessibility' },
 ];
 
 @Component({
@@ -59,6 +61,17 @@ const EXAMPLES: DocExampleRef[] = [
       </docs-example>
 
       <docs-example
+        exampleId="invalid"
+        title="Invalid"
+        description="invalid applies the error styling for a failed validation state."
+        [code]="invalidCode"
+      >
+        <div preview>
+          <dg-switch [invalid]="true">Required setting</dg-switch>
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="disabled"
         title="Disabled"
         description="disabled greys the control out and blocks interaction."
@@ -95,6 +108,38 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <section id="accessibility" class="space-y-3">
+        <h2
+          class="text-sm font-semibold uppercase tracking-wide text-text-muted"
+        >
+          Accessibility
+        </h2>
+        <ul class="list-disc space-y-1 pl-5 text-sm text-text-primary">
+          <li>
+            Renders a native
+            <code class="font-mono"
+              >&lt;input type="checkbox" role="switch"&gt;</code
+            >, inheriting keyboard (Space to toggle) semantics for free.
+          </li>
+          <li>
+            <code class="font-mono">aria-checked</code> reflects the current
+            state, <code class="font-mono">aria-invalid</code> is set while
+            <code class="font-mono">invalid</code> is true, and
+            <code class="font-mono">aria-readonly</code> while
+            <code class="font-mono">readOnly</code> is true.
+          </li>
+          <li>
+            Always pair with an accessible name — the projected label content,
+            or <code class="font-mono">ariaLabel</code> when there's no visible
+            one.
+          </li>
+          <li>
+            <code class="font-mono">ariaDescribedby</code> associates an
+            external help/error message's <code class="font-mono">id</code>.
+          </li>
+        </ul>
+      </section>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -111,6 +156,7 @@ export class SwitchDocPage {
   protected readonly sizesCode = `<dg-switch size="sm">Small</dg-switch>
 <dg-switch size="md">Medium</dg-switch>
 <dg-switch size="lg">Large</dg-switch>`;
+  protected readonly invalidCode = `<dg-switch [invalid]="true">Required setting</dg-switch>`;
   protected readonly disabledCode = `<dg-switch [disabled]="true">Disabled option</dg-switch>`;
   protected readonly readonlyCode = `<dg-switch [checked]="true" [readOnly]="true">Read-only option</dg-switch>`;
   protected readonly reactiveFormsCode = `<dg-switch [formControl]="enabled">Reactive notifications</dg-switch>`;

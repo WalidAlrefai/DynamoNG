@@ -17,15 +17,19 @@ protected readonly agreed = signal(false);
 
 ## Inputs
 
-| Input            | Type                  | Default     | Description                                                                                                                                                                                                           |
-| ---------------- | --------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checked`        | `boolean` (model)     | `false`     | Two-way bindable: `<dg-checkbox [(checked)]="value">`. Also driven by Angular forms via `writeValue`.                                                                                                                 |
-| `indeterminate`  | `boolean`             | `false`     | Visual-only mixed state; does not affect `checked`.                                                                                                                                                                   |
-| `disabled`       | `boolean` (model)     | `false`     | Also driven by Angular forms via `setDisabledState`.                                                                                                                                                                  |
-| `readOnly`       | `boolean`             | `false`     | HTML `readonly` semantics — the current state stays visible and the input stays focusable/tabbable, but toggling is blocked. Unlike `disabled`, does not remove the control from the tab order or dim its appearance. |
-| `size`           | `DynamoSize`          | `'md'`      |                                                                                                                                                                                                                       |
-| `ariaLabel`      | `string \| undefined` | `undefined` | Accessible name for the native checkbox when no visible label content is projected.                                                                                                                                   |
-| `ariaLabelledBy` | `string \| undefined` | `undefined` | Accessible name via reference to an external label element.                                                                                                                                                           |
+| Input             | Type                                               | Default      | Description                                                                                                                                                                                                           |
+| ----------------- | -------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`         | `boolean` (model)                                  | `false`      | Two-way bindable: `<dg-checkbox [(checked)]="value">`. Also driven by Angular forms via `writeValue`.                                                                                                                 |
+| `indeterminate`   | `boolean`                                          | `false`      | Visual-only mixed state; does not affect `checked`.                                                                                                                                                                   |
+| `disabled`        | `boolean` (model)                                  | `false`      | Also driven by Angular forms via `setDisabledState`.                                                                                                                                                                  |
+| `readOnly`        | `boolean`                                          | `false`      | HTML `readonly` semantics — the current state stays visible and the input stays focusable/tabbable, but toggling is blocked. Unlike `disabled`, does not remove the control from the tab order or dim its appearance. |
+| `size`            | `DynamoSize`                                       | `'md'`       |                                                                                                                                                                                                                       |
+| `variant`         | `DynamoCheckboxVariant` (`'outlined' \| 'filled'`) | `'outlined'` | `'filled'` swaps the outlined look for a filled surface background while unchecked — checked always stays the same primary fill regardless of variant.                                                                |
+| `invalid`         | `boolean`                                          | `false`      | Applies error styling and sets `aria-invalid`.                                                                                                                                                                        |
+| `name`            | `string \| undefined`                              | `undefined`  | Native `name` attribute, for plain (non-Angular-managed) form submission.                                                                                                                                             |
+| `ariaLabel`       | `string \| undefined`                              | `undefined`  | Accessible name for the native checkbox when no visible label content is projected.                                                                                                                                   |
+| `ariaLabelledBy`  | `string \| undefined`                              | `undefined`  | Accessible name via reference to an external label element.                                                                                                                                                           |
+| `ariaDescribedby` | `string \| undefined`                              | `undefined`  | Associates the native checkbox with an external help/error message element via `aria-describedby`.                                                                                                                    |
 
 ## Outputs
 
@@ -37,8 +41,25 @@ protected readonly agreed = signal(false);
 ## Accessibility
 
 - Renders a visually-hidden native `<input type="checkbox">` (`sr-only`) under a styled label/box, so native keyboard and click semantics (Space toggles, clicking the label toggles) come for free.
-- `aria-checked="mixed"` is set while `indeterminate` is true. `aria-readonly="true"` is set while `readOnly` is true.
+- `aria-checked="mixed"` is set while `indeterminate` is true. `aria-readonly="true"` is set while `readOnly` is true. `aria-invalid="true"` is set while `invalid` is true. `aria-describedby` reflects `ariaDescribedby`.
 - Implements `ControlValueAccessor` — works with `[formControl]`, `[formControlName]`, and `[(ngModel)]`, not just `[(checked)]`.
+
+## Passthrough (`pt`)
+
+`pt.root` merges onto the outer `<label>`, `pt.input` onto the native (visually-hidden) `<input>`,
+`pt.box` onto the visual box `<span>`, `pt.label` onto the text `<span>`. `class` is merged into each
+part's own built-in classes; every other key is set as a literal DOM attribute via
+`@dynamong/core/base`'s `DynamoPassThroughDirective` (e.g. `pt.input`'s non-`class` keys land directly
+on the native input — the only way to set e.g. `tabindex` today).
+
+## Investigated: `readOnly`'s native-DOM revert timing
+
+Clicking a `readOnly` checkbox lets the native `<input>`'s own `checked` DOM property flip for one
+frame before `onNativeChange` synchronously reverts it back to the model's `checked()` — briefly
+visible to the accessibility tree, at most. This is inherent to any synchronous-revert controlled-input
+pattern (the same posture `DynamoSwitch`/`DynamoRadio` now also use for their own `readOnly`); avoiding
+it entirely would require intercepting the native `click` before the browser applies its own default
+checkbox-toggle behavior, which isn't reliably preventable across browsers — left as-is.
 
 ## Tier / dependencies
 

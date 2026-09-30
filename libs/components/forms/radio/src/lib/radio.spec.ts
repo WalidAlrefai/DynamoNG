@@ -68,6 +68,47 @@ class ReactiveFormGroupHostComponent {
   readonly fruit = new FormControl('apple', { nonNullable: true });
 }
 
+// Proves the registry's form-root scoping fix: two independent reactive-form
+// radio groups that happen to reuse the same `name` must not sync each
+// other's selection — only Angular's own `RadioControlRegistry` (which this
+// mirrors) already guards against this; before the fix, `DynamoRadioControlRegistry`
+// matched purely by `name`, so selecting in group A would incorrectly rewrite
+// group B's radios' visual `checked` state too.
+// Each group is wrapped in its own <form> — the browser's own native
+// radio-group scoping is per-form-owner (or document-wide with no form
+// ancestor at all), so without separate <form>s here, the DOM itself would
+// auto-uncheck an earlier same-`name` radio the instant a later one is set
+// `checked`, independently of anything DynamoRadioControlRegistry does —
+// that's a native-DOM artifact this test must route around to isolate the
+// registry-level bug being tested.
+@Component({
+  selector: 'dg-radio-cross-form-host',
+  standalone: true,
+  imports: [DynamoRadio, ReactiveFormsModule],
+  template: `
+    <form>
+      <dg-radio name="fruit" value="apple" [formControl]="fruitA"
+        >Apple A</dg-radio
+      >
+      <dg-radio name="fruit" value="banana" [formControl]="fruitA"
+        >Banana A</dg-radio
+      >
+    </form>
+    <form>
+      <dg-radio name="fruit" value="apple" [formControl]="fruitB"
+        >Apple B</dg-radio
+      >
+      <dg-radio name="fruit" value="banana" [formControl]="fruitB"
+        >Banana B</dg-radio
+      >
+    </form>
+  `,
+})
+class RadioCrossFormHostComponent {
+  readonly fruitA = new FormControl('apple', { nonNullable: true });
+  readonly fruitB = new FormControl('apple', { nonNullable: true });
+}
+
 describe('DynamoRadio', () => {
   describe('creation', () => {
     it('renders without errors with a native radio input', () => {
@@ -452,6 +493,29 @@ describe('DynamoRadio', () => {
       expect(changes).toEqual(['apple']);
     });
 
+    it('does not cross-contaminate an unrelated reactive-form radio group sharing the same name (registry form-root scoping)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        RadioCrossFormHostComponent,
+      );
+      const radios = within(container).getAllByRole(
+        'radio',
+      ) as HTMLInputElement[];
+      const [appleA, bananaA, appleB, bananaB] = radios;
+      expect(appleA?.checked).toBe(true);
+      expect(appleB?.checked).toBe(true);
+
+      await userEvent.click(bananaA as HTMLInputElement);
+
+      expect(componentInstance.fruitA.value).toBe('banana');
+      expect(bananaA?.checked).toBe(true);
+      expect(appleA?.checked).toBe(false);
+      // The unrelated form (same `name`, different FormControl root) must
+      // stay completely untouched.
+      expect(componentInstance.fruitB.value).toBe('apple');
+      expect(appleB?.checked).toBe(true);
+      expect(bananaB?.checked).toBe(false);
+    });
+
     it('registerOnTouched is called on selection', async () => {
       const { container, componentInstance } = renderDynamoComponent(
         DynamoRadio,
@@ -465,6 +529,103 @@ describe('DynamoRadio', () => {
       await userEvent.click(within(container).getByRole('radio'));
 
       expect(touched).toBe(true);
+    });
+  });
+
+  describe('passthrough (pt)', () => {
+    it('merges pt.root/input/circle/label classes onto their respective elements', () => {
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: {
+          name: 'test',
+          pt: {
+            root: { class: 'ring-root' },
+            input: { class: 'ring-input' },
+            circle: { class: 'ring-circle' },
+            label: { class: 'ring-label' },
+          },
+        },
+      });
+
+      expect(container.querySelector('label')?.classList).toContain(
+        'ring-root',
+      );
+      expect(within(container).getByRole('radio').classList).toContain(
+        'ring-input',
+      );
+      expect(container.querySelectorAll('span')[0]?.classList).toContain(
+        'ring-circle',
+      );
+      expect(container.querySelectorAll('span')[1]?.classList).toContain(
+        'ring-label',
+      );
+    });
+  });
+
+  describe('variant / invalid / readOnly / ariaDescribedby', () => {
+    it('defaults variant to outlined', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
+      expect(componentInstance.variant()).toBe('outlined');
+    });
+
+    it('applies a different circle background for the filled variant while unchecked', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test', variant: 'outlined' },
+      });
+      const outlinedClasses = container.querySelectorAll('span')[0]?.className;
+
+      setInputs({ variant: 'filled' });
+      const filledClasses = container.querySelectorAll('span')[0]?.className;
+
+      expect(outlinedClasses).not.toBe(filledClasses);
+    });
+
+    it('reflects invalid as aria-invalid on the native input', () => {
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test', invalid: true },
+      });
+      expect(
+        within(container).getByRole('radio').getAttribute('aria-invalid'),
+      ).toBe('true');
+    });
+
+    it('defaults readOnly to false', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test' },
+      });
+      expect(componentInstance.readOnly()).toBe(false);
+    });
+
+    it('blocks selection via click while keeping the input focusable when readOnly', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoRadio,
+        { inputs: { name: 'test', readOnly: true } },
+      );
+      const input = within(container).getByRole('radio') as HTMLInputElement;
+
+      await userEvent.click(input);
+
+      expect(componentInstance.checked()).toBe(false);
+      expect(input.disabled).toBe(false);
+    });
+
+    it('reflects aria-readonly on the native input', () => {
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test', readOnly: true },
+      });
+      expect(
+        within(container).getByRole('radio').getAttribute('aria-readonly'),
+      ).toBe('true');
+    });
+
+    it('forwards ariaDescribedby to the native input', () => {
+      const { container } = renderDynamoComponent(DynamoRadio, {
+        inputs: { name: 'test', ariaDescribedby: 'help-text' },
+      });
+      expect(
+        within(container).getByRole('radio').getAttribute('aria-describedby'),
+      ).toBe('help-text');
     });
   });
 

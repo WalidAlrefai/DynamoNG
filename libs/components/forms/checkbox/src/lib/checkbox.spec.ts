@@ -453,6 +453,93 @@ describe('DynamoCheckbox', () => {
     });
   });
 
+  describe('passthrough (pt)', () => {
+    it('merges pt.root class onto the label', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: { pt: { root: { class: 'ring-2' } } },
+      });
+      expect(
+        container.querySelector('label')?.classList.contains('ring-2'),
+      ).toBe(true);
+    });
+
+    it('merges pt.input class/attrs onto the native input', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: {
+          pt: { input: { class: 'ring-2', 'data-testid': 'cb-input' } },
+        },
+      });
+      const input = within(container).getByRole('checkbox');
+      expect(input.classList.contains('ring-2')).toBe(true);
+      expect(input.getAttribute('data-testid')).toBe('cb-input');
+    });
+
+    it('merges pt.box class onto the visual box span', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: { pt: { box: { class: 'ring-2' } } },
+      });
+      expect(
+        container.querySelectorAll('span')[0]?.classList.contains('ring-2'),
+      ).toBe(true);
+    });
+
+    it('merges pt.label class onto the text span', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: { pt: { label: { class: 'ring-2' } } },
+      });
+      const labelSpan = container.querySelectorAll('span')[1];
+      expect(labelSpan?.classList.contains('ring-2')).toBe(true);
+    });
+  });
+
+  describe('variant / invalid / name / ariaDescribedby', () => {
+    it('defaults variant to outlined', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoCheckbox);
+      expect(componentInstance.variant()).toBe('outlined');
+    });
+
+    it('applies a different box background for the filled variant while unchecked', () => {
+      const { container, setInputs } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: { variant: 'outlined' },
+      });
+      const outlinedClasses = container.querySelectorAll('span')[0]?.className;
+
+      setInputs({ variant: 'filled' });
+      const filledClasses = container.querySelectorAll('span')[0]?.className;
+
+      expect(outlinedClasses).not.toBe(filledClasses);
+    });
+
+    it('reflects invalid as aria-invalid on the native input', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: { invalid: true },
+      });
+      expect(
+        within(container).getByRole('checkbox').getAttribute('aria-invalid'),
+      ).toBe('true');
+    });
+
+    it('forwards name to the native input', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: { name: 'terms' },
+      });
+      expect(
+        (within(container).getByRole('checkbox') as HTMLInputElement).name,
+      ).toBe('terms');
+    });
+
+    it('forwards ariaDescribedby to the native input', () => {
+      const { container } = renderDynamoComponent(DynamoCheckbox, {
+        inputs: { ariaDescribedby: 'help-text' },
+      });
+      expect(
+        within(container)
+          .getByRole('checkbox')
+          .getAttribute('aria-describedby'),
+      ).toBe('help-text');
+    });
+  });
+
   describe('edge cases', () => {
     it('renders with no projected label content without throwing', () => {
       const { container } = renderDynamoComponent(DynamoCheckbox);

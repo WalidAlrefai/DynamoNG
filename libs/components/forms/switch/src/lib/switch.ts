@@ -7,7 +7,10 @@ import {
   model,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   switchRootStyles,
@@ -20,6 +23,7 @@ import type { DynamoSwitchPart, DynamoSwitchSize } from './switch.types';
   selector: 'dg-switch',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoPassThroughDirective],
   templateUrl: './switch.html',
   providers: [
     {
@@ -42,8 +46,13 @@ export class DynamoSwitch
    *  from the tab order. */
   readonly readOnly = input(false);
   readonly size = input<DynamoSwitchSize>('md');
+  readonly invalid = input(false);
+  /** Native `name` attribute, for plain (non-Angular-managed) form submission. */
+  readonly name = input<string | undefined>(undefined);
   /** Accessible name for the native switch when no visible label content is projected. */
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Associates the native switch with an external help/error message element via `aria-describedby`. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
 
   protected readonly inputId = this.idGenerator.next('dg-switch');
 
@@ -56,8 +65,12 @@ export class DynamoSwitch
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(switchRootStyles({ disabled: this.disabled() }), this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          switchRootStyles({ disabled: this.disabled() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
 
   // The track/thumb are structural (the native input is visually hidden), so
@@ -65,10 +78,28 @@ export class DynamoSwitch
   // cosmetic color/variant classes, without this the switch would have no
   // affordance.
   protected readonly trackClasses = computed(() =>
-    switchTrackStyles({ size: this.size(), checked: this.checked() }),
+    cn(
+      switchTrackStyles({
+        size: this.size(),
+        checked: this.checked(),
+        invalid: this.invalid(),
+      }),
+      this.ptFor('track').class,
+    ),
   );
   protected readonly thumbClasses = computed(() =>
-    switchThumbStyles({ size: this.size(), checked: this.checked() }),
+    cn(
+      switchThumbStyles({ size: this.size(), checked: this.checked() }),
+      this.ptFor('thumb').class,
+    ),
+  );
+
+  protected readonly labelClasses = computed(() =>
+    cn('text-sm', this.ptFor('label').class),
+  );
+
+  protected readonly inputClasses = computed(() =>
+    cn('peer sr-only', this.ptFor('input').class),
   );
 
   protected onNativeChange(event: Event): void {
