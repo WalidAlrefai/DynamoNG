@@ -4,8 +4,18 @@ import { focusRingClass } from '@dynamong/utils/styles';
 // The only place Tailwind utility classes are allowed to live for this
 // component — table.html only ever binds `[class]="...Classes()"` or a
 // plain exported string constant.
-export const tableWrapperStyles =
-  'w-full overflow-x-auto rounded-md border border-border';
+export const tableWrapperStyles = cva(
+  'overflow-x-auto rounded-md border border-border',
+  {
+    variants: {
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
+    },
+    defaultVariants: { fluid: true },
+  },
+);
 export const tableStyles =
   'w-full border-collapse text-start text-sm text-text-primary';
 export const tableHeaderRowStyles = 'border-b border-border bg-surface-50';
@@ -113,6 +123,25 @@ export const tableFilterWrapperStyles =
 
 // v4 reuses DynamoInputText directly instead of a hand-styled native
 // `<input type="search">` — no local filter-input styles needed anymore.
+
+// --- per-column filtering ---
+
+// A second header row, only rendered when at least one column opts into
+// `columnFilter` — same border/background language as `tableHeaderRowStyles`
+// so it reads as part of the same header block, not a separate element.
+export const tableColumnFilterRowStyles =
+  'border-b border-border bg-surface-50';
+
+export const tableColumnFilterCellStyles = cva('align-top', {
+  variants: {
+    size: {
+      sm: 'px-3 py-1.5',
+      md: 'px-4 py-2.5',
+      lg: 'px-5 py-3.5',
+    },
+  },
+  defaultVariants: { size: 'md' },
+});
 
 // --- v5: virtual scroll ---
 

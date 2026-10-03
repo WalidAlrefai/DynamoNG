@@ -1,31 +1,50 @@
-<div [class]="wrapperClasses()" [attr.aria-busy]="loading() ? 'true' : null">
+<div
+  [class]="wrapperClasses()"
+  [attr.aria-busy]="loading() ? 'true' : null"
+  [dgPt]="ptFor('root')"
+>
   @if (filterable()) {
-  <div [class]="filterWrapperClasses">
+  <div [class]="filterWrapperClasses()" [dgPt]="ptFor('filterWrapper')">
     <dg-input-text
       type="search"
       size="sm"
       [value]="filterText()"
       (valueChange)="onFilterTextChange($event)"
-      ariaLabel="Search table"
+      [ariaLabel]="filterAriaLabel()"
       [placeholder]="filterPlaceholder()"
       [disabled]="loading()"
+      [pt]="{ input: ptFor('filterInput') }"
     />
   </div>
   } @if (!virtualScroll()) {
-  <table [class]="tableClasses" [attr.aria-label]="ariaLabel() ?? null">
+  <table
+    [class]="tableClasses()"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [dgPt]="ptFor('table')"
+  >
     <thead>
-      <tr [class]="headerRowClasses">
+      <tr [class]="headerRowClasses()" [dgPt]="ptFor('headerRow')">
         @if (expansionEnabled()) {
-        <th scope="col" [class]="expandCellClasses()">
+        <th
+          scope="col"
+          [class]="expandCellClasses()"
+          [dgPt]="ptFor('expandCell')"
+        >
           <span class="sr-only">Expand row</span>
         </th>
         } @if (selectable()) {
-        <th scope="col" [class]="selectionCellClasses()">
+        <th
+          scope="col"
+          [class]="selectionCellClasses()"
+          [dgPt]="ptFor('selectionCell')"
+        >
           <dg-checkbox
             size="sm"
             [checked]="isAllSelected()"
             [indeterminate]="isSomeSelected()"
             [disabled]="pagedData().length === 0 || loading()"
+            [pt]="{ root: ptFor('selectionCheckbox') }"
             (checkedChange)="toggleSelectAll()"
           >
             <span class="sr-only">Select all rows</span>
@@ -36,12 +55,14 @@
           scope="col"
           [class]="headerCellClasses()"
           [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+          [dgPt]="ptFor('headerCell')"
         >
           @if (column.sortable) {
           <button
             type="button"
-            [class]="sortButtonClasses"
+            [class]="sortButtonClasses()"
             [disabled]="loading()"
+            [dgPt]="ptFor('sortButton')"
             (click)="toggleSort(column, $event)"
           >
             <span>{{ column.header }}</span>
@@ -52,6 +73,7 @@
               height="12"
               viewBox="0 0 16 16"
               fill="none"
+              [dgPt]="ptFor('sortIcon')"
             >
               <path
                 d="M4 6l4 4 4-4"
@@ -71,23 +93,61 @@
         </th>
         }
       </tr>
+      @if (hasColumnFilters()) {
+      <!--
+        This row doesn't define column headers — the first header row above
+        already does that — so its cells are `<td>`, not `<th>`: a `<th>`
+        with no accessible content (a column with no `columnFilter`, or the
+        leading expand/selection placeholder) is a real a11y violation
+        (axe's `empty-table-header` rule), not just a style nit.
+      -->
+      <tr [class]="columnFilterRowClasses()" [dgPt]="ptFor('columnFilterRow')">
+        @if (expansionEnabled()) {
+        <td [class]="columnFilterCellClasses()"></td>
+        } @if (selectable()) {
+        <td [class]="columnFilterCellClasses()"></td>
+        } @for (column of columns(); track column.field) {
+        <td
+          [class]="columnFilterCellClasses()"
+          [dgPt]="ptFor('columnFilterCell')"
+        >
+          @if (column.columnFilter) { @if (column.columnFilter.type === 'custom'
+          && column.filterTemplate) {
+          <ng-container
+            [ngTemplateOutlet]="column.filterTemplate"
+            [ngTemplateOutletContext]="columnFilterContext(column)"
+          />
+          } @else {
+          <dg-input-text
+            type="search"
+            size="sm"
+            [value]="columnFilterValue(column.field)"
+            (valueChange)="onColumnFilterChange(column.field, $event)"
+            [ariaLabel]="'Filter ' + column.header"
+            [placeholder]="column.columnFilter.placeholder ?? 'Filter...'"
+            [disabled]="loading()"
+            [pt]="{ input: ptFor('columnFilterInput') }"
+          />
+          } }
+        </td>
+        }
+      </tr>
+      }
     </thead>
     <tbody>
       @for (row of pagedData(); track trackRow(row, $index); let rowIndex =
       $index) {
-      <tr [class]="bodyRowClasses(row)">
+      <tr [class]="bodyRowClasses(row)" [dgPt]="ptFor('bodyRow')">
         @if (expansionEnabled()) {
-        <td [class]="expandCellClasses()">
+        <td [class]="expandCellClasses()" [dgPt]="ptFor('expandCell')">
           <button
             type="button"
-            [class]="expandButtonClasses"
+            [class]="expandButtonClasses()"
             [disabled]="loading()"
             [attr.aria-expanded]="isRowExpanded(row)"
             [attr.aria-controls]="isRowExpanded(row) ? detailId(rowIndex) : null"
-            [attr.aria-label]="
-              (isRowExpanded(row) ? 'Collapse row ' : 'Expand row ') +
-              (rowIndex + 1)
-            "
+            [attr.aria-label]="expandButtonLabel(row, rowIndex)"
+            [dgPt]="ptFor('expandButton')"
             (click)="toggleRowExpansion(row)"
           >
             <svg
@@ -97,6 +157,7 @@
               height="14"
               viewBox="0 0 16 16"
               fill="none"
+              [dgPt]="ptFor('expandIcon')"
             >
               <path
                 d="M6 3l5 5-5 5"
@@ -109,18 +170,19 @@
           </button>
         </td>
         } @if (selectable()) {
-        <td [class]="selectionCellClasses()">
+        <td [class]="selectionCellClasses()" [dgPt]="ptFor('selectionCell')">
           <dg-checkbox
             size="sm"
             [checked]="isRowSelected(row)"
             [disabled]="loading()"
+            [pt]="{ root: ptFor('selectionCheckbox') }"
             (checkedChange)="toggleRowSelection(row)"
           >
-            <span class="sr-only">{{ 'Select row ' + ($index + 1) }}</span>
+            <span class="sr-only">{{ selectionLabel(rowIndex) }}</span>
           </dg-checkbox>
         </td>
         } @for (column of columns(); track column.field) {
-        <td [class]="bodyCellClasses()">
+        <td [class]="bodyCellClasses()" [dgPt]="ptFor('bodyCell')">
           @if (column.cellTemplate) {
           <ng-container
             [ngTemplateOutlet]="column.cellTemplate"
@@ -136,7 +198,8 @@
           data-detail-cell
           [id]="detailId(rowIndex)"
           [attr.colspan]="fullColspan()"
-          [class]="detailCellClasses"
+          [class]="detailCellClasses()"
+          [dgPt]="ptFor('detailCell')"
         >
           <ng-container
             [ngTemplateOutlet]="expansionTemplate() ?? null"
@@ -180,30 +243,40 @@
   <!--
     aria-rowcount / aria-rowindex are load-bearing here, not decorative: the
     body is virtualized so most rows are never in the DOM for assistive tech
-    to count or position. Count is data rows + 1 header row; the header is
-    row 1, so body row `i` (0-based cdkVirtualFor index) is aria-rowindex
-    `i + 2`.
+    to count or position. Count is data rows + 1 header row (+1 more when the
+    optional per-column filter row is also rendered); the header is row 1 (and
+    the filter row, when present, is row 2), so body row `i` (0-based
+    cdkVirtualFor index) is aria-rowindex `i + 2`, or `i + 3` once the filter
+    row pushes the body down one more row.
   -->
   <div
     role="table"
-    [class]="virtualTableClasses"
+    [class]="virtualTableClasses()"
     [attr.aria-label]="ariaLabel() ?? null"
-    [attr.aria-rowcount]="sortedData().length + 1"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [attr.aria-rowcount]="sortedData().length + (hasColumnFilters() ? 2 : 1)"
+    [dgPt]="ptFor('table')"
   >
     <div role="rowgroup">
       <div
         role="row"
         aria-rowindex="1"
-        [class]="virtualHeaderRowClasses"
+        [class]="virtualHeaderRowClasses()"
         [style.gridTemplateColumns]="virtualGridTemplate()"
+        [dgPt]="ptFor('headerRow')"
       >
         @if (selectable()) {
-        <div role="columnheader" [class]="selectionCellClasses()">
+        <div
+          role="columnheader"
+          [class]="selectionCellClasses()"
+          [dgPt]="ptFor('selectionCell')"
+        >
           <dg-checkbox
             size="sm"
             [checked]="isAllSelected()"
             [indeterminate]="isSomeSelected()"
             [disabled]="pagedData().length === 0 || loading()"
+            [pt]="{ root: ptFor('selectionCheckbox') }"
             (checkedChange)="toggleSelectAll()"
           >
             <span class="sr-only">Select all rows</span>
@@ -214,12 +287,14 @@
           role="columnheader"
           [class]="headerCellClasses()"
           [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+          [dgPt]="ptFor('headerCell')"
         >
           @if (column.sortable) {
           <button
             type="button"
-            [class]="sortButtonClasses"
+            [class]="sortButtonClasses()"
             [disabled]="loading()"
+            [dgPt]="ptFor('sortButton')"
             (click)="toggleSort(column, $event)"
           >
             <span>{{ column.header }}</span>
@@ -230,6 +305,7 @@
               height="12"
               viewBox="0 0 16 16"
               fill="none"
+              [dgPt]="ptFor('sortIcon')"
             >
               <path
                 d="M4 6l4 4 4-4"
@@ -249,6 +325,44 @@
         </div>
         }
       </div>
+      @if (hasColumnFilters()) {
+      <div
+        role="row"
+        aria-rowindex="2"
+        [class]="columnFilterRowClasses()"
+        [style.gridTemplateColumns]="virtualGridTemplate()"
+        [dgPt]="ptFor('columnFilterRow')"
+      >
+        @if (selectable()) {
+        <div role="cell" [class]="columnFilterCellClasses()"></div>
+        } @for (column of columns(); track column.field) {
+        <div
+          role="cell"
+          [class]="columnFilterCellClasses()"
+          [dgPt]="ptFor('columnFilterCell')"
+        >
+          @if (column.columnFilter) { @if (column.columnFilter.type === 'custom'
+          && column.filterTemplate) {
+          <ng-container
+            [ngTemplateOutlet]="column.filterTemplate"
+            [ngTemplateOutletContext]="columnFilterContext(column)"
+          />
+          } @else {
+          <dg-input-text
+            type="search"
+            size="sm"
+            [value]="columnFilterValue(column.field)"
+            (valueChange)="onColumnFilterChange(column.field, $event)"
+            [ariaLabel]="'Filter ' + column.header"
+            [placeholder]="column.columnFilter.placeholder ?? 'Filter...'"
+            [disabled]="loading()"
+            [pt]="{ input: ptFor('columnFilterInput') }"
+          />
+          } }
+        </div>
+        }
+      </div>
+      }
     </div>
     <div role="rowgroup">
       @if (sortedData().length === 0) {
@@ -273,23 +387,33 @@
         <ng-template let-row let-i="index">
           <div
             role="row"
-            [attr.aria-rowindex]="i + 2"
-            [class]="virtualBodyRowClasses"
+            [attr.aria-rowindex]="i + (hasColumnFilters() ? 3 : 2)"
+            [class]="virtualBodyRowClasses()"
             [style.gridTemplateColumns]="virtualGridTemplate()"
+            [dgPt]="ptFor('bodyRow')"
           >
             @if (selectable()) {
-            <div role="cell" [class]="selectionCellClasses()">
+            <div
+              role="cell"
+              [class]="selectionCellClasses()"
+              [dgPt]="ptFor('selectionCell')"
+            >
               <dg-checkbox
                 size="sm"
                 [checked]="isRowSelected(row)"
                 [disabled]="loading()"
+                [pt]="{ root: ptFor('selectionCheckbox') }"
                 (checkedChange)="toggleRowSelection(row)"
               >
                 <span class="sr-only">{{ 'Select row ' + (i + 1) }}</span>
               </dg-checkbox>
             </div>
             } @for (column of columns(); track column.field) {
-            <div role="cell" [class]="bodyCellClasses()">
+            <div
+              role="cell"
+              [class]="bodyCellClasses()"
+              [dgPt]="ptFor('bodyCell')"
+            >
               @if (column.cellTemplate) {
               <ng-container
                 [ngTemplateOutlet]="column.cellTemplate"
@@ -305,14 +429,16 @@
     </div>
   </div>
   } @if (pageSize() && !virtualScroll()) {
-  <div [class]="paginationWrapperClasses">
+  <div [class]="paginationWrapperClasses()" [dgPt]="ptFor('paginationWrapper')">
     <dg-pagination
-      [totalItems]="sortedData().length"
-      [(page)]="page"
+      [totalItems]="totalItemCount()"
+      [page]="page()"
+      (pageChange)="onPageChange($event)"
       [pageSize]="pageSize() ?? 10"
-      (pageSizeChange)="pageSize.set($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
       [pageSizeOptions]="pageSizeOptions()"
       [disabled]="loading()"
+      [pt]="{ root: ptFor('pagination') }"
       size="sm"
     />
   </div>

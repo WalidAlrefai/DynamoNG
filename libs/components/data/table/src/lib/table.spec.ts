@@ -7,6 +7,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { DynamoPagination } from '@dynamong/pagination';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -16,7 +17,11 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoTable } from './table';
 import { DynamoTableHarness } from './table.harness';
-import type { DynamoTableCellContext, DynamoTableColumn } from './table.types';
+import type {
+  DynamoTableCellContext,
+  DynamoTableColumn,
+  DynamoTableColumnFilterContext,
+} from './table.types';
 
 interface Person {
   name: string;
@@ -46,6 +51,11 @@ const PEOPLE: Person[] = [
 
 const ITEM_COLUMNS: DynamoTableColumn<Item>[] = [
   { field: 'name', header: 'Name', sortable: true },
+];
+
+const EXPANDABLE_COLUMNS: DynamoTableColumn<Person>[] = [
+  { field: 'name', header: 'Name', sortable: true },
+  { field: 'age', header: 'Age' },
 ];
 
 @Component({
@@ -213,11 +223,11 @@ describe('DynamoTable', () => {
       expect(componentInstance.size()).toBe('md');
     });
 
-    it('has no aria-sort on any header by default', () => {
+    it('sets aria-sort="none" (not absent) on every sortable header by default', () => {
       const { container } = renderDynamoComponent(TableTestHostComponent);
 
       for (const th of getHeaderCells(container)) {
-        expect(th.getAttribute('aria-sort')).toBeNull();
+        expect(th.getAttribute('aria-sort')).toBe('none');
       }
     });
 
@@ -315,9 +325,9 @@ describe('DynamoTable', () => {
       nameHeader.click();
       fixture.detectChanges();
       expect(getColumnValues(container, 0)).toEqual(['Charlie', 'Ada', 'Bea']);
-      expect(
-        getHeaderCells(container)[0]?.getAttribute('aria-sort'),
-      ).toBeNull();
+      expect(getHeaderCells(container)[0]?.getAttribute('aria-sort')).toBe(
+        'none',
+      );
     });
 
     it('jumps a newly-clicked column straight to ascending and clears the previous one', () => {
@@ -335,9 +345,9 @@ describe('DynamoTable', () => {
       fixture.detectChanges();
 
       expect(getColumnValues(container, 1)).toEqual(['25', '30', '40']);
-      expect(
-        getHeaderCells(container)[0]?.getAttribute('aria-sort'),
-      ).toBeNull();
+      expect(getHeaderCells(container)[0]?.getAttribute('aria-sort')).toBe(
+        'none',
+      );
       expect(getHeaderCells(container)[1]?.getAttribute('aria-sort')).toBe(
         'ascending',
       );
@@ -382,9 +392,9 @@ describe('DynamoTable', () => {
       ageHeader.click();
       fixture.detectChanges();
 
-      expect(
-        getHeaderCells(container)[0]?.getAttribute('aria-sort'),
-      ).toBeNull();
+      expect(getHeaderCells(container)[0]?.getAttribute('aria-sort')).toBe(
+        'none',
+      );
       expect(getHeaderCells(container)[1]?.getAttribute('aria-sort')).toBe(
         'ascending',
       );
@@ -461,9 +471,9 @@ describe('DynamoTable', () => {
       expect(getHeaderCells(container)[0]?.getAttribute('aria-sort')).toBe(
         'ascending',
       );
-      expect(
-        getHeaderCells(container)[1]?.getAttribute('aria-sort'),
-      ).toBeNull();
+      expect(getHeaderCells(container)[1]?.getAttribute('aria-sort')).toBe(
+        'none',
+      );
     });
 
     it('shows a priority badge only once 2+ keys are active', () => {
@@ -1393,7 +1403,7 @@ describe('DynamoTable', () => {
         .closest('button') as HTMLButtonElement;
       const headerCell = sortButton.closest('th') as HTMLElement;
       await userEvent.click(sortButton);
-      expect(headerCell.getAttribute('aria-sort')).toBeNull();
+      expect(headerCell.getAttribute('aria-sort')).toBe('none');
 
       const selectAll = within(container).getByLabelText(
         'Select all rows',
@@ -1977,6 +1987,38 @@ class TableExpansionHostComponent {
   readonly expanded = model<Item[]>([]);
 }
 
+@Component({
+  selector: 'dg-table-pt-expansion-host',
+  standalone: true,
+  imports: [DynamoTable],
+  template: `
+    <ng-template #detail let-row>{{ row.name }}</ng-template>
+    <dg-table
+      [columns]="columns"
+      [data]="data"
+      [(expandedRows)]="expandedRows"
+      [expansionTemplate]="detailTpl()"
+      [pageSize]="pageSize()"
+      [(page)]="page"
+      [pt]="{
+        expandCell: { class: 'pt-expand-cell' },
+        expandButton: { class: 'pt-expand-button' },
+        expandIcon: { class: 'pt-expand-icon' },
+        detailCell: { class: 'pt-detail-cell' },
+      }"
+    />
+  `,
+})
+class TablePtExpansionHostComponent {
+  protected readonly detailTpl =
+    viewChild.required<TemplateRef<DynamoTableCellContext<Person>>>('detail');
+  readonly columns = EXPANDABLE_COLUMNS;
+  readonly data: Person[] = PEOPLE;
+  readonly expandedRows = model<Person[]>([]);
+  readonly pageSize = input<number | undefined>(undefined);
+  readonly page = model(1);
+}
+
 describe('DynamoTable row expansion', () => {
   const chevrons = (c: HTMLElement) =>
     Array.from(
@@ -2127,5 +2169,908 @@ describe('DynamoTable row expansion', () => {
     await userEvent.click(chevrons(container)[0] as HTMLElement);
 
     await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+  });
+});
+
+describe('DynamoTable — baseline parity (Phase 0)', () => {
+  describe('passthrough (pt)', () => {
+    it('merges pt class onto every part: root/table/headerRow/headerCell/sortButton/sortIcon/bodyRow/bodyCell/selectionCell/selectionCheckbox/filterWrapper/filterInput/paginationWrapper/pagination', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            selectable: true,
+            filterable: true,
+            pageSize: 2,
+            pt: {
+              root: { class: 'pt-root' },
+              table: { class: 'pt-table' },
+              headerRow: { class: 'pt-header-row' },
+              headerCell: { class: 'pt-header-cell' },
+              sortButton: { class: 'pt-sort-button' },
+              sortIcon: { class: 'pt-sort-icon' },
+              bodyRow: { class: 'pt-body-row' },
+              bodyCell: { class: 'pt-body-cell' },
+              selectionCell: { class: 'pt-selection-cell' },
+              selectionCheckbox: { class: 'pt-selection-checkbox' },
+              filterWrapper: { class: 'pt-filter-wrapper' },
+              filterInput: { class: 'pt-filter-input' },
+              paginationWrapper: { class: 'pt-pagination-wrapper' },
+              pagination: { class: 'pt-pagination' },
+            },
+          },
+        },
+      );
+      await fixture.whenStable();
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('table.pt-table')).not.toBeNull();
+      expect(container.querySelector('thead tr')?.classList).toContain(
+        'pt-header-row',
+      );
+      expect(container.querySelector('th.pt-header-cell')).not.toBeNull();
+      expect(container.querySelector('button.pt-sort-button')).not.toBeNull();
+      expect(container.querySelector('svg.pt-sort-icon')).not.toBeNull();
+      expect(container.querySelector('tbody tr.pt-body-row')).not.toBeNull();
+      expect(container.querySelector('td.pt-body-cell')).not.toBeNull();
+      expect(container.querySelector('.pt-selection-cell')).not.toBeNull();
+      // DynamoCheckbox's own `class` merge lands on its inner <label>, not
+      // the <dg-checkbox> host — same pattern confirmed in the MultiSelect
+      // round's own pt test.
+      expect(
+        container.querySelector('label.pt-selection-checkbox'),
+      ).not.toBeNull();
+      expect(container.querySelector('.pt-filter-wrapper')).not.toBeNull();
+      expect(
+        container.querySelector('input[type="search"].pt-filter-input'),
+      ).not.toBeNull();
+      expect(container.querySelector('.pt-pagination-wrapper')).not.toBeNull();
+      // DynamoPagination itself hasn't been pt-reviewed yet (confirmed zero
+      // ptFor/dgPt usage in its own package) — Table's own responsibility
+      // here is just forwarding the `pt` object into its `[pt]` input, which
+      // this verifies directly against the child instance rather than
+      // depending on Pagination's own (not-yet-existing) class merge.
+      const paginationDebug = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoPagination,
+      );
+      expect(
+        (paginationDebug.componentInstance as DynamoPagination).pt(),
+      ).toEqual(expect.objectContaining({ root: { class: 'pt-pagination' } }));
+    });
+
+    it('merges pt class onto expandCell/expandButton/expandIcon/detailCell when expansion is enabled', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        TablePtExpansionHostComponent,
+      );
+
+      expect(container.querySelector('.pt-expand-cell')).not.toBeNull();
+      expect(container.querySelector('button.pt-expand-button')).not.toBeNull();
+      expect(container.querySelector('svg.pt-expand-icon')).not.toBeNull();
+
+      await userEvent.click(
+        container.querySelector('button.pt-expand-button') as HTMLElement,
+      );
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(container.querySelector('.pt-detail-cell')).not.toBeNull();
+    });
+
+    it('merges pt class onto table/headerRow/headerCell/sortButton/sortIcon/bodyRow/bodyCell/selectionCell/selectionCheckbox while virtualized', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            selectable: true,
+            virtualScroll: true,
+            pt: {
+              table: { class: 'pt-table' },
+              headerRow: { class: 'pt-header-row' },
+              headerCell: { class: 'pt-header-cell' },
+              sortButton: { class: 'pt-sort-button' },
+              sortIcon: { class: 'pt-sort-icon' },
+              bodyRow: { class: 'pt-body-row' },
+              bodyCell: { class: 'pt-body-cell' },
+              selectionCell: { class: 'pt-selection-cell' },
+              selectionCheckbox: { class: 'pt-selection-checkbox' },
+            },
+          },
+        },
+      );
+      // CDK's viewport measures its own size asynchronously before deciding
+      // how many rows to render — same "flush before asserting" idiom the
+      // existing virtual-scroll describe block already uses.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      fixture.detectChanges();
+
+      expect(container.querySelector('[role="table"].pt-table')).not.toBeNull();
+      expect(
+        container.querySelector('[role="row"].pt-header-row'),
+      ).not.toBeNull();
+      expect(
+        container.querySelector('[role="columnheader"].pt-header-cell'),
+      ).not.toBeNull();
+      expect(container.querySelector('button.pt-sort-button')).not.toBeNull();
+      expect(container.querySelector('svg.pt-sort-icon')).not.toBeNull();
+      expect(
+        container.querySelector('[role="cell"].pt-selection-cell'),
+      ).not.toBeNull();
+      expect(
+        container.querySelector('label.pt-selection-checkbox'),
+      ).not.toBeNull();
+    });
+  });
+
+  describe('fluid / ariaDescribedby / filterAriaLabel', () => {
+    it('defaults fluid to true', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        { inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE } },
+      );
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('drops w-full when fluid is set to false', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            fluid: false,
+          },
+        },
+      );
+      expect(container.querySelector('div')?.className).not.toContain('w-full');
+    });
+
+    it('forwards ariaDescribedby to the native table', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            ariaDescribedby: 'help-text',
+          },
+        },
+      );
+      expect(
+        container.querySelector('table')?.getAttribute('aria-describedby'),
+      ).toBe('help-text');
+    });
+
+    it('forwards ariaDescribedby to the virtualized role="table" div', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            virtualScroll: true,
+            ariaDescribedby: 'help-text',
+          },
+        },
+      );
+      expect(
+        container
+          .querySelector('[role="table"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBe('help-text');
+    });
+
+    it('defaults filterAriaLabel to "Search table" and allows overriding it', () => {
+      const { container, setInputs } = renderDynamoComponent<
+        DynamoTable<Person>
+      >(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE, filterable: true },
+      });
+      expect(getFilterInput(container).getAttribute('aria-label')).toBe(
+        'Search table',
+      );
+
+      setInputs({ filterAriaLabel: 'Filter people' });
+      expect(getFilterInput(container).getAttribute('aria-label')).toBe(
+        'Filter people',
+      );
+    });
+  });
+
+  describe('bug fix — absolute (not page-relative) row numbering in aria-labels', () => {
+    it('expand-button aria-label reflects the absolute row number on page 2, not a page-relative one', () => {
+      const { container } = renderDynamoComponent(
+        TablePtExpansionHostComponent,
+        { inputs: { pageSize: 2, page: 2 } },
+      );
+
+      // Page 2 of pageSize=2 over 3 people shows only "Bea" (absolute index 2).
+      const expandButton = within(container).getByRole('button', {
+        name: 'Expand row 3',
+      });
+      expect(expandButton).not.toBeNull();
+    });
+
+    it('selection-checkbox sr-only label reflects the absolute row number on page 2', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            selectable: true,
+            pageSize: 2,
+            page: 2,
+          },
+        },
+      );
+
+      expect(within(container).getByText('Select row 3')).not.toBeNull();
+    });
+
+    it('is unaffected when unpaginated — page-relative and absolute indices coincide', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        {
+          inputs: {
+            columns: SORTABLE_COLUMNS,
+            data: PEOPLE,
+            selectable: true,
+          },
+        },
+      );
+
+      expect(within(container).getByText('Select row 1')).not.toBeNull();
+      expect(within(container).getByText('Select row 3')).not.toBeNull();
+    });
+  });
+
+  describe('bug fix — aria-sort explicit "none" for a sortable-but-unsorted column', () => {
+    it('is "none" for a sortable column with no active sort', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        { inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE } },
+      );
+      expect(getHeaderCells(container)[0]?.getAttribute('aria-sort')).toBe(
+        'none',
+      );
+    });
+
+    it('is "ascending"/"descending" once sorted', () => {
+      const { container, fixture } = renderDynamoComponent(
+        TableTestHostComponent,
+      );
+      const nameHeader = within(container).getByRole('button', {
+        name: 'Name',
+      });
+
+      nameHeader.click();
+      fixture.detectChanges();
+      expect(getHeaderCells(container)[0]?.getAttribute('aria-sort')).toBe(
+        'ascending',
+      );
+    });
+
+    it('is still entirely absent (not "none") for a non-sortable column', () => {
+      const { container } = renderDynamoComponent<DynamoTable<Person>>(
+        DynamoTable,
+        { inputs: { columns: MIXED_COLUMNS, data: PEOPLE } },
+      );
+      const ageHeader = getHeaderCells(container)[1];
+      expect(ageHeader?.getAttribute('aria-sort')).toBeNull();
+    });
+  });
+});
+
+@Component({
+  selector: 'dg-table-column-filter-template-host',
+  standalone: true,
+  imports: [DynamoTable],
+  template: `
+    <ng-template #statusFilter let-value let-setValue="setValue">
+      <input
+        data-testid="custom-status-filter"
+        [value]="value ?? ''"
+        (input)="setValue($any($event.target).value)"
+      />
+    </ng-template>
+    <dg-table
+      [columns]="columns()"
+      [data]="data"
+      [(columnFilters)]="columnFilters"
+    />
+  `,
+})
+class TableColumnFilterTemplateHostComponent {
+  private readonly statusFilterTpl =
+    viewChild.required<TemplateRef<DynamoTableColumnFilterContext<Person>>>(
+      'statusFilter',
+    );
+  readonly data: Person[] = PEOPLE;
+  readonly columnFilters = model<Record<string, unknown>>({});
+  readonly columns = computed<DynamoTableColumn<Person>[]>(() => [
+    { field: 'name', header: 'Name' },
+    {
+      field: 'age',
+      header: 'Age',
+      columnFilter: { type: 'custom' },
+      filterTemplate: this.statusFilterTpl(),
+    },
+  ]);
+}
+
+describe('DynamoTable — per-column filtering (Phase 1)', () => {
+  const COLUMN_FILTER_COLUMNS: DynamoTableColumn<Person>[] = [
+    { field: 'name', header: 'Name' },
+    {
+      field: 'age',
+      header: 'Age',
+      columnFilter: { placeholder: 'Filter age' },
+    },
+  ];
+
+  function getColumnFilterInput(
+    container: HTMLElement,
+    placeholder = 'Filter age',
+  ): HTMLInputElement {
+    return within(container).getByPlaceholderText(
+      placeholder,
+    ) as HTMLInputElement;
+  }
+
+  function setColumnFilterValue(input: HTMLInputElement, value: string): void {
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+  }
+
+  it('renders no second header row when no column opts into columnFilter', () => {
+    const { container } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      { inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE } },
+    );
+    expect(getHeaderCells(container).length).toBe(2);
+    expect(container.querySelectorAll('thead tr')).toHaveLength(1);
+  });
+
+  it('renders a built-in text input for a column with columnFilter and narrows rows on input, resetting page to 1', () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent<
+      DynamoTable<Person>
+    >(DynamoTable, {
+      inputs: { columns: COLUMN_FILTER_COLUMNS, data: PEOPLE, pageSize: 2 },
+    });
+    componentInstance.page.set(2);
+    fixture.detectChanges();
+
+    const input = getColumnFilterInput(container);
+    setColumnFilterValue(input, '25');
+    fixture.detectChanges();
+
+    expect(getColumnValues(container, 0)).toEqual(['Charlie']);
+    expect(componentInstance.page()).toBe(1);
+  });
+
+  it('columnFilters model two-way binding reflects an externally-set value into the input', () => {
+    const { container, setInputs } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      { inputs: { columns: COLUMN_FILTER_COLUMNS, data: PEOPLE } },
+    );
+
+    setInputs({ columnFilters: { age: '30' } });
+
+    expect(getColumnFilterInput(container).value).toBe('30');
+    expect(getColumnValues(container, 0)).toEqual(['Bea']);
+  });
+
+  it('renders a custom filterTemplate and its setValue writes back into columnFilters', () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent(
+      TableColumnFilterTemplateHostComponent,
+    );
+
+    const customInput = within(container).getByTestId('custom-status-filter');
+    fireEvent.input(customInput, { target: { value: '40' } });
+    fixture.detectChanges();
+
+    expect(componentInstance.columnFilters()).toEqual({ age: '40' });
+  });
+
+  it('uses a custom predicate instead of the default substring match', () => {
+    const exactAgeColumns: DynamoTableColumn<Person>[] = [
+      { field: 'name', header: 'Name' },
+      {
+        field: 'age',
+        header: 'Age',
+        columnFilter: {
+          placeholder: 'Filter age',
+          predicate: (row, value) => row.age === Number(value),
+        },
+      },
+    ];
+    const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      { inputs: { columns: exactAgeColumns, data: PEOPLE } },
+    );
+
+    // The default substring predicate would match "3" against "30" (Bea's
+    // age, as a substring); the custom exact-equality predicate
+    // (row.age === Number(value)) matches no row for "3" at all — proving
+    // the custom predicate actually replaced the default rather than just
+    // agreeing with it.
+    setColumnFilterValue(getColumnFilterInput(container), '3');
+    fixture.detectChanges();
+
+    expect(within(container).getByText('No matching rows')).not.toBeNull();
+  });
+
+  it('composes with the global filter as a logical AND', () => {
+    const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      {
+        inputs: {
+          columns: COLUMN_FILTER_COLUMNS,
+          data: PEOPLE,
+          filterable: true,
+        },
+      },
+    );
+
+    setFilterValue(container, 'a'); // matches Charlie, Ada, Bea (all contain "a")
+    fixture.detectChanges();
+    setColumnFilterValue(getColumnFilterInput(container), '40');
+    fixture.detectChanges();
+
+    expect(getColumnValues(container, 0)).toEqual(['Ada']);
+  });
+
+  it('composes correctly alongside sorting and pagination', () => {
+    const multiRowColumns: DynamoTableColumn<Person>[] = [
+      { field: 'name', header: 'Name', sortable: true },
+      { field: 'age', header: 'Age', columnFilter: {} },
+    ];
+    const MANY: Person[] = [
+      { name: 'Ada', age: 40 },
+      { name: 'Alan', age: 41 },
+      { name: 'Bea', age: 30 },
+    ];
+    const { container, fixture, componentInstance } = renderDynamoComponent<
+      DynamoTable<Person>
+    >(DynamoTable, {
+      inputs: { columns: multiRowColumns, data: MANY, pageSize: 1 },
+    });
+
+    setColumnFilterValue(
+      within(container).getByPlaceholderText('Filter...') as HTMLInputElement,
+      '4',
+    );
+    fixture.detectChanges();
+    const nameHeader = within(container).getByRole('button', {
+      name: 'Name',
+    });
+    nameHeader.click();
+    fixture.detectChanges();
+
+    expect(componentInstance.page()).toBe(1);
+    expect(getColumnValues(container, 0)).toEqual(['Ada']);
+  });
+
+  it('triggers noMatchesMessage when a column filter alone excludes every row', () => {
+    const { container, fixture } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      {
+        inputs: {
+          columns: COLUMN_FILTER_COLUMNS,
+          data: PEOPLE,
+          noMatchesMessage: 'Nothing matched',
+        },
+      },
+    );
+
+    setColumnFilterValue(getColumnFilterInput(container), 'zzz');
+    fixture.detectChanges();
+
+    expect(within(container).getByText('Nothing matched')).not.toBeNull();
+  });
+
+  it('merges pt class onto columnFilterRow/columnFilterCell/columnFilterInput', () => {
+    const { container } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      {
+        inputs: {
+          columns: COLUMN_FILTER_COLUMNS,
+          data: PEOPLE,
+          pt: {
+            columnFilterRow: { class: 'pt-column-filter-row' },
+            columnFilterCell: { class: 'pt-column-filter-cell' },
+            columnFilterInput: { class: 'pt-column-filter-input' },
+          },
+        },
+      },
+    );
+
+    expect(container.querySelector('tr.pt-column-filter-row')).not.toBeNull();
+    expect(container.querySelector('td.pt-column-filter-cell')).not.toBeNull();
+    expect(
+      container.querySelector('input[type="search"].pt-column-filter-input'),
+    ).not.toBeNull();
+  });
+
+  it('has no axe violations with a column filter rendered', async () => {
+    const { container } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      { inputs: { columns: COLUMN_FILTER_COLUMNS, data: PEOPLE } },
+    );
+
+    await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+  });
+});
+
+describe('DynamoTable — lazy/server-driven mode (Phase 2)', () => {
+  it('renders data() as-is with no internal filter/sort/slice while lazy', () => {
+    // filterText would exclude everyone but "Ada" in non-lazy mode — proves
+    // filteredData()/sortedData()/pagedData() all short-circuit to data() verbatim.
+    const { container } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      {
+        inputs: {
+          columns: SORTABLE_COLUMNS,
+          data: PEOPLE,
+          lazy: true,
+          filterText: 'ada',
+        },
+      },
+    );
+
+    expect(getColumnValues(container, 0)).toEqual(['Charlie', 'Ada', 'Bea']);
+  });
+
+  it('pageCount/pagination summary use totalRecords, not data().length', () => {
+    const page1: Person[] = [
+      { name: 'Charlie', age: 25 },
+      { name: 'Ada', age: 40 },
+    ];
+    const { container } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      {
+        inputs: {
+          columns: SORTABLE_COLUMNS,
+          data: page1,
+          lazy: true,
+          totalRecords: 100,
+          pageSize: 2,
+        },
+      },
+    );
+
+    expect(getPaginationSummary(container)).toBe('Showing 1-2 of 100');
+  });
+
+  it('falls back to data().length for pageCount when totalRecords is omitted', () => {
+    const { container } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      {
+        inputs: {
+          columns: SORTABLE_COLUMNS,
+          data: PEOPLE,
+          lazy: true,
+          pageSize: 2,
+        },
+      },
+    );
+
+    expect(getPaginationSummary(container)).toBe('Showing 1-2 of 3');
+  });
+
+  it('toggleSort emits lazyLoad with the current sort state and resets page to 1, without locally re-sorting data()', () => {
+    // Simulates a real lazy consumer: `data()` holds only page 2's own row
+    // (Table never slices it itself in lazy mode).
+    const { container, fixture, componentInstance } = renderDynamoComponent<
+      DynamoTable<Person>
+    >(DynamoTable, {
+      inputs: {
+        columns: SORTABLE_COLUMNS,
+        data: [PEOPLE[1] as Person],
+        lazy: true,
+        pageSize: 1,
+        totalRecords: 3,
+        page: 2,
+      },
+    });
+    const emitted: unknown[] = [];
+    componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+    const nameHeader = within(container).getByRole('button', {
+      name: 'Name',
+    });
+    nameHeader.click();
+    fixture.detectChanges();
+
+    expect(componentInstance.page()).toBe(1);
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        page: 1,
+        sort: [{ field: 'name', direction: 'asc' }],
+      }),
+    ]);
+    // data() itself is never re-sorted/re-fetched locally by Table — the
+    // same single row the consumer handed back is still all that's shown,
+    // until the consumer's own (lazyLoad) handler re-fetches and re-binds it.
+    expect(getColumnValues(container, 0)).toEqual(['Ada']);
+  });
+
+  it('onFilterTextChange emits lazyLoad with the new filterText and resets page to 1', () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent<
+      DynamoTable<Person>
+    >(DynamoTable, {
+      inputs: {
+        columns: SORTABLE_COLUMNS,
+        data: PEOPLE,
+        lazy: true,
+        filterable: true,
+        pageSize: 1,
+        totalRecords: 3,
+        page: 2,
+      },
+    });
+    const emitted: unknown[] = [];
+    componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+    setFilterValue(container, 'ada');
+    fixture.detectChanges();
+
+    expect(componentInstance.page()).toBe(1);
+    expect(emitted).toEqual([
+      expect.objectContaining({ page: 1, filterText: 'ada' }),
+    ]);
+  });
+
+  it('onColumnFilterChange emits lazyLoad with the new columnFilters and resets page to 1', () => {
+    const columns: DynamoTableColumn<Person>[] = [
+      { field: 'name', header: 'Name' },
+      { field: 'age', header: 'Age', columnFilter: {} },
+    ];
+    const { container, fixture, componentInstance } = renderDynamoComponent<
+      DynamoTable<Person>
+    >(DynamoTable, {
+      inputs: {
+        columns,
+        data: PEOPLE,
+        lazy: true,
+        pageSize: 1,
+        totalRecords: 3,
+        page: 2,
+      },
+    });
+    const emitted: unknown[] = [];
+    componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+    const input = within(container).getByPlaceholderText(
+      'Filter...',
+    ) as HTMLInputElement;
+    input.value = '40';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(componentInstance.page()).toBe(1);
+    expect(emitted).toEqual([
+      expect.objectContaining({ page: 1, columnFilters: { age: '40' } }),
+    ]);
+  });
+
+  it('onPageChange emits lazyLoad with the new page', () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent<
+      DynamoTable<Person>
+    >(DynamoTable, {
+      inputs: {
+        columns: SORTABLE_COLUMNS,
+        data: PEOPLE,
+        lazy: true,
+        pageSize: 1,
+        totalRecords: 3,
+      },
+    });
+    const emitted: unknown[] = [];
+    componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+    within(container).getByRole('button', { name: 'Next page' }).click();
+    fixture.detectChanges();
+
+    expect(componentInstance.page()).toBe(2);
+    expect(emitted).toEqual([expect.objectContaining({ page: 2 })]);
+  });
+
+  it('onPageSizeChange emits lazyLoad with the new pageSize and resets to page 1', () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent<
+      DynamoTable<Person>
+    >(DynamoTable, {
+      inputs: {
+        columns: SORTABLE_COLUMNS,
+        data: PEOPLE,
+        lazy: true,
+        pageSize: 2,
+        totalRecords: 100,
+        pageSizeOptions: [2, 25],
+      },
+    });
+    const emitted: unknown[] = [];
+    componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+    within(container).getByRole('combobox', { name: 'Rows per page' }).click();
+    fixture.detectChanges();
+    within(document.body).getByRole('option', { name: '25 / page' }).click();
+    fixture.detectChanges();
+
+    expect(componentInstance.pageSize()).toBe(25);
+    expect(emitted).toEqual([expect.objectContaining({ pageSize: 25 })]);
+  });
+
+  it('non-lazy mode never emits lazyLoad, even as sort/filter/page all change', () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent<
+      DynamoTable<Person>
+    >(DynamoTable, {
+      inputs: {
+        columns: SORTABLE_COLUMNS,
+        data: PEOPLE,
+        filterable: true,
+        pageSize: 1,
+      },
+    });
+    const emitted: unknown[] = [];
+    componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+    within(container).getByRole('button', { name: 'Name' }).click();
+    fixture.detectChanges();
+    setFilterValue(container, 'ada');
+    fixture.detectChanges();
+    within(container).getByRole('button', { name: 'Next page' }).click();
+    fixture.detectChanges();
+
+    expect(emitted).toEqual([]);
+  });
+
+  it('selection survives a same-page re-fetch when the new row objects are trackBy-equal', () => {
+    const trackBy = (row: Item) => row.id;
+    const page1a: Item[] = [{ id: 1, name: 'First' }];
+    const { container, fixture, setInputs, componentInstance } =
+      renderDynamoComponent<DynamoTable<Item>>(DynamoTable, {
+        inputs: {
+          columns: ITEM_COLUMNS,
+          data: page1a,
+          lazy: true,
+          selectable: true,
+          trackBy,
+        },
+      });
+
+    getRowCheckboxes(container)[0]?.click();
+    fixture.detectChanges();
+    expect(componentInstance.selected()).toEqual(page1a);
+
+    // Simulate a re-fetch of the same logical page: new row object
+    // reference, same id.
+    setInputs({ data: [{ id: 1, name: 'First' }] });
+
+    expect(getRowCheckboxes(container)[0]?.checked).toBe(true);
+  });
+
+  it('selection visually clears on a same-page re-fetch without a trackBy (new references, same logical row)', () => {
+    const page1a: Item[] = [{ id: 1, name: 'First' }];
+    const { container, fixture, setInputs, componentInstance } =
+      renderDynamoComponent<DynamoTable<Item>>(DynamoTable, {
+        inputs: {
+          columns: ITEM_COLUMNS,
+          data: page1a,
+          lazy: true,
+          selectable: true,
+        },
+      });
+
+    getRowCheckboxes(container)[0]?.click();
+    fixture.detectChanges();
+    expect(componentInstance.selected()).toEqual(page1a);
+
+    // Same logical row, new reference, no trackBy — selection model itself
+    // (`selected()`) is untouched, but the checkbox UI can no longer match
+    // the new row object by `===`, so it renders unchecked.
+    setInputs({ data: [{ id: 1, name: 'First' }] });
+
+    expect(componentInstance.selected()).toEqual(page1a);
+    expect(getRowCheckboxes(container)[0]?.checked).toBe(false);
+  });
+
+  describe('dev-mode warnings', () => {
+    it('warns when lazy is combined with virtualScroll', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: {
+          columns: SORTABLE_COLUMNS,
+          data: PEOPLE,
+          lazy: true,
+          virtualScroll: true,
+        },
+      });
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('`lazy` and `virtualScroll`'),
+      );
+      warn.mockRestore();
+    });
+
+    it('warns when lazy is on without totalRecords', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      renderDynamoComponent<DynamoTable<Person>>(DynamoTable, {
+        inputs: { columns: SORTABLE_COLUMNS, data: PEOPLE, lazy: true },
+      });
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('without `totalRecords`'),
+      );
+      warn.mockRestore();
+    });
+
+    it('warns when lazy + selectable is on without a trackBy', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      renderDynamoComponent<DynamoTable<Item>>(DynamoTable, {
+        inputs: {
+          columns: ITEM_COLUMNS,
+          data: [{ id: 1, name: 'First' }],
+          lazy: true,
+          totalRecords: 1,
+          selectable: true,
+        },
+      });
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('no `trackBy`'),
+      );
+      warn.mockRestore();
+    });
+
+    it('does not warn for a fully-configured lazy table (totalRecords + trackBy set, no virtualScroll)', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      renderDynamoComponent<DynamoTable<Item>>(DynamoTable, {
+        inputs: {
+          columns: ITEM_COLUMNS,
+          data: [{ id: 1, name: 'First' }],
+          lazy: true,
+          totalRecords: 1,
+          selectable: true,
+          trackBy: (row: Item) => row.id,
+        },
+      });
+
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+  });
+
+  it('loading UI still renders correctly while lazy is also on', () => {
+    const { container } = renderDynamoComponent<DynamoTable<Person>>(
+      DynamoTable,
+      {
+        inputs: {
+          columns: SORTABLE_COLUMNS,
+          data: [],
+          lazy: true,
+          totalRecords: 0,
+          loading: true,
+        },
+      },
+    );
+
+    expect(container.querySelector('dg-spinner')).not.toBeNull();
   });
 });

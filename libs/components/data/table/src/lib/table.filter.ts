@@ -42,3 +42,39 @@ export function filterRows<TRow>(
   if (!trimmed) return rows;
   return rows.filter((row) => rowMatches(row, columns, trimmed, cellValue));
 }
+
+/**
+ * Applies every column's active per-column filter as a logical AND on top
+ * of whatever filtering already ran — composes with (runs AFTER) `filterRows`'s
+ * global-filter pass, never instead of it. "Active" means `columnFilters[field]`
+ * is not `undefined`/`null`/`''` — an absent or blank entry means "no filter
+ * for that column", never "exclude every row" (same polarity `filterRows`
+ * itself uses for a blank global query). Default predicate (no
+ * `column.columnFilter.predicate`) reads via the same `cellValue` accessor
+ * convention `filterRows` already uses (`cell()` output when present, else
+ * raw `field`) for consistency between the two filter layers. Returns `rows`
+ * unchanged (same reference) when no column filter is active — same
+ * no-defensive-copy contract as `filterRows`.
+ */
+export function filterRowsByColumns<TRow>(
+  rows: readonly TRow[],
+  columns: readonly DynamoTableColumn<TRow>[],
+  columnFilters: Readonly<Record<string, unknown>>,
+  cellValue: (row: TRow, column: DynamoTableColumn<TRow>) => unknown,
+): readonly TRow[] {
+  const active = columns.filter((column) => {
+    const value = columnFilters[column.field];
+    return value !== undefined && value !== null && value !== '';
+  });
+  if (active.length === 0) return rows;
+  return rows.filter((row) =>
+    active.every((column) => {
+      const value = columnFilters[column.field];
+      const predicate = column.columnFilter?.predicate;
+      if (predicate) return predicate(row, value);
+      return String(cellValue(row, column))
+        .toLowerCase()
+        .includes(String(value).trim().toLowerCase());
+    }),
+  );
+}
