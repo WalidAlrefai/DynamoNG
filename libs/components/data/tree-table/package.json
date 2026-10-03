@@ -10,7 +10,8 @@
     "@dynamong/input-text": "0.0.1",
     "@dynamong/pagination": "0.0.1",
     "@dynamong/spinner": "0.0.1",
-    "@dynamong/utils": "0.0.1"
+    "@dynamong/utils": "0.0.1",
+    "@dynamong/virtual-scroll": "0.0.1"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1"

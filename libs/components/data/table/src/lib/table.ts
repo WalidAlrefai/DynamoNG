@@ -12,13 +12,16 @@ import {
   signal,
 } from '@angular/core';
 import { DynamoCheckbox } from '@dynamong/checkbox';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoPagination } from '@dynamong/pagination';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { cn } from '@dynamong/utils/class-merge';
-import { filterRows } from './table.filter';
+import { filterRows, filterRowsByColumns } from './table.filter';
 import {
   sortRowsMulti,
   type DynamoTableSortDescriptor,
@@ -27,6 +30,8 @@ import {
 import {
   tableBodyCellStyles,
   tableBodyRowStyles,
+  tableColumnFilterCellStyles,
+  tableColumnFilterRowStyles,
   tableDetailCellStyles,
   tableEmptyCellStyles,
   tableExpandButtonStyles,
@@ -50,7 +55,9 @@ import {
 import type {
   DynamoTableCellContext,
   DynamoTableColumn,
+  DynamoTableColumnFilterContext,
   DynamoTableExpandMode,
+  DynamoTableLazyLoadEvent,
   DynamoTablePart,
   DynamoTableSize,
   DynamoTableSortMode,
@@ -67,6 +74,7 @@ import type {
     DynamoPagination,
     DynamoSpinner,
     DynamoVirtualScroll,
+    DynamoPassThroughDirective,
   ],
   templateUrl: './table.html',
 })
@@ -85,6 +93,12 @@ export class DynamoTable<TRow = unknown>
   /** Shown in the empty-state slot instead of `emptyMessage`/`noMatchesMessage` while `loading` is true. */
   readonly loadingMessage = input('Loading…');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Associates the table with an external help/error message element via `aria-describedby`,
+   *  bound on both render paths' primary element — same pattern as `ariaLabel`. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true` to match every existing consumer's
+   *  assumption of a full-width table; set `false` for content-driven/intrinsic sizing. */
+  readonly fluid = input(true);
   /**
    * `@for` track escape hatch for when `data()` rows are freshly recreated
    * on every render. Defaults to row-object reference identity (not
@@ -163,6 +177,9 @@ export class DynamoTable<TRow = unknown>
   readonly filterable = input(false);
   /** Placeholder text for the search input rendered when `filterable` is `true`. */
   readonly filterPlaceholder = input('Search...');
+  /** Accessible name for the search input rendered when `filterable` is `true` — like every
+   *  other user-facing string on Table, this is configurable instead of a hardcoded string. */
+  readonly filterAriaLabel = input('Search table');
   /**
    * Two-way bindable filter query: `<dg-table [(filterText)]="query">`, so
    * a consumer can read, clear, or pre-fill it externally — mirrors
@@ -182,6 +199,36 @@ export class DynamoTable<TRow = unknown>
    * mistake "nothing matched my search" for "there's no data at all".
    */
   readonly noMatchesMessage = input('No matching rows');
+  /**
+   * Two-way bindable per-column filter values, keyed by `column.field`:
+   * `<dg-table [(columnFilters)]="filters">`. Mirrors `filterText`'s own
+   * model pattern but scoped per-column instead of one global query —
+   * composes as a logical AND with `filterText`, never replaces it. See
+   * `filteredData` for how the two layers combine.
+   */
+  readonly columnFilters = model<Record<string, unknown>>({});
+
+  /**
+   * Opt-in server-driven mode: `data()` is expected to hold only the
+   * *current page's* already-filtered/sorted rows, and `totalRecords` — not
+   * `data().length` — drives `pageCount`. Table no longer filters, sorts, or
+   * slices `data()` itself while this is on; it only emits `lazyLoad`
+   * whenever page/pageSize/sort/filter state changes via Table's OWN UI,
+   * and the consumer re-fetches and re-binds `data` in response. Mutually
+   * exclusive with `virtualScroll` (dev warning, not a hard block — same
+   * posture as the existing `virtualScroll`+`pageSize` exclusion): true
+   * lazy-loading virtualization (fetch-more-as-scrolled) is a materially
+   * bigger feature with no `scrolledIndexChange`-equivalent output yet,
+   * out of scope for this round.
+   */
+  readonly lazy = input(false);
+  /** Required in `lazy` mode to compute the correct page count from a `data()` that only holds
+   *  the current page (dev warning if omitted — falls back to `data().length`, which is almost
+   *  certainly wrong). Ignored otherwise. */
+  readonly totalRecords = input<number | undefined>(undefined);
+  /** Emitted from `lazy` mode whenever page/pageSize/sort/either filter changes via Table's own
+   *  UI — see `DynamoTableLazyLoadEvent`'s own doc comment for the full contract. */
+  readonly lazyLoad = output<DynamoTableLazyLoadEvent>();
 
   /**
    * Opt-in — renders the body through `@dynamong/virtual-scroll` instead
@@ -218,33 +265,58 @@ export class DynamoTable<TRow = unknown>
    * (`table.filter.ts`), passing `cellValue` as the accessor so filtering
    * reads `cell()`'s formatted output when present (unlike sorting, which
    * always reads the raw `field` — see `table.filter.ts`'s own doc for
-   * why these deliberately differ). Never reads `cellTemplate`.
+   * why these deliberately differ). Never reads `cellTemplate`. Per-column
+   * filters (`filterRowsByColumns`) run AFTER the global pass, as a logical
+   * AND on top of it — never instead of it.
    */
-  protected readonly filteredData = computed(() =>
-    filterRows(this.data(), this.columns(), this.filterText(), (row, column) =>
-      this.cellValue(row, column),
-    ),
-  );
+  /** While `lazy()`, `data()` already holds exactly the rows to show — filtering it again here
+   *  would be redundant (and wrong, since it's only ever the current page's worth, not the full set). */
+  protected readonly filteredData = computed(() => {
+    if (this.lazy()) return this.data();
+    const globallyFiltered = filterRows(
+      this.data(),
+      this.columns(),
+      this.filterText(),
+      (row, column) => this.cellValue(row, column),
+    );
+    return filterRowsByColumns(
+      globallyFiltered,
+      this.columns(),
+      this.columnFilters(),
+      (row, column) => this.cellValue(row, column),
+    );
+  });
 
   /** Sorts the FILTERED set (`filteredData()`), not raw `data()` — see
    *  `filteredData` above. `sortRowsMulti` handles single-sort identically
    *  to before — a one-descriptor array is just a primary key with no
-   *  tiebreakers. */
+   *  tiebreakers. Skipped while `lazy()`, same reasoning as `filteredData`. */
   protected readonly sortedData = computed(() =>
-    sortRowsMulti(this.filteredData(), this.columns(), this.sortState()),
+    this.lazy()
+      ? this.filteredData()
+      : sortRowsMulti(this.filteredData(), this.columns(), this.sortState()),
+  );
+
+  /** The pagination footer's total-item count — `totalRecords()` (falling back to `data().length`,
+   *  dev-warned) while `lazy()`, since `data()` only ever holds the current page's rows in that
+   *  mode; `sortedData().length` otherwise. */
+  protected readonly totalItemCount = computed(() =>
+    this.lazy()
+      ? (this.totalRecords() ?? this.data().length)
+      : this.sortedData().length,
   );
 
   /**
    * Always >= 1, even for zero rows — see `currentPage`'s doc for why this
-   * matters. Based on `sortedData().length`, which now reflects BOTH
-   * sorting and filtering — the same >=1 safety property holds whether the
-   * length shrank to zero because `data()` itself is empty or because
-   * `filterText` excluded every row.
+   * matters. Based on `totalItemCount()`, which reflects sorting AND
+   * filtering in non-lazy mode, or `totalRecords()` in `lazy` mode — the
+   * same >=1 safety property holds whether the length shrank to zero
+   * because `data()` itself is empty or because a filter excluded every row.
    */
   protected readonly pageCount = computed(() => {
     const size = this.pageSize();
     if (!size) return 1;
-    return Math.max(1, Math.ceil(this.sortedData().length / size));
+    return Math.max(1, Math.ceil(this.totalItemCount() / size));
   });
 
   /**
@@ -263,7 +335,10 @@ export class DynamoTable<TRow = unknown>
     Math.min(Math.max(1, this.page()), this.pageCount()),
   );
 
+  /** While `lazy()`, `data()` already holds exactly the current page's rows — slicing it again
+   *  here would be wrong (it would cut an already-page-sized array down further). */
   protected readonly pagedData = computed(() => {
+    if (this.lazy()) return this.data();
     const size = this.pageSize();
     if (!size) return this.sortedData();
     const start = (this.currentPage() - 1) * size;
@@ -276,16 +351,20 @@ export class DynamoTable<TRow = unknown>
    * clamp guarantee above) only happens when `sortedData()`/
    * `filteredData()` itself is empty. Three states:
    *  1. `data()` itself has zero rows -> `emptyMessage()`, regardless of
-   *     `filterText()` — an active-but-irrelevant filter must not steal
-   *     this message from genuinely-empty data.
-   *  2. `data()` has rows but the active `filterText()` matched none of
-   *     them -> `noMatchesMessage()`.
-   *  3. `filterText()` is blank/whitespace-only -> always `emptyMessage()`
-   *     (falls into case 1) — a blank filter can never be "the reason"
+   *     `filterText()`/`columnFilters()` — an active-but-irrelevant filter
+   *     must not steal this message from genuinely-empty data.
+   *  2. `data()` has rows but the active `filterText()`/`columnFilters()`
+   *     matched none of them -> `noMatchesMessage()`.
+   *  3. Both filters are blank/inactive -> always `emptyMessage()` (falls
+   *     into case 1) — an inactive filter can never be "the reason"
    *     nothing matched.
    */
   protected readonly emptyStateMessage = computed(() => {
-    const hasActiveFilter = this.filterText().trim().length > 0;
+    const hasActiveGlobalFilter = this.filterText().trim().length > 0;
+    const hasActiveColumnFilter = Object.values(this.columnFilters()).some(
+      (value) => value !== undefined && value !== null && value !== '',
+    );
+    const hasActiveFilter = hasActiveGlobalFilter || hasActiveColumnFilter;
     return hasActiveFilter && this.data().length > 0
       ? this.noMatchesMessage()
       : this.emptyMessage();
@@ -296,19 +375,56 @@ export class DynamoTable<TRow = unknown>
 
   protected readonly wrapperClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(tableWrapperStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          tableWrapperStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
-  protected readonly tableClasses = tableStyles;
-  protected readonly headerRowClasses = tableHeaderRowStyles;
-  protected readonly sortButtonClasses = tableSortButtonStyles;
+  protected readonly tableClasses = computed(() =>
+    cn(tableStyles, this.ptFor('table').class),
+  );
+  protected readonly headerRowClasses = computed(() =>
+    cn(tableHeaderRowStyles, this.ptFor('headerRow').class),
+  );
+  protected readonly sortButtonClasses = computed(() =>
+    cn(tableSortButtonStyles, this.ptFor('sortButton').class),
+  );
   protected readonly sortPriorityClasses = tableSortPriorityStyles;
   protected readonly emptyCellClasses = tableEmptyCellStyles;
-  protected readonly paginationWrapperClasses = tablePaginationWrapperStyles;
-  protected readonly filterWrapperClasses = tableFilterWrapperStyles;
-  protected readonly virtualTableClasses = tableVirtualStyles;
-  protected readonly virtualHeaderRowClasses = tableVirtualHeaderRowStyles;
-  protected readonly virtualBodyRowClasses = tableVirtualBodyRowStyles;
+  protected readonly paginationWrapperClasses = computed(() =>
+    cn(tablePaginationWrapperStyles, this.ptFor('paginationWrapper').class),
+  );
+  protected readonly filterWrapperClasses = computed(() =>
+    cn(tableFilterWrapperStyles, this.ptFor('filterWrapper').class),
+  );
+  protected readonly columnFilterRowClasses = computed(() =>
+    cn(tableColumnFilterRowStyles, this.ptFor('columnFilterRow').class),
+  );
+  protected readonly columnFilterCellClasses = computed(() =>
+    cn(
+      tableColumnFilterCellStyles({ size: this.size() }),
+      this.ptFor('columnFilterCell').class,
+    ),
+  );
+  /** True when ANY column declares `columnFilter` — drives whether the
+   *  second header filter row renders at all. No separate Table-level
+   *  toggle input (unlike `filterable`, which gates the global search box)
+   *  — consistent with how `sortable`/`cellTemplate` are also purely
+   *  column-level opt-ins with no parent "sortingEnabled" flag. */
+  protected readonly hasColumnFilters = computed(() =>
+    this.columns().some((column) => !!column.columnFilter),
+  );
+  protected readonly virtualTableClasses = computed(() =>
+    cn(tableVirtualStyles, this.ptFor('table').class),
+  );
+  protected readonly virtualHeaderRowClasses = computed(() =>
+    cn(tableVirtualHeaderRowStyles, this.ptFor('headerRow').class),
+  );
+  protected readonly virtualBodyRowClasses = computed(() =>
+    cn(tableVirtualBodyRowStyles, this.ptFor('bodyRow').class),
+  );
   protected readonly loadingWrapperClasses = tableLoadingWrapperStyles;
 
   /**
@@ -325,19 +441,35 @@ export class DynamoTable<TRow = unknown>
   });
 
   protected readonly headerCellClasses = computed(() =>
-    tableHeaderCellStyles({ size: this.size() }),
+    cn(
+      tableHeaderCellStyles({ size: this.size() }),
+      this.ptFor('headerCell').class,
+    ),
   );
   protected readonly bodyCellClasses = computed(() =>
-    tableBodyCellStyles({ size: this.size() }),
+    cn(
+      tableBodyCellStyles({ size: this.size() }),
+      this.ptFor('bodyCell').class,
+    ),
   );
   protected readonly selectionCellClasses = computed(() =>
-    tableSelectionCellStyles({ size: this.size() }),
+    cn(
+      tableSelectionCellStyles({ size: this.size() }),
+      this.ptFor('selectionCell').class,
+    ),
   );
   protected readonly expandCellClasses = computed(() =>
-    tableExpandCellStyles({ size: this.size() }),
+    cn(
+      tableExpandCellStyles({ size: this.size() }),
+      this.ptFor('expandCell').class,
+    ),
   );
-  protected readonly expandButtonClasses = tableExpandButtonStyles;
-  protected readonly detailCellClasses = tableDetailCellStyles;
+  protected readonly expandButtonClasses = computed(() =>
+    cn(tableExpandButtonStyles, this.ptFor('expandButton').class),
+  );
+  protected readonly detailCellClasses = computed(() =>
+    cn(tableDetailCellStyles, this.ptFor('detailCell').class),
+  );
   private readonly tableId = this.idGenerator.next('dg-table');
 
   /** Expansion is off under `virtualScroll` — its grid DOM has no detail-row slot. */
@@ -406,21 +538,50 @@ export class DynamoTable<TRow = unknown>
         '[dg-table] `pageSize` is ignored while `virtualScroll` is enabled — the virtualized path renders all rows and hides the pagination footer.',
       );
     }
+    if (this.lazy() && this.virtualScroll()) {
+      console.warn(
+        '[dg-table] `lazy` and `virtualScroll` cannot be meaningfully combined yet — `virtualScroll` renders `data()` as-is with no fetch-more-on-scroll hook, so `lazy` has no effect while it is on.',
+      );
+    }
+    if (this.lazy() && this.totalRecords() === undefined) {
+      console.warn(
+        "[dg-table] `lazy` is on without `totalRecords` — `pageCount` falls back to `data().length` (the current page's own row count), which is almost certainly not the real total. Set `totalRecords`.",
+      );
+    }
+    if (
+      this.lazy() &&
+      (this.selectable() || this.expansionTemplate()) &&
+      !this.trackBy()
+    ) {
+      console.warn(
+        '[dg-table] `lazy` is on with `selectable`/`expansionTemplate` but no `trackBy` — re-fetching a previously-visited page returns new row-object references, so selection/expansion state for that page will appear to silently clear even though the underlying rows are unchanged. Provide a stable `trackBy`.',
+      );
+    }
   }
 
   protected sortIconClasses(
     direction: DynamoTableSortDirection | 'none',
   ): string {
-    return tableSortIconStyles({ direction });
+    return cn(tableSortIconStyles({ direction }), this.ptFor('sortIcon').class);
   }
 
   protected sortDirectionFor(field: string): DynamoTableSortDirection | 'none' {
     return this.sortState().find((s) => s.field === field)?.direction ?? 'none';
   }
 
-  protected ariaSortFor(field: string): 'ascending' | 'descending' | null {
+  /**
+   * `'none'` (not `null`) for a sortable column with no active sort
+   * descriptor — WAI-ARIA authoring practice wants an explicit "none" so
+   * assistive tech can distinguish "sortable, not currently sorted" from
+   * "not sortable at all". The `null` case for a genuinely non-sortable
+   * column is still handled entirely by the template's own
+   * `column.sortable ? ariaSortFor(...) : null` ternary — this method is
+   * only ever consulted for a sortable column, so it never itself needs to
+   * return `null`.
+   */
+  protected ariaSortFor(field: string): 'ascending' | 'descending' | 'none' {
     const state = this.sortState().find((s) => s.field === field);
-    if (!state) return null;
+    if (!state) return 'none';
     return state.direction === 'asc' ? 'ascending' : 'descending';
   }
 
@@ -474,6 +635,7 @@ export class DynamoTable<TRow = unknown>
       return state.filter((s) => s.field !== column.field);
     });
     this.page.set(1);
+    this.emitLazyLoad();
   }
 
   /**
@@ -492,6 +654,72 @@ export class DynamoTable<TRow = unknown>
     if (this.isBusy()) return;
     this.filterText.set(value);
     this.page.set(1);
+    this.emitLazyLoad();
+  }
+
+  /** Writes one column's filter value and resets `page` to 1 — same pattern `onFilterTextChange` uses for the global filter. */
+  protected onColumnFilterChange(field: string, value: unknown): void {
+    if (this.isBusy()) return;
+    this.columnFilters.update((filters) => ({ ...filters, [field]: value }));
+    this.page.set(1);
+    this.emitLazyLoad();
+  }
+
+  /** `<dg-pagination>`'s own `(pageChange)` handler — explicit instead of `[(page)]` two-way
+   *  sugar so a page change can also trigger `emitLazyLoad()`; behaves identically to the plain
+   *  `page.set(value)` the sugar used to do otherwise. */
+  protected onPageChange(value: number): void {
+    this.page.set(value);
+    this.emitLazyLoad();
+  }
+
+  /** `<dg-pagination>`'s own `(pageSizeChange)` handler — same reasoning as `onPageChange`. */
+  protected onPageSizeChange(value: number): void {
+    this.pageSize.set(value);
+    this.emitLazyLoad();
+  }
+
+  /**
+   * Single emission point for `lazyLoad` — called from every one of Table's
+   * OWN call sites that change page/pageSize/sort/filter state
+   * (`onPageChange`, `onPageSizeChange`, `toggleSort`, `onFilterTextChange`,
+   * `onColumnFilterChange`), the same way `toggleSort`/`onFilterTextChange`
+   * already each own their own `page.set(1)` reset inline instead of a
+   * shared `effect()`. No-op while `!lazy()`. Deliberately NOT triggered by
+   * a consumer writing directly to `page`/`filterText`/`columnFilters` from
+   * outside Table's own UI (e.g. calling `.set(...)` on the model
+   * programmatically) — keeping Table effect-free, consistent with its
+   * entire existing architecture, at the cost of that one gap (documented
+   * in the README).
+   */
+  private emitLazyLoad(): void {
+    if (!this.lazy()) return;
+    this.lazyLoad.emit({
+      page: this.currentPage(),
+      pageSize: this.pageSize() ?? this.totalItemCount(),
+      sort: this.sortState(),
+      filterText: this.filterText(),
+      columnFilters: this.columnFilters(),
+    });
+  }
+
+  /** Builds the context handed to a column's `filterTemplate`. */
+  protected columnFilterContext(
+    column: DynamoTableColumn<TRow>,
+  ): DynamoTableColumnFilterContext<TRow> {
+    const value = this.columnFilters()[column.field];
+    return {
+      $implicit: value,
+      value,
+      setValue: (v) => this.onColumnFilterChange(column.field, v),
+      column,
+    };
+  }
+
+  /** String form of a column's current filter value, for the built-in text input's `[value]` binding. */
+  protected columnFilterValue(field: string): string {
+    const value = this.columnFilters()[field];
+    return value === undefined || value === null ? '' : String(value);
   }
 
   protected cellValue(row: TRow, column: DynamoTableColumn<TRow>): unknown {
@@ -516,7 +744,10 @@ export class DynamoTable<TRow = unknown>
   }
 
   protected expandIconClasses(row: TRow): string {
-    return tableExpandIconStyles({ expanded: this.isRowExpanded(row) });
+    return cn(
+      tableExpandIconStyles({ expanded: this.isRowExpanded(row) }),
+      this.ptFor('expandIcon').class,
+    );
   }
 
   protected isRowExpanded(row: TRow): boolean {
@@ -526,6 +757,24 @@ export class DynamoTable<TRow = unknown>
   /** Stable id linking a row's chevron (`aria-controls`) to its detail cell. */
   protected detailId(pageIndex: number): string {
     return `${this.tableId}-detail-${this.absoluteIndex(pageIndex)}`;
+  }
+
+  /**
+   * aria-label for the row-expansion toggle button. Routes `pageIndex`
+   * through `absoluteIndex()` — exactly like `detailId`/`cellContext`/
+   * `trackRow` already do — so page 2 of a paginated table announces
+   * "Expand row 11", not "Expand row 1". A page-relative index silently
+   * restarted from 1 on every page; that was a real screen-reader-facing
+   * bug, not a cosmetic one.
+   */
+  protected expandButtonLabel(row: TRow, pageIndex: number): string {
+    const verb = this.isRowExpanded(row) ? 'Collapse row ' : 'Expand row ';
+    return verb + (this.absoluteIndex(pageIndex) + 1);
+  }
+
+  /** sr-only label for a row's selection checkbox — same `absoluteIndex()` routing fix as `expandButtonLabel`. */
+  protected selectionLabel(pageIndex: number): string {
+    return 'Select row ' + (this.absoluteIndex(pageIndex) + 1);
   }
 
   /**
@@ -547,7 +796,10 @@ export class DynamoTable<TRow = unknown>
   }
 
   protected bodyRowClasses(row: TRow): string {
-    return tableBodyRowStyles({ selected: this.isRowSelected(row) });
+    return cn(
+      tableBodyRowStyles({ selected: this.isRowSelected(row) }),
+      this.ptFor('bodyRow').class,
+    );
   }
 
   /**

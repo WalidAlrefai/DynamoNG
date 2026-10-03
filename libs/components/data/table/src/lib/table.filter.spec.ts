@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterRows } from './table.filter';
+import { filterRows, filterRowsByColumns } from './table.filter';
 import type { DynamoTableColumn } from './table.types';
 
 interface Row {
@@ -87,6 +87,75 @@ describe('filterRows', () => {
   it('never mutates the input array', () => {
     const original = [...rows];
     filterRows(rows, columns, 'ada', cellValue);
+    expect(rows).toEqual(original);
+  });
+});
+
+describe('filterRowsByColumns', () => {
+  it('returns the same array reference when no column filter is active', () => {
+    expect(filterRowsByColumns(rows, columns, {}, cellValue)).toBe(rows);
+  });
+
+  it('treats undefined/null/blank-string values as inactive (same reference returned)', () => {
+    expect(
+      filterRowsByColumns(
+        rows,
+        columns,
+        { name: undefined, age: null, status: '' },
+        cellValue,
+      ),
+    ).toBe(rows);
+  });
+
+  it('narrows to rows matching a single active column filter', () => {
+    expect(
+      filterRowsByColumns(rows, columns, { name: 'ada' }, cellValue),
+    ).toEqual([rows[0]]);
+  });
+
+  it('ANDs multiple active column filters together', () => {
+    expect(
+      filterRowsByColumns(rows, columns, { name: 'a', age: '40' }, cellValue),
+    ).toEqual([rows[0]]);
+  });
+
+  it('returns an empty array when the AND of active filters matches nothing', () => {
+    expect(
+      filterRowsByColumns(rows, columns, { name: 'ada', age: '30' }, cellValue),
+    ).toEqual([]);
+  });
+
+  it('uses a custom predicate when the column declares one, ignoring the default substring match', () => {
+    const exactAgeColumn: DynamoTableColumn<Row> = {
+      ...ageColumn,
+      columnFilter: {
+        predicate: (row, value) => row.age === value,
+      },
+    };
+    expect(
+      filterRowsByColumns(rows, [exactAgeColumn], { age: 30 }, cellValue),
+    ).toEqual([rows[1]]);
+  });
+
+  it('default predicate reads through cell() when present, not just the raw field', () => {
+    const prefixColumn: DynamoTableColumn<Row> = {
+      field: 'name',
+      header: 'Name',
+      cell: () => 'PREFIX-MATCH',
+    };
+    expect(
+      filterRowsByColumns(
+        rows,
+        [prefixColumn],
+        { name: 'prefix-match' },
+        cellValue,
+      ),
+    ).toEqual(rows);
+  });
+
+  it('never mutates the input array', () => {
+    const original = [...rows];
+    filterRowsByColumns(rows, columns, { name: 'ada' }, cellValue);
     expect(rows).toEqual(original);
   });
 });

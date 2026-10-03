@@ -1,6 +1,10 @@
-<div [class]="rootClasses()" [attr.aria-busy]="loading() ? 'true' : null">
+<div
+  [class]="rootClasses()"
+  [attr.aria-busy]="loading() ? 'true' : null"
+  [dgPt]="ptFor('root')"
+>
   @if (filterable()) {
-  <div [class]="filterWrapperClasses">
+  <div [class]="filterWrapperClasses()" [dgPt]="ptFor('filterWrapper')">
     <dg-input-text
       type="search"
       size="sm"
@@ -9,23 +13,32 @@
       ariaLabel="Search tree table"
       [placeholder]="filterPlaceholder()"
       [disabled]="loading()"
+      [pt]="{ input: ptFor('filterInput') }"
     />
   </div>
-  }
+  } @if (!virtualScroll()) {
   <table
     role="treegrid"
-    [class]="tableClasses"
+    [class]="tableClasses()"
     [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [dgPt]="ptFor('table')"
   >
     <thead>
-      <tr role="row" [class]="headerRowClasses">
+      <tr role="row" [class]="headerRowClasses()" [dgPt]="ptFor('headerRow')">
         @if (selectable()) {
-        <th role="columnheader" scope="col" [class]="selectionCellClasses">
+        <th
+          role="columnheader"
+          scope="col"
+          [class]="selectionCellClasses()"
+          [dgPt]="ptFor('selectionCell')"
+        >
           <dg-checkbox
             size="sm"
             [checked]="allCheckState() === 'checked'"
             [indeterminate]="allCheckState() === 'indeterminate'"
-            [disabled]="items().length === 0 || loading()"
+            [disabled]="pagedRoots().length === 0 || loading()"
+            [pt]="{ root: ptFor('selectionCheckbox') }"
             (checkedChange)="toggleSelectAll()"
           >
             <span class="sr-only">Select all rows</span>
@@ -35,14 +48,16 @@
         <th
           role="columnheader"
           scope="col"
-          [class]="headerCellClasses"
+          [class]="headerCellClasses()"
           [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+          [dgPt]="ptFor('headerCell')"
         >
           @if (column.sortable) {
           <button
             type="button"
-            [class]="sortButtonClasses"
+            [class]="sortButtonClasses()"
             [disabled]="loading()"
+            [dgPt]="ptFor('sortButton')"
             (click)="toggleSort(column)"
           >
             <span>{{ column.header }}</span>
@@ -53,6 +68,7 @@
               height="12"
               viewBox="0 0 16 16"
               fill="none"
+              [dgPt]="ptFor('sortIcon')"
             >
               <path
                 d="M4 6l4 4 4-4"
@@ -67,47 +83,95 @@
         </th>
         }
       </tr>
+      @if (hasColumnFilters()) {
+      <tr [class]="columnFilterRowClasses()" [dgPt]="ptFor('columnFilterRow')">
+        @if (selectable()) {
+        <td
+          [class]="columnFilterCellClasses()"
+          [dgPt]="ptFor('columnFilterCell')"
+        ></td>
+        } @for (column of columns(); track column.field) {
+        <td
+          [class]="columnFilterCellClasses()"
+          [dgPt]="ptFor('columnFilterCell')"
+        >
+          @if (column.columnFilter) { @if (column.columnFilter.type ===
+          'custom') {
+          <ng-container
+            [ngTemplateOutlet]="column.filterTemplate ?? null"
+            [ngTemplateOutletContext]="columnFilterContext(column)"
+          />
+          } @else {
+          <dg-input-text
+            type="search"
+            size="sm"
+            [value]="columnFilterValue(column.field)"
+            (valueChange)="onColumnFilterChange(column.field, $event)"
+            [ariaLabel]="column.columnFilter.placeholder ?? ('Filter ' + column.header)"
+            [placeholder]="column.columnFilter.placeholder ?? ('Filter ' + column.header)"
+            [disabled]="loading()"
+            [pt]="{ input: ptFor('columnFilterInput') }"
+          />
+          } }
+        </td>
+        }
+      </tr>
+      }
     </thead>
     <tbody>
       @for (entry of visibleEntries(); track entry.node.id; let rowIndex =
       $index) {
       <tr
-        #rowEl
         role="row"
         [class]="rowClasses(entry)"
         [tabindex]="isActive(entry) ? 0 : -1"
+        [attr.data-row-id]="entry.node.id"
         [attr.aria-level]="entry.depth + 1"
         [attr.aria-expanded]="hasChildren(entry.node) ? isExpanded(entry.node.id) : null"
         [attr.aria-disabled]="entry.node.disabled ? 'true' : null"
+        [dgPt]="ptFor('row')"
         (keydown)="onRowKeydown($event, entry)"
         (focus)="onRowFocus(entry)"
       >
         @if (selectable()) {
-        <td role="gridcell" [class]="selectionCellClasses">
+        <td
+          role="gridcell"
+          [class]="selectionCellClasses()"
+          [dgPt]="ptFor('selectionCell')"
+        >
           <dg-checkbox
             size="sm"
             [checked]="checkState(entry.node) === 'checked'"
             [indeterminate]="checkState(entry.node) === 'indeterminate'"
             [disabled]="entry.node.disabled || loading()"
+            [pt]="{ root: ptFor('selectionCheckbox') }"
             (checkedChange)="toggleChecked(entry.node)"
           >
             <span class="sr-only">{{ 'Select row ' + (rowIndex + 1) }}</span>
           </dg-checkbox>
         </td>
         } @for (column of columns(); track column.field; let i = $index) {
-        <td role="gridcell" [class]="cellClasses">
+        <td role="gridcell" [class]="cellClasses()" [dgPt]="ptFor('cell')">
           @if (i === 0) {
           <span
             [class]="firstCellContentClasses"
             [style.paddingLeft.rem]="indentRem(entry.depth)"
           >
             @if (hasChildren(entry.node)) {
-            <span
-              [class]="chevronButtonClasses"
+            <button
+              type="button"
+              tabindex="-1"
               data-testid="chevron"
-              [attr.aria-hidden]="true"
-              (click)="toggleExpanded(entry.node.id)"
+              [class]="chevronButtonClasses()"
+              [disabled]="loading()"
+              [attr.aria-label]="chevronLabel(entry.node)"
+              [dgPt]="ptFor('chevronButton')"
+              (click)="toggleExpanded(entry.node)"
+              (focus)="onRowFocus(entry)"
             >
+              @if (isNodeLoading(entry.node)) {
+              <dg-spinner size="sm" [dgPt]="ptFor('chevron')" />
+              } @else {
               <svg
                 [class]="chevronClasses(entry.node)"
                 [attr.aria-hidden]="true"
@@ -115,6 +179,7 @@
                 height="16"
                 viewBox="0 0 16 16"
                 fill="none"
+                [dgPt]="ptFor('chevron')"
               >
                 <path
                   d="M4 6l4 4 4-4"
@@ -124,7 +189,8 @@
                   stroke-linejoin="round"
                 />
               </svg>
-            </span>
+              }
+            </button>
             } @else {
             <span
               [class]="chevronPlaceholderClasses"
@@ -166,15 +232,264 @@
       }
     </tbody>
   </table>
-  @if (pageSize()) {
-  <div [class]="paginationWrapperClasses">
+  } @else {
+  <!--
+    Virtualized path: CSS Grid replaces the native `<table>`'s auto-layout
+    (CDK mounts each row independently, so native table column alignment
+    across rows can't work) — `role="treegrid"`/`"row"`/`"columnheader"`/
+    `"gridcell"` reproduce the exact same ARIA semantics as the native path
+    above, just via `<div>`s instead of real table elements. The body is
+    virtualized so most rows are never in the DOM for assistive tech to
+    count or position. Count is data rows + 1 header row (+1 more when the
+    optional per-column filter row is also rendered); the header is row 1
+    (and the filter row, when present, is row 2), so body row `i` (0-based
+    cdkVirtualFor index) is aria-rowindex `i + 2`, or `i + 3` once the
+    filter row pushes the body down one more row.
+  -->
+  <div
+    role="treegrid"
+    [class]="virtualTableClasses()"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [attr.aria-rowcount]="visibleEntries().length + (hasColumnFilters() ? 2 : 1)"
+    [dgPt]="ptFor('table')"
+  >
+    <div role="rowgroup">
+      <div
+        role="row"
+        aria-rowindex="1"
+        [class]="virtualHeaderRowClasses()"
+        [style.gridTemplateColumns]="virtualGridTemplate()"
+        [dgPt]="ptFor('headerRow')"
+      >
+        @if (selectable()) {
+        <div
+          role="columnheader"
+          [class]="selectionCellClasses()"
+          [dgPt]="ptFor('selectionCell')"
+        >
+          <dg-checkbox
+            size="sm"
+            [checked]="allCheckState() === 'checked'"
+            [indeterminate]="allCheckState() === 'indeterminate'"
+            [disabled]="pagedRoots().length === 0 || loading()"
+            [pt]="{ root: ptFor('selectionCheckbox') }"
+            (checkedChange)="toggleSelectAll()"
+          >
+            <span class="sr-only">Select all rows</span>
+          </dg-checkbox>
+        </div>
+        } @for (column of columns(); track column.field) {
+        <div
+          role="columnheader"
+          [class]="headerCellClasses()"
+          [attr.aria-sort]="column.sortable ? ariaSortFor(column.field) : null"
+          [dgPt]="ptFor('headerCell')"
+        >
+          @if (column.sortable) {
+          <button
+            type="button"
+            [class]="sortButtonClasses()"
+            [disabled]="loading()"
+            [dgPt]="ptFor('sortButton')"
+            (click)="toggleSort(column)"
+          >
+            <span>{{ column.header }}</span>
+            <svg
+              [class]="sortIconClasses(sortDirectionFor(column.field))"
+              [attr.aria-hidden]="true"
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+              [dgPt]="ptFor('sortIcon')"
+            >
+              <path
+                d="M4 6l4 4 4-4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          } @else { {{ column.header }} }
+        </div>
+        }
+      </div>
+      @if (hasColumnFilters()) {
+      <div
+        role="row"
+        aria-rowindex="2"
+        [class]="columnFilterRowClasses()"
+        [style.gridTemplateColumns]="virtualGridTemplate()"
+        [dgPt]="ptFor('columnFilterRow')"
+      >
+        @if (selectable()) {
+        <div
+          role="gridcell"
+          [class]="columnFilterCellClasses()"
+          [dgPt]="ptFor('columnFilterCell')"
+        ></div>
+        } @for (column of columns(); track column.field) {
+        <div
+          role="gridcell"
+          [class]="columnFilterCellClasses()"
+          [dgPt]="ptFor('columnFilterCell')"
+        >
+          @if (column.columnFilter) { @if (column.columnFilter.type ===
+          'custom') {
+          <ng-container
+            [ngTemplateOutlet]="column.filterTemplate ?? null"
+            [ngTemplateOutletContext]="columnFilterContext(column)"
+          />
+          } @else {
+          <dg-input-text
+            type="search"
+            size="sm"
+            [value]="columnFilterValue(column.field)"
+            (valueChange)="onColumnFilterChange(column.field, $event)"
+            [ariaLabel]="column.columnFilter.placeholder ?? ('Filter ' + column.header)"
+            [placeholder]="column.columnFilter.placeholder ?? ('Filter ' + column.header)"
+            [disabled]="loading()"
+            [pt]="{ input: ptFor('columnFilterInput') }"
+          />
+          } }
+        </div>
+        }
+      </div>
+      }
+    </div>
+    <div role="rowgroup">
+      @if (visibleEntries().length === 0) {
+      <div role="row">
+        <div role="gridcell" [class]="emptyCellClasses">
+          @if (loading()) {
+          <span [class]="loadingWrapperClasses" role="status">
+            <dg-spinner size="sm" />
+            <span>{{ loadingMessage() }}</span>
+          </span>
+          } @else {
+          <span role="status">{{ emptyStateMessage() }}</span>
+          }
+        </div>
+      </div>
+      } @else {
+      <dg-virtual-scroll
+        [items]="visibleEntries()"
+        [itemSize]="virtualScrollItemSize()"
+        [height]="virtualScrollHeight()"
+      >
+        <ng-template let-entry let-i="index">
+          <div
+            role="row"
+            [class]="virtualBodyRowClasses()"
+            [style.gridTemplateColumns]="virtualGridTemplate()"
+            [tabindex]="isActive(entry) ? 0 : -1"
+            [attr.data-row-id]="entry.node.id"
+            [attr.aria-rowindex]="i + (hasColumnFilters() ? 3 : 2)"
+            [attr.aria-level]="entry.depth + 1"
+            [attr.aria-expanded]="hasChildren(entry.node) ? isExpanded(entry.node.id) : null"
+            [attr.aria-disabled]="entry.node.disabled ? 'true' : null"
+            [dgPt]="ptFor('row')"
+            (keydown)="onRowKeydown($event, entry)"
+            (focus)="onRowFocus(entry)"
+          >
+            @if (selectable()) {
+            <div
+              role="gridcell"
+              [class]="selectionCellClasses()"
+              [dgPt]="ptFor('selectionCell')"
+            >
+              <dg-checkbox
+                size="sm"
+                [checked]="checkState(entry.node) === 'checked'"
+                [indeterminate]="checkState(entry.node) === 'indeterminate'"
+                [disabled]="entry.node.disabled || loading()"
+                [pt]="{ root: ptFor('selectionCheckbox') }"
+                (checkedChange)="toggleChecked(entry.node)"
+              >
+                <span class="sr-only">{{ 'Select row ' + (i + 1) }}</span>
+              </dg-checkbox>
+            </div>
+            } @for (column of columns(); track column.field; let ci = $index) {
+            <div role="gridcell" [class]="cellClasses()" [dgPt]="ptFor('cell')">
+              @if (ci === 0) {
+              <span
+                [class]="firstCellContentClasses"
+                [style.paddingLeft.rem]="indentRem(entry.depth)"
+              >
+                @if (hasChildren(entry.node)) {
+                <button
+                  type="button"
+                  tabindex="-1"
+                  data-testid="chevron"
+                  [class]="chevronButtonClasses()"
+                  [disabled]="loading()"
+                  [attr.aria-label]="chevronLabel(entry.node)"
+                  [dgPt]="ptFor('chevronButton')"
+                  (click)="toggleExpanded(entry.node)"
+                  (focus)="onRowFocus(entry)"
+                >
+                  @if (isNodeLoading(entry.node)) {
+                  <dg-spinner size="sm" [dgPt]="ptFor('chevron')" />
+                  } @else {
+                  <svg
+                    [class]="chevronClasses(entry.node)"
+                    [attr.aria-hidden]="true"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    [dgPt]="ptFor('chevron')"
+                  >
+                    <path
+                      d="M4 6l4 4 4-4"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  }
+                </button>
+                } @else {
+                <span
+                  [class]="chevronPlaceholderClasses"
+                  [attr.aria-hidden]="true"
+                ></span>
+                } @if (column.cellTemplate) {
+                <ng-container
+                  [ngTemplateOutlet]="column.cellTemplate"
+                  [ngTemplateOutletContext]="cellContext(entry.node, entry.depth)"
+                />
+                } @else { {{ cellValue(entry.node.data, column) }} }
+              </span>
+              } @else if (column.cellTemplate) {
+              <ng-container
+                [ngTemplateOutlet]="column.cellTemplate"
+                [ngTemplateOutletContext]="cellContext(entry.node, entry.depth)"
+              />
+              } @else { {{ cellValue(entry.node.data, column) }} }
+            </div>
+            }
+          </div>
+        </ng-template>
+      </dg-virtual-scroll>
+      }
+    </div>
+  </div>
+  } @if (pageSize()) {
+  <div [class]="paginationWrapperClasses()" [dgPt]="ptFor('paginationWrapper')">
     <dg-pagination
-      [totalItems]="filteredItems().length"
-      [(page)]="page"
+      [totalItems]="totalItemCount()"
+      [page]="page()"
+      (pageChange)="onPageChange($event)"
       [pageSize]="pageSize() ?? 10"
-      (pageSizeChange)="pageSize.set($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
       [pageSizeOptions]="pageSizeOptions()"
       [disabled]="loading()"
+      [pt]="{ root: ptFor('pagination') }"
       size="sm"
     />
   </div>

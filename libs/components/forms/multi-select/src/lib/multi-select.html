@@ -1,31 +1,43 @@
 <div
   #triggerEl
-  role="combobox"
-  [id]="triggerId"
   [class]="triggerClasses()"
-  [attr.tabindex]="isDisabled() ? -1 : 0"
-  aria-haspopup="listbox"
-  [attr.aria-expanded]="isOpen()"
-  [attr.aria-controls]="isOpen() ? listboxId : null"
-  [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
-  [attr.aria-invalid]="invalid() ? 'true' : null"
-  [attr.aria-disabled]="isDisabled() ? 'true' : null"
-  [attr.aria-readonly]="readOnly() ? 'true' : null"
-  [attr.aria-busy]="loading() ? 'true' : null"
-  [attr.aria-label]="ariaLabel() ?? null"
+  [attr.role]="editableTags() ? null : 'combobox'"
+  [attr.id]="editableTags() ? null : triggerId"
+  [attr.tabindex]="editableTags() ? null : (isDisabled() ? -1 : 0)"
+  [attr.aria-haspopup]="editableTags() ? null : 'listbox'"
+  [attr.aria-expanded]="editableTags() ? null : isOpen()"
+  [attr.aria-controls]="editableTags() || !isOpen() ? null : listboxId"
+  [attr.aria-activedescendant]="
+    editableTags() || !isOpen() ? null : activeOptionId()
+  "
+  [attr.aria-invalid]="editableTags() ? null : (invalid() ? 'true' : null)"
+  [attr.aria-disabled]="editableTags() ? null : (isDisabled() ? 'true' : null)"
+  [attr.aria-readonly]="editableTags() ? null : (readOnly() ? 'true' : null)"
+  [attr.aria-busy]="editableTags() ? null : (loading() ? 'true' : null)"
+  [attr.aria-label]="editableTags() ? null : (ariaLabel() ?? null)"
+  [attr.aria-describedby]="editableTags() ? null : (ariaDescribedby() ?? null)"
+  [dgPt]="triggerPt()"
   (click)="toggle()"
   (keydown)="onTriggerKeydown($event)"
 >
   @if (loading()) {
   <dg-spinner size="sm" />
-  } @if (selectedOptions().length === 0) {
+  } @if (selectedOptions().length === 0 && !editableTags()) {
   <span [class]="placeholderClasses">{{ placeholder() }}</span>
   } @else { @for (tag of visibleTags(); track tag.value) {
-  <span [class]="tagClasses">
+  <span [class]="tagClasses()" [dgPt]="ptFor('tag')">
+    @if (tagTemplate(); as tpl) {
+    <ng-container
+      [ngTemplateOutlet]="tpl"
+      [ngTemplateOutletContext]="{ $implicit: tag }"
+    />
+    } @else {
     <span>{{ tag.label }}</span>
+    }
     <button
       type="button"
-      [class]="tagRemoveButtonClasses"
+      [class]="tagRemoveButtonClasses()"
+      [dgPt]="ptFor('tagRemove')"
       [disabled]="isDisabled() || readOnly()"
       [attr.aria-label]="'Remove ' + tag.label"
       (click)="removeTag(tag.value, $event)"
@@ -46,13 +58,39 @@
     </button>
   </span>
   } @if (overflowCount() > 0) {
-  <span [class]="overflowTagClasses"
+  <span
+    [class]="overflowTagClasses()"
+    [dgPt]="ptFor('overflowTag')"
+    [attr.aria-label]="overflowTagAriaLabel()"
     >{{ overflowLabelFn()(overflowCount()) }}</span
   >
-  } } @if (clearable() && selectedOptions().length > 0) {
+  } } @if (editableTags()) {
+  <input
+    type="text"
+    role="combobox"
+    [id]="triggerId"
+    [disabled]="isDisabled()"
+    [readOnly]="readOnly()"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="isOpen() ? listboxId : null"
+    [attr.aria-activedescendant]="isOpen() ? activeOptionId() : null"
+    [attr.aria-invalid]="invalid() ? 'true' : null"
+    [attr.aria-readonly]="readOnly() ? 'true' : null"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [dgPt]="ptFor('chipInput')"
+    [placeholder]="selectedOptions().length === 0 ? placeholder() : ''"
+    [value]="chipDraft()"
+    (input)="onChipInputInput($event)"
+    (click)="onChipInputClick($event)"
+    (blur)="onChipInputBlur()"
+  />
+  } @if (clearable() && selectedOptions().length > 0) {
   <button
     type="button"
-    [class]="clearButtonClasses"
+    [class]="clearButtonClasses()"
+    [dgPt]="ptFor('clear')"
     [disabled]="isDisabled() || readOnly()"
     aria-label="Clear selection"
     (click)="clearSelection($event)"
@@ -79,6 +117,7 @@
     height="16"
     viewBox="0 0 16 16"
     fill="none"
+    [dgPt]="ptFor('chevron')"
   >
     <path
       d="M4 6l4 4 4-4"
@@ -101,6 +140,8 @@
         [checked]="selectAllState().checked"
         [indeterminate]="selectAllState().indeterminate"
         [disabled]="isDisabled() || readOnly() || visibleOptions().length === 0"
+        [styleClass]="headerCheckboxClasses()"
+        [pt]="{ root: headerCheckboxPt() }"
         (checkedChange)="onSelectAllToggle($event)"
       >
         <span class="sr-only">{{ selectAllLabel() }}</span>
@@ -111,6 +152,7 @@
           type="search"
           size="sm"
           [styleClass]="filterInputExtraClasses"
+          [pt]="{ input: ptFor('filterInput') }"
           [ngModel]="filterText()"
           (ngModelChange)="onFilterInputChange($event)"
           (keydown)="onFilterKeydown($event)"
@@ -141,14 +183,16 @@
       [id]="listboxId"
       role="listbox"
       aria-multiselectable="true"
-      [class]="isVirtualized() ? '' : listboxClasses"
+      [class]="isVirtualized() ? '' : listboxClasses()"
       [attr.aria-label]="ariaLabel() ?? 'Options'"
+      [dgPt]="ptFor('listbox')"
     >
       @if (isVirtualized()) {
       <dg-virtual-scroll
         [items]="visibleOptions()"
         [itemSize]="virtualScrollItemSize()"
         [height]="virtualScrollHeight()"
+        (scrolledIndexChange)="scrolledIndexChange.emit($event)"
       >
         <ng-template let-option let-i="index">
           <li
@@ -158,24 +202,45 @@
             [attr.aria-selected]="isSelected(option)"
             [attr.aria-disabled]="option.disabled ? 'true' : null"
             [class]="optionClasses(option, i)"
+            [dgPt]="ptFor('option')"
             (click)="toggleOption(option)"
             (keydown.enter)="toggleOption(option)"
             (keydown.space)="toggleOption(option)"
             (mouseenter)="activeIndex.set(i)"
           >
-            <span [class]="checkboxClasses(option)" [attr.aria-hidden]="true">
+            <span
+              [class]="checkboxClasses(option)"
+              [dgPt]="ptFor('optionCheckbox')"
+              [attr.aria-hidden]="true"
+            >
               @if (isSelected(option)) {
               <dg-icon-check size="sm" />
               }
             </span>
+            @if (optionTemplate(); as tpl) {
+            <ng-container
+              [ngTemplateOutlet]="tpl"
+              [ngTemplateOutletContext]="{ $implicit: option }"
+            />
+            } @else {
             <span>{{ option.label }}</span>
+            }
           </li>
         </ng-template>
       </dg-virtual-scroll>
       } @else { @for (item of renderItems(); track entryKey(item)) { @if
       (item.kind === 'heading') {
-      <li role="presentation" [class]="groupHeadingClasses">
-        {{ item.label }}
+      <li
+        role="presentation"
+        [class]="groupHeadingClasses()"
+        [dgPt]="ptFor('group')"
+      >
+        @if (groupTemplate(); as tpl) {
+        <ng-container
+          [ngTemplateOutlet]="tpl"
+          [ngTemplateOutletContext]="{ $implicit: item.label }"
+        />
+        } @else { {{ item.label }} }
       </li>
       } @else {
       <li
@@ -185,17 +250,29 @@
         [attr.aria-selected]="isSelected(item.option)"
         [attr.aria-disabled]="item.option.disabled ? 'true' : null"
         [class]="optionClasses(item.option, item.index)"
+        [dgPt]="ptFor('option')"
         (click)="toggleOption(item.option)"
         (keydown.enter)="toggleOption(item.option)"
         (keydown.space)="toggleOption(item.option)"
         (mouseenter)="activeIndex.set(item.index)"
       >
-        <span [class]="checkboxClasses(item.option)" [attr.aria-hidden]="true">
+        <span
+          [class]="checkboxClasses(item.option)"
+          [dgPt]="ptFor('optionCheckbox')"
+          [attr.aria-hidden]="true"
+        >
           @if (isSelected(item.option)) {
           <dg-icon-check size="sm" />
           }
         </span>
+        @if (optionTemplate(); as tpl) {
+        <ng-container
+          [ngTemplateOutlet]="tpl"
+          [ngTemplateOutletContext]="{ $implicit: item.option }"
+        />
+        } @else {
         <span>{{ item.option.label }}</span>
+        }
       </li>
       } } } @if (showNoResults()) {
       <li role="presentation" [class]="noResultsClasses">
