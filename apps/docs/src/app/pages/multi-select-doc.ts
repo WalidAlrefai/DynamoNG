@@ -25,6 +25,9 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'max-tags', title: 'Max Visible Tags' },
   { id: 'clearable-readonly', title: 'Clearable & Read-only' },
+  { id: 'filled', title: 'Filled' },
+  { id: 'template', title: 'Template' },
+  { id: 'editable-tags', title: 'Editable Tags' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
 ];
 
@@ -104,6 +107,76 @@ const EXAMPLES: DocExampleRef[] = [
       </docs-example>
 
       <docs-example
+        exampleId="filled"
+        title="Filled"
+        description='variant "filled" swaps the outlined look for a filled surface background — mirrors Select&apos;s variant.'
+      >
+        <div preview class="max-w-sm">
+          <dg-multi-select
+            [options]="options"
+            variant="filled"
+            ariaLabel="Skills (filled)"
+            placeholder="Choose skills"
+          />
+        </div>
+        <div code>
+          &lt;dg-multi-select [options]="options" variant="filled" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="template"
+        title="Template"
+        description="Project an #optionTemplate to render arbitrary content per option (falls back to plain text when omitted). #tagTemplate customizes each selected tag's label the same way; #groupTemplate customizes group headings."
+      >
+        <div preview class="max-w-sm">
+          <dg-multi-select
+            [options]="options"
+            [(value)]="templateSkills"
+            ariaLabel="Skills"
+          >
+            <ng-template #optionTemplate let-option>
+              <span
+                class="inline-block h-2.5 w-2.5 rounded-full bg-primary"
+              ></span>
+              <span>{{ option.label }}</span>
+            </ng-template>
+            <ng-template #tagTemplate let-option>
+              <span
+                class="inline-block h-1.5 w-1.5 rounded-full bg-primary"
+              ></span>
+              <span>{{ option.label }}</span>
+            </ng-template>
+          </dg-multi-select>
+        </div>
+        <div code>
+          &lt;dg-multi-select [options]="options" [(value)]="skills"&gt;
+          &lt;ng-template #optionTemplate let-option&gt;...&lt;/ng-template&gt;
+          &lt;ng-template #tagTemplate let-option&gt;...&lt;/ng-template&gt;
+          &lt;/dg-multi-select&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="editable-tags"
+        title="Editable Tags"
+        description="editableTags renders a real typable input alongside the tag pills. Typing a value that doesn't match any option's label commits it directly as a free-text tag on blur, comma, or Enter; typing an existing option's label selects that option properly. Mutually exclusive with filterable."
+      >
+        <div preview class="max-w-sm">
+          <dg-multi-select
+            [options]="options"
+            [(value)]="editableTagsSkills"
+            ariaLabel="Skills"
+            [editableTags]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-multi-select [options]="options" [(value)]="skills"
+          [editableTags]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="virtual-scroll"
         title="Virtual Scroll"
         description="Set virtualScroll for large option lists — only a small rendered window mounts."
@@ -150,6 +223,21 @@ const EXAMPLES: DocExampleRef[] = [
               <td class="py-2 font-mono">[]</td>
             </tr>
             <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">variant</td>
+              <td class="py-2 pr-4 font-mono">'outlined' | 'filled'</td>
+              <td class="py-2 font-mono">'outlined'</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">fluid</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">true</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">ariaDescribedby</td>
+              <td class="py-2 pr-4 font-mono">string | undefined</td>
+              <td class="py-2 font-mono">undefined</td>
+            </tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">filterable</td>
               <td class="py-2 pr-4 font-mono">boolean</td>
               <td class="py-2 font-mono">false</td>
@@ -180,16 +268,26 @@ const EXAMPLES: DocExampleRef[] = [
               <td class="py-2 font-mono">undefined</td>
             </tr>
             <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">editableTags</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">false</td>
+            </tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">tagRemoved</td>
               <td class="py-2 pr-4 font-mono">output&lt;TValue&gt;</td>
               <td class="py-2 font-mono">—</td>
             </tr>
-            <tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">
                 virtualScroll / ...ItemSize / ...Height
               </td>
               <td class="py-2 pr-4 font-mono">boolean / number / number</td>
               <td class="py-2 font-mono">false / 36 / 240</td>
+            </tr>
+            <tr>
+              <td class="py-2 pr-4 font-mono">scrolledIndexChange</td>
+              <td class="py-2 pr-4 font-mono">output&lt;number&gt;</td>
+              <td class="py-2 font-mono">—</td>
             </tr>
           </tbody>
         </table>
@@ -207,4 +305,6 @@ export class MultiSelectDocPage {
   protected readonly options = SKILL_OPTIONS;
   protected readonly manyOptions = MANY_OPTIONS;
   protected readonly clearableSkills = signal<string[]>(['react', 'vue']);
+  protected readonly templateSkills = signal<string[]>(['angular']);
+  protected readonly editableTagsSkills = signal<string[]>(['react']);
 }

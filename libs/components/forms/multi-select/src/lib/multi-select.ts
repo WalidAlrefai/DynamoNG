@@ -4,17 +4,21 @@ import {
   ElementRef,
   TemplateRef,
   computed,
+  contentChild,
   effect,
   forwardRef,
   input,
   model,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { FormsModule } from '@angular/forms';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoCheckbox } from '@dynamong/checkbox';
+import { DynamoPassThroughDirective } from '@dynamong/core/base';
 import { DynamoCheckIcon } from '@dynamong/icons';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoSpinner } from '@dynamong/spinner';
@@ -42,6 +46,7 @@ import type {
   DynamoSelectOption,
   DynamoSelectPosition,
   DynamoSelectSize,
+  DynamoSelectVariant,
 } from '@dynamong/select';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -72,11 +77,13 @@ type DynamoMultiSelectRenderItem<TValue> =
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
+    NgTemplateOutlet,
     DynamoInputText,
     DynamoCheckIcon,
     DynamoCheckbox,
     DynamoSpinner,
     DynamoVirtualScroll,
+    DynamoPassThroughDirective,
   ],
   templateUrl: './multi-select.html',
   providers: [
@@ -94,7 +101,12 @@ export class DynamoMultiSelect<TValue = unknown>
   readonly options = input.required<DynamoSelectOption<TValue>[]>();
   readonly placeholder = input('Select options');
   readonly size = input<DynamoSelectSize>('md');
+  readonly variant = input<DynamoSelectVariant>('outlined');
+  /** Fills the width of its container. Defaults `true` to match every existing consumer's assumption of a full-width trigger; set `false` for PrimeNG-style intrinsic sizing. */
+  readonly fluid = input(true);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Associates the trigger with an external help/error message element via `aria-describedby`. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   /** Two-way bindable array of selected values; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<TValue[]>([]);
   /** Fires once per option a user directly toggles (check or uncheck) with the full option object — not from `selectAll()`/`clearAll()`/the header checkbox. */
@@ -144,12 +156,37 @@ export class DynamoMultiSelect<TValue = unknown>
   );
   /** Emitted when a single tag's remove button is clicked (in addition to `value` updating). */
   readonly tagRemoved = output<TValue>();
+  /** Forwarded 1:1 from `@dynamong/virtual-scroll`'s own output — the index of the first item considered "in view" after each scroll, while `virtualScroll` is on. Drive your own lazy-load fetch from this as the index nears `options().length`. */
+  readonly scrolledIndexChange = output<number>();
+  /** Renders a free-text `<input>` alongside the tag pills — typing and committing (Enter, comma, or
+   *  blur) adds a new tag to `value`. Text matching an existing option's label selects that option
+   *  properly (via `toggleOption()`, respecting `disabled`/`maxSelected`, emitting `itemSelect`) —
+   *  unless it's already selected, in which case re-typing its label is a no-op (never unselects it).
+   *  Anything else is appended as a raw string (only meaningful when `TValue` is/accepts `string`),
+   *  deduplicated against existing values. Does NOT close the panel on commit — unlike `DynamoSelect`'s
+   *  `editable`, adding one tag is expected to be followed by adding more. Mutually exclusive with
+   *  `filterable` in v1 (documented, not runtime-guarded). */
+  readonly editableTags = input(false);
+  protected readonly chipDraft = signal('');
 
   private readonly triggerEl =
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
   private readonly virtualScrollRef = viewChild(DynamoVirtualScroll);
+
+  /** Optional, independently-usable projected templates — each falls back to today's plain-text rendering when omitted, mirroring `DynamoSelect`'s own `contentChild(TemplateRef)` idiom. */
+  protected readonly optionTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoSelectOption<TValue> }>>(
+      'optionTemplate',
+    );
+  protected readonly groupTemplate =
+    contentChild<TemplateRef<{ $implicit: string }>>('groupTemplate');
+  /** Replaces only a tag pill's label content — the pill wrapper and its real, independently-focusable remove `<button>` stay exactly as today, outside the templated region (a11y/`stopPropagation` wiring never shifts onto the consumer). Does not apply to the "+N more" overflow pill, which is a count summary, not a per-option render. */
+  protected readonly tagTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoSelectOption<TValue> }>>(
+      'tagTemplate',
+    );
 
   protected readonly triggerId = this.idGenerator.next(
     'dg-multi-select-trigger',
@@ -219,11 +256,21 @@ export class DynamoMultiSelect<TValue = unknown>
     return capacity !== undefined && this.value().length >= capacity;
   });
 
-  /** Selection-order, not `options()` order — a stable, intuitive tag list as the user picks things. */
+  /** Selection-order, not `options()` order — a stable, intuitive tag list as the user picks things.
+   *  While `editableTags()` is on, a committed raw-string tag has no matching `options()` entry — a
+   *  fallback option is synthesized from the value itself so it still renders as a pill, instead of
+   *  silently vanishing from the tag row despite being correctly present in `value()`. */
   protected readonly selectedOptions = computed(() => {
     const options = this.options();
+    const synthesize = this.editableTags();
     return this.value()
-      .map((v) => options.find((option) => option.value === v))
+      .map((v) => {
+        const match = options.find((option) => option.value === v);
+        if (match) return match;
+        return synthesize
+          ? ({ label: String(v), value: v } as DynamoSelectOption<TValue>)
+          : undefined;
+      })
       .filter(
         (option): option is DynamoSelectOption<TValue> => option !== undefined,
       );
@@ -237,6 +284,13 @@ export class DynamoMultiSelect<TValue = unknown>
     const max = this.maxVisibleTags();
     if (max === undefined) return 0;
     return Math.max(0, this.selectedOptions().length - max);
+  });
+  /** Lists the labels collapsed into the "+N more" pill, for screen readers — the pill's own visible text ("+3 more") carries no information about which options those are. */
+  protected readonly overflowTagAriaLabel = computed(() => {
+    const hidden = this.selectedOptions().slice(this.visibleTags().length);
+    return hidden.length === 0
+      ? null
+      : `Also selected: ${hidden.map((o) => o.label).join(', ')}`;
   });
 
   protected readonly selectAllState = computed(() => {
@@ -260,6 +314,11 @@ export class DynamoMultiSelect<TValue = unknown>
     () => this.disabled() || this.loading(),
   );
 
+  /** `root` and `trigger` both target the same single trigger `<div>` — unlike `DynamoSelect`, there's no separate inner button to split them onto (see the class-level doc comment on `multiSelectPlaceholderStyles`). */
+  protected readonly triggerPt = computed(() => ({
+    ...this.ptFor('root'),
+    ...this.ptFor('trigger'),
+  }));
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
       ? this.styleClass()
@@ -267,18 +326,33 @@ export class DynamoMultiSelect<TValue = unknown>
           multiSelectTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
+            variant: this.variant(),
+            fluid: this.fluid(),
             disabled: this.isDisabled(),
           }),
+          this.ptFor('root').class,
+          this.ptFor('trigger').class,
           this.styleClass(),
         ),
   );
   protected readonly placeholderClasses = multiSelectPlaceholderStyles;
-  protected readonly tagClasses = multiSelectTagStyles;
-  protected readonly overflowTagClasses = multiSelectOverflowTagStyles;
-  protected readonly tagRemoveButtonClasses = multiSelectTagRemoveButtonStyles;
-  protected readonly clearButtonClasses = selectClearButtonStyles;
+  protected readonly tagClasses = computed(() =>
+    cn(multiSelectTagStyles, this.ptFor('tag').class),
+  );
+  protected readonly overflowTagClasses = computed(() =>
+    cn(multiSelectOverflowTagStyles, this.ptFor('overflowTag').class),
+  );
+  protected readonly tagRemoveButtonClasses = computed(() =>
+    cn(multiSelectTagRemoveButtonStyles, this.ptFor('tagRemove').class),
+  );
+  protected readonly clearButtonClasses = computed(() =>
+    cn(selectClearButtonStyles, this.ptFor('clear').class),
+  );
   protected readonly chevronClasses = computed(() =>
-    selectChevronStyles({ open: this.isOpen() }),
+    cn(
+      selectChevronStyles({ open: this.isOpen() }),
+      this.ptFor('chevron').class,
+    ),
   );
   /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
   protected readonly panelWrapperClasses = computed(() =>
@@ -286,12 +360,24 @@ export class DynamoMultiSelect<TValue = unknown>
       ? selectPanelWrapperVirtualStyles
       : selectPanelWrapperStyles,
   );
-  protected readonly listboxClasses = selectListboxStyles;
+  protected readonly listboxClasses = computed(() =>
+    cn(selectListboxStyles, this.ptFor('listbox').class),
+  );
   protected readonly headerRowClasses = multiSelectHeaderRowStyles;
+  /** Merges the `selectAll`/`clearAll` pt parts onto the one tri-state header `<dg-checkbox>` — `selectAll` wins key collisions since it's the control's primary identity. */
+  protected readonly headerCheckboxPt = computed(() => ({
+    ...this.ptFor('clearAll'),
+    ...this.ptFor('selectAll'),
+  }));
+  protected readonly headerCheckboxClasses = computed(() =>
+    cn(this.ptFor('clearAll').class, this.ptFor('selectAll').class),
+  );
   protected readonly filterFieldWrapperClasses = selectFilterFieldWrapperStyles;
   protected readonly filterIconClasses = selectFilterIconStyles;
   protected readonly filterInputExtraClasses = selectFilterInputExtraClasses;
-  protected readonly groupHeadingClasses = selectGroupHeadingStyles;
+  protected readonly groupHeadingClasses = computed(() =>
+    cn(selectGroupHeadingStyles, this.ptFor('group').class),
+  );
   protected readonly noResultsClasses = selectNoResultsStyles;
   protected readonly maxSelectedMessageClasses =
     multiSelectMaxSelectedMessageStyles;
@@ -305,6 +391,24 @@ export class DynamoMultiSelect<TValue = unknown>
       } else {
         this.detachOverlay();
       }
+    });
+
+    // Re-validates `activeIndex` if `effectiveOptions()` changes while the panel stays open — e.g.
+    // an async-loaded list swap, a disabled flag flipping, or `maxSelected` capacity synthetically
+    // disabling the currently-active row via `effectiveOptions()` itself (no external data change
+    // needed — just the user's own selections reaching the cap). Without this, a stale index could
+    // point past the end of the new list or at a since-disabled row, and `aria-activedescendant`
+    // would reference a nonexistent/mismatched option id. Self-terminating: the write only fires
+    // when the read-back condition is currently true.
+    effect(() => {
+      if (!this.isOpen()) return;
+      const options = this.visibleOptions();
+      const current = this.activeIndex();
+      const isInvalid =
+        current < 0 || current >= options.length || options[current]?.disabled;
+      if (!isInvalid) return;
+      const recovered = findEnabledIndex(options, -1, 1) ?? -1;
+      if (recovered !== current) this.activeIndex.set(recovered);
     });
 
     this.destroyRef.onDestroy(() => this.destroyOverlay());
@@ -336,17 +440,21 @@ export class DynamoMultiSelect<TValue = unknown>
     option: DynamoSelectOption<TValue>,
     index: number,
   ): string {
-    return selectOptionStyles({
-      active: index === this.activeIndex(),
-      selected: this.isSelected(option),
-      disabled: !!option.disabled,
-    });
+    return cn(
+      selectOptionStyles({
+        active: index === this.activeIndex(),
+        selected: this.isSelected(option),
+        disabled: !!option.disabled,
+      }),
+      this.ptFor('option').class,
+    );
   }
 
   protected checkboxClasses(option: DynamoSelectOption<TValue>): string {
-    return multiSelectOptionCheckboxStyles({
-      checked: this.isSelected(option),
-    });
+    return cn(
+      multiSelectOptionCheckboxStyles({ checked: this.isSelected(option) }),
+      this.ptFor('optionCheckbox').class,
+    );
   }
 
   protected isSelected(option: DynamoSelectOption<TValue>): boolean {
@@ -407,6 +515,57 @@ export class DynamoMultiSelect<TValue = unknown>
     if (this.isDisabled() || this.readOnly()) return;
     this.value.set([]);
     this.onChangeFn([]);
+    this.chipDraft.set('');
+  }
+
+  /** Mirrors `removeTag`'s `stopPropagation` — clicking directly into the chip input must never also
+   *  toggle the panel shut via the wrapper `<div>`'s own `(click)="toggle()"`. Unlike that handler,
+   *  this only ever opens: once the panel is open, clicking back into the field to keep typing must
+   *  not unexpectedly close it. */
+  protected onChipInputClick(event: MouseEvent): void {
+    event.stopPropagation();
+    if (!this.isOpen()) this.openList();
+  }
+
+  protected onChipInputInput(event: Event): void {
+    this.chipDraft.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onChipInputBlur(): void {
+    this.commitChipDraft();
+    this.onTouchedFn();
+  }
+
+  /**
+   * Commits the chip input's typed draft as a new tag. Text matching an existing option's label
+   * (exact) toggles that option properly via `toggleOption()` — respecting `disabled`/`maxSelected`,
+   * emitting `itemSelect` — unless it's already selected, in which case this is a no-op (re-typing an
+   * already-selected tag's label must never remove it). Anything else is appended to `value` directly
+   * as a raw string (only meaningful when `TValue` is/accepts `string`), deduplicated against existing
+   * values and capped by `maxSelected` the same way `toggleOption` is. Does NOT close the panel —
+   * unlike `DynamoSelect`'s single-value commit, adding one tag is expected to be followed by adding
+   * more. No-op on an empty draft.
+   */
+  private commitChipDraft(): void {
+    const trimmed = this.chipDraft().trim();
+    this.chipDraft.set('');
+    if (trimmed === '') return;
+    const matched = this.options().find((option) => option.label === trimmed);
+    if (matched) {
+      if (!this.isSelected(matched)) this.toggleOption(matched);
+      return;
+    }
+    const next = trimmed as unknown as TValue;
+    if (this.value().includes(next)) return;
+    const capacity = this.maxSelected();
+    if (capacity !== undefined && this.value().length >= capacity) return;
+    const updated = [...this.value(), next];
+    this.value.set(updated);
+    this.onChangeFn(updated);
+  }
+
+  protected override matchOverlayWidthToTrigger(): boolean {
+    return this.editableTags();
   }
 
   protected selectAll(): void {
@@ -511,9 +670,39 @@ export class DynamoMultiSelect<TValue = unknown>
           this.scrollActiveIntoView();
         }
         break;
-      case 'Enter':
       case ' ':
+        // A real textbox once `editableTags()` — Space must type a literal
+        // space (e.g. a multi-word free-text tag), not act as a toggle key.
+        // Same posture `DynamoSelect`'s `editable` already takes.
+        if (this.editableTags()) return;
         event.preventDefault();
+        if (this.isOpen()) {
+          const active = this.visibleOptions()[this.activeIndex()];
+          if (active) this.toggleOption(active);
+        } else {
+          this.openList();
+        }
+        break;
+      case ',':
+        if (this.editableTags()) {
+          event.preventDefault();
+          this.commitChipDraft();
+        }
+        break;
+      case 'Enter':
+        event.preventDefault();
+        // Enter while a real option is actively highlighted (arrow-keyed, or
+        // auto-highlighted on open) still toggles it, even in chip-input
+        // mode — only falls through to committing the typed draft when
+        // nothing's highlighted (closed trigger, or open with no active row).
+        if (
+          this.editableTags() &&
+          this.chipDraft().trim() !== '' &&
+          (!this.isOpen() || this.activeIndex() < 0)
+        ) {
+          this.commitChipDraft();
+          break;
+        }
         if (this.isOpen()) {
           const active = this.visibleOptions()[this.activeIndex()];
           if (active) this.toggleOption(active);
@@ -548,7 +737,8 @@ export class DynamoMultiSelect<TValue = unknown>
       event.ctrlKey ||
       event.metaKey ||
       event.altKey ||
-      this.filterable()
+      this.filterable() ||
+      this.editableTags()
     ) {
       return;
     }

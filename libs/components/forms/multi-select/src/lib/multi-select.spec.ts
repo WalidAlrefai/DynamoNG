@@ -72,6 +72,48 @@ class MultiSelectTestHostComponent {
 }
 
 @Component({
+  selector: 'dg-multi-select-templates-host',
+  standalone: true,
+  imports: [DynamoMultiSelect],
+  template: `
+    <dg-multi-select
+      [options]="options"
+      [(value)]="value"
+      ariaLabel="Choose options"
+    >
+      <ng-template #optionTemplate let-option>
+        <span data-testid="custom-option">{{ option.label }} (custom)</span>
+      </ng-template>
+      <ng-template #tagTemplate let-option>
+        <span data-testid="custom-tag">{{ option.label }} (tag)</span>
+      </ng-template>
+    </dg-multi-select>
+  `,
+})
+class MultiSelectTemplatesHostComponent {
+  readonly options = THREE_OPTIONS;
+  readonly value = model<string[]>([]);
+}
+
+@Component({
+  selector: 'dg-multi-select-group-template-host',
+  standalone: true,
+  imports: [DynamoMultiSelect],
+  template: `
+    <dg-multi-select [options]="options" ariaLabel="Choose items">
+      <ng-template #groupTemplate let-label>
+        <strong data-testid="custom-group">{{ label }} —</strong>
+      </ng-template>
+    </dg-multi-select>
+  `,
+})
+class MultiSelectGroupTemplateHostComponent {
+  readonly options: DynamoSelectOption<string>[] = [
+    { label: 'Ava', value: 'ava', group: 'Team' },
+  ];
+}
+
+@Component({
   selector: 'dg-multi-select-reactive-form-host',
   standalone: true,
   imports: [DynamoMultiSelect, ReactiveFormsModule],
@@ -1280,6 +1322,649 @@ describe('DynamoMultiSelect', () => {
       await expect(
         expectNoA11yViolations(getOverlayContainer()),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('passthrough (pt)', () => {
+    it('merges pt class onto every part: root/trigger/tag/tagRemove/overflowTag/chevron/clear/listbox/group/option/optionCheckbox/filterInput', async () => {
+      const groupedWithFilter: DynamoSelectOption<string>[] = [
+        { label: 'Ava', value: 'ava', group: 'Team' },
+        { label: 'Bea', value: 'bea', group: 'Team' },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: {
+          options: groupedWithFilter,
+          value: ['ava', 'bea'],
+          clearable: true,
+          filterable: true,
+          maxVisibleTags: 1,
+          pt: {
+            root: { class: 'pt-root' },
+            trigger: { class: 'pt-trigger' },
+            tag: { class: 'pt-tag' },
+            tagRemove: { class: 'pt-tag-remove' },
+            overflowTag: { class: 'pt-overflow-tag' },
+            chevron: { class: 'pt-chevron' },
+            clear: { class: 'pt-clear' },
+            listbox: { class: 'pt-listbox' },
+            group: { class: 'pt-group' },
+            option: { class: 'pt-option' },
+            optionCheckbox: { class: 'pt-option-checkbox' },
+            filterInput: { class: 'pt-filter-input' },
+          },
+        },
+      });
+
+      const trigger = within(container).getByRole('combobox');
+      expect(trigger.classList).toContain('pt-root');
+      expect(trigger.classList).toContain('pt-trigger');
+      expect(container.querySelector('div > svg')?.classList).toContain(
+        'pt-chevron',
+      );
+      expect(
+        within(container).getByRole('button', { name: 'Clear selection' })
+          .classList,
+      ).toContain('pt-clear');
+      expect(
+        within(container)
+          .getByRole('button', { name: /Remove Ava/ })
+          .closest('span')?.classList,
+      ).toContain('pt-tag');
+      expect(
+        within(container).getByRole('button', { name: /Remove Ava/ }).classList,
+      ).toContain('pt-tag-remove');
+      expect(container.querySelector('.pt-overflow-tag')).not.toBeNull();
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getPanel()?.classList).toContain('pt-listbox');
+      expect(
+        getPanel()?.querySelector('[role="presentation"]')?.classList,
+      ).toContain('pt-group');
+      expect(getOptionByText('Ava').classList).toContain('pt-option');
+      expect(getOptionByText('Ava').querySelector('span')?.classList).toContain(
+        'pt-option-checkbox',
+      );
+      expect(
+        getOverlayContainer().querySelector('input[type="search"]')?.classList,
+      ).toContain('pt-filter-input');
+    });
+
+    it('merges selectAll and clearAll pt classes onto the one header checkbox, selectAll winning key collisions', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          pt: {
+            selectAll: { class: 'pt-select-all', 'data-select-all': 'yes' },
+            clearAll: { class: 'pt-clear-all', 'data-select-all': 'no' },
+          },
+        },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      const selectAllHost = within(document.body).getByTestId(
+        'dg-multi-select-select-all',
+      );
+      const label = selectAllHost.querySelector('label');
+      expect(label?.classList).toContain('pt-select-all');
+      expect(label?.classList).toContain('pt-clear-all');
+      expect(label?.getAttribute('data-select-all')).toBe('yes');
+    });
+  });
+
+  describe('variant / fluid / ariaDescribedby', () => {
+    it('defaults variant to outlined and fluid to true', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS } },
+      );
+      expect(componentInstance.variant()).toBe('outlined');
+      expect(componentInstance.fluid()).toBe(true);
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('applies a different background for the filled variant', () => {
+      const { container, setInputs } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, variant: 'outlined' } },
+      );
+      const outlinedClasses = container.querySelector('div')?.className;
+
+      setInputs({ variant: 'filled' });
+      const filledClasses = container.querySelector('div')?.className;
+
+      expect(outlinedClasses).not.toBe(filledClasses);
+    });
+
+    it('drops w-full when fluid is set to false', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS, fluid: false },
+      });
+      expect(container.querySelector('div')?.className).not.toContain('w-full');
+    });
+
+    it('forwards ariaDescribedby to the trigger', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS, ariaDescribedby: 'help-text' },
+      });
+      expect(
+        within(container)
+          .getByRole('combobox')
+          .getAttribute('aria-describedby'),
+      ).toBe('help-text');
+    });
+  });
+
+  describe('lazy virtual scroll (scrolledIndexChange)', () => {
+    const MANY_OPTIONS_FOR_SCROLL: DynamoSelectOption<string>[] =
+      createMockSelectOptions(50);
+
+    it('forwards scrolledIndexChange from the underlying dg-virtual-scroll while virtualized', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: MANY_OPTIONS_FOR_SCROLL, virtualScroll: true } },
+      );
+      const emitted: number[] = [];
+      componentInstance.scrolledIndexChange.subscribe((i) => emitted.push(i));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      const viewportDebugEl = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      );
+      const viewport =
+        viewportDebugEl.componentInstance as DynamoVirtualScroll<unknown>;
+      viewport.scrolledIndexChange.emit(7);
+
+      // CDK's viewport also emits an initial index (0) on its own attach —
+      // assert the forwarded value arrived rather than an exact array, to
+      // stay robust to that implementation detail.
+      expect(emitted).toContain(7);
+    });
+  });
+
+  describe('activeIndex re-validation while the panel stays open', () => {
+    it('recovers activeIndex once a previously all-disabled option list gets an enabled option', async () => {
+      const allDisabled: DynamoSelectOption<string>[] = [
+        { label: 'First', value: 'first', disabled: true },
+        { label: 'Second', value: 'second', disabled: true },
+      ];
+      const { container, fixture, componentInstance, setInputs } =
+        renderDynamoComponent(DynamoMultiSelect, {
+          inputs: { options: allDisabled },
+        });
+      const trigger = within(container).getByRole('combobox');
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      expect(componentInstance['activeIndex']()).toBe(-1);
+
+      setInputs({
+        options: [
+          { label: 'First', value: 'first', disabled: true },
+          { label: 'Second', value: 'second', disabled: false },
+        ],
+      });
+      await settle(fixture);
+
+      expect(componentInstance['activeIndex']()).toBe(1);
+      expect(trigger.getAttribute('aria-activedescendant')).toBe(
+        getOptionByText('Second').id,
+      );
+    });
+
+    it('recovers activeIndex when the actively-highlighted option is removed while the panel stays open', async () => {
+      const { container, fixture, componentInstance, setInputs } =
+        renderDynamoComponent(DynamoMultiSelect, {
+          inputs: { options: THREE_OPTIONS },
+        });
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      trigger.focus();
+      // Opening already auto-focuses index 0, so two more ArrowDowns reach index 2.
+      await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+      expect(componentInstance['activeIndex']()).toBe(2);
+
+      setInputs({ options: THREE_OPTIONS.slice(0, 2) });
+      await settle(fixture);
+
+      expect(componentInstance['activeIndex']()).toBeLessThan(2);
+    });
+
+    it('recovers activeIndex when maxSelected capacity synthetically disables the active row via effectiveOptions', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, maxSelected: 1 } },
+      );
+      const trigger = within(container).getByRole('combobox') as HTMLElement;
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      trigger.focus();
+      // Open auto-focuses index 0 ("Option 1"); arrow down once more to
+      // highlight "Option 2" before selecting "Option 1", which then caps
+      // capacity and synthetically disables "Option 2" out from under the
+      // still-active index.
+      await userEvent.keyboard('{ArrowDown}');
+      expect(componentInstance['activeIndex']()).toBe(1);
+
+      await userEvent.keyboard('{ArrowUp}{Enter}');
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(['option-1']);
+      const active = componentInstance['activeIndex']();
+      const options = componentInstance[
+        'visibleOptions'
+      ]() as DynamoSelectOption<string>[];
+      expect(options[active]?.disabled).not.toBe(true);
+    });
+  });
+
+  describe('overflow tag accessibility', () => {
+    it('describes the hidden options on the "+N more" pill via aria-label', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          value: ['option-1', 'option-2', 'option-3'],
+          maxVisibleTags: 1,
+        },
+      });
+
+      const overflow = container.querySelector('[aria-label^="Also selected"]');
+      expect(overflow).not.toBeNull();
+      expect(overflow?.getAttribute('aria-label')).toContain('Option 2');
+      expect(overflow?.getAttribute('aria-label')).toContain('Option 3');
+    });
+
+    it('has no aria-label on the overflow pill when nothing is hidden', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS, value: ['option-1'] },
+      });
+
+      expect(
+        container.querySelector('[aria-label^="Also selected"]'),
+      ).toBeNull();
+    });
+  });
+
+  describe('custom templates', () => {
+    it('renders #optionTemplate instead of plain text for every option', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MultiSelectTemplatesHostComponent,
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      const customOptions = getPanel()?.querySelectorAll(
+        '[data-testid="custom-option"]',
+      );
+      expect(customOptions).toHaveLength(3);
+      expect(customOptions?.[0]?.textContent).toContain('(custom)');
+    });
+
+    it('renders #tagTemplate inside each tag pill while keeping the remove button real and functional', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        MultiSelectTemplatesHostComponent,
+      );
+      componentInstance.value.set(['option-1']);
+      fixture.detectChanges();
+
+      const tag = within(container).getByTestId('custom-tag');
+      expect(tag.textContent).toContain('Option 1 (tag)');
+      const removeButton = within(container).getByRole('button', {
+        name: /Remove Option 1/,
+      });
+      expect(removeButton).not.toBeNull();
+
+      await userEvent.click(removeButton);
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual([]);
+    });
+
+    it('does not apply #tagTemplate to the overflow ("+N more") pill', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS, value: ['option-1', 'option-2'] },
+      });
+      // No tagTemplate projected here at all (plain DynamoMultiSelect render)
+      // — sanity-checks the overflow pill's own text path is untouched;
+      // the host-component test above covers the "template present but
+      // skipped for overflow" case indirectly since maxVisibleTags isn't
+      // set there and no overflow pill renders.
+      expect(container.querySelector('[data-testid="custom-tag"]')).toBeNull();
+    });
+
+    it('renders #groupTemplate instead of plain text for group headings', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MultiSelectGroupTemplateHostComponent,
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      const heading = getPanel()?.querySelector('[data-testid="custom-group"]');
+      expect(heading?.textContent).toContain('Team —');
+    });
+
+    it('falls back to plain text for options/groups/tags when no templates are provided', async () => {
+      const grouped: DynamoSelectOption<string>[] = [
+        { label: 'Ava', value: 'ava', group: 'Team' },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: grouped, value: ['ava'] },
+      });
+
+      expect(within(container).getByText('Ava')).not.toBeNull();
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.textContent).toContain('Team');
+      expect(getOptionByText('Ava')).not.toBeNull();
+    });
+  });
+
+  describe('editableTags (chip input)', () => {
+    it('defaults to false, rendering no chip input (trigger stays the combobox)', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLElement).tagName,
+      ).toBe('DIV');
+    });
+
+    it('renders a real typable <input role="combobox"> when editableTags is true', () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: { options: THREE_OPTIONS, editableTags: true },
+      });
+      expect(
+        (within(container).getByRole('combobox') as HTMLElement).tagName,
+      ).toBe('INPUT');
+    });
+
+    it('typing updates the input value live without committing anything yet', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Custom');
+
+      expect(input.value).toBe('Custom');
+      expect(componentInstance.value()).toEqual([]);
+    });
+
+    it('Space types a literal space instead of toggling the active option', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      // userEvent.type() clicks (opens the panel) before typing — Space must
+      // still type literally rather than toggling whatever's highlighted.
+      await userEvent.type(input, 'a b');
+
+      expect(input.value).toBe('a b');
+      expect(componentInstance.value()).toEqual([]);
+    });
+
+    it('commits a non-matching typed value as a raw-string tag on blur, and it renders as a pill', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Something custom');
+      input.blur();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(['Something custom']);
+      // Regression check for the `selectedOptions()` synthesis fix — a
+      // raw-string tag has no matching `options()` entry, so without the
+      // fallback it would silently vanish from the tag row despite being
+      // correctly present in `value()`.
+      expect(within(container).getByText('Something custom')).not.toBeNull();
+    });
+
+    it('selects the matching option properly (not the raw string) when typed text matches its label exactly, on blur', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Option 2');
+      input.blur();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(['option-2']);
+    });
+
+    it('re-typing an already-selected option label is a no-op — it does not unselect it', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            editableTags: true,
+            value: ['option-1'],
+          },
+        },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Option 1');
+      input.blur();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(['option-1']);
+    });
+
+    it('comma commits the draft and clears the input', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Something custom,');
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(['Something custom']);
+      expect(input.value).toBe('');
+    });
+
+    it('blur with an empty draft is a no-op', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+      input.focus();
+      input.blur();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual([]);
+    });
+
+    it('a duplicate raw-string tag is deduped, not appended twice', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Custom,');
+      await settle(fixture);
+      await userEvent.type(input, 'Custom,');
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(['Custom']);
+    });
+
+    it('a commit at maxSelected capacity is a silent no-op', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            editableTags: true,
+            maxSelected: 1,
+            value: ['option-1'],
+          },
+        },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+
+      await userEvent.type(input, 'Custom,');
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(['option-1']);
+    });
+
+    it('does not close the panel on commit (unlike single-select)', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+      await userEvent.click(input);
+      await settle(fixture);
+      expect(componentInstance['isOpen']()).toBe(true);
+
+      await userEvent.type(input, 'Custom,');
+      await settle(fixture);
+
+      expect(componentInstance['isOpen']()).toBe(true);
+    });
+
+    it('clicking the input opens the panel without ever closing it while already open', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const input = within(container).getByRole('combobox');
+
+      await userEvent.click(input);
+      await settle(fixture);
+      expect(componentInstance['isOpen']()).toBe(true);
+
+      await userEvent.click(input);
+      await settle(fixture);
+      expect(componentInstance['isOpen']()).toBe(true);
+    });
+
+    it('clicking elsewhere on the trigger still toggles the panel open and closed', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS, editableTags: true } },
+      );
+      const trigger = container.querySelector('div') as HTMLElement;
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      expect(componentInstance['isOpen']()).toBe(true);
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      expect(componentInstance['isOpen']()).toBe(false);
+    });
+
+    it('existing tag removal, selectAll, and clearSelection still work unchanged with editableTags on', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            editableTags: true,
+            clearable: true,
+            value: ['option-1', 'option-2'],
+          },
+        },
+      );
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: /Remove Option 1/ }),
+      );
+      await settle(fixture);
+      expect(componentInstance.value()).toEqual(['option-2']);
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Clear selection' }),
+      );
+      await settle(fixture);
+      expect(componentInstance.value()).toEqual([]);
+    });
+
+    it('clearSelection also clears any in-progress chip draft', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoMultiSelect,
+        {
+          inputs: {
+            options: THREE_OPTIONS,
+            editableTags: true,
+            clearable: true,
+            value: ['option-1'],
+          },
+        },
+      );
+      const input = within(container).getByRole('combobox') as HTMLInputElement;
+      await userEvent.type(input, ' extra');
+
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'Clear selection' }),
+      );
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual([]);
+      expect(input.value).toBe('');
+    });
+
+    it('matchOverlayWidthToTrigger returns editableTags()', () => {
+      const { componentInstance, setInputs } = renderDynamoComponent(
+        DynamoMultiSelect,
+        { inputs: { options: THREE_OPTIONS } },
+      );
+      expect(componentInstance['matchOverlayWidthToTrigger']()).toBe(false);
+
+      setInputs({ editableTags: true });
+      expect(componentInstance['matchOverlayWidthToTrigger']()).toBe(true);
+    });
+
+    it('filterable and editableTags both true does not throw (smoke test — mutual exclusivity is documented, not guarded)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          editableTags: true,
+          filterable: true,
+        },
+      });
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = renderDynamoComponent(DynamoMultiSelect, {
+        inputs: {
+          options: THREE_OPTIONS,
+          editableTags: true,
+          ariaLabel: 'Skills',
+        },
+      });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });
 });

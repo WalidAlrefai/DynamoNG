@@ -12,10 +12,12 @@ export type DynamoMultiSelectPart =
   | 'filterInput'
   | 'selectAll'
   | 'clearAll'
-  | 'clearButton';
+  | 'clear'
+  | 'chipInput';
 
 export type {
   DynamoSelectOption,
   DynamoSelectPosition,
   DynamoSelectSize,
+  DynamoSelectVariant,
 } from '@dynamong/select';

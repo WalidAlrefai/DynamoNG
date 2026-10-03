@@ -15,8 +15,8 @@ import {
 // instead of one label, `flex-wrap` instead of a single line) and the tag
 // pills themselves are genuinely different and get their own styles below.
 export const multiSelectTriggerStyles = cva(
-  'flex w-full flex-wrap items-center gap-1.5 rounded-md border bg-surface-0 ' +
-    'text-text-primary transition-colors ' +
+  'flex flex-wrap items-center gap-1.5 rounded-md border text-text-primary ' +
+    'transition-colors ' +
     focusRingWithinClass,
   {
     variants: {
@@ -31,12 +31,26 @@ export const multiSelectTriggerStyles = cva(
         true: 'border-danger ' + focusRingInvalidClass,
         false: 'border-border',
       },
+      variant: {
+        outlined: 'bg-surface-0',
+        filled: 'bg-surface-100 border-transparent',
+      },
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
       disabled: {
         true: 'pointer-events-none opacity-60',
         false: '',
       },
     },
-    defaultVariants: { size: 'md', invalid: false, disabled: false },
+    defaultVariants: {
+      size: 'md',
+      invalid: false,
+      variant: 'outlined',
+      fluid: true,
+      disabled: false,
+    },
   },
 );
 
