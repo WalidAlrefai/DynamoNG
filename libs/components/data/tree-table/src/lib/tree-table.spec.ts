@@ -1,17 +1,42 @@
-import { Component, model, signal } from '@angular/core';
+import {
+  Component,
+  TemplateRef,
+  computed,
+  model,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { DynamoPagination } from '@dynamong/pagination';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
 } from '@dynamong/testing';
+import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoTreeTable } from './tree-table';
 import { DynamoTreeTableHarness } from './tree-table.harness';
 import type {
   DynamoTreeTableColumn,
+  DynamoTreeTableColumnFilterContext,
   DynamoTreeTableNode,
 } from './tree-table.types';
+
+// jsdom has no real `Element.scrollTo` implementation. `virtualScroll`'s
+// focus-into-unmounted-row fix calls the virtual-scroll viewport's own
+// `scrollToIndex()` (via CDK's viewport, which calls `scrollTo`
+// internally) when a keyboard move targets a row outside the currently
+// mounted range. A minimal stub (jsdom-only; this is a real,
+// universally-supported browser API) lets these tests exercise the real
+// keyboard-nav-while-virtualized behavior instead of crashing the run —
+// same gap and fix already established in `select.spec.ts`.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (): void {
+    /* jsdom gap — see comment above */
+  };
+}
 
 interface FileRow {
   name: string;
@@ -1445,6 +1470,1316 @@ describe('DynamoTreeTable', () => {
       );
 
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+});
+
+describe('DynamoTreeTable — baseline parity (Phase 0)', () => {
+  describe('passthrough (pt)', () => {
+    it('merges pt class onto every part: root/filterWrapper/filterInput/table/headerRow/headerCell/sortButton/sortIcon/row/cell/selectionCell/selectionCheckbox/chevronButton/chevron/paginationWrapper/pagination', async () => {
+      const { container, fixture } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          selectable: true,
+          filterable: true,
+          pageSize: 2,
+          pt: {
+            root: { class: 'pt-root' },
+            filterWrapper: { class: 'pt-filter-wrapper' },
+            filterInput: { class: 'pt-filter-input' },
+            table: { class: 'pt-table' },
+            headerRow: { class: 'pt-header-row' },
+            headerCell: { class: 'pt-header-cell' },
+            sortButton: { class: 'pt-sort-button' },
+            sortIcon: { class: 'pt-sort-icon' },
+            row: { class: 'pt-row' },
+            cell: { class: 'pt-cell' },
+            selectionCell: { class: 'pt-selection-cell' },
+            selectionCheckbox: { class: 'pt-selection-checkbox' },
+            chevronButton: { class: 'pt-chevron-button' },
+            chevron: { class: 'pt-chevron' },
+            paginationWrapper: { class: 'pt-pagination-wrapper' },
+            pagination: { class: 'pt-pagination' },
+          },
+        },
+      });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('.pt-filter-wrapper')).not.toBeNull();
+      expect(
+        container.querySelector('input[type="search"].pt-filter-input'),
+      ).not.toBeNull();
+      expect(container.querySelector('table.pt-table')).not.toBeNull();
+      expect(container.querySelector('thead tr')?.classList).toContain(
+        'pt-header-row',
+      );
+      expect(container.querySelector('th.pt-header-cell')).not.toBeNull();
+      expect(container.querySelector('button.pt-sort-button')).not.toBeNull();
+      expect(container.querySelector('svg.pt-sort-icon')).not.toBeNull();
+      expect(container.querySelector('tbody tr.pt-row')).not.toBeNull();
+      expect(container.querySelector('td.pt-cell')).not.toBeNull();
+      expect(container.querySelector('.pt-selection-cell')).not.toBeNull();
+      // DynamoCheckbox's own `class` merge lands on its inner <label>, not
+      // the <dg-checkbox> host — same pattern confirmed in Table's own pt
+      // test for its analogous selectionCheckbox part.
+      expect(
+        container.querySelector('label.pt-selection-checkbox'),
+      ).not.toBeNull();
+      expect(
+        container.querySelector('button.pt-chevron-button'),
+      ).not.toBeNull();
+      expect(container.querySelector('svg.pt-chevron')).not.toBeNull();
+      expect(container.querySelector('.pt-pagination-wrapper')).not.toBeNull();
+      // DynamoPagination itself hasn't been pt-reviewed yet (confirmed zero
+      // ptFor/dgPt usage in its own package) — TreeTable's own
+      // responsibility here is just forwarding the `pt` object into its
+      // `[pt]` input, verified directly against the child instance.
+      const paginationDebug = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoPagination,
+      );
+      expect(
+        (paginationDebug.componentInstance as DynamoPagination).pt(),
+      ).toEqual(expect.objectContaining({ root: { class: 'pt-pagination' } }));
+    });
+  });
+
+  describe('fluid / ariaDescribedby', () => {
+    it('defaults fluid to true', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns() } },
+      );
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('drops w-full when fluid is set to false', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: sampleItems(),
+            columns: sampleColumns(),
+            fluid: false,
+          },
+        },
+      );
+      expect(container.querySelector('div')?.className).not.toContain('w-full');
+    });
+
+    it('binds ariaDescribedby onto the table element', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: sampleItems(),
+            columns: sampleColumns(),
+            ariaDescribedby: 'hint-id',
+          },
+        },
+      );
+      expect(
+        container.querySelector('table')?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('omits aria-describedby when unset', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns() } },
+      );
+      expect(
+        container.querySelector('table')?.hasAttribute('aria-describedby'),
+      ).toBe(false);
+    });
+  });
+
+  describe('bug fixes', () => {
+    it('disables the select-all checkbox when the active filter matches no roots, even though items() stays non-empty', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: sampleItems(),
+            columns: sampleColumns(),
+            selectable: true,
+            filterable: true,
+            filterText: 'zzz-no-such-file',
+          },
+        },
+      );
+      expect(headerCheckbox(container).disabled).toBe(true);
+    });
+
+    it('renders the chevron as a real button with a non-empty accessible name, excluded from the Tab sequence', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns() } },
+      );
+      const chevron = rowByName(
+        container,
+        'docs',
+      ).querySelector<HTMLButtonElement>('[data-testid="chevron"]');
+      expect(chevron?.tagName).toBe('BUTTON');
+      expect(chevron?.getAttribute('aria-label')).toBeTruthy();
+      expect(chevron?.tabIndex).toBe(-1);
+    });
+
+    it('still toggles expandedIds when the chevron button is clicked', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeTableTestHostComponent,
+      );
+      const chevron = rowByName(container, 'docs').querySelector<HTMLElement>(
+        '[data-testid="chevron"]',
+      )!;
+      await userEvent.click(chevron);
+      expect(componentInstance.expanded()).toEqual(['docs']);
+    });
+
+    it('sets aria-sort="none" (not absent) on a sortable-but-currently-unsorted column, and omits it on a non-sortable column', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns() } },
+      );
+      const headerCells = container.querySelectorAll('thead th');
+      expect(headerCells[0]?.getAttribute('aria-sort')).toBe('none'); // Name — sortable
+      expect(headerCells[2]?.getAttribute('aria-sort')).toBeNull(); // Modified — not sortable
+    });
+
+    it('sets aria-sort to ascending/descending once a column is actively sorted', async () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns() } },
+      );
+      const headerButton =
+        container.querySelector<HTMLElement>('thead button')!;
+      await userEvent.click(headerButton);
+      expect(
+        container.querySelector('thead th')?.getAttribute('aria-sort'),
+      ).toBe('ascending');
+    });
+
+    it('has no axe violations, including on the chevron button', async () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: sampleItems(), columns: sampleColumns() } },
+      );
+      const chevron = rowByName(container, 'docs').querySelector<HTMLElement>(
+        '[data-testid="chevron"]',
+      );
+      expect(chevron?.getAttribute('aria-label')?.length).toBeGreaterThan(0);
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+});
+
+@Component({
+  selector: 'dg-tree-table-column-filter-template-host',
+  standalone: true,
+  imports: [DynamoTreeTable],
+  template: `
+    <ng-template #sizeFilter let-value let-setValue="setValue">
+      <input
+        data-testid="custom-size-filter"
+        [value]="value ?? ''"
+        (input)="setValue($any($event.target).value)"
+      />
+    </ng-template>
+    <dg-tree-table
+      [items]="items"
+      [columns]="columns()"
+      [(columnFilters)]="columnFilters"
+      ariaLabel="Files"
+    />
+  `,
+})
+class TreeTableColumnFilterTemplateHostComponent {
+  private readonly sizeFilterTpl =
+    viewChild.required<
+      TemplateRef<DynamoTreeTableColumnFilterContext<FileRow>>
+    >('sizeFilter');
+  readonly items = sampleItems();
+  readonly columnFilters = model<Record<string, unknown>>({});
+  readonly columns = computed<DynamoTreeTableColumn<FileRow>[]>(() => [
+    { field: 'name', header: 'Name' },
+    {
+      field: 'size',
+      header: 'Size',
+      columnFilter: { type: 'custom' },
+      filterTemplate: this.sizeFilterTpl(),
+    },
+  ]);
+}
+
+describe('DynamoTreeTable — per-column filtering (Phase 1)', () => {
+  const COLUMN_FILTER_COLUMNS: DynamoTreeTableColumn<FileRow>[] = [
+    { field: 'name', header: 'Name', sortable: true },
+    {
+      field: 'size',
+      header: 'Size',
+      sortable: true,
+      columnFilter: { placeholder: 'Filter size' },
+    },
+    { field: 'modified', header: 'Modified' },
+  ];
+
+  function getColumnFilterInput(
+    container: HTMLElement,
+    placeholder = 'Filter size',
+  ): HTMLInputElement {
+    return within(container).getByPlaceholderText(
+      placeholder,
+    ) as HTMLInputElement;
+  }
+
+  function setColumnFilterValue(input: HTMLInputElement, value: string): void {
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+  }
+
+  it('renders no second header row when no column opts into columnFilter', () => {
+    const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+      DynamoTreeTable,
+      { inputs: { items: sampleItems(), columns: sampleColumns() } },
+    );
+    expect(container.querySelectorAll('thead tr')).toHaveLength(1);
+  });
+
+  it('renders a built-in text input for a column with columnFilter and narrows rows hierarchy-aware, resetting page to 1', () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: sampleItems(),
+        columns: COLUMN_FILTER_COLUMNS,
+        pageSize: 1,
+      },
+    });
+    componentInstance.page.set(2);
+    fixture.detectChanges();
+
+    const input = getColumnFilterInput(container);
+    setColumnFilterValue(input, '120');
+    fixture.detectChanges();
+
+    // "resume.pdf" (size "120kb") matches; its parent "docs" is kept as the
+    // ancestor chain — same hierarchy-aware shape the global filter uses.
+    expect(rowNames(container)).toEqual(['docs', 'resume.pdf']);
+    expect(componentInstance.page()).toBe(1);
+  });
+
+  it('columnFilters model two-way binding reflects an externally-set value into the input', () => {
+    const { container, setInputs } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: { items: sampleItems(), columns: COLUMN_FILTER_COLUMNS },
+    });
+
+    setInputs({ columnFilters: { size: '120' } });
+
+    expect(getColumnFilterInput(container).value).toBe('120');
+    expect(rowNames(container)).toEqual(['docs', 'resume.pdf']);
+  });
+
+  it('renders a custom filterTemplate and its setValue writes back into columnFilters', () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent(
+      TreeTableColumnFilterTemplateHostComponent,
+    );
+
+    const customInput = within(container).getByTestId('custom-size-filter');
+    fireEvent.input(customInput, { target: { value: '120' } });
+    fixture.detectChanges();
+
+    expect(componentInstance.columnFilters()).toEqual({ size: '120' });
+  });
+
+  it('uses a custom predicate instead of the default substring match', () => {
+    const exactSizeColumns: DynamoTreeTableColumn<FileRow>[] = [
+      { field: 'name', header: 'Name' },
+      {
+        field: 'size',
+        header: 'Size',
+        columnFilter: {
+          placeholder: 'Filter size',
+          predicate: (row, value) => row.size === value,
+        },
+      },
+    ];
+    const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+      DynamoTreeTable,
+      {
+        inputs: {
+          items: sampleItems(),
+          columns: exactSizeColumns,
+          columnFilters: { size: '120kb' },
+        },
+      },
+    );
+    // Exact match only — "120kb" (not a substring match against "2.4mb" etc).
+    expect(rowNames(container)).toEqual(['docs', 'resume.pdf']);
+  });
+
+  it('composes with the global filter as a logical AND', () => {
+    const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+      DynamoTreeTable,
+      {
+        inputs: {
+          items: sampleItems(),
+          columns: COLUMN_FILTER_COLUMNS,
+          filterable: true,
+          filterText: 'cover',
+          columnFilters: { size: '120' },
+        },
+      },
+    );
+    // "cover.pdf" matches the global query but not the size filter ("120");
+    // "resume.pdf" matches the size filter but not the global query. Only a
+    // row matching BOTH should remain — here, neither does.
+    expect(rowNames(container)).toEqual([]);
+  });
+
+  it('shows noMatchesMessage when a column filter alone matches nothing', () => {
+    const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+      DynamoTreeTable,
+      {
+        inputs: {
+          items: sampleItems(),
+          columns: COLUMN_FILTER_COLUMNS,
+          columnFilters: { size: 'zzz-no-such-size' },
+        },
+      },
+    );
+    expect(
+      container.querySelector('[role="status"]')?.textContent?.trim(),
+    ).toBe('No matching rows');
+  });
+
+  it('disables the column filter input while loading', () => {
+    const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+      DynamoTreeTable,
+      {
+        inputs: {
+          items: sampleItems(),
+          columns: COLUMN_FILTER_COLUMNS,
+          loading: true,
+        },
+      },
+    );
+    expect(getColumnFilterInput(container).disabled).toBe(true);
+  });
+
+  it('merges pt class onto columnFilterRow/columnFilterCell/columnFilterInput', () => {
+    const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+      DynamoTreeTable,
+      {
+        inputs: {
+          items: sampleItems(),
+          columns: COLUMN_FILTER_COLUMNS,
+          pt: {
+            columnFilterRow: { class: 'pt-column-filter-row' },
+            columnFilterCell: { class: 'pt-column-filter-cell' },
+            columnFilterInput: { class: 'pt-column-filter-input' },
+          },
+        },
+      },
+    );
+    expect(container.querySelector('tr.pt-column-filter-row')).not.toBeNull();
+    expect(container.querySelector('td.pt-column-filter-cell')).not.toBeNull();
+    expect(
+      container.querySelector('input[type="search"].pt-column-filter-input'),
+    ).not.toBeNull();
+  });
+
+  it('has no axe violations with column filters active', async () => {
+    const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+      DynamoTreeTable,
+      { inputs: { items: sampleItems(), columns: COLUMN_FILTER_COLUMNS } },
+    );
+    await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+  });
+});
+
+describe('DynamoTreeTable — virtual scroll (Phase 2)', () => {
+  // CDK's viewport measures its own size asynchronously (an
+  // `afterNextRender`-driven check, not synchronous with construction)
+  // before deciding how many rows to render — same "flush before
+  // asserting" idiom `@dynamong/virtual-scroll`'s own spec already uses.
+  async function settle(fixture: { detectChanges(): void }): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+  }
+
+  // The virtualized path's rows live under `[role="rowgroup"]` divs, not
+  // `<tbody>` — `rowNames()` (defined above, for the native `<table>`
+  // path) doesn't match them.
+  function virtualRowNames(container: HTMLElement): string[] {
+    const bodyGroup = container.querySelectorAll('[role="rowgroup"]')[1];
+    return Array.from(bodyGroup?.querySelectorAll('[role="row"]') ?? []).map(
+      (row) =>
+        row.querySelector('[role="gridcell"]')?.textContent?.trim() ?? '',
+    );
+  }
+
+  // 200 flat root nodes — deliberately not nested, since virtualization
+  // itself only cares about the flattened visibleEntries() length, and a
+  // flat set keeps the fixture simple.
+  function manyNodes(count: number): DynamoTreeTableNode<FileRow>[] {
+    return Array.from({ length: count }, (_, i) => ({
+      id: `item-${i}`,
+      data: { name: `Item ${i}`, size: '1kb', modified: '2024-01-01' },
+    }));
+  }
+
+  it('renders a role="treegrid" div (not a real <table>) when enabled', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: manyNodes(200),
+        columns: sampleColumns(),
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    expect(container.querySelector('table')).toBeNull();
+    expect(container.querySelector('[role="treegrid"]')).toBeTruthy();
+    expect(container.querySelectorAll('[role="columnheader"]')).toHaveLength(3);
+  });
+
+  it('renders real row/cell content through the virtualized path', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: manyNodes(200),
+        columns: sampleColumns(),
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    const rows = container.querySelectorAll('[role="row"]');
+    expect(rows.length).toBeGreaterThan(1);
+    expect(
+      container.querySelector('[role="gridcell"]')?.textContent?.trim(),
+    ).toBe('Item 0');
+  });
+
+  it('shares one grid-template-columns string between the header row and body rows', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: manyNodes(200),
+        columns: sampleColumns(),
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    const rows = Array.from(
+      container.querySelectorAll<HTMLElement>('[role="row"]'),
+    );
+    const templates = new Set(rows.map((row) => row.style.gridTemplateColumns));
+    expect(templates.size).toBe(1);
+  });
+
+  it('exposes aria-rowcount and sequential aria-rowindex (the DOM can not be counted while virtualized)', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: manyNodes(200),
+        columns: sampleColumns(),
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    expect(
+      container
+        .querySelector('[role="treegrid"]')
+        ?.getAttribute('aria-rowcount'),
+    ).toBe('201');
+
+    const rowgroups = Array.from(
+      container.querySelectorAll('[role="rowgroup"]'),
+    );
+    expect(rowgroups).toHaveLength(2);
+    const [headerGroup, bodyGroup] = rowgroups;
+    expect(
+      headerGroup?.querySelector('[role="row"]')?.getAttribute('aria-rowindex'),
+    ).toBe('1');
+
+    const bodyRows = Array.from(
+      bodyGroup?.querySelectorAll<HTMLElement>('[role="row"]') ?? [],
+    );
+    expect(bodyRows.length).toBeGreaterThan(0);
+    const indices = bodyRows.map((r) =>
+      Number(r.getAttribute('aria-rowindex')),
+    );
+    expect(indices).toEqual(indices.map((_, offset) => 2 + offset));
+  });
+
+  it('bumps aria-rowindex by one more when the column-filter row is also present', async () => {
+    const COLUMN_FILTER_COLUMNS: DynamoTreeTableColumn<FileRow>[] = [
+      { field: 'name', header: 'Name', columnFilter: {} },
+      { field: 'size', header: 'Size' },
+      { field: 'modified', header: 'Modified' },
+    ];
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: manyNodes(200),
+        columns: COLUMN_FILTER_COLUMNS,
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    expect(
+      container
+        .querySelector('[role="treegrid"]')
+        ?.getAttribute('aria-rowcount'),
+    ).toBe('202');
+    const rowgroups = Array.from(
+      container.querySelectorAll('[role="rowgroup"]'),
+    );
+    const [headerGroup, bodyGroup] = rowgroups;
+    const headerRows = headerGroup?.querySelectorAll('[role="row"]') ?? [];
+    expect(headerRows).toHaveLength(2);
+    expect(headerRows[1]?.getAttribute('aria-rowindex')).toBe('2');
+    const firstBodyRow = bodyGroup?.querySelector('[role="row"]');
+    expect(firstBodyRow?.getAttribute('aria-rowindex')).toBe('3');
+  });
+
+  it('keeps CDK viewport wrappers accessibility-tree transparent (role="presentation")', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: manyNodes(200),
+        columns: sampleColumns(),
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    expect(
+      container.querySelector('dg-virtual-scroll')?.getAttribute('role'),
+    ).toBe('presentation');
+    expect(
+      container
+        .querySelector('cdk-virtual-scroll-viewport')
+        ?.getAttribute('role'),
+    ).toBe('presentation');
+  });
+
+  it('sorting still works while virtualized', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: sampleItems(),
+        columns: sampleColumns(),
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    const nameHeader = within(container).getByRole('button', {
+      name: /Name/,
+    });
+    await userEvent.click(nameHeader);
+    await settle(fixture);
+
+    expect(
+      container.querySelector('[role="gridcell"]')?.textContent?.trim(),
+    ).toBe('docs');
+  });
+
+  it('expand/collapse works through the virtualized render path', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: sampleItems(),
+        columns: sampleColumns(),
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    expect(virtualRowNames(container)).not.toContain('resume.pdf');
+    const chevron = container.querySelector<HTMLElement>(
+      '[data-testid="chevron"]',
+    )!;
+    await userEvent.click(chevron);
+    await settle(fixture);
+
+    expect(virtualRowNames(container)).toContain('resume.pdf');
+  });
+
+  it('selection works through the virtualized render path', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: sampleItems(),
+        columns: sampleColumns(),
+        selectable: true,
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    const bodyCheckbox = Array.from(
+      container.querySelectorAll('[role="rowgroup"]'),
+    )[1]?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    expect(bodyCheckbox).toBeTruthy();
+    await userEvent.click(bodyCheckbox as HTMLInputElement);
+    await settle(fixture);
+    expect(bodyCheckbox?.checked).toBe(true);
+  });
+
+  it('renders the empty-state message instead of the viewport when there is no data', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: { items: [], columns: sampleColumns(), virtualScroll: true },
+    });
+    await settle(fixture);
+
+    expect(container.querySelector('dg-virtual-scroll')).toBeNull();
+    expect(within(container).getByRole('status').textContent?.trim()).toBe(
+      'No data',
+    );
+  });
+
+  it('composes with pageSize — paginates ROOT nodes, then virtualizes the (potentially large) resulting visible-row list', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: manyNodes(200),
+        columns: sampleColumns(),
+        virtualScroll: true,
+        pageSize: 10,
+      },
+    });
+    await settle(fixture);
+
+    expect(container.querySelector('[aria-label="Next page"]')).toBeTruthy();
+    expect(
+      container
+        .querySelector('[role="treegrid"]')
+        ?.getAttribute('aria-rowcount'),
+    ).toBe('11'); // 10 roots on this page + 1 header row
+  });
+
+  it('does not virtualize when virtualScroll is left at its default (false)', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: { items: sampleItems(), columns: sampleColumns() },
+    });
+    await settle(fixture);
+
+    expect(container.querySelector('table')).toBeTruthy();
+    expect(
+      container.querySelector('[role="treegrid"][aria-rowcount]'),
+    ).toBeNull();
+  });
+
+  // jsdom can't perform CDK's real layout/scroll measurement, so the
+  // mounted-range side of this fix (does the targeted row actually land in
+  // the DOM after scrolling) isn't reliably assertable here — confirmed
+  // live in a real browser instead (see the plan's verification notes).
+  // What IS reliably unit-testable, and is the actual logic this fix adds,
+  // is that a keyboard move whose target row isn't currently mounted calls
+  // the viewport's `scrollToIndex` with the correct index — mirroring the
+  // same spy-based technique `select.spec.ts` already established for its
+  // own analogous `scrollToIndex`-on-keyboard-nav regression test.
+  it("End scrolls the virtualized viewport to the last row's index when it is not currently mounted", async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: manyNodes(200),
+        columns: sampleColumns(),
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    const viewportDebugEl = fixture.debugElement.query(
+      (node) => node.componentInstance instanceof DynamoVirtualScroll,
+    );
+    const scrollSpy = vi.spyOn(
+      viewportDebugEl.componentInstance as DynamoVirtualScroll<unknown>,
+      'scrollToIndex',
+    );
+
+    const firstRow = container.querySelector<HTMLElement>(
+      '[data-row-id="item-0"]',
+    )!;
+    firstRow.focus();
+    fireEvent.keyDown(firstRow, { key: 'End' });
+    await settle(fixture);
+
+    expect(scrollSpy).toHaveBeenCalledWith(199);
+  });
+
+  it('does not call scrollToIndex when the target row is already mounted', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: sampleItems(),
+        columns: sampleColumns(),
+        virtualScroll: true,
+      },
+    });
+    await settle(fixture);
+
+    const viewportDebugEl = fixture.debugElement.query(
+      (node) => node.componentInstance instanceof DynamoVirtualScroll,
+    );
+    const scrollSpy = vi.spyOn(
+      viewportDebugEl.componentInstance as DynamoVirtualScroll<unknown>,
+      'scrollToIndex',
+    );
+
+    const firstRow = Array.from(
+      container.querySelectorAll('[role="rowgroup"]'),
+    )[1]?.querySelector<HTMLElement>('[role="row"]');
+    firstRow?.focus();
+    fireEvent.keyDown(firstRow as HTMLElement, { key: 'ArrowDown' });
+    await settle(fixture);
+
+    expect(scrollSpy).not.toHaveBeenCalled();
+  });
+
+  it('merges pt class onto table/headerRow/row/selectionCell/selectionCheckbox/chevronButton/chevron while virtualized', async () => {
+    const { container, fixture } = renderDynamoComponent<
+      DynamoTreeTable<FileRow>
+    >(DynamoTreeTable, {
+      inputs: {
+        items: sampleItems(),
+        columns: sampleColumns(),
+        selectable: true,
+        virtualScroll: true,
+        pt: {
+          table: { class: 'pt-table' },
+          headerRow: { class: 'pt-header-row' },
+          row: { class: 'pt-row' },
+          selectionCell: { class: 'pt-selection-cell' },
+          selectionCheckbox: { class: 'pt-selection-checkbox' },
+          chevronButton: { class: 'pt-chevron-button' },
+          chevron: { class: 'pt-chevron' },
+        },
+      },
+    });
+    await settle(fixture);
+
+    expect(
+      container.querySelector('[role="treegrid"].pt-table'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[role="row"].pt-header-row'),
+    ).not.toBeNull();
+    expect(container.querySelector('[role="row"].pt-row')).not.toBeNull();
+    expect(container.querySelector('.pt-selection-cell')).not.toBeNull();
+    expect(
+      container.querySelector('label.pt-selection-checkbox'),
+    ).not.toBeNull();
+    expect(container.querySelector('button.pt-chevron-button')).not.toBeNull();
+    expect(container.querySelector('svg.pt-chevron')).not.toBeNull();
+  });
+});
+
+function paginationSummary(container: HTMLElement): string {
+  return (
+    container.querySelector('[aria-live="polite"]')?.textContent?.trim() ?? ''
+  );
+}
+
+describe('DynamoTreeTable — lazy mode (Phase 3)', () => {
+  describe('top-level (page/sort/filter-driven)', () => {
+    it('renders items() as-is with no internal filter/sort/slice while lazy', () => {
+      // filterText would exclude everyone but nothing matches "zzz" in
+      // non-lazy mode — proves filteredItems()/pagedRoots() both
+      // short-circuit to items() verbatim.
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: sampleItems(),
+            columns: sampleColumns(),
+            lazy: true,
+            filterable: true,
+            filterText: 'zzz-no-match',
+          },
+        },
+      );
+      expect(rowNames(container)).toEqual(['docs', 'photos', 'notes.txt']);
+    });
+
+    it('pagination summary uses totalRecords, not items().length', () => {
+      const page1 = [sampleItems()[0] as DynamoTreeTableNode<FileRow>];
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: page1,
+            columns: sampleColumns(),
+            lazy: true,
+            totalRecords: 100,
+            pageSize: 1,
+          },
+        },
+      );
+      expect(paginationSummary(container)).toBe('Showing 1-1 of 100');
+    });
+
+    it('falls back to items().length for pageCount when totalRecords is omitted', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: sampleItems(),
+            columns: sampleColumns(),
+            lazy: true,
+            pageSize: 2,
+          },
+        },
+      );
+      expect(paginationSummary(container)).toBe('Showing 1-2 of 3');
+    });
+
+    it('toggleSort emits lazyLoad with the current sort state and resets page to 1, without locally re-sorting items()', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: [sampleItems()[1] as DynamoTreeTableNode<FileRow>], // "photos"
+          columns: sampleColumns(),
+          lazy: true,
+          pageSize: 1,
+          totalRecords: 3,
+          page: 2,
+        },
+      });
+      const emitted: unknown[] = [];
+      componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+      const nameHeader = within(container).getByRole('button', {
+        name: /Name/,
+      });
+      nameHeader.click();
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(1);
+      expect(emitted).toEqual([
+        expect.objectContaining({
+          page: 1,
+          sort: { field: 'name', direction: 'asc' },
+        }),
+      ]);
+      // items() itself is never re-sorted/re-fetched locally — the same
+      // single root the consumer handed back is still all that's shown.
+      expect(rowNames(container)).toEqual(['photos']);
+    });
+
+    it('onFilterTextChange emits lazyLoad with the new filterText and resets page to 1', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          lazy: true,
+          filterable: true,
+          pageSize: 1,
+          totalRecords: 3,
+          page: 2,
+        },
+      });
+      const emitted: unknown[] = [];
+      componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+      const input = within(container).getByPlaceholderText(
+        'Search...',
+      ) as HTMLInputElement;
+      input.value = 'ada';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(1);
+      expect(emitted).toEqual([
+        expect.objectContaining({ page: 1, filterText: 'ada' }),
+      ]);
+    });
+
+    it('onColumnFilterChange emits lazyLoad with the new columnFilters and resets page to 1', () => {
+      const columns: DynamoTreeTableColumn<FileRow>[] = [
+        { field: 'name', header: 'Name' },
+        { field: 'size', header: 'Size', columnFilter: {} },
+      ];
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns,
+          lazy: true,
+          pageSize: 1,
+          totalRecords: 3,
+          page: 2,
+        },
+      });
+      const emitted: unknown[] = [];
+      componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+      const input = within(container).getByPlaceholderText(
+        'Filter Size',
+      ) as HTMLInputElement;
+      input.value = '120kb';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(1);
+      expect(emitted).toEqual([
+        expect.objectContaining({ page: 1, columnFilters: { size: '120kb' } }),
+      ]);
+    });
+
+    it('onPageChange emits lazyLoad with the new page', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          lazy: true,
+          pageSize: 1,
+          totalRecords: 3,
+        },
+      });
+      const emitted: unknown[] = [];
+      componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+      within(container).getByRole('button', { name: 'Next page' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.page()).toBe(2);
+      expect(emitted).toEqual([expect.objectContaining({ page: 2 })]);
+    });
+
+    it('onPageSizeChange emits lazyLoad with the new pageSize and resets to page 1', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          lazy: true,
+          pageSize: 10,
+          totalRecords: 100,
+          pageSizeOptions: [10, 25],
+        },
+      });
+      const emitted: unknown[] = [];
+      componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+      within(container)
+        .getByRole('combobox', { name: 'Rows per page' })
+        .click();
+      fixture.detectChanges();
+      within(document.body).getByRole('option', { name: '25 / page' }).click();
+      fixture.detectChanges();
+
+      expect(componentInstance.pageSize()).toBe(25);
+      expect(emitted).toEqual([expect.objectContaining({ pageSize: 25 })]);
+    });
+
+    it('non-lazy mode never emits lazyLoad, even as sort/filter/page all change', () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          filterable: true,
+          pageSize: 1,
+        },
+      });
+      const emitted: unknown[] = [];
+      componentInstance.lazyLoad.subscribe((event) => emitted.push(event));
+
+      within(container).getByRole('button', { name: /Name/ }).click();
+      fixture.detectChanges();
+      const input = within(container).getByPlaceholderText(
+        'Search...',
+      ) as HTMLInputElement;
+      input.value = 'ada';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      within(container).getByRole('button', { name: 'Next page' }).click();
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([]);
+    });
+
+    it('warns in dev mode when lazy is on without totalRecords', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      renderDynamoComponent<DynamoTreeTable<FileRow>>(DynamoTreeTable, {
+        inputs: { items: sampleItems(), columns: sampleColumns(), lazy: true },
+      });
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('`lazy` is on without `totalRecords`'),
+      );
+      warn.mockRestore();
+    });
+
+    it('does not warn when lazy is fully configured with totalRecords', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      renderDynamoComponent<DynamoTreeTable<FileRow>>(DynamoTreeTable, {
+        inputs: {
+          items: sampleItems(),
+          columns: sampleColumns(),
+          lazy: true,
+          totalRecords: 3,
+        },
+      });
+
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+  });
+
+  describe('per-node (on-demand child loading)', () => {
+    function lazyNodes(): DynamoTreeTableNode<FileRow>[] {
+      return [
+        {
+          id: 'remote-folder',
+          data: { name: 'Remote Folder', size: '—', modified: '2024-01-01' },
+          leaf: false,
+        },
+        {
+          id: 'local-leaf',
+          data: { name: 'local.txt', size: '2kb', modified: '2024-01-01' },
+        },
+      ];
+    }
+
+    it('shows a chevron for a leaf:false childless node', () => {
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        { inputs: { items: lazyNodes(), columns: sampleColumns() } },
+      );
+      const row = rowByName(container, 'Remote Folder');
+      expect(row.querySelector('[data-testid="chevron"]')).not.toBeNull();
+    });
+
+    it('emits nodeExpand with the full node when a leaf:false node is expanded', async () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: lazyNodes(), columns: sampleColumns() },
+      });
+      const emitted: DynamoTreeTableNode<FileRow>[] = [];
+      componentInstance.nodeExpand.subscribe((node) => emitted.push(node));
+
+      const chevron = rowByName(
+        container,
+        'Remote Folder',
+      ).querySelector<HTMLElement>('[data-testid="chevron"]')!;
+      await userEvent.click(chevron);
+
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0]?.id).toBe('remote-folder');
+    });
+
+    it('isNodeLoading is true while expanded and unloaded, false once children resolve', async () => {
+      const { container, fixture, setInputs } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: lazyNodes(), columns: sampleColumns() },
+      });
+
+      const chevron = rowByName(
+        container,
+        'Remote Folder',
+      ).querySelector<HTMLElement>('[data-testid="chevron"]')!;
+      await userEvent.click(chevron);
+      fixture.detectChanges();
+
+      // Loading: the chevron swaps its svg for a spinner.
+      expect(
+        rowByName(container, 'Remote Folder').querySelector('svg'),
+      ).toBeNull();
+
+      const resolved: DynamoTreeTableNode<FileRow>[] = [
+        {
+          id: 'remote-folder',
+          data: { name: 'Remote Folder', size: '—', modified: '2024-01-01' },
+          leaf: false,
+          children: [
+            {
+              id: 'remote-child',
+              data: {
+                name: 'remote-child.txt',
+                size: '1kb',
+                modified: '2024-01-02',
+              },
+            },
+          ],
+        },
+        lazyNodes()[1] as DynamoTreeTableNode<FileRow>,
+      ];
+      setInputs({ items: resolved });
+      fixture.detectChanges();
+
+      expect(
+        rowByName(container, 'Remote Folder').querySelector('svg'),
+      ).not.toBeNull();
+      expect(rowNames(container)).toContain('remote-child.txt');
+    });
+
+    it('collapsing and re-expanding before resolution re-emits nodeExpand (no internal de-duplication)', async () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: lazyNodes(), columns: sampleColumns() },
+      });
+      const emitted: unknown[] = [];
+      componentInstance.nodeExpand.subscribe((node) => emitted.push(node));
+
+      const chevron = rowByName(
+        container,
+        'Remote Folder',
+      ).querySelector<HTMLElement>('[data-testid="chevron"]')!;
+      await userEvent.click(chevron); // expand (unloaded) -> emits
+      await userEvent.click(chevron); // collapse -> no emit
+      await userEvent.click(chevron); // re-expand, still unloaded -> emits again
+
+      expect(emitted).toHaveLength(2);
+    });
+
+    it('keyboard-triggered expand (ArrowRight) also emits nodeExpand', async () => {
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: lazyNodes(), columns: sampleColumns() },
+      });
+      const emitted: unknown[] = [];
+      componentInstance.nodeExpand.subscribe((node) => emitted.push(node));
+
+      const row = rowByName(container, 'Remote Folder');
+      row.focus();
+      fireEvent.keyDown(row, { key: 'ArrowRight' });
+
+      expect(emitted).toHaveLength(1);
+    });
+
+    it('a resolved leaf:false node with no actual children (empty array) does not re-trigger loading', () => {
+      const resolvedEmpty: DynamoTreeTableNode<FileRow>[] = [
+        {
+          id: 'remote-folder',
+          data: { name: 'Remote Folder', size: '—', modified: '2024-01-01' },
+          leaf: true,
+        },
+      ];
+      const { container } = renderDynamoComponent<DynamoTreeTable<FileRow>>(
+        DynamoTreeTable,
+        {
+          inputs: {
+            items: resolvedEmpty,
+            columns: sampleColumns(),
+            expandedIds: ['remote-folder'],
+          },
+        },
+      );
+      // leaf: true now -> hasChildren() is false -> no chevron rendered at all.
+      expect(
+        rowByName(container, 'Remote Folder').querySelector(
+          '[data-testid="chevron"]',
+        ),
+      ).toBeNull();
+    });
+  });
+
+  describe('independence of top-level and per-node lazy', () => {
+    it("sorting/filtering/paging roots never mutates an unrelated node's own leaf/children state", async () => {
+      const mixedItems: DynamoTreeTableNode<FileRow>[] = [
+        {
+          id: 'remote-folder',
+          data: { name: 'Remote Folder', size: '—', modified: '2024-01-01' },
+          leaf: false,
+        },
+      ];
+      const { container, fixture, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: { items: mixedItems, columns: sampleColumns() },
+      });
+      const nodeExpandEmitted: unknown[] = [];
+      componentInstance.nodeExpand.subscribe((n) => nodeExpandEmitted.push(n));
+
+      const nameHeader = within(container).getByRole('button', {
+        name: /Name/,
+      });
+      await userEvent.click(nameHeader); // sorts — purely local, top-level lazy is off
+      fixture.detectChanges();
+
+      expect(nodeExpandEmitted).toEqual([]);
+      expect(
+        rowByName(container, 'Remote Folder').querySelector(
+          '[data-testid="chevron"]',
+        ),
+      ).not.toBeNull();
+    });
+
+    it('expanding a per-node-lazy node never emits a spurious lazyLoad', async () => {
+      const mixedItems: DynamoTreeTableNode<FileRow>[] = [
+        {
+          id: 'remote-folder',
+          data: { name: 'Remote Folder', size: '—', modified: '2024-01-01' },
+          leaf: false,
+        },
+      ];
+      const { container, componentInstance } = renderDynamoComponent<
+        DynamoTreeTable<FileRow>
+      >(DynamoTreeTable, {
+        inputs: {
+          items: mixedItems,
+          columns: sampleColumns(),
+          lazy: true,
+          totalRecords: 1,
+        },
+      });
+      const lazyLoadEmitted: unknown[] = [];
+      componentInstance.lazyLoad.subscribe((e) => lazyLoadEmitted.push(e));
+
+      const chevron = rowByName(
+        container,
+        'Remote Folder',
+      ).querySelector<HTMLElement>('[data-testid="chevron"]')!;
+      await userEvent.click(chevron);
+
+      expect(lazyLoadEmitted).toEqual([]);
     });
   });
 });

@@ -4,8 +4,13 @@ import { focusRingClass } from '@dynamong/utils/styles';
 // The only place Tailwind utility classes are allowed to live for this
 // component — tree-table.html only ever binds `[class]="...Classes()"` or
 // a plain exported string constant.
-export const treeTableRootStyles =
-  'w-full overflow-x-auto rounded-md border border-border';
+export const treeTableRootStyles = cva(
+  'overflow-x-auto rounded-md border border-border',
+  {
+    variants: { fluid: { true: 'w-full', false: '' } },
+    defaultVariants: { fluid: true },
+  },
+);
 export const treeTableStyles =
   'w-full border-collapse text-start text-sm text-text-primary';
 export const treeTableHeaderRowStyles = 'border-b border-border bg-surface-50';
@@ -107,3 +112,24 @@ export const treeTableFilterWrapperStyles =
 
 export const treeTablePaginationWrapperStyles =
   'flex items-center justify-between gap-4 border-t border-border px-4 py-2.5';
+
+// --- v3: per-column filtering ---
+
+// Plain strings, not `cva` — TreeTable has no `size` input to vary against,
+// unlike Table's analogous `tableColumnFilterCellStyles`.
+export const treeTableColumnFilterRowStyles =
+  'border-b border-border bg-surface-50';
+export const treeTableColumnFilterCellStyles = 'px-4 py-2.5 align-top';
+
+// --- v4: virtual scroll ---
+
+// `grid` + a per-render `grid-template-columns` (bound inline in
+// tree-table.html via `virtualGridTemplate()`), mirroring Table's own
+// virtualized shapes — CSS Grid replaces native `<table>` auto-layout so
+// each independently-mounted CDK row still lines its columns up with the
+// header.
+export const treeTableVirtualStyles = 'w-full text-sm text-text-primary';
+export const treeTableVirtualHeaderRowStyles =
+  'grid border-b border-border bg-surface-50';
+export const treeTableVirtualBodyRowStyles =
+  'grid items-center border-b border-border last:border-b-0 hover:bg-surface-50';

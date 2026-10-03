@@ -3,18 +3,25 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  type OnInit,
   computed,
+  inject,
   input,
+  isDevMode,
   model,
   output,
   signal,
-  viewChildren,
+  viewChild,
 } from '@angular/core';
 import { DynamoCheckbox } from '@dynamong/checkbox';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoPagination } from '@dynamong/pagination';
 import { DynamoSpinner } from '@dynamong/spinner';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   createTypeaheadBuffer,
@@ -33,6 +40,8 @@ import {
   treeTableChevronButtonStyles,
   treeTableChevronPlaceholderStyles,
   treeTableChevronStyles,
+  treeTableColumnFilterCellStyles,
+  treeTableColumnFilterRowStyles,
   treeTableEmptyCellStyles,
   treeTableFilterWrapperStyles,
   treeTableFirstCellContentStyles,
@@ -47,10 +56,15 @@ import {
   treeTableSortButtonStyles,
   treeTableSortIconStyles,
   treeTableStyles,
+  treeTableVirtualBodyRowStyles,
+  treeTableVirtualHeaderRowStyles,
+  treeTableVirtualStyles,
 } from './tree-table.styles';
 import type {
   DynamoTreeTableCellContext,
   DynamoTreeTableColumn,
+  DynamoTreeTableColumnFilterContext,
+  DynamoTreeTableLazyLoadEvent,
   DynamoTreeTableNode,
   DynamoTreeTablePart,
   DynamoTreeTableSortDirection,
@@ -184,17 +198,23 @@ function findEnabledEntryIndex<TRow>(
     DynamoCheckbox,
     DynamoInputText,
     DynamoPagination,
+    DynamoVirtualScroll,
+    DynamoPassThroughDirective,
   ],
   templateUrl: './tree-table.html',
 })
-export class DynamoTreeTable<
-  TRow = unknown,
-> extends DynamoBaseComponent<DynamoTreeTablePart> {
+export class DynamoTreeTable<TRow = unknown>
+  extends DynamoBaseComponent<DynamoTreeTablePart>
+  implements OnInit
+{
   readonly items = input.required<DynamoTreeTableNode<TRow>[]>();
   readonly columns = input.required<DynamoTreeTableColumn<TRow>[]>();
   /** Two-way bindable: which node ids are currently expanded. */
   readonly expandedIds = model<string[]>([]);
   readonly ariaLabel = input<string | undefined>(undefined);
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Controls the root wrapper's width — `true` (default) is `w-full`; `false` shrinks to content. */
+  readonly fluid = input(true);
   readonly emptyMessage = input('No data');
   /** Renders a spinner + message in the empty-state slot and makes sorting,
    *  expand/collapse, and row navigation non-interactive. Never emits back
@@ -233,6 +253,14 @@ export class DynamoTreeTable<
   readonly noMatchesMessage = input('No matching rows');
 
   /**
+   * Two-way bindable per-column filter values, keyed by `column.field` —
+   * mirrors Table's own `columnFilters`. Composes with `filterText` as a
+   * logical AND, in a single hierarchy-aware pass — see `filterTree`'s own
+   * doc comment for why this can't be two sequential filter passes.
+   */
+  readonly columnFilters = model<Record<string, unknown>>({});
+
+  /**
    * Opt-in pagination over ROOT nodes only — see this class's own doc
    * comment for why the flattened visible-row list isn't what gets
    * paginated. Unset (default) means every root renders and no pagination
@@ -245,12 +273,50 @@ export class DynamoTreeTable<
   /** Two-way bindable, 1-indexed root-node page — mirrors Table's own `page`. */
   readonly page = model(1);
 
+  /**
+   * Opt-in virtual scrolling over `visibleEntries()` (the already flat,
+   * expand-state-aware row list) via `@dynamong/virtual-scroll` — mirrors
+   * Table's own `virtualScroll`. Two deliberate divergences from Table's
+   * own exclusions: `pageSize` composes freely (TreeTable's `pageSize` caps
+   * only the ROOT count, not the flattened row count a single expanded root
+   * can still produce, unlike Table's `pageSize` which already caps the
+   * total render count), and expand/collapse is fully supported (TreeTable's
+   * expand/collapse IS the core feature, not an optional add-on row the way
+   * Table's `expansionTemplate` is).
+   */
+  readonly virtualScroll = input(false);
+  /** Row height in px when virtualized. */
+  readonly virtualScrollItemSize = input(40);
+  /** Viewport height in px when virtualized. */
+  readonly virtualScrollHeight = input(400);
+
+  /**
+   * Opt-in top-level lazy/server-driven mode — mirrors Table's own `lazy`.
+   * `filteredItems()`/`pagedRoots()` both bypass to `items()` verbatim
+   * while `true` (the consumer is expected to hand back exactly the
+   * current page's already-filtered-and-sorted root nodes); `lazyLoad`
+   * fires on every page/sort/filter-driven UI interaction instead.
+   * Independent of per-node lazy loading (`DynamoTreeTableNode.leaf`) —
+   * see that type's own doc comment for how the two compose.
+   */
+  readonly lazy = input(false);
+  /** Total root-node count the server reports — backs `pageCount`/the pagination footer while `lazy`. Falls back to `items().length` (dev-warned) when omitted. */
+  readonly totalRecords = input<number | undefined>(undefined);
+  readonly lazyLoad = output<DynamoTreeTableLazyLoadEvent>();
+
+  /**
+   * Fires when a node whose children aren't loaded yet (`leaf === false`
+   * and no `children`) is expanded for the first time — see
+   * `DynamoTreeTableNode.leaf`'s own doc comment. Fires every time such a
+   * node is expanded, including a re-expand before an earlier fetch has
+   * resolved — no internal request de-duplication; a consumer wanting to
+   * avoid duplicate fetches memoizes by `node.id` themselves.
+   */
+  readonly nodeExpand = output<DynamoTreeTableNode<TRow>>();
+
+  private readonly elementRef: ElementRef<HTMLElement> = inject(ElementRef);
+  private readonly virtualScrollRef = viewChild(DynamoVirtualScroll);
   private readonly activeIdSignal = signal<string | undefined>(undefined);
-  // Matches visibleEntries()'s order 1:1 — both derive from the same
-  // `@for` iteration in tree-table.html, so index-based lookup (rather
-  // than an id-keyed Map, which Tree needs because DynamoTreeItem is a
-  // separate recursive component) is enough here.
-  private readonly rowRefs = viewChildren<ElementRef<HTMLElement>>('rowEl');
   private readonly typeahead = createTypeaheadBuffer();
 
   /** Sole source of truth for the active sort — mirrors Table's own single-signal `sortState`, not two-way bindable. */
@@ -261,8 +327,12 @@ export class DynamoTreeTable<
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(treeTableRootStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          treeTableRootStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
 
   /** Plain alias, not a `disabled`-merge — TreeTable has no `disabled` input of its own to merge with. */
@@ -273,24 +343,49 @@ export class DynamoTreeTable<
   /**
    * `items()` pruned to hierarchy-matching branches — see `filterTree`'s
    * own doc comment. Returns `items()` unchanged (same reference) when
-   * `filterText` is blank/whitespace-only.
+   * there is no active `filterText` and no active `columnFilters` entry.
+   * Bypasses pruning entirely while `lazy()` — the consumer is expected to
+   * hand back exactly the current page's already-filtered root nodes, same
+   * as Table's own `filteredData` bypass.
    */
   protected readonly filteredItems = computed(() =>
-    filterTree(this.items(), this.columns(), this.filterText(), (row, column) =>
-      this.cellValue(row, column),
-    ),
+    this.lazy()
+      ? this.items()
+      : filterTree(
+          this.items(),
+          this.columns(),
+          this.filterText(),
+          this.columnFilters(),
+          (row, column) => this.cellValue(row, column),
+        ),
   );
 
-  /** True while a non-blank filter is narrowing `filteredItems()` — used by `visibleEntries` to force every retained node open (see its own comment) and by `emptyStateMessage` to pick the right empty-state wording. */
-  protected readonly isFilterActive = computed(
-    () => this.filterText().trim().length > 0,
+  /** Root count driving `pageCount`/the pagination footer — `totalRecords()` (dev-warned fallback to `items().length`) while `lazy`, else `filteredItems().length`. */
+  protected readonly totalItemCount = computed(() =>
+    this.lazy()
+      ? (this.totalRecords() ?? this.items().length)
+      : this.filteredItems().length,
   );
 
-  /** Always >= 1, even for zero root nodes — mirrors Table's own `pageCount`. Based on `filteredItems().length` (root count), not the flattened row count — see this class's own doc comment. */
+  protected readonly hasColumnFilters = computed(() =>
+    this.columns().some((column) => !!column.columnFilter),
+  );
+
+  /** True while a non-blank global filter or an active column filter is narrowing `filteredItems()` — used by `visibleEntries` to force every retained node open (see its own comment) and by `emptyStateMessage` to pick the right empty-state wording. */
+  protected readonly isFilterActive = computed(() => {
+    if (this.filterText().trim().length > 0) return true;
+    const filters = this.columnFilters();
+    return this.columns().some((column) => {
+      const value = filters[column.field];
+      return value !== undefined && value !== null && value !== '';
+    });
+  });
+
+  /** Always >= 1, even for zero root nodes — mirrors Table's own `pageCount`. Based on `totalItemCount()` (root count), not the flattened row count — see this class's own doc comment. */
   protected readonly pageCount = computed(() => {
     const size = this.pageSize();
     if (!size) return 1;
-    return Math.max(1, Math.ceil(this.filteredItems().length / size));
+    return Math.max(1, Math.ceil(this.totalItemCount() / size));
   });
 
   /** Clamps the *read* of `page()` into `[1, pageCount()]` without ever writing back to `page` — mirrors Table's own `currentPage`, keeping TreeTable effect-free. */
@@ -298,8 +393,9 @@ export class DynamoTreeTable<
     Math.min(Math.max(1, this.page()), this.pageCount()),
   );
 
-  /** The current page's root nodes (or every filtered root, when `pageSize` is unset) — what `visibleEntries()` actually walks. */
+  /** The current page's root nodes (or every filtered root, when `pageSize` is unset) — what `visibleEntries()` actually walks. Bypasses slicing entirely while `lazy()` — `items()` IS the current page. */
   protected readonly pagedRoots = computed(() => {
+    if (this.lazy()) return this.items();
     const size = this.pageSize();
     if (!size) return this.filteredItems();
     const start = (this.currentPage() - 1) * size;
@@ -346,11 +442,15 @@ export class DynamoTreeTable<
   // of `expandedIds` — `filterTree` already pruned the tree down to
   // matches and their ancestor chain, so there is nothing to hide, and
   // this way filtering never has to write to the `expandedIds` model.
+  // Excludes `lazy()`: `filteredItems()` never actually prunes anything
+  // while lazy (the consumer filters server-side), so there's nothing a
+  // force-expand would be revealing — `expandedIds` alone should still
+  // govern what's visible, same as the unfiltered case.
   protected readonly visibleEntries = computed<DynamoTreeTableEntry<TRow>[]>(
     () => {
       const result: DynamoTreeTableEntry<TRow>[] = [];
       const expanded = new Set(this.expandedIds());
-      const filterActive = this.isFilterActive();
+      const filterActive = this.isFilterActive() && !this.lazy();
       const state = this.sortState();
       const column = state
         ? this.columns().find((c) => c.field === state.field)
@@ -396,24 +496,87 @@ export class DynamoTreeTable<
     return index === -1 ? undefined : entries[index]?.node.id;
   });
 
-  protected readonly tableClasses = treeTableStyles;
-  protected readonly headerRowClasses = treeTableHeaderRowStyles;
-  protected readonly headerCellClasses = treeTableHeaderCellStyles;
-  protected readonly sortButtonClasses = treeTableSortButtonStyles;
-  protected readonly cellClasses = treeTableCellStyles;
+  protected readonly tableClasses = computed(() =>
+    cn(treeTableStyles, this.ptFor('table').class),
+  );
+  protected readonly headerRowClasses = computed(() =>
+    cn(treeTableHeaderRowStyles, this.ptFor('headerRow').class),
+  );
+  protected readonly headerCellClasses = computed(() =>
+    cn(treeTableHeaderCellStyles, this.ptFor('headerCell').class),
+  );
+  protected readonly sortButtonClasses = computed(() =>
+    cn(treeTableSortButtonStyles, this.ptFor('sortButton').class),
+  );
+  protected readonly cellClasses = computed(() =>
+    cn(treeTableCellStyles, this.ptFor('cell').class),
+  );
   protected readonly emptyCellClasses = treeTableEmptyCellStyles;
-  protected readonly chevronButtonClasses = treeTableChevronButtonStyles;
+  protected readonly chevronButtonClasses = computed(() =>
+    cn(treeTableChevronButtonStyles, this.ptFor('chevronButton').class),
+  );
   protected readonly chevronPlaceholderClasses =
     treeTableChevronPlaceholderStyles;
   protected readonly firstCellContentClasses = treeTableFirstCellContentStyles;
   protected readonly loadingWrapperClasses = treeTableLoadingWrapperStyles;
-  protected readonly selectionCellClasses = treeTableSelectionCellStyles;
-  protected readonly filterWrapperClasses = treeTableFilterWrapperStyles;
-  protected readonly paginationWrapperClasses =
-    treeTablePaginationWrapperStyles;
+  protected readonly selectionCellClasses = computed(() =>
+    cn(treeTableSelectionCellStyles, this.ptFor('selectionCell').class),
+  );
+  protected readonly filterWrapperClasses = computed(() =>
+    cn(treeTableFilterWrapperStyles, this.ptFor('filterWrapper').class),
+  );
+  protected readonly paginationWrapperClasses = computed(() =>
+    cn(treeTablePaginationWrapperStyles, this.ptFor('paginationWrapper').class),
+  );
+  protected readonly columnFilterRowClasses = computed(() =>
+    cn(treeTableColumnFilterRowStyles, this.ptFor('columnFilterRow').class),
+  );
+  protected readonly columnFilterCellClasses = computed(() =>
+    cn(treeTableColumnFilterCellStyles, this.ptFor('columnFilterCell').class),
+  );
+  protected readonly virtualTableClasses = computed(() =>
+    cn(treeTableVirtualStyles, this.ptFor('table').class),
+  );
+  protected readonly virtualHeaderRowClasses = computed(() =>
+    cn(treeTableVirtualHeaderRowStyles, this.ptFor('headerRow').class),
+  );
+  protected readonly virtualBodyRowClasses = computed(() =>
+    cn(treeTableVirtualBodyRowStyles, this.ptFor('row').class),
+  );
 
+  /**
+   * Grid-track list shared by the virtualized header and every body row.
+   * Simpler than Table's own equivalent: no separate leading "expand"
+   * track is needed — the chevron lives inside the first column's own
+   * cell (via indentation), not a dedicated column — only an optional
+   * leading selection track.
+   */
+  protected readonly virtualGridTemplate = computed(() => {
+    const tracks = this.columns().map(() => 'minmax(0, 1fr)');
+    return this.selectable()
+      ? ['2.5rem', ...tracks].join(' ')
+      : tracks.join(' ');
+  });
+
+  /** `true` for a node with real children, OR a node flagged `leaf === false` (children exist server-side but aren't loaded yet — see `DynamoTreeTableNode.leaf`'s own doc comment). Fully backward compatible: a consumer who never sets `leaf` sees zero behavior change. */
   protected hasChildren(node: DynamoTreeTableNode<TRow>): boolean {
-    return (node.children?.length ?? 0) > 0;
+    return (node.children?.length ?? 0) > 0 || node.leaf === false;
+  }
+
+  /**
+   * Pure derived state, not a stored signal — deliberately effect-free. A
+   * node is "loading" exactly when it's expanded, flagged `leaf === false`,
+   * and still has no children; as soon as the consumer writes a new
+   * `items()` tree with that node's children populated (and/or `leaf`
+   * flipped `true`), this flips `false` purely as a side effect of the new
+   * input, with no manual bookkeeping to keep in sync.
+   */
+  protected isNodeLoading(node: DynamoTreeTableNode<TRow>): boolean {
+    return (
+      this.expandedIds().includes(node.id) &&
+      node.leaf === false &&
+      !node.children?.length
+    );
   }
 
   protected isExpanded(id: string): boolean {
@@ -431,18 +594,39 @@ export class DynamoTreeTable<
   }
 
   protected rowClasses(entry: DynamoTreeTableEntry<TRow>) {
-    return treeTableRowStyles({
-      active: this.isActive(entry),
-      disabled: entry.node.disabled ?? false,
-    });
+    return cn(
+      treeTableRowStyles({
+        active: this.isActive(entry),
+        disabled: entry.node.disabled ?? false,
+      }),
+      this.ptFor('row').class,
+    );
   }
 
   protected chevronClasses(node: DynamoTreeTableNode<TRow>) {
-    return treeTableChevronStyles({ expanded: this.isExpanded(node.id) });
+    return cn(
+      treeTableChevronStyles({ expanded: this.isExpanded(node.id) }),
+      this.ptFor('chevron').class,
+    );
   }
 
   protected indentRem(depth: number): number {
     return treeTableIndentRem(depth);
+  }
+
+  /**
+   * Accessible name for the chevron button — uses the row's own first-column
+   * value ("Expand Resume.pdf") rather than a numeric position, since every
+   * row already has a natural "name" via its first column (the same value
+   * `handleTypeahead` already treats as the row's identity).
+   */
+  protected chevronLabel(node: DynamoTreeTableNode<TRow>): string {
+    const verb = this.isExpanded(node.id) ? 'Collapse ' : 'Expand ';
+    const firstColumn = this.columns()[0];
+    return (
+      verb +
+      (firstColumn ? String(this.cellValue(node.data, firstColumn)) : node.id)
+    );
   }
 
   protected sortDirectionFor(
@@ -452,14 +636,24 @@ export class DynamoTreeTable<
     return state?.field === field ? state.direction : 'none';
   }
 
-  protected ariaSortFor(field: string): 'ascending' | 'descending' | null {
+  /**
+   * `'none'`, not `null`, for a sortable-but-currently-unsorted column — WAI-ARIA
+   * authoring practice wants an explicit value here so assistive tech can
+   * distinguish "sortable, not currently sorted" from "not sortable at all"
+   * (the latter correctly gets no `aria-sort` attribute at all, via the
+   * template's own `column.sortable ? ariaSortFor(...) : null` ternary).
+   */
+  protected ariaSortFor(field: string): 'ascending' | 'descending' | 'none' {
     const state = this.sortState();
-    if (state?.field !== field) return null;
+    if (state?.field !== field) return 'none';
     return state.direction === 'asc' ? 'ascending' : 'descending';
   }
 
   protected sortIconClasses(direction: DynamoTreeTableSortDirection | 'none') {
-    return treeTableSortIconStyles({ direction });
+    return cn(
+      treeTableSortIconStyles({ direction }),
+      this.ptFor('sortIcon').class,
+    );
   }
 
   protected cellValue(row: TRow, column: DynamoTreeTableColumn<TRow>): unknown {
@@ -494,6 +688,7 @@ export class DynamoTreeTable<
       return null;
     });
     this.page.set(1);
+    this.emitLazyLoad();
   }
 
   /** Wired to `<dg-input-text>`'s `(valueChange)` — mirrors Table's own `onFilterTextChange` exactly, including the page-reset-in-the-same-handler technique (no `effect()` needed). */
@@ -501,16 +696,88 @@ export class DynamoTreeTable<
     if (this.isBusy()) return;
     this.filterText.set(value);
     this.page.set(1);
+    this.emitLazyLoad();
   }
 
-  protected toggleExpanded(id: string): void {
+  /** Builds the template context handed to a column's `filterTemplate`. */
+  protected columnFilterContext(
+    column: DynamoTreeTableColumn<TRow>,
+  ): DynamoTreeTableColumnFilterContext<TRow> {
+    const value = this.columnFilters()[column.field];
+    return {
+      $implicit: value,
+      value,
+      setValue: (next) => this.onColumnFilterChange(column.field, next),
+      column,
+    };
+  }
+
+  /** String coercion for the built-in `<dg-input-text>` column filter's `[value]` binding. */
+  protected columnFilterValue(field: string): string {
+    const value = this.columnFilters()[field];
+    return value === undefined || value === null ? '' : String(value);
+  }
+
+  /** Mirrors `onFilterTextChange`'s page-reset-in-the-same-handler pattern. */
+  protected onColumnFilterChange(field: string, value: unknown): void {
+    if (this.isBusy()) return;
+    this.columnFilters.update((filters) => ({ ...filters, [field]: value }));
+    this.page.set(1);
+    this.emitLazyLoad();
+  }
+
+  /** Replaces the template's old `[(page)]`/`(pageSizeChange)="pageSize.set($event)"` two-way sugar — needed so a page/size change can also emit `lazyLoad`. */
+  protected onPageChange(value: number): void {
+    this.page.set(value);
+    this.emitLazyLoad();
+  }
+
+  protected onPageSizeChange(value: number): void {
+    this.pageSize.set(value);
+    this.emitLazyLoad();
+  }
+
+  /**
+   * Single, effect-free emission point for `lazyLoad` — called as a
+   * trailing statement from every one of TreeTable's own state-changing
+   * handlers (sort/filter/column-filter/page/pageSize), mirroring Table's
+   * identical pattern. NOT called from `toggleExpanded`/`toggleChecked`/
+   * `toggleSelectAll` — expand/select are purely local-display concerns for
+   * already-loaded data. Not triggered by a consumer writing directly to
+   * the underlying models from outside TreeTable's own UI — a documented,
+   * accepted gap matching Table's own effect-free architecture.
+   */
+  private emitLazyLoad(): void {
+    if (!this.lazy()) return;
+    this.lazyLoad.emit({
+      page: this.currentPage(),
+      pageSize: this.pageSize() ?? this.totalItemCount(),
+      sort: this.sortState(),
+      filterText: this.filterText(),
+      columnFilters: this.columnFilters(),
+    });
+  }
+
+  /**
+   * Toggles `expandedIds`; additionally emits `nodeExpand` when expanding a
+   * node whose children aren't loaded yet (`leaf === false`, no
+   * `children`) — see `DynamoTreeTableNode.leaf`'s own doc comment. Fires
+   * from both the chevron click and keyboard (`ArrowRight`/`Enter`/
+   * `Space`), since both funnel through this one method.
+   */
+  protected toggleExpanded(node: DynamoTreeTableNode<TRow>): void {
     if (this.isBusy()) return;
     const current = this.expandedIds();
+    const id = node.id;
+    const expanding = !current.includes(id);
     this.expandedIds.set(
-      current.includes(id)
-        ? current.filter((existing) => existing !== id)
-        : [...current, id],
+      expanding
+        ? [...current, id]
+        : current.filter((existing) => existing !== id),
     );
+    if (expanding && node.leaf === false && !node.children?.length) {
+      this.nodeExpand.emit(node);
+    }
   }
 
   /** Checks/unchecks `node`'s subtree (cascading to its enabled descendants) and fires `itemSelect` once for `node` itself — never once per cascaded descendant. */
@@ -598,7 +865,7 @@ export class DynamoTreeTable<
         const hasChildren = this.hasChildren(entry.node);
         const isExpanded = this.isExpanded(entry.node.id);
         if (hasChildren && !isExpanded) {
-          this.toggleExpanded(entry.node.id);
+          this.toggleExpanded(entry.node);
         } else if (hasChildren && isExpanded) {
           const child = entries[currentIndex + 1];
           if (child?.parentId === entry.node.id) {
@@ -612,7 +879,7 @@ export class DynamoTreeTable<
         const hasChildren = this.hasChildren(entry.node);
         const isExpanded = this.isExpanded(entry.node.id);
         if (hasChildren && isExpanded) {
-          this.toggleExpanded(entry.node.id);
+          this.toggleExpanded(entry.node);
         } else if (entry.parentId !== undefined) {
           const parentIndex = entries.findIndex(
             (candidate) => candidate.node.id === entry.parentId,
@@ -626,7 +893,7 @@ export class DynamoTreeTable<
         if (entry.node.disabled) return;
         event.preventDefault();
         if (this.hasChildren(entry.node)) {
-          this.toggleExpanded(entry.node.id);
+          this.toggleExpanded(entry.node);
         }
         if (this.selectable()) {
           this.toggleChecked(entry.node);
@@ -683,6 +950,80 @@ export class DynamoTreeTable<
     const entry = this.visibleEntries()[index];
     if (!entry) return;
     this.activeIdSignal.set(entry.node.id);
-    this.rowRefs()[index]?.nativeElement.focus();
+    this.focusRow(entry.node.id, index);
+  }
+
+  /**
+   * Looks up a row by `data-row-id` instead of an index-keyed
+   * `viewChildren` array — needed because `virtualScroll` only mounts rows
+   * near the viewport, so a target row may not exist in the DOM at all.
+   * Applied uniformly to both render paths (not just the virtualized one),
+   * which also removes the native path's own prior index-fragility.
+   *
+   * When the target isn't currently mounted, scrolls the CDK viewport to
+   * it first, then polls for it to appear before focusing — confirmed via
+   * live testing in a real browser that a single `afterNextRender` fires
+   * too early: CDK's own mount in response to `scrollToIndex` settles over
+   * several of its own internal render passes (triggered by its scroll
+   * listener, not synchronously with the `scrollToIndex` call), not just
+   * the next one, so a single next-render callback found nothing and
+   * silently no-opped — the viewport visibly scrolled and the row looked
+   * "active" (that part is driven by `activeIdSignal`, set synchronously
+   * above), but real DOM focus never landed.
+   */
+  private focusRow(id: string, index: number): void {
+    const existing = this.findRowElement(id);
+    if (existing) {
+      existing.focus();
+      return;
+    }
+    if (!this.virtualScroll()) return;
+    this.virtualScrollRef()?.scrollToIndex(index);
+    this.pollForRowAndFocus(id, 20);
+  }
+
+  private pollForRowAndFocus(id: string, framesLeft: number): void {
+    if (framesLeft <= 0) return;
+    requestAnimationFrame(() => {
+      const row = this.findRowElement(id);
+      if (row) {
+        row.focus();
+        return;
+      }
+      this.pollForRowAndFocus(id, framesLeft - 1);
+    });
+  }
+
+  // Scans rather than building a `[data-row-id="${id}"]` selector string —
+  // `CSS.escape` isn't implemented in every test/runtime environment (confirmed
+  // missing in this project's jsdom setup), and a scan sidesteps needing it
+  // at all. The mounted row count is always small (virtualized: only rows
+  // near the viewport; unvirtualized: the full visible list either way).
+  private findRowElement(id: string): HTMLElement | null {
+    const rows =
+      this.elementRef.nativeElement.querySelectorAll<HTMLElement>(
+        '[data-row-id]',
+      );
+    for (const row of Array.from(rows)) {
+      if (row.dataset['rowId'] === id) return row;
+    }
+    return null;
+  }
+
+  /**
+   * Dev-only misconfiguration guard, mirroring Table's own `ngOnInit`.
+   * `lazy` + `virtualScroll` is deliberately NOT warned about here, unlike
+   * Table — see `virtualScroll`'s own doc comment for why TreeTable's
+   * top-level `lazy` (root-page-fetch) composes fine with virtualizing the
+   * resulting flattened row list, unlike Table's `lazy` (which has no
+   * fetch-more-on-scroll hook at all).
+   */
+  ngOnInit(): void {
+    if (!isDevMode()) return;
+    if (this.lazy() && this.totalRecords() === undefined) {
+      console.warn(
+        "[dg-tree-table] `lazy` is on without `totalRecords` — `pageCount` falls back to `items().length` (the current page's own root count), which is almost certainly not the real total. Set `totalRecords`.",
+      );
+    }
   }
 }
