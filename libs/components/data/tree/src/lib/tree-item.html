@@ -1,34 +1,38 @@
 <div
-  #row
   role="treeitem"
   [class]="rowClasses()"
   [tabindex]="isActive() ? 0 : -1"
-  aria-selected="false"
+  [attr.aria-selected]="ariaSelectedAttr()"
   [attr.aria-expanded]="isExpandable() ? isExpanded() : null"
-  [attr.aria-checked]="ariaCheckedAttr()"
+  [attr.aria-checked]="state.selectionMode() === 'checkbox' ? ariaCheckedAttr() : null"
   [attr.aria-disabled]="node().disabled ? 'true' : null"
   [attr.aria-level]="depth() + 1"
   [attr.aria-posinset]="posinset()"
   [attr.aria-setsize]="setsize()"
   [attr.data-node-id]="node().id"
   [style.paddingLeft.rem]="indentRem()"
+  [dgPt]="ptFor('row')"
   (click)="onRowClick()"
   (focus)="onRowFocus()"
   (keydown)="state.handleKeydown($event)"
 >
   @if (node().loading) {
   <span
-    [class]="chevronButtonClasses"
+    [class]="chevronButtonClasses()"
     data-testid="chevron-spinner"
     [attr.aria-hidden]="true"
+    [dgPt]="ptFor('chevronButton')"
   >
     <dg-spinner size="sm" />
   </span>
   } @else if (isExpandable()) {
-  <span
-    [class]="chevronButtonClasses"
+  <button
+    type="button"
+    tabindex="-1"
     data-testid="chevron"
-    [attr.aria-hidden]="true"
+    [class]="chevronButtonClasses()"
+    [attr.aria-label]="chevronLabel()"
+    [dgPt]="ptFor('chevronButton')"
     (click)="onChevronClick($event)"
   >
     <svg
@@ -38,6 +42,7 @@
       height="16"
       viewBox="0 0 16 16"
       fill="none"
+      [dgPt]="ptFor('chevron')"
     >
       <path
         d="M4 6l4 4 4-4"
@@ -47,24 +52,34 @@
         stroke-linejoin="round"
       />
     </svg>
-  </span>
+  </button>
   } @else {
   <span [class]="chevronPlaceholderClasses" [attr.aria-hidden]="true"></span>
-  }
+  } @if (state.selectionMode() === 'checkbox') {
   <span #checkboxHost>
     <dg-checkbox
       size="sm"
       [checked]="checkboxChecked()"
       [indeterminate]="isIndeterminate()"
       [disabled]="node().disabled ?? false"
+      [pt]="{ root: ptFor('checkbox') }"
       (checkedChange)="onCheckedChange()"
       (click)="onCheckboxContainerClick($event)"
     />
   </span>
-  <span [class]="labelClasses">{{ node().label }}</span>
+  } @if (nodeTemplate()) {
+  <ng-container
+    [ngTemplateOutlet]="nodeTemplate() ?? null"
+    [ngTemplateOutletContext]="nodeContext()"
+  />
+  } @else {
+  <span [class]="labelClasses()" [dgPt]="ptFor('label')"
+    >{{ node().label }}</span
+  >
+  }
 </div>
-@if (isExpandable() && isExpanded()) {
-<div role="group" [class]="groupClasses()">
+@if (renderChildren() && isExpandable() && isExpanded()) {
+<div role="group" [class]="groupClasses()" [dgPt]="ptFor('group')">
   <div [class]="groupInnerClasses">
     @for (child of node().children; track child.id; let i = $index) {
     <dg-tree-item
@@ -72,6 +87,8 @@
       [depth]="depth() + 1"
       [posinset]="i + 1"
       [setsize]="node().children!.length"
+      [pt]="pt()"
+      [nodeTemplate]="nodeTemplate()"
     />
     }
   </div>

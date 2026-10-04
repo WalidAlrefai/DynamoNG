@@ -44,6 +44,8 @@ const MANY_NODES: DynamoTreeNode<string>[] = [
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'filterable', title: 'Filterable' },
+  { id: 'clearable', title: 'Clearable' },
+  { id: 'selection-modes', title: 'Selection Modes' },
   { id: 'readonly', title: 'Read-only' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
 ];
@@ -54,6 +56,12 @@ const API: ApiTableRow[] = [
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
   { name: 'readOnly', type: 'boolean', default: 'false' },
+  { name: 'clearable', type: 'boolean', default: 'false' },
+  {
+    name: 'selectionMode',
+    type: "'single' | 'multiple' | 'checkbox'",
+    default: "'single'",
+  },
   { name: 'filterable', type: 'boolean', default: 'false' },
   { name: 'filterText', type: 'string (model)', default: "''" },
   { name: 'filterPlaceholder', type: 'string', default: "'Search...'" },
@@ -125,6 +133,57 @@ const API: ApiTableRow[] = [
       </docs-example>
 
       <docs-example
+        exampleId="clearable"
+        title="Clearable"
+        description="clearable shows a × button next to the trigger once a value is selected."
+      >
+        <div preview class="max-w-xs">
+          <dg-tree-select
+            [nodes]="nodes"
+            [(value)]="clearableValue"
+            [clearable]="true"
+            ariaLabel="Category (clearable)"
+          />
+        </div>
+        <div code>
+          &lt;dg-tree-select [nodes]="nodes" [(value)]="value"
+          [clearable]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="selection-modes"
+        title="Selection Modes"
+        description="selectionMode='single' (default) is the original, only-ever behavior. 'multiple' toggles plain membership on a bare click — no modifier key, no cascading. 'checkbox' cascades tri-state to enabled descendants, mirroring DynamoTree's own checkbox mode."
+      >
+        <div preview class="max-w-xs space-y-4">
+          <div>
+            <p class="mb-1 text-xs font-medium text-text-muted">Multiple</p>
+            <dg-tree-select
+              [nodes]="nodes"
+              [(value)]="multipleValue"
+              selectionMode="multiple"
+              ariaLabel="Category (multiple)"
+            />
+          </div>
+          <div>
+            <p class="mb-1 text-xs font-medium text-text-muted">Checkbox</p>
+            <dg-tree-select
+              [nodes]="nodes"
+              [(value)]="checkboxValue"
+              selectionMode="checkbox"
+              ariaLabel="Category (checkbox)"
+            />
+          </div>
+        </div>
+        <div code>
+          &lt;dg-tree-select [nodes]="nodes" [(value)]="value"
+          selectionMode="multiple" /&gt; &lt;dg-tree-select [nodes]="nodes"
+          [(value)]="value" selectionMode="checkbox" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="readonly"
         title="Read-only"
         description="readOnly keeps the trigger focusable and lets the panel open for browsing, but blocks committing a node — unlike disabled, it isn't dimmed or removed from the tab order."
@@ -175,5 +234,8 @@ export class TreeSelectDocPage {
   protected readonly category = new FormControl<string | null>(null);
   protected readonly manyValue = signal<string | null>(null);
   protected readonly filterValue = signal<string | null>(null);
+  protected readonly clearableValue = signal<string | null>('apple');
+  protected readonly multipleValue = signal<string[] | null>([]);
+  protected readonly checkboxValue = signal<string[] | null>([]);
   protected readonly readonlyValue = signal<string | null>('grain');
 }

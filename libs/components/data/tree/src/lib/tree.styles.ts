@@ -8,13 +8,22 @@ import { focusRingInsetClass } from '@dynamong/utils/styles';
 // A visual no-op on its own (Tree ships border-less by default, unlike
 // Table's/TreeTable's bordered-card wrapper styles) — just a hook for a
 // consumer's own styleClass border/background to round against.
-export const treeWrapperStyles = 'rounded-md';
+export const treeWrapperStyles = cva('rounded-md', {
+  variants: { fluid: { true: 'w-full', false: '' } },
+  defaultVariants: { fluid: true },
+});
 
 // The inner `role="tree"` element's own row-stacking layout — plain,
 // non-overridable (bound directly, never merged with styleClass()),
 // mirroring Table's own tableStyles/tableClasses split: unstyled() now
 // only strips the WRAPPER's classes, never this layout.
 export const treeStyles = 'flex flex-col gap-0.5';
+
+// The virtualized `role="tree"` wrapper's own layout — `treeStyles`' own
+// `flex flex-col gap-0.5` is meaningless once the only child is a single
+// `<dg-virtual-scroll>` viewport, so this is intentionally near-empty;
+// sizing comes entirely from `virtualScrollHeight`/`virtualScrollItemSize`.
+export const treeVirtualStyles = 'block';
 
 // Shown in place of the item list when `items()` is empty — a loading spin
 // + message while `loading` is true, or `emptyStateMessage()` otherwise.
@@ -38,12 +47,20 @@ export const treeRowStyles = cva(
         true: 'bg-surface-100',
         false: '',
       },
+      // Independent of `active` — a row can be the roving-tabindex-focused
+      // row (`active`), the single/multiple-mode `selected` row, both, or
+      // neither, so both need their own composable visual treatment rather
+      // than one variant implying the other.
+      selected: {
+        true: 'bg-primary/10 text-primary',
+        false: '',
+      },
       disabled: {
         true: 'pointer-events-none cursor-not-allowed opacity-60',
         false: 'cursor-pointer hover:bg-surface-50',
       },
     },
-    defaultVariants: { active: false, disabled: false },
+    defaultVariants: { active: false, selected: false, disabled: false },
   },
 );
 

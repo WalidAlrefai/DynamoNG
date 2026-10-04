@@ -44,3 +44,29 @@ export const treeSelectExpandIconStyles = cva('transition-transform', {
   },
   defaultVariants: { expanded: false },
 });
+
+// `selectionMode="checkbox"`'s per-row indicator — deliberately decorative
+// (`aria-hidden`, no native `<input>`), mirroring `DynamoSelect`'s/
+// `DynamoMultiSelect`'s own `selectedIndicator="checkbox"` precedent rather
+// than TreeSelect's sibling `DynamoTree`'s real `<dg-checkbox>`: a row here
+// is `tabindex="-1"` and non-interactive (all keyboard handling lives on the
+// trigger, see tree-select.ts), so a second independently-focusable native
+// checkbox nested inside it would be a real a11y regression — the row's own
+// `aria-checked` already conveys the state. Tri-state, unlike Select's
+// binary version, since a branch can be indeterminate.
+export const treeSelectCheckboxIndicatorStyles = cva(
+  'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+  {
+    variants: {
+      state: {
+        checked: 'bg-primary border-primary text-on-primary',
+        indeterminate: 'bg-primary border-primary text-on-primary',
+        unchecked: 'bg-surface-0 border-border text-transparent',
+      },
+    },
+    defaultVariants: { state: 'unchecked' },
+  },
+);
+
+export const treeSelectCheckboxIndeterminateDashStyles =
+  'h-0.5 w-2 rounded-full bg-current';

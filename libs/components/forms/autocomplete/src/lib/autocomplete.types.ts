@@ -4,4 +4,5 @@ export type {
   DynamoSelectSize,
 } from '@dynamong/select';
 
-export type DynamoAutocompletePart = 'root' | 'field' | 'panel' | 'option';
+export type DynamoAutocompletePart =
+  'root' | 'field' | 'clear' | 'panel' | 'listbox' | 'group' | 'option';

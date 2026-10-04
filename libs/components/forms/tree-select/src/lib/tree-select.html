@@ -1,8 +1,8 @@
-<div #triggerEl [class]="triggerClasses()">
+<div #triggerEl [class]="triggerClasses()" [dgPt]="ptFor('root')">
   <button
     type="button"
     role="combobox"
-    [class]="triggerButtonClasses"
+    [class]="triggerButtonClasses()"
     [disabled]="isDisabled()"
     aria-haspopup="listbox"
     [attr.aria-expanded]="isOpen()"
@@ -12,6 +12,8 @@
     [attr.aria-busy]="loading() ? 'true' : null"
     [attr.aria-readonly]="readOnly() ? 'true' : null"
     [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [dgPt]="ptFor('trigger')"
     (click)="toggle()"
     (keydown)="onTriggerKeydown($event)"
   >
@@ -19,6 +21,30 @@
     <dg-spinner size="sm" />
     } {{ selectedLabel() }}
   </button>
+  @if (clearable() && hasSelection()) {
+  <button
+    type="button"
+    [class]="clearButtonClasses()"
+    [disabled]="isDisabled()"
+    aria-label="Clear selection"
+    [dgPt]="ptFor('clear')"
+    (click)="clearValue($event)"
+  >
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      [attr.aria-hidden]="true"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+        clip-rule="evenodd"
+      />
+    </svg>
+  </button>
+  }
   <svg
     [class]="chevronClasses()"
     [attr.aria-hidden]="true"
@@ -26,6 +52,7 @@
     height="16"
     viewBox="0 0 16 16"
     fill="none"
+    [dgPt]="ptFor('chevron')"
   >
     <path
       d="M4 6l4 4 4-4"
@@ -38,11 +65,22 @@
 </div>
 
 <ng-template #panelTemplate>
+  <!--
+    role/aria-label are omitted in the no-results state — an empty
+    `role="tree"` (zero treeitem children) is itself an
+    aria-required-children violation regardless of what other,
+    non-treeitem content it holds, so this container isn't a tree at
+    all while showing only a status message.
+  -->
   <div
     [id]="panelId"
     [class]="panelWrapperClasses()"
-    role="tree"
-    [attr.aria-label]="ariaLabel() ?? 'Options'"
+    [attr.role]="showNoResults() ? null : 'tree'"
+    [attr.aria-label]="showNoResults() ? null : (ariaLabel() ?? 'Options')"
+    [attr.aria-multiselectable]="
+      showNoResults() ? null : ariaMultiselectable()
+    "
+    [dgPt]="ptFor('panel')"
   >
     @if (filterable()) {
     <div [class]="filterWrapperClasses">
@@ -51,6 +89,7 @@
           type="search"
           size="sm"
           [styleClass]="filterInputExtraClasses"
+          [pt]="{ input: ptFor('filterInput') }"
           [ngModel]="filterText()"
           (ngModelChange)="onFilterInputChange($event)"
           (keydown)="onFilterKeydown($event)"
@@ -76,7 +115,11 @@
       </div>
     </div>
     } @if (showNoResults()) {
-    <div class="px-3 py-2 text-sm text-text-muted">
+    <div
+      role="status"
+      [class]="noResultsClasses()"
+      [dgPt]="ptFor('no-results')"
+    >
       {{ noResultsMessage() }}
     </div>
     } @if (isVirtualized()) {
@@ -96,18 +139,25 @@
           [attr.aria-expanded]="
               entry.node.children?.length ? isExpanded(entry.node.id) : null
             "
+          [attr.aria-checked]="
+              selectionMode() === 'checkbox'
+                ? ariaCheckedAttr(entry.node)
+                : null
+            "
           [attr.aria-disabled]="entry.node.disabled ? 'true' : null"
           [class]="rowClasses(entry, i)"
+          [dgPt]="ptFor('row')"
           (click)="selectNode(entry.node)"
           (mouseenter)="activeIndex.set(i)"
         >
           @if (entry.node.children?.length) {
           <button
             type="button"
-            [class]="expandButtonClasses"
+            [class]="expandButtonClasses()"
             [attr.aria-label]="
                   isExpanded(entry.node.id) ? 'Collapse' : 'Expand'
                 "
+            [dgPt]="ptFor('expandButton')"
             (click)="toggleExpanded(entry.node.id, $event)"
           >
             <svg
@@ -129,6 +179,18 @@
           </button>
           } @else {
           <span [class]="expandSpacerClasses"></span>
+          } @if (selectionMode() === 'checkbox') {
+          <span
+            [class]="checkboxIndicatorClasses(entry.node)"
+            [attr.aria-hidden]="true"
+            [dgPt]="ptFor('checkbox')"
+          >
+            @if (checkState(entry.node) === 'indeterminate') {
+            <span [class]="checkboxIndeterminateDashClasses"></span>
+            } @else if (checkState(entry.node) === 'checked') {
+            <dg-icon-check size="sm" />
+            }
+          </span>
           }
           <span>{{ entry.node.label }}</span>
         </div>
@@ -146,16 +208,21 @@
       [attr.aria-expanded]="
             entry.node.children?.length ? isExpanded(entry.node.id) : null
           "
+      [attr.aria-checked]="
+            selectionMode() === 'checkbox' ? ariaCheckedAttr(entry.node) : null
+          "
       [attr.aria-disabled]="entry.node.disabled ? 'true' : null"
       [class]="rowClasses(entry, i)"
+      [dgPt]="ptFor('row')"
       (click)="selectNode(entry.node)"
       (mouseenter)="activeIndex.set(i)"
     >
       @if (entry.node.children?.length) {
       <button
         type="button"
-        [class]="expandButtonClasses"
+        [class]="expandButtonClasses()"
         [attr.aria-label]="isExpanded(entry.node.id) ? 'Collapse' : 'Expand'"
+        [dgPt]="ptFor('expandButton')"
         (click)="toggleExpanded(entry.node.id, $event)"
       >
         <svg
@@ -177,6 +244,18 @@
       </button>
       } @else {
       <span [class]="expandSpacerClasses"></span>
+      } @if (selectionMode() === 'checkbox') {
+      <span
+        [class]="checkboxIndicatorClasses(entry.node)"
+        [attr.aria-hidden]="true"
+        [dgPt]="ptFor('checkbox')"
+      >
+        @if (checkState(entry.node) === 'indeterminate') {
+        <span [class]="checkboxIndeterminateDashClasses"></span>
+        } @else if (checkState(entry.node) === 'checked') {
+        <dg-icon-check size="sm" />
+        }
+      </span>
       }
       <span>{{ entry.node.label }}</span>
     </div>

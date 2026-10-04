@@ -4,6 +4,7 @@ import {
   ElementRef,
   TemplateRef,
   computed,
+  contentChild,
   effect,
   forwardRef,
   input,
@@ -11,10 +12,12 @@ import {
   output,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
+import { DynamoPassThroughDirective } from '@dynamong/core/base';
 import {
   DynamoListboxBase,
   buildListboxPositions,
@@ -31,6 +34,7 @@ import {
 } from '@dynamong/select';
 import { cn } from '@dynamong/utils/class-merge';
 import {
+  autocompleteClearButtonStyles,
   autocompleteFieldStyles,
   autocompleteFieldWrapperStyles,
   autocompleteLoadingIndicatorStyles,
@@ -51,7 +55,12 @@ type DynamoAutocompleteRenderItem<TValue> =
   selector: 'dg-autocomplete',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSpinner, DynamoVirtualScroll],
+  imports: [
+    DynamoSpinner,
+    DynamoVirtualScroll,
+    DynamoPassThroughDirective,
+    NgTemplateOutlet,
+  ],
   templateUrl: './autocomplete.html',
   providers: [
     {
@@ -69,6 +78,11 @@ export class DynamoAutocomplete<TValue = unknown>
   readonly placeholder = input('');
   readonly size = input<DynamoSelectSize>('md');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Associates the field with an external help/error message element via `aria-describedby`. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true` to match every existing consumer's
+   *  assumption of a full-width field; set `false` for intrinsic sizing. */
+  readonly fluid = input(true);
   readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
@@ -81,6 +95,10 @@ export class DynamoAutocomplete<TValue = unknown>
    *  non-interactive, like `disabled`. Never emits back — the consumer
    *  drives it. */
   readonly loading = input(false);
+  /** Shows an × button that clears the typed text — mirrors `DynamoInputText`'s own `showClear`
+   *  (the field here is a bare `<input>`, not a button trigger like `DynamoSelect`'s `clearable`). */
+  readonly clearable = input(false);
+  readonly clearAriaLabel = input('Clear');
   readonly position = input<DynamoSelectPosition>('bottom-start');
   readonly noResultsMessage = input('No matching options');
   /**
@@ -121,6 +139,15 @@ export class DynamoAutocomplete<TValue = unknown>
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
   private readonly virtualScrollRef = viewChild(DynamoVirtualScroll);
+
+  /** Optional per-option custom rendering — falls back to plain `{{ option.label }}` text when unset. */
+  protected readonly optionTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoSelectOption<TValue> }>>(
+      'optionTemplate',
+    );
+  /** Optional custom group-heading rendering — falls back to plain `{{ label }}` text when unset. */
+  protected readonly groupTemplate =
+    contentChild<TemplateRef<{ $implicit: string }>>('groupTemplate');
 
   protected readonly fieldId = this.idGenerator.next('dg-autocomplete-field');
   protected readonly listboxId = this.idGenerator.next(
@@ -188,29 +215,49 @@ export class DynamoAutocomplete<TValue = unknown>
     () => this.disabled() || this.loading(),
   );
 
+  protected readonly fieldWrapperClasses = computed(() =>
+    cn(autocompleteFieldWrapperStyles, this.ptFor('root').class),
+  );
+  /** Whether either the spinner or the clear button may occupy the field's trailing slot — they're
+   *  never shown simultaneously (the clear button hides itself while loading), but either one alone
+   *  still needs the same reserved padding. */
+  private readonly showsTrailingIcon = computed(
+    () => this.loading() || (this.clearable() && !!this.value()),
+  );
   protected readonly fieldClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('field').class)
       : cn(
           autocompleteFieldStyles({
             size: this.size(),
             invalid: this.invalid(),
-            loading: this.loading(),
+            fluid: this.fluid(),
+            trailingIcon: this.showsTrailingIcon(),
           }),
           this.styleClass(),
+          this.ptFor('field').class,
         ),
   );
-  protected readonly fieldWrapperClasses = autocompleteFieldWrapperStyles;
   protected readonly loadingIndicatorClasses =
     autocompleteLoadingIndicatorStyles;
+  protected readonly clearButtonClasses = computed(() =>
+    cn(autocompleteClearButtonStyles, this.ptFor('clear').class),
+  );
   /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
   protected readonly panelWrapperClasses = computed(() =>
-    this.isVirtualized()
-      ? selectPanelWrapperVirtualStyles
-      : selectPanelWrapperStyles,
+    cn(
+      this.isVirtualized()
+        ? selectPanelWrapperVirtualStyles
+        : selectPanelWrapperStyles,
+      this.ptFor('panel').class,
+    ),
   );
-  protected readonly listboxClasses = selectListboxStyles;
-  protected readonly groupHeadingClasses = selectGroupHeadingStyles;
+  protected readonly listboxClasses = computed(() =>
+    cn(selectListboxStyles, this.ptFor('listbox').class),
+  );
+  protected readonly groupHeadingClasses = computed(() =>
+    cn(selectGroupHeadingStyles, this.ptFor('group').class),
+  );
   protected readonly noResultsClasses = selectNoResultsStyles;
 
   constructor() {
@@ -222,6 +269,27 @@ export class DynamoAutocomplete<TValue = unknown>
       } else {
         this.detachOverlay();
       }
+    });
+
+    // Re-validates `activeIndex` if `visibleOptions()` changes while the panel stays open (e.g. an
+    // async `lazy`-mode result swap, or a disabled flag flipping) — without this, a stale index could
+    // point past the end of the new list or at a since-disabled row, and `aria-activedescendant` would
+    // reference a nonexistent/mismatched option id. Self-terminating: the write only fires when
+    // `recovered` actually differs from the current value, so a no-op pass never re-triggers itself.
+    // Adapted from `DynamoSelect`'s identical effect, with one deliberate difference: `current < 0` is
+    // NOT treated as invalid here — unlike Select (whose `openList()` always seeds a real index),
+    // Autocomplete's `onInput` intentionally resets `activeIndex` to `-1` on every keystroke so nothing
+    // is pre-highlighted while typing; promoting that back to `0` would silently highlight (and let
+    // Enter select) a suggestion the user never actually navigated to.
+    effect(() => {
+      if (!this.isOpen()) return;
+      const options = this.visibleOptions();
+      const current = this.activeIndex();
+      if (current < 0) return;
+      const isInvalid = current >= options.length || options[current]?.disabled;
+      if (!isInvalid) return;
+      const recovered = findEnabledIndex(options, -1, 1) ?? -1;
+      if (recovered !== current) this.activeIndex.set(recovered);
     });
 
     this.destroyRef.onDestroy(() => {
@@ -264,11 +332,14 @@ export class DynamoAutocomplete<TValue = unknown>
     option: DynamoSelectOption<TValue>,
     index: number,
   ): string {
-    return selectOptionStyles({
-      active: index === this.activeIndex(),
-      selected: false,
-      disabled: !!option.disabled,
-    });
+    return cn(
+      selectOptionStyles({
+        active: index === this.activeIndex(),
+        selected: false,
+        disabled: !!option.disabled,
+      }),
+      this.ptFor('option').class,
+    );
   }
 
   protected onInput(event: Event): void {
@@ -276,8 +347,16 @@ export class DynamoAutocomplete<TValue = unknown>
     this.value.set(text);
     this.onChangeFn(text);
     this.activeIndex.set(-1);
-    if (!this.isOpen()) {
-      this.isOpen.set(true);
+    // Typing-driven open/close is gated on `minLength` in both modes — not just `lazy`'s own
+    // `searchQuery` emission gate below, a separate concern (network-request gating, not panel
+    // visibility). Keyboard-driven `openList()` (ArrowDown/Up while closed) deliberately stays
+    // un-gated — an existing escape hatch to browse the current list regardless of typed length.
+    if (text.trim().length >= this.minLength()) {
+      if (!this.isOpen()) {
+        this.isOpen.set(true);
+      }
+    } else if (this.isOpen()) {
+      this.isOpen.set(false);
     }
     if (this.lazy()) {
       this.debounceSearch(text);
@@ -357,6 +436,14 @@ export class DynamoAutocomplete<TValue = unknown>
 
   protected onBlur(): void {
     this.close();
+  }
+
+  protected clearValue(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.isDisabled() || this.readOnly()) return;
+    this.value.set('');
+    this.onChangeFn('');
+    this.triggerEl().nativeElement.focus();
   }
 
   private openList(): void {

@@ -35,19 +35,26 @@ protected onItemSelect(node: DynamoTreeNode): void { ... }
 
 ## Inputs
 
-| Input               | Type                          | Default                 | Description                                                                                                                  |
-| ------------------- | ----------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `items`             | `DynamoTreeNode[]` (required) | —                       |                                                                                                                              |
-| `expandedIds`       | `string[]` (model)            | `[]`                    | Which node ids are currently expanded.                                                                                       |
-| `selected`          | `string[]` (model)            | `[]`                    | Every node id (leaf or branch) currently fully checked. Checking a branch cascades to its enabled descendants.               |
-| `ariaLabel`         | `string \| undefined`         | `undefined`             |                                                                                                                              |
-| `emptyMessage`      | `string`                      | `'No data'`             | Shown in place of the tree when `items` is empty.                                                                            |
-| `loading`           | `boolean`                     | `false`                 | Renders a spinner + message in the empty-state slot and makes expand/collapse, checking, and row activation non-interactive. |
-| `loadingMessage`    | `string`                      | `'Loading…'`            | Shown in the empty-state slot instead of `emptyMessage` while `loading` is true.                                             |
-| `filterable`        | `boolean`                     | `false`                 | Renders a search `<input>` above the tree. Matching is hierarchy-aware — see Design notes.                                   |
-| `filterPlaceholder` | `string`                      | `'Search...'`           |                                                                                                                              |
-| `filterText`        | `string` (model)              | `''`                    | Case-insensitive substring match against `label`.                                                                            |
-| `noMatchesMessage`  | `string`                      | `'No matching results'` | Shown instead of `emptyMessage` when `items` has nodes but the active filter matched none.                                   |
+| Input                   | Type                                              | Default                 | Description                                                                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`                 | `DynamoTreeNode[]` (required)                     | —                       |                                                                                                                                                                                                               |
+| `expandedIds`           | `string[]` (model)                                | `[]`                    | Which node ids are currently expanded.                                                                                                                                                                        |
+| `selected`              | `string[]` (model)                                | `[]`                    | In `'checkbox'` mode: every node id (leaf or branch) currently fully checked, cascading to enabled descendants. In `'single'`/`'multiple'` mode: the plain (non-cascading) selected id(s) — see Design notes. |
+| `selectionMode`         | `'single' \| 'multiple' \| 'checkbox'`            | `'checkbox'`            | `'checkbox'` is the original always-cascading tri-state model, unchanged. `'single'`/`'multiple'` are new non-cascading modes — see Design notes.                                                             |
+| `ariaLabel`             | `string \| undefined`                             | `undefined`             |                                                                                                                                                                                                               |
+| `ariaDescribedby`       | `string \| undefined`                             | `undefined`             | Forwarded as `aria-describedby` on the `role="tree"` element.                                                                                                                                                 |
+| `fluid`                 | `boolean`                                         | `true`                  | `true` renders the root wrapper `w-full`; `false` shrinks it to content width.                                                                                                                                |
+| `emptyMessage`          | `string`                                          | `'No data'`             | Shown in place of the tree when `items` is empty.                                                                                                                                                             |
+| `loading`               | `boolean`                                         | `false`                 | Renders a spinner + message in the empty-state slot and makes expand/collapse, checking, and row activation non-interactive.                                                                                  |
+| `loadingMessage`        | `string`                                          | `'Loading…'`            | Shown in the empty-state slot instead of `emptyMessage` while `loading` is true.                                                                                                                              |
+| `filterable`            | `boolean`                                         | `false`                 | Renders a search `<input>` above the tree. Matching is hierarchy-aware — see Design notes.                                                                                                                    |
+| `filterPlaceholder`     | `string`                                          | `'Search...'`           |                                                                                                                                                                                                               |
+| `filterText`            | `string` (model)                                  | `''`                    | Case-insensitive substring match against `label`.                                                                                                                                                             |
+| `noMatchesMessage`      | `string`                                          | `'No matching results'` | Shown instead of `emptyMessage` when `items` has nodes but the active filter matched none.                                                                                                                    |
+| `nodeTemplate`          | `TemplateRef<DynamoTreeNodeContext> \| undefined` | `undefined`             | Custom per-node content, replacing the default plain-`label` span — see Design notes.                                                                                                                         |
+| `virtualScroll`         | `boolean`                                         | `false`                 | Virtualizes the flattened, expand-state-aware node list via `@dynamong/virtual-scroll` — see Design notes.                                                                                                    |
+| `virtualScrollItemSize` | `number`                                          | `40`                    | Row height in px when virtualized.                                                                                                                                                                            |
+| `virtualScrollHeight`   | `number`                                          | `400`                   | Viewport height in px when virtualized.                                                                                                                                                                       |
 
 ## Outputs
 
@@ -62,8 +69,21 @@ protected onItemSelect(node: DynamoTreeNode): void { ... }
 
 ## Accessibility
 
-- `role="tree"` root (omitted entirely while `items` is empty, in favor of a `role="status"` empty-state region — a plain `<div>` isn't a valid child of `role="tree"`), `role="treeitem"` rows with `aria-expanded`/`aria-checked` (including `"mixed"` for a partially-checked branch)/`aria-level`/`aria-posinset`/`aria-setsize`.
+- `role="tree"` root (omitted entirely while `items` is empty, in favor of a `role="status"` empty-state region — a plain `<div>` isn't a valid child of `role="tree"`), `role="treeitem"` rows with `aria-expanded`/`aria-checked` (including `"mixed"` for a partially-checked branch, `'checkbox'` mode only)/`aria-selected` (`'single'`/`'multiple'` mode only — always `"false"` in `'checkbox'` mode, where selection is conveyed by `aria-checked` instead)/`aria-level`/`aria-posinset`/`aria-setsize`. `aria-multiselectable` on the root is `"false"` in `'single'` mode, `"true"` otherwise.
 - Keyboard: `ArrowDown`/`ArrowUp` move, `ArrowRight` expands (or moves into the first child), `ArrowLeft` collapses (or moves to the parent), `Home`/`End` jump, `Enter`/`Space` toggles the active row's checkbox and activates it.
+- The expand/collapse chevron is a real `<button>` with its own accessible name (e.g. "Expand Documents") — not just a clickable icon. It's excluded from the Tab sequence (`tabindex="-1"`) since the row itself is already the roving tab stop and `ArrowRight`/`ArrowLeft`/`Enter` already toggle expansion from there; the button exists so touch-AT (VoiceOver/TalkBack) and voice-control/switch-access users have a directly operable, named control at that location too.
+- While `virtualScroll` is active, moving to a row outside the mounted range first scrolls the viewport to it (`scrollToIndex`), then focuses it once CDK has actually rendered it (a bounded `requestAnimationFrame` poll, not a single frame) — real DOM focus lands the same as the non-virtualized path, just after a short delay instead of synchronously.
+
+## Passthrough (`pt`)
+
+Every part below accepts a `pt` entry (merged class + arbitrary attributes), matching
+`@dynamong/table`'s/`@dynamong/tree-table`'s own convention:
+
+`root`, `filterWrapper`, `filterInput`, `emptyState`, `tree`, `row`, `chevronButton`, `chevron`,
+`checkbox`, `label`, `group`.
+
+`pt.checkbox` is forwarded into the nested `<dg-checkbox>`'s own `pt.root`; `pt.filterInput` is
+forwarded into `<dg-input-text>`'s `pt.input`.
 
 ## Design notes
 
@@ -84,6 +104,25 @@ carrying a lightweight payload, with the consumer patching resolved data
 back in through a normal input/model rather than the component taking an
 async loader function.
 
+**`selectionMode`.** `'checkbox'` (default) is the original, always-cascading tri-state checkbox model,
+byte-for-byte unchanged. `'single'`/`'multiple'` are new non-cascading modes (PrimeNG's own three
+`p-tree` selection modes) that reuse the exact same `selected: string[]` model — only the write
+semantics differ, so switching modes never changes the model's type. `'single'`: a click/Enter-Space
+_replaces_ `selected` with just that node's id — clicking an already-selected node leaves it selected,
+it never toggles off. `'multiple'`: a click/Enter-Space toggles plain membership — **a bare click, no
+modifier key required.** This is a deliberate divergence from PrimeNG's own `p-tree` default
+(`metaKeySelection: true`, where a plain click _replaces_ the selection and Ctrl/Cmd-click is what
+toggles/adds) — no other component in this codebase has a modifier-key-click convention to be
+consistent with, and a bare-click toggle matches every other multi-select interaction already here
+(Table's row selection, MultiSelect's option toggling, Tree's own `'checkbox'` mode).
+
+**Custom node templating.** `nodeTemplate` replaces the default plain-`label` rendering with
+arbitrary projected content — pass an `<ng-template let-node let-depth="depth" let-expanded="expanded">`
+and bind `[nodeTemplate]` to it. The context mirrors `DynamoTableCellContext`/`DynamoTreeTableCellContext`'s
+own `$implicit`/explicit-name-alias shape; unlike those, there's no separate `row`/`data` field —
+`DynamoTreeNode` already carries `label`/`value` directly. The template is forwarded through every
+level of recursion automatically, so a deeply-nested child renders through it too.
+
 **Hierarchy-aware filter.** A flat per-node filter (checking each node in
 isolation) would hide a matching grandchild behind its now-excluded,
 non-matching parent — useless for a search over a hierarchy. Instead, a
@@ -97,9 +136,24 @@ ancestor — without ever writing to the `expandedIds` model itself;
 clearing the filter restores whatever expand state `expandedIds` already
 held.
 
+**Virtual scroll.** `virtualScroll` virtualizes the already-flat, expand-state-aware node list (the
+existing `visibleEntries()` computed, previously unused for rendering) via `@dynamong/virtual-scroll`.
+`DynamoTreeItem` — Tree's genuinely recursive rendering primitive — is reused for both the recursive
+and virtualized paths rather than duplicated: a `renderChildren` input (default `true`) gates only the
+trailing nested-children block, so the virtualized path passes `[renderChildren]="false"` and lets
+`visibleEntries()` itself supply every already-expanded descendant as its own flat entry. Losing the
+nested-group expand/collapse height animation while virtualized is expected (hierarchy is still conveyed
+via `aria-level`/`aria-posinset`/`aria-setsize`); dropping the wrapping `role="group"` for flattened rows
+is ARIA-legal for the same reason. CDK's `_RecycleViewRepeaterStrategy` reuses `<dg-tree-item>` component
+instances across scroll positions rather than destroying/recreating them, which breaks any construction-only,
+one-shot logic that assumes an instance's identity never changes — this is why the row-focus registry was
+removed in favor of a DOM scan (see `tree-state.ts`) and why the checkbox's `aria-label` re-syncs via
+`ngOnChanges` instead of only `afterNextRender`.
+
 ## Tier / dependencies
 
-- `tier:1`. Peer dependencies: `@dynamong/checkbox`, `@dynamong/input-text`, `@dynamong/spinner`.
+- `tier:1`. Peer dependencies: `@dynamong/checkbox`, `@dynamong/input-text`, `@dynamong/spinner`,
+  `@dynamong/virtual-scroll`.
 
 ## Running unit tests
 

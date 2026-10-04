@@ -1,11 +1,14 @@
 import type { DynamoTreeTableNode } from './tree-table.types';
 
-// Independently duplicated from Tree's own tree-selection.ts (not
-// importable — TreeTable and Tree are both tier:1, and same-tier
-// dependencies are forbidden by @nx/enforce-module-boundaries) — same
+// Independently duplicated from Tree's own tree-selection.ts — same
 // algorithm, retyped to DynamoTreeTableNode<TRow> in place of
-// DynamoTreeNode. See tree-table.ts's own class doc comment for the
-// identical reasoning already applied to its sort logic.
+// DynamoTreeNode. Not actually blocked by module-boundary tiering today
+// (TreeTable is tier:3, Tree is tier:1, and tier:3 may depend on tier:1) —
+// collapsing this into one shared tier:1 util was considered during Tree's
+// own review round and deliberately deferred, not forbidden. See
+// tree-table.ts's own class doc comment for the identical duplication
+// already applied to its sort logic (for a different reason: Table's own
+// sort/filter helpers simply aren't exported from its index.ts).
 
 export type DynamoTreeTableCheckState =
   'checked' | 'unchecked' | 'indeterminate';

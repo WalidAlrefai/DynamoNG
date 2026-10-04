@@ -7,9 +7,17 @@ export class DynamoTreeSelectHarness extends ComponentHarness {
   private readonly triggerLocator = this.locatorFor('[role="combobox"]');
   // The panel is portaled outside dg-tree-select's own host subtree by CDK
   // Overlay, so it must be located from the document root — same technique
-  // as DynamoSelectHarness/DynamoMenuHarness.
+  // as DynamoSelectHarness/DynamoMenuHarness. Keyed on the panel's own
+  // stable id prefix rather than `[role="tree"]`: the role is omitted while
+  // showing only a no-results message (an empty `role="tree"` would itself
+  // be an aria-required-children violation — see tree-select.html), which
+  // would otherwise make `isOpen()` false-negative during that state, the
+  // same unfixed quirk `DynamoCascadeSelectHarness`'s own `[role="listbox"]`
+  // panel locator still has.
   private readonly panelLocator =
-    this.documentRootLocatorFactory().locatorForOptional('[role="tree"]');
+    this.documentRootLocatorFactory().locatorForOptional(
+      '[id^="dg-tree-select-panel"]',
+    );
   private readonly rowLocators =
     this.documentRootLocatorFactory().locatorForAll('[role="treeitem"]');
 
@@ -43,8 +51,10 @@ export class DynamoTreeSelectHarness extends ComponentHarness {
     for (const row of rows) {
       if ((await row.text()).trim() === label) {
         const rowId = await row.getAttribute('id');
-        const expandButton = await this.documentRootLocatorFactory()
-          .locatorForOptional(`#${rowId} button`)();
+        const expandButton =
+          await this.documentRootLocatorFactory().locatorForOptional(
+            `#${rowId} button`,
+          )();
         if (!expandButton) {
           throw new Error(`Row "${label}" has no children to expand`);
         }

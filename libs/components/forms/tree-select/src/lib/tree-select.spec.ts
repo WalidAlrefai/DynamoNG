@@ -50,11 +50,13 @@ const NODES: DynamoTreeNode<string>[] = [
   { id: 'grain', label: 'Grain', value: 'grain' },
 ];
 
-// The CDK overlay portals `role="tree"` content into a
-// `.cdk-overlay-container` appended near document.body — same reasoning as
-// DynamoSelect's/DynamoMenu's specs.
+// The CDK overlay portals panel content into a `.cdk-overlay-container`
+// appended near document.body — same reasoning as DynamoSelect's/
+// DynamoMenu's specs. Keyed on the panel's own stable id prefix rather than
+// `[role="tree"]`: the role is omitted while showing only a no-results
+// message (see tree-select.html), which a role-based query would miss.
 function getPanel(): HTMLElement | null {
-  return document.body.querySelector('[role="tree"]');
+  return document.body.querySelector('[id^="dg-tree-select-panel"]');
 }
 
 function getRows(): HTMLElement[] {
@@ -992,4 +994,607 @@ describe('DynamoTreeSelect', () => {
       ).resolves.toBeUndefined();
     });
   });
+
+  describe('DynamoTreeSelect — baseline parity (Phase 0)', () => {
+    describe('passthrough (pt)', () => {
+      it('merges pt class onto every part: root/trigger/chevron/panel/row/expandButton/filterInput', async () => {
+        const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            filterable: true,
+            pt: {
+              root: { class: 'pt-root' },
+              trigger: { class: 'pt-trigger' },
+              chevron: { class: 'pt-chevron' },
+              panel: { class: 'pt-panel' },
+              row: { class: 'pt-row' },
+              expandButton: { class: 'pt-expand-button' },
+              filterInput: { class: 'pt-filter-input' },
+            },
+          },
+        });
+
+        expect(container.querySelector('.pt-root')).not.toBeNull();
+        expect(within(container).getByRole('combobox').className).toContain(
+          'pt-trigger',
+        );
+        expect(container.querySelector('svg.pt-chevron')).not.toBeNull();
+
+        await userEvent.click(within(container).getByRole('combobox'));
+        await settle(fixture);
+
+        expect(getPanel()?.className).toContain('pt-panel');
+        expect(
+          getPanel()?.querySelector('input[type="search"].pt-filter-input'),
+        ).not.toBeNull();
+        expect(
+          getPanel()?.querySelector('[role="treeitem"].pt-row'),
+        ).not.toBeNull();
+        expect(
+          getPanel()?.querySelector('button.pt-expand-button'),
+        ).not.toBeNull();
+      });
+
+      it('merges pt class onto the no-results message', async () => {
+        const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            filterable: true,
+            pt: { 'no-results': { class: 'pt-no-results' } },
+          },
+        });
+
+        await userEvent.click(within(container).getByRole('combobox'));
+        await settle(fixture);
+        const filterInput = getPanel()?.querySelector(
+          'input[type="search"]',
+        ) as HTMLInputElement;
+        await userEvent.type(filterInput, 'zzz-no-match');
+        await settle(fixture);
+
+        expect(getPanel()?.querySelector('.pt-no-results')).not.toBeNull();
+      });
+    });
+
+    describe('ariaDescribedby / fluid', () => {
+      it('defaults fluid to true', () => {
+        const { container } = renderDynamoComponent(DynamoTreeSelect, {
+          inputs: { nodes: NODES, ariaLabel: 'Choose' },
+        });
+        expect(container.querySelector('div')?.className).toContain('w-full');
+      });
+
+      it('drops w-full when fluid is set to false', () => {
+        const { container } = renderDynamoComponent(DynamoTreeSelect, {
+          inputs: { nodes: NODES, ariaLabel: 'Choose', fluid: false },
+        });
+        expect(container.querySelector('div')?.className).not.toContain(
+          'w-full',
+        );
+      });
+
+      it('forwards ariaDescribedby to the trigger', () => {
+        const { container } = renderDynamoComponent(DynamoTreeSelect, {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            ariaDescribedby: 'help-text',
+          },
+        });
+        expect(
+          within(container)
+            .getByRole('combobox')
+            .getAttribute('aria-describedby'),
+        ).toBe('help-text');
+      });
+    });
+
+    describe('no-results accessibility (role fix)', () => {
+      it('omits role="tree" and aria-label while showing only the no-results message, but keeps role="status" on the message itself', async () => {
+        const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+          inputs: { nodes: NODES, ariaLabel: 'Choose', filterable: true },
+        });
+
+        await userEvent.click(within(container).getByRole('combobox'));
+        await settle(fixture);
+        const filterInput = getPanel()?.querySelector(
+          'input[type="search"]',
+        ) as HTMLInputElement;
+        await userEvent.type(filterInput, 'zzz-no-match');
+        await settle(fixture);
+
+        expect(getPanel()?.getAttribute('role')).toBeNull();
+        expect(getPanel()?.getAttribute('aria-label')).toBeNull();
+        expect(getPanel()?.querySelector('[role="status"]')).not.toBeNull();
+      });
+
+      it('restores role="tree" once the filter matches again', async () => {
+        const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+          inputs: { nodes: NODES, ariaLabel: 'Choose', filterable: true },
+        });
+
+        await userEvent.click(within(container).getByRole('combobox'));
+        await settle(fixture);
+        const filterInput = getPanel()?.querySelector(
+          'input[type="search"]',
+        ) as HTMLInputElement;
+        await userEvent.type(filterInput, 'zzz-no-match');
+        await settle(fixture);
+        await userEvent.clear(filterInput);
+        await settle(fixture);
+
+        expect(getPanel()?.getAttribute('role')).toBe('tree');
+      });
+
+      it('has no axe violations while showing only the no-results message', async () => {
+        const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+          inputs: { nodes: NODES, ariaLabel: 'Choose', filterable: true },
+        });
+
+        await userEvent.click(within(container).getByRole('combobox'));
+        await settle(fixture);
+        const filterInput = getPanel()?.querySelector(
+          'input[type="search"]',
+        ) as HTMLInputElement;
+        await userEvent.type(filterInput, 'zzz-no-match');
+        await settle(fixture);
+
+        await expect(
+          expectNoA11yViolations(
+            document.body.querySelector(
+              '.cdk-overlay-container',
+            ) as HTMLElement,
+          ),
+        ).resolves.toBeUndefined();
+      });
+
+      it('DynamoTreeSelectHarness.isOpen() reports true while showing only the no-results message', async () => {
+        const { fixture } = renderDynamoComponent(DynamoTreeSelect, {
+          inputs: { nodes: NODES, ariaLabel: 'Choose', filterable: true },
+        });
+        const harness = await TestbedHarnessEnvironment.harnessForFixture(
+          fixture as ComponentFixture<unknown>,
+          DynamoTreeSelectHarness,
+        );
+
+        await harness.open();
+        const filterInput = getPanel()?.querySelector(
+          'input[type="search"]',
+        ) as HTMLInputElement;
+        await userEvent.type(filterInput, 'zzz-no-match');
+        await settle(fixture);
+
+        expect(await harness.isOpen()).toBe(true);
+      });
+    });
+  });
 });
+
+describe('DynamoTreeSelect — clearable (Phase 1)', () => {
+  it('renders no clear button by default, or when nothing is selected', () => {
+    const { container } = renderDynamoComponent(DynamoTreeSelect, {
+      inputs: { nodes: NODES, ariaLabel: 'Choose', clearable: true },
+    });
+    expect(
+      within(container).queryByRole('button', { name: 'Clear selection' }),
+    ).toBeNull();
+  });
+
+  it('renders a clear button once a value is selected', () => {
+    const { container } = renderDynamoComponent(DynamoTreeSelect, {
+      inputs: {
+        nodes: NODES,
+        ariaLabel: 'Choose',
+        clearable: true,
+        value: 'apple',
+      },
+    });
+    expect(
+      within(container).getByRole('button', { name: 'Clear selection' }),
+    ).toBeTruthy();
+  });
+
+  it('clicking it clears the value without reopening the panel', async () => {
+    const { container, componentInstance } = renderDynamoComponent(
+      DynamoTreeSelect,
+      {
+        inputs: {
+          nodes: NODES,
+          ariaLabel: 'Choose',
+          clearable: true,
+          value: 'apple',
+        },
+      },
+    );
+
+    await userEvent.click(
+      within(container).getByRole('button', { name: 'Clear selection' }),
+    );
+
+    expect(componentInstance.value()).toBeNull();
+    expect(getPanel()).toBeNull();
+  });
+
+  it('is disabled and inert while the component is disabled', async () => {
+    const { container, componentInstance } = renderDynamoComponent(
+      DynamoTreeSelect,
+      {
+        inputs: {
+          nodes: NODES,
+          ariaLabel: 'Choose',
+          clearable: true,
+          value: 'apple',
+          disabled: true,
+        },
+      },
+    );
+
+    const clearButton = within(container).getByRole('button', {
+      name: 'Clear selection',
+    });
+    expect(clearButton.hasAttribute('disabled')).toBe(true);
+    await userEvent.click(clearButton, { pointerEventsCheck: 0 });
+    expect(componentInstance.value()).toBe('apple');
+  });
+
+  it('merges pt class onto the clear button', () => {
+    const { container } = renderDynamoComponent(DynamoTreeSelect, {
+      inputs: {
+        nodes: NODES,
+        ariaLabel: 'Choose',
+        clearable: true,
+        value: 'apple',
+        pt: { clear: { class: 'pt-clear' } },
+      },
+    });
+    expect(container.querySelector('button.pt-clear')).not.toBeNull();
+  });
+
+  it('has no axe violations with the clear button visible', async () => {
+    const { container } = renderDynamoComponent(DynamoTreeSelect, {
+      inputs: {
+        nodes: NODES,
+        ariaLabel: 'Choose',
+        clearable: true,
+        value: 'apple',
+      },
+    });
+    await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+  });
+});
+
+describe('DynamoTreeSelect — selectionMode (Phase 2)', () => {
+  describe('"single" (default) — baseline regression', () => {
+    it('replaces the value and closes the panel on pick, explicitly set', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            selectionMode: 'single',
+          },
+        },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Grain'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toBe('grain');
+      expect(getPanel()).toBeNull();
+    });
+
+    it('sets aria-multiselectable to false on the panel', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, ariaLabel: 'Choose' },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.getAttribute('aria-multiselectable')).toBe('false');
+    });
+
+    it('renders no checkbox indicators', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, ariaLabel: 'Choose' },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(
+        getPanel()?.querySelector('[aria-hidden="true"].rounded-sm'),
+      ).toBeNull();
+    });
+  });
+
+  describe('"multiple" — plain non-cascading toggle', () => {
+    it('toggles plain membership without cascading, keeps the panel open', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            selectionMode: 'multiple',
+          },
+        },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(chevronButton(getRowByText('Fruits')));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Apple'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual(['apple']);
+      expect(getPanel()).not.toBeNull();
+
+      await userEvent.click(getRowByText('Grain'));
+      await settle(fixture);
+      expect((componentInstance.value() as string[]).sort()).toEqual([
+        'apple',
+        'grain',
+      ]);
+
+      await userEvent.click(getRowByText('Apple'));
+      await settle(fixture);
+      expect(componentInstance.value()).toEqual(['grain']);
+    });
+
+    it('sets aria-multiselectable to true on the panel', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: {
+          nodes: NODES,
+          ariaLabel: 'Choose',
+          selectionMode: 'multiple',
+        },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.getAttribute('aria-multiselectable')).toBe('true');
+    });
+
+    it('renders a comma-joined trigger label', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: {
+          nodes: NODES,
+          ariaLabel: 'Choose',
+          selectionMode: 'multiple',
+          value: ['apple', 'grain'],
+        },
+      });
+      void fixture;
+
+      expect(within(container).getByRole('combobox').textContent?.trim()).toBe(
+        'Apple, Grain',
+      );
+    });
+  });
+
+  describe('"checkbox" — tri-state cascade', () => {
+    it('checking a branch cascades to its enabled descendants', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            selectionMode: 'checkbox',
+          },
+        },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Fruits'));
+      await settle(fixture);
+
+      expect((componentInstance.value() as string[]).sort()).toEqual([
+        'apple',
+        'banana',
+        'fruits',
+      ]);
+      expect(getPanel()).not.toBeNull();
+    });
+
+    it('unchecking a fully-checked branch reverses the cascade', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            selectionMode: 'checkbox',
+          },
+        },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Fruits'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Fruits'));
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual([]);
+    });
+
+    it('skips disabled descendants when cascading and leaves the branch indeterminate', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            selectionMode: 'checkbox',
+          },
+        },
+      );
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Vegetables'));
+      await settle(fixture);
+
+      // Pea (enabled) is cascaded in; Carrot (disabled) is excluded — the
+      // branch itself can never read as fully "checked" as a result.
+      expect((componentInstance.value() as string[]).sort()).toEqual([
+        'pea',
+        'veggies',
+      ]);
+      expect(getRowByText('Vegetables').getAttribute('aria-checked')).toBe(
+        'mixed',
+      );
+
+      // Expand to inspect Carrot's own (disabled, never-cascaded) state.
+      await userEvent.click(chevronButton(getRowByText('Vegetables')));
+      await settle(fixture);
+      expect(getRowByText('Carrot').getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('sets aria-multiselectable to true on the panel', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: {
+          nodes: NODES,
+          ariaLabel: 'Choose',
+          selectionMode: 'checkbox',
+        },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.getAttribute('aria-multiselectable')).toBe('true');
+    });
+
+    it('merges pt class onto the checkbox indicator', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: {
+          nodes: NODES,
+          ariaLabel: 'Choose',
+          selectionMode: 'checkbox',
+          pt: { checkbox: { class: 'pt-checkbox' } },
+        },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('.pt-checkbox')).not.toBeNull();
+    });
+
+    it('has no axe violations', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: {
+          nodes: NODES,
+          ariaLabel: 'Choose',
+          selectionMode: 'checkbox',
+        },
+      });
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Vegetables'));
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(
+          document.body.querySelector('.cdk-overlay-container') as HTMLElement,
+        ),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('itemSelect cardinality', () => {
+    it('fires once per direct interaction in "single" mode', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        { inputs: { nodes: NODES, ariaLabel: 'Choose' } },
+      );
+      const emits: unknown[] = [];
+      componentInstance.itemSelect.subscribe((n) => emits.push(n));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Grain'));
+      await settle(fixture);
+
+      expect(emits).toHaveLength(1);
+    });
+
+    it('fires once per direct interaction in "multiple" mode', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            selectionMode: 'multiple',
+          },
+        },
+      );
+      const emits: unknown[] = [];
+      componentInstance.itemSelect.subscribe((n) => emits.push(n));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Grain'));
+      await settle(fixture);
+
+      expect(emits).toHaveLength(1);
+    });
+
+    it('fires once per direct interaction in "checkbox" mode, even when it cascades to many', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoTreeSelect,
+        {
+          inputs: {
+            nodes: NODES,
+            ariaLabel: 'Choose',
+            selectionMode: 'checkbox',
+          },
+        },
+      );
+      const emits: unknown[] = [];
+      componentInstance.itemSelect.subscribe((n) => emits.push(n));
+
+      await userEvent.click(within(container).getByRole('combobox'));
+      await settle(fixture);
+      await userEvent.click(getRowByText('Fruits'));
+      await settle(fixture);
+
+      expect(emits).toHaveLength(1);
+    });
+  });
+
+  describe('value as a reactive-forms CVA round-trip', () => {
+    it('accepts a scalar via writeValue in "single" mode', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: { nodes: NODES, ariaLabel: 'Choose' },
+      });
+      componentInstance.writeValue('grain');
+      expect(componentInstance.value()).toBe('grain');
+    });
+
+    it('accepts an array via writeValue in "checkbox" mode', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoTreeSelect, {
+        inputs: {
+          nodes: NODES,
+          ariaLabel: 'Choose',
+          selectionMode: 'checkbox',
+        },
+      });
+      componentInstance.writeValue(['apple', 'banana']);
+      expect(componentInstance.value()).toEqual(['apple', 'banana']);
+    });
+  });
+});
+
+function chevronButton(row: HTMLElement): HTMLElement {
+  const button = row.querySelector('button');
+  if (!button) throw new Error('Row has no expand button');
+  return button;
+}

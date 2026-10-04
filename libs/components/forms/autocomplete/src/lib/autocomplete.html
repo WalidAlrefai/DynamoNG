@@ -1,4 +1,4 @@
-<div [class]="fieldWrapperClasses">
+<div [class]="fieldWrapperClasses()" [dgPt]="ptFor('root')">
   <input
     #triggerEl
     type="text"
@@ -18,76 +18,116 @@
     [attr.aria-readonly]="readOnly() ? 'true' : null"
     [attr.aria-busy]="loading() ? 'true' : null"
     [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [dgPt]="ptFor('field')"
     (input)="onInput($event)"
     (keydown)="onKeydown($event)"
     (blur)="onBlur()"
   />
   @if (loading()) {
-    <dg-spinner size="sm" [styleClass]="loadingIndicatorClasses" />
+  <dg-spinner size="sm" [styleClass]="loadingIndicatorClasses" />
+  } @else if (clearable() && value() && !isDisabled() && !readOnly()) {
+  <button
+    type="button"
+    [class]="clearButtonClasses()"
+    [attr.aria-label]="clearAriaLabel()"
+    [dgPt]="ptFor('clear')"
+    (click)="clearValue($event)"
+  >
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      [attr.aria-hidden]="true"
+    >
+      <path
+        d="M6.293 6.293a1 1 0 011.414 0L10 8.586l2.293-2.293a1 1 0 111.414 1.414L11.414 10l2.293 2.293a1 1 0 01-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 01-1.414-1.414L8.586 10 6.293 7.707a1 1 0 010-1.414z"
+      />
+    </svg>
+  </button>
   }
 </div>
 
 <ng-template #panelTemplate>
-  <div [class]="panelWrapperClasses()">
+  <div [class]="panelWrapperClasses()" [dgPt]="ptFor('panel')">
     <ul
       [id]="listboxId"
       role="listbox"
-      [class]="isVirtualized() ? '' : listboxClasses"
+      [class]="isVirtualized() ? '' : listboxClasses()"
       [attr.aria-label]="ariaLabel() ?? 'Suggestions'"
+      [dgPt]="ptFor('listbox')"
     >
       @if (isVirtualized()) {
-        <dg-virtual-scroll
-          [items]="visibleOptions()"
-          [itemSize]="virtualScrollItemSize()"
-          [height]="virtualScrollHeight()"
-        >
-          <ng-template let-option let-i="index">
-            <li
-              [id]="optionId(i)"
-              role="option"
-              tabindex="-1"
-              [attr.aria-selected]="i === activeIndex()"
-              [attr.aria-disabled]="option.disabled ? 'true' : null"
-              [class]="optionClasses(option, i)"
-              (mousedown)="$event.preventDefault()"
-              (click)="selectOption(option)"
-              (keydown.enter)="selectOption(option)"
-              (keydown.space)="selectOption(option)"
-              (mouseenter)="activeIndex.set(i)"
-            >
-              {{ option.label }}
-            </li>
-          </ng-template>
-        </dg-virtual-scroll>
+      <dg-virtual-scroll
+        [items]="visibleOptions()"
+        [itemSize]="virtualScrollItemSize()"
+        [height]="virtualScrollHeight()"
+      >
+        <ng-template let-option let-i="index">
+          <li
+            [id]="optionId(i)"
+            role="option"
+            tabindex="-1"
+            [attr.aria-selected]="i === activeIndex()"
+            [attr.aria-disabled]="option.disabled ? 'true' : null"
+            [class]="optionClasses(option, i)"
+            [dgPt]="ptFor('option')"
+            (mousedown)="$event.preventDefault()"
+            (click)="selectOption(option)"
+            (keydown.enter)="selectOption(option)"
+            (keydown.space)="selectOption(option)"
+            (mouseenter)="activeIndex.set(i)"
+          >
+            @if (optionTemplate(); as tpl) {
+            <ng-container
+              [ngTemplateOutlet]="tpl"
+              [ngTemplateOutletContext]="{ $implicit: option }"
+            />
+            } @else { {{ option.label }} }
+          </li>
+        </ng-template>
+      </dg-virtual-scroll>
+      } @else { @for (item of renderItems(); track entryKey(item)) { @if
+      (item.kind === 'heading') {
+      <li
+        role="presentation"
+        [class]="groupHeadingClasses()"
+        [dgPt]="ptFor('group')"
+      >
+        @if (groupTemplate(); as tpl) {
+        <ng-container
+          [ngTemplateOutlet]="tpl"
+          [ngTemplateOutletContext]="{ $implicit: item.label }"
+        />
+        } @else { {{ item.label }} }
+      </li>
       } @else {
-        @for (item of renderItems(); track entryKey(item)) {
-          @if (item.kind === 'heading') {
-            <li role="presentation" [class]="groupHeadingClasses">
-              {{ item.label }}
-            </li>
-          } @else {
-            <li
-              [id]="optionId(item.index)"
-              role="option"
-              tabindex="-1"
-              [attr.aria-selected]="item.index === activeIndex()"
-              [attr.aria-disabled]="item.option.disabled ? 'true' : null"
-              [class]="optionClasses(item.option, item.index)"
-              (mousedown)="$event.preventDefault()"
-              (click)="selectOption(item.option)"
-              (keydown.enter)="selectOption(item.option)"
-              (keydown.space)="selectOption(item.option)"
-              (mouseenter)="activeIndex.set(item.index)"
-            >
-              {{ item.option.label }}
-            </li>
-          }
-        }
-      }
-      @if (showNoResults()) {
-        <li role="presentation" [class]="noResultsClasses">
-          <span role="status">{{ noResultsMessage() }}</span>
-        </li>
+      <li
+        [id]="optionId(item.index)"
+        role="option"
+        tabindex="-1"
+        [attr.aria-selected]="item.index === activeIndex()"
+        [attr.aria-disabled]="item.option.disabled ? 'true' : null"
+        [class]="optionClasses(item.option, item.index)"
+        [dgPt]="ptFor('option')"
+        (mousedown)="$event.preventDefault()"
+        (click)="selectOption(item.option)"
+        (keydown.enter)="selectOption(item.option)"
+        (keydown.space)="selectOption(item.option)"
+        (mouseenter)="activeIndex.set(item.index)"
+      >
+        @if (optionTemplate(); as tpl) {
+        <ng-container
+          [ngTemplateOutlet]="tpl"
+          [ngTemplateOutletContext]="{ $implicit: item.option }"
+        />
+        } @else { {{ item.option.label }} }
+      </li>
+      } } } @if (showNoResults()) {
+      <li role="presentation" [class]="noResultsClasses">
+        <span role="status">{{ noResultsMessage() }}</span>
+      </li>
       }
     </ul>
   </div>

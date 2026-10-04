@@ -18,6 +18,7 @@ import {
   DynamoListboxBase,
   buildListboxPositions,
   selectChevronStyles,
+  selectClearButtonStyles,
   selectFilterFieldWrapperStyles,
   selectFilterIconStyles,
   selectFilterInputExtraClasses,
@@ -30,8 +31,10 @@ import {
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
+import { DynamoCheckIcon } from '@dynamong/icons';
 import type { DynamoTreeNode } from '@dynamong/tree';
 import type { DynamoSize } from '@dynamong/core/api';
+import { DynamoPassThroughDirective } from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   createTypeaheadBuffer,
@@ -39,12 +42,17 @@ import {
   resolveTypeaheadQuery,
 } from '@dynamong/utils/typeahead';
 import {
+  treeSelectCheckboxIndicatorStyles,
+  treeSelectCheckboxIndeterminateDashStyles,
   treeSelectExpandButtonStyles,
   treeSelectExpandIconStyles,
   treeSelectExpandSpacerStyles,
   treeSelectRowStyles,
 } from './tree-select.styles';
-import type { DynamoTreeSelectPart } from './tree-select.types';
+import type {
+  DynamoTreeSelectPart,
+  DynamoTreeSelectSelectionMode,
+} from './tree-select.types';
 
 interface DynamoTreeSelectEntry<TValue> {
   node: DynamoTreeNode<TValue>;
@@ -183,11 +191,84 @@ function flattenFilteredNodes<TValue>(
   return result;
 }
 
+type DynamoTreeSelectCheckState = 'checked' | 'unchecked' | 'indeterminate';
+
+// Local, value-keyed port of `@dynamong/tree`'s own `tree-selection.ts`
+// algorithm (not exported from that package's public API, so this is a
+// reimplementation — same precedent as `flattenVisibleNodes`/
+// `findEnabledEntryIndex` above). Keyed by `nodeValue(node)` instead of
+// `node.id`: TreeSelect's `value` model is value-based, not id-based, so
+// this sidesteps needing any id<->value bridging. The cascade logic itself
+// (a branch's displayed state is always derived from its children, never
+// stored; only downward cascade is materialized into `value`; disabled
+// nodes and their subtrees are skipped) is unchanged from the original.
+function computeNodeCheckState<TValue>(
+  node: DynamoTreeNode<TValue>,
+  selectedValues: ReadonlySet<TValue>,
+): DynamoTreeSelectCheckState {
+  if (!node.children?.length) {
+    return selectedValues.has(nodeValue(node)) ? 'checked' : 'unchecked';
+  }
+  const states = node.children.map((child) =>
+    computeNodeCheckState(child, selectedValues),
+  );
+  if (states.every((state) => state === 'checked')) {
+    return 'checked';
+  }
+  if (states.every((state) => state === 'unchecked')) {
+    return 'unchecked';
+  }
+  return 'indeterminate';
+}
+
+// Whether toggling `node` should check (true) or uncheck (false) its
+// subtree — deliberately ignores disabled descendants entirely, so a branch
+// with any disabled, unchecked descendant doesn't get stuck permanently
+// indeterminate (which would make its checkbox always decide to check).
+function shouldCascadeCheck<TValue>(
+  node: DynamoTreeNode<TValue>,
+  selectedValues: ReadonlySet<TValue>,
+): boolean {
+  const enabledLeafStates: boolean[] = [];
+  const walk = (current: DynamoTreeNode<TValue>): void => {
+    if (current.disabled) return;
+    if (!current.children?.length) {
+      enabledLeafStates.push(selectedValues.has(nodeValue(current)));
+      return;
+    }
+    current.children.forEach(walk);
+  };
+  walk(node);
+  return enabledLeafStates.length === 0 || !enabledLeafStates.every(Boolean);
+}
+
+// Every value in `node`'s own subtree (including itself) whose checked
+// state changes together when `node` is toggled. Disabled descendants are
+// excluded so a cascading check/uncheck never silently flips a disabled
+// node's own state.
+function collectCascadeValues<TValue>(node: DynamoTreeNode<TValue>): TValue[] {
+  const values: TValue[] = [];
+  const walk = (current: DynamoTreeNode<TValue>): void => {
+    if (current.disabled) return;
+    values.push(nodeValue(current));
+    current.children?.forEach(walk);
+  };
+  walk(node);
+  return values;
+}
+
 @Component({
   selector: 'dg-tree-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DynamoInputText, DynamoSpinner, DynamoVirtualScroll],
+  imports: [
+    FormsModule,
+    DynamoInputText,
+    DynamoSpinner,
+    DynamoVirtualScroll,
+    DynamoCheckIcon,
+    DynamoPassThroughDirective,
+  ],
   templateUrl: './tree-select.html',
   providers: [
     {
@@ -212,10 +293,22 @@ export class DynamoTreeSelect<TValue = string>
    *  drives it. */
   readonly loading = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Associates the trigger with an external help/error message element via `aria-describedby`. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true` to match every existing consumer's
+   *  assumption of a full-width trigger; set `false` for PrimeNG-style intrinsic sizing. */
+  readonly fluid = input(true);
   /** Two-way bindable: which branch node ids are currently expanded. */
   readonly expandedIds = model<string[]>([]);
-  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
-  readonly value = model<TValue | null>(null);
+  /** `'single'` (default) is TreeSelect's original, only-ever behavior — a plain scalar `value`,
+   *  replaced on each pick, panel closes on commit. `'multiple'`/`'checkbox'` are new, non-default
+   *  modes that make `value` an array: `'multiple'` toggles plain membership via a bare click (no
+   *  modifier key); `'checkbox'` cascades tri-state to enabled descendants, mirroring `DynamoTree`'s
+   *  own `selectionMode='checkbox'` default — see the README's Design notes. */
+  readonly selectionMode = input<DynamoTreeSelectSelectionMode>('single');
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. A plain `TValue | null` in
+   *  `'single'` mode; `TValue[] | null` in `'multiple'`/`'checkbox'` mode. */
+  readonly value = model<TValue | TValue[] | null>(null);
   /** Fires once a node is committed (click or keyboard Enter/Space) with the full node object. */
   readonly itemSelect = output<DynamoTreeNode<TValue>>();
   /**
@@ -234,6 +327,8 @@ export class DynamoTreeSelect<TValue = string>
    *  still opens for browsing, but committing a node is blocked. Unlike
    *  `disabled`, doesn't dim it or remove it from the tab order. */
   readonly readOnly = input(false);
+  /** Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoCascadeSelect`'s own `clearable`. */
+  readonly clearable = input(false);
   /** Opt-in filter box rendered above the tree — mirrors `DynamoSelect`'s `filterable`. Matching branches auto-reveal regardless of `expandedIds`. */
   readonly filterable = input(false);
   readonly filterText = model('');
@@ -249,7 +344,7 @@ export class DynamoTreeSelect<TValue = string>
 
   protected readonly panelId = this.idGenerator.next('dg-tree-select-panel');
 
-  private onChangeFn: (value: TValue | null) => void = () => {
+  private onChangeFn: (value: TValue | TValue[] | null) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
   };
   private onTouchedFn: () => void = () => {
@@ -278,11 +373,48 @@ export class DynamoTreeSelect<TValue = string>
       this.visibleEntries().length === 0,
   );
   protected readonly isVirtualized = computed(() => this.virtualScroll());
-  protected readonly selectedNode = computed(() =>
-    findNodeByValue(this.nodes(), this.value()),
+  /** Normalizes `value()` into a `Set` regardless of mode/shape — the single source every selection
+   *  query (`isSelected`/`checkState`/`hasSelection`) reads from. */
+  private readonly selectedValuesSet = computed(() => {
+    const current = this.value();
+    return new Set<TValue>(
+      Array.isArray(current) ? current : current == null ? [] : [current],
+    );
+  });
+  protected readonly hasSelection = computed(
+    () => this.selectedValuesSet().size > 0,
   );
-  protected readonly selectedLabel = computed(
-    () => this.selectedNode()?.label ?? this.placeholder(),
+  /** Only meaningful in `'single'` mode — `undefined` whenever `value()` is an array. */
+  protected readonly selectedNode = computed(() => {
+    const current = this.value();
+    return Array.isArray(current)
+      ? undefined
+      : findNodeByValue(this.nodes(), current);
+  });
+  /** Every currently-selected node, in tree order — used for `'multiple'`/`'checkbox'`'s
+   *  comma-joined trigger label. */
+  protected readonly selectedNodesList = computed(() => {
+    const ids = this.selectedValuesSet();
+    if (ids.size === 0) return [];
+    const result: DynamoTreeNode<TValue>[] = [];
+    const walk = (list: DynamoTreeNode<TValue>[]): void => {
+      for (const node of list) {
+        if (ids.has(nodeValue(node))) result.push(node);
+        if (node.children) walk(node.children);
+      }
+    };
+    walk(this.nodes());
+    return result;
+  });
+  protected readonly selectedLabel = computed(() => {
+    if (this.selectionMode() === 'single') {
+      return this.selectedNode()?.label ?? this.placeholder();
+    }
+    const labels = this.selectedNodesList().map((node) => node.label);
+    return labels.length > 0 ? labels.join(', ') : this.placeholder();
+  });
+  protected readonly ariaMultiselectable = computed(
+    () => this.selectionMode() !== 'single',
   );
   protected readonly activeEntryId = computed(() => {
     const index = this.activeIndex();
@@ -295,32 +427,52 @@ export class DynamoTreeSelect<TValue = string>
 
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
           selectTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
+            fluid: this.fluid(),
             disabled: this.isDisabled(),
           }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
-  protected readonly triggerButtonClasses = selectTriggerButtonStyles;
+  protected readonly triggerButtonClasses = computed(() =>
+    cn(selectTriggerButtonStyles, this.ptFor('trigger').class),
+  );
   protected readonly chevronClasses = computed(() =>
-    selectChevronStyles({ open: this.isOpen() }),
+    cn(
+      selectChevronStyles({ open: this.isOpen() }),
+      this.ptFor('chevron').class,
+    ),
+  );
+  protected readonly clearButtonClasses = computed(() =>
+    cn(selectClearButtonStyles, this.ptFor('clear').class),
   );
   /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
   protected readonly panelWrapperClasses = computed(() =>
-    this.isVirtualized()
-      ? selectPanelWrapperVirtualStyles
-      : selectPanelWrapperStyles,
+    cn(
+      this.isVirtualized()
+        ? selectPanelWrapperVirtualStyles
+        : selectPanelWrapperStyles,
+      this.ptFor('panel').class,
+    ),
   );
-  protected readonly expandButtonClasses = treeSelectExpandButtonStyles;
+  protected readonly expandButtonClasses = computed(() =>
+    cn(treeSelectExpandButtonStyles, this.ptFor('expandButton').class),
+  );
   protected readonly expandSpacerClasses = treeSelectExpandSpacerStyles;
+  protected readonly noResultsClasses = computed(() =>
+    cn('px-3 py-2 text-sm text-text-muted', this.ptFor('no-results').class),
+  );
   protected readonly filterWrapperClasses = selectFilterWrapperStyles;
   protected readonly filterFieldWrapperClasses = selectFilterFieldWrapperStyles;
   protected readonly filterIconClasses = selectFilterIconStyles;
   protected readonly filterInputExtraClasses = selectFilterInputExtraClasses;
+  protected readonly checkboxIndeterminateDashClasses =
+    treeSelectCheckboxIndeterminateDashStyles;
 
   constructor() {
     super();
@@ -334,11 +486,11 @@ export class DynamoTreeSelect<TValue = string>
     this.destroyRef.onDestroy(() => this.destroyOverlay());
   }
 
-  writeValue(value: TValue | null): void {
+  writeValue(value: TValue | TValue[] | null): void {
     this.value.set(value);
   }
 
-  registerOnChange(fn: (value: TValue | null) => void): void {
+  registerOnChange(fn: (value: TValue | TValue[] | null) => void): void {
     this.onChangeFn = fn;
   }
 
@@ -373,18 +525,46 @@ export class DynamoTreeSelect<TValue = string>
   }
 
   protected isSelected(node: DynamoTreeNode<TValue>): boolean {
-    return nodeValue(node) === this.value();
+    return this.selectedValuesSet().has(nodeValue(node));
+  }
+
+  /** Only meaningful in `'checkbox'` mode — a branch's state is always derived from its children. */
+  protected checkState(
+    node: DynamoTreeNode<TValue>,
+  ): DynamoTreeSelectCheckState {
+    return computeNodeCheckState(node, this.selectedValuesSet());
+  }
+
+  protected ariaCheckedAttr(
+    node: DynamoTreeNode<TValue>,
+  ): 'true' | 'false' | 'mixed' {
+    const state = this.checkState(node);
+    return state === 'checked'
+      ? 'true'
+      : state === 'indeterminate'
+        ? 'mixed'
+        : 'false';
+  }
+
+  protected checkboxIndicatorClasses(node: DynamoTreeNode<TValue>): string {
+    return cn(
+      treeSelectCheckboxIndicatorStyles({ state: this.checkState(node) }),
+      this.ptFor('checkbox').class,
+    );
   }
 
   protected rowClasses(
     entry: DynamoTreeSelectEntry<TValue>,
     index: number,
   ): string {
-    return treeSelectRowStyles({
-      active: index === this.activeIndex(),
-      selected: this.isSelected(entry.node),
-      disabled: !!entry.node.disabled,
-    });
+    return cn(
+      treeSelectRowStyles({
+        active: index === this.activeIndex(),
+        selected: this.isSelected(entry.node),
+        disabled: !!entry.node.disabled,
+      }),
+      this.ptFor('row').class,
+    );
   }
 
   protected expandIconClasses(id: string): string {
@@ -433,16 +613,61 @@ export class DynamoTreeSelect<TValue = string>
     );
   }
 
+  /** Dispatches by `selectionMode()`. `'single'` replaces the value and closes the panel (the original,
+   *  only-ever behavior). `'multiple'`/`'checkbox'` leave the panel open — picking one of several items
+   *  shouldn't force a reopen for the next, mirroring `DynamoMultiSelect`'s own panel behavior. */
   protected selectNode(node: DynamoTreeNode<TValue>): void {
     if (node.disabled || this.readOnly()) {
       return;
     }
-    const next = nodeValue(node);
+    switch (this.selectionMode()) {
+      case 'checkbox':
+        this.toggleChecked(node);
+        return;
+      case 'multiple':
+        this.toggleMultiple(node);
+        return;
+      case 'single':
+      default: {
+        const next = nodeValue(node);
+        this.value.set(next);
+        this.onChangeFn(next);
+        this.itemSelect.emit(node);
+        this.close();
+        this.triggerEl().nativeElement.focus();
+      }
+    }
+  }
+
+  private toggleChecked(node: DynamoTreeNode<TValue>): void {
+    const selectedValues = this.selectedValuesSet();
+    const willCheck = shouldCascadeCheck(node, selectedValues);
+    const next = new Set(selectedValues);
+    for (const v of collectCascadeValues(node)) {
+      if (willCheck) next.add(v);
+      else next.delete(v);
+    }
+    this.value.set([...next]);
+    this.onChangeFn([...next]);
+    this.itemSelect.emit(node);
+  }
+
+  private toggleMultiple(node: DynamoTreeNode<TValue>): void {
+    const v = nodeValue(node);
+    const current = this.value();
+    const arr = Array.isArray(current) ? current : [];
+    const next = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
     this.value.set(next);
     this.onChangeFn(next);
     this.itemSelect.emit(node);
-    this.close();
-    this.triggerEl().nativeElement.focus();
+  }
+
+  protected clearValue(event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.isDisabled() || this.readOnly()) return;
+    const next = this.selectionMode() === 'single' ? null : [];
+    this.value.set(next);
+    this.onChangeFn(next);
   }
 
   // All keyboard handling — both closed-state "open the panel" and
