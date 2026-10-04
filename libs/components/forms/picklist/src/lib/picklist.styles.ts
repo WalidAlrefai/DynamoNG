@@ -4,7 +4,23 @@ import {
   sectionHeadingBaseClass,
 } from '@dynamong/utils/styles';
 
-export const picklistRootStyles = 'flex items-start gap-3';
+// Stacked (panels keep their own fixed w-64, move buttons as a
+// horizontal row between them, everything centered along the cross
+// axis so the auto-width button row doesn't stretch away from the
+// narrower panels) below `sm`; side-by-side (move buttons as a
+// vertical column between them) at/above it.
+export const picklistRootStyles = cva(
+  'flex flex-col items-center gap-3 sm:flex-row sm:items-start',
+  {
+    variants: {
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
+    },
+    defaultVariants: { fluid: true },
+  },
+);
 
 export const picklistPanelStyles =
   'flex max-h-80 w-64 flex-col overflow-hidden rounded-md border border-border bg-surface-0';
@@ -55,7 +71,10 @@ export const picklistOptionCheckboxStyles = cva(
   },
 );
 
-export const picklistMoveButtonColumnStyles = 'flex flex-col gap-2 pt-8';
+// Horizontal row between the stacked panels below `sm`; vertical column
+// (offset to clear the panel header) at/above it.
+export const picklistMoveButtonColumnStyles =
+  'flex flex-row justify-center gap-2 sm:flex-col sm:pt-8';
 
 export const picklistReorderButtonRowStyles = 'flex items-center gap-1';
 
