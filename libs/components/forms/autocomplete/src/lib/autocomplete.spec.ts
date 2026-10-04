@@ -945,3 +945,394 @@ describe('DynamoAutocomplete', () => {
     });
   });
 });
+
+describe('DynamoAutocomplete — baseline parity (Phase 0)', () => {
+  describe('passthrough (pt)', () => {
+    it('merges pt class onto every part: root/field/panel/listbox/group/option', async () => {
+      const grouped: DynamoSelectOption<string>[] = [
+        { label: 'Apple', value: 'apple', group: 'Fruits' },
+        { label: 'Banana', value: 'banana', group: 'Fruits' },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: {
+          options: grouped,
+          ariaLabel: 'Fruit',
+          pt: {
+            root: { class: 'pt-root' },
+            field: { class: 'pt-field' },
+            panel: { class: 'pt-panel' },
+            listbox: { class: 'pt-listbox' },
+            group: { class: 'pt-group' },
+            option: { class: 'pt-option' },
+          },
+        },
+      });
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(within(container).getByRole('combobox').className).toContain(
+        'pt-field',
+      );
+
+      await userEvent.type(within(container).getByRole('combobox'), 'a');
+      await settle(fixture);
+
+      expect(getOverlayContainer().querySelector('.pt-panel')).not.toBeNull();
+      expect(getPanel()?.className).toContain('pt-listbox');
+      expect(getPanel()?.querySelector('.pt-group')).not.toBeNull();
+      expect(getPanel()?.querySelector('.pt-option')).not.toBeNull();
+    });
+  });
+
+  describe('ariaDescribedby / fluid', () => {
+    it('defaults fluid to true', () => {
+      const { container } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit' },
+      });
+      expect(within(container).getByRole('combobox').className).toContain(
+        'w-full',
+      );
+    });
+
+    it('drops w-full when fluid is set to false', () => {
+      const { container } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit', fluid: false },
+      });
+      expect(within(container).getByRole('combobox').className).not.toContain(
+        'w-full',
+      );
+    });
+
+    it('forwards ariaDescribedby to the field', () => {
+      const { container } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: {
+          options: THREE_OPTIONS,
+          ariaLabel: 'Fruit',
+          ariaDescribedby: 'help-text',
+        },
+      });
+      expect(
+        within(container)
+          .getByRole('combobox')
+          .getAttribute('aria-describedby'),
+      ).toBe('help-text');
+    });
+  });
+
+  describe('active-index revalidation effect', () => {
+    it('does not promote the deliberate -1 (nothing highlighted) state while typing', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit' },
+      });
+      const field = within(container).getByRole('combobox');
+
+      await userEvent.type(field, 'Option');
+      await settle(fixture);
+
+      expect(field.getAttribute('aria-activedescendant')).toBeNull();
+    });
+
+    it('recovers activeIndex if options() shrinks below it while the panel is open', async () => {
+      const { container, fixture, setInputs, componentInstance } =
+        renderDynamoComponent(DynamoAutocomplete, {
+          inputs: {
+            options: createMockSelectOptions(5),
+            ariaLabel: 'Fruit',
+          },
+        });
+
+      await userEvent.type(within(container).getByRole('combobox'), 'Option');
+      await settle(fixture);
+      await userEvent.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}');
+      await settle(fixture);
+      expect(componentInstance['activeIndex']()).toBe(2);
+
+      setInputs({ options: createMockSelectOptions(1) });
+      await settle(fixture);
+
+      expect(componentInstance['activeIndex']()).toBe(0);
+    });
+  });
+
+  describe('minLength gates typing-driven open/close in local (non-lazy) mode', () => {
+    it('does not open the panel below minLength', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit', minLength: 2 },
+      });
+
+      await userEvent.type(within(container).getByRole('combobox'), 'O');
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
+    });
+
+    it('opens the panel once minLength is reached', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit', minLength: 2 },
+      });
+
+      await userEvent.type(within(container).getByRole('combobox'), 'Op');
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+    });
+
+    it('closes the panel when backspacing back below minLength', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit', minLength: 2 },
+      });
+      const field = within(container).getByRole('combobox');
+
+      await userEvent.type(field, 'Op');
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+
+      await userEvent.type(field, '{Backspace}');
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
+    });
+
+    it("ArrowDown's keyboard-driven open stays un-gated by minLength", async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit', minLength: 2 },
+      });
+      const field = within(container).getByRole('combobox');
+      field.focus();
+
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+
+      expect(getPanel()).not.toBeNull();
+    });
+  });
+});
+
+describe('DynamoAutocomplete — clearable (Phase 1)', () => {
+  it('renders no clear button by default, or when the field is empty', () => {
+    const { container } = renderDynamoComponent(DynamoAutocomplete, {
+      inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit', clearable: true },
+    });
+    expect(
+      within(container).queryByRole('button', { name: 'Clear' }),
+    ).toBeNull();
+  });
+
+  it('renders a clear button once text is typed', async () => {
+    const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+      inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit', clearable: true },
+    });
+    await userEvent.type(within(container).getByRole('combobox'), 'a');
+    await settle(fixture);
+
+    expect(
+      within(container).getByRole('button', { name: 'Clear' }),
+    ).toBeTruthy();
+  });
+
+  it('clicking it clears the value, refocuses the field, and leaves the panel closed', async () => {
+    const { container, fixture, componentInstance } = renderDynamoComponent(
+      DynamoAutocomplete,
+      {
+        inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit', clearable: true },
+      },
+    );
+    const field = within(container).getByRole('combobox');
+    await userEvent.type(field, 'a');
+    await settle(fixture);
+    await userEvent.click(
+      within(container).getByRole('button', { name: 'Clear' }),
+    );
+    await settle(fixture);
+
+    expect(componentInstance.value()).toBe('');
+    expect(document.activeElement).toBe(field);
+    expect(getPanel()).toBeNull();
+  });
+
+  it('is hidden while loading, even with text present', () => {
+    // The field is itself disabled while loading (`isDisabled()`), so the
+    // value is set directly as an input rather than typed.
+    const { container } = renderDynamoComponent(DynamoAutocomplete, {
+      inputs: {
+        options: THREE_OPTIONS,
+        ariaLabel: 'Fruit',
+        clearable: true,
+        loading: true,
+        value: 'a',
+      },
+    });
+
+    expect(
+      within(container).queryByRole('button', { name: 'Clear' }),
+    ).toBeNull();
+  });
+
+  it('respects a custom clearAriaLabel', async () => {
+    const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+      inputs: {
+        options: THREE_OPTIONS,
+        ariaLabel: 'Fruit',
+        clearable: true,
+        clearAriaLabel: 'Clear fruit',
+      },
+    });
+    await userEvent.type(within(container).getByRole('combobox'), 'a');
+    await settle(fixture);
+
+    expect(
+      within(container).getByRole('button', { name: 'Clear fruit' }),
+    ).toBeTruthy();
+  });
+
+  it('merges pt class onto the clear button', async () => {
+    const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+      inputs: {
+        options: THREE_OPTIONS,
+        ariaLabel: 'Fruit',
+        clearable: true,
+        pt: { clear: { class: 'pt-clear' } },
+      },
+    });
+    await userEvent.type(within(container).getByRole('combobox'), 'a');
+    await settle(fixture);
+
+    expect(container.querySelector('button.pt-clear')).not.toBeNull();
+  });
+
+  it('has no axe violations with the clear button visible', async () => {
+    const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+      inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit', clearable: true },
+    });
+    await userEvent.type(within(container).getByRole('combobox'), 'a');
+    await settle(fixture);
+
+    await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+  });
+});
+
+@Component({
+  selector: 'dg-autocomplete-templates-host',
+  standalone: true,
+  imports: [DynamoAutocomplete],
+  template: `
+    <dg-autocomplete
+      [options]="options"
+      [(value)]="value"
+      ariaLabel="Fruit"
+      [virtualScroll]="virtualScroll()"
+    >
+      <ng-template #optionTemplate let-option>
+        <span data-testid="custom-option">{{ option.label }} (custom)</span>
+      </ng-template>
+    </dg-autocomplete>
+  `,
+})
+class AutocompleteOptionTemplateHostComponent {
+  readonly options = THREE_OPTIONS;
+  readonly value = model('');
+  readonly virtualScroll = model(false);
+}
+
+@Component({
+  selector: 'dg-autocomplete-group-template-host',
+  standalone: true,
+  imports: [DynamoAutocomplete],
+  template: `
+    <dg-autocomplete [options]="options" [(value)]="value" ariaLabel="Fruit">
+      <ng-template #groupTemplate let-label>
+        <strong data-testid="custom-group">{{ label }} —</strong>
+      </ng-template>
+    </dg-autocomplete>
+  `,
+})
+class AutocompleteGroupTemplateHostComponent {
+  readonly options: DynamoSelectOption<string>[] = [
+    { label: 'Apple', value: 'apple', group: 'Fruits' },
+  ];
+  readonly value = model('');
+}
+
+describe('DynamoAutocomplete — custom item templates (Phase 2)', () => {
+  describe('optionTemplate', () => {
+    it('renders the default plain-label text when unset', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options: THREE_OPTIONS, ariaLabel: 'Fruit' },
+      });
+      await userEvent.type(within(container).getByRole('combobox'), 'Option');
+      await settle(fixture);
+
+      expect(getOptions()[0]?.textContent?.trim()).toBe('Option 1');
+      expect(
+        getPanel()?.querySelector('[data-testid="custom-option"]'),
+      ).toBeNull();
+    });
+
+    it('renders projected content instead of the plain label when set', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        AutocompleteOptionTemplateHostComponent,
+      );
+      await userEvent.type(within(container).getByRole('combobox'), 'Option');
+      await settle(fixture);
+
+      const custom = getPanel()?.querySelector('[data-testid="custom-option"]');
+      expect(custom).not.toBeNull();
+      expect(custom?.textContent).toContain('Option 1 (custom)');
+    });
+
+    it('passes the full option as $implicit', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        AutocompleteOptionTemplateHostComponent,
+      );
+      await userEvent.type(within(container).getByRole('combobox'), 'Option 2');
+      await settle(fixture);
+
+      const custom = getPanel()?.querySelector('[data-testid="custom-option"]');
+      expect(custom?.textContent).toContain('Option 2 (custom)');
+    });
+
+    it('forwards through the virtualized render path', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        AutocompleteOptionTemplateHostComponent,
+      );
+      componentInstance.virtualScroll.set(true);
+      fixture.detectChanges();
+      await userEvent.type(within(container).getByRole('combobox'), 'Option');
+      await settle(fixture);
+
+      expect(getPanel()?.querySelector('dg-virtual-scroll')).not.toBeNull();
+      const custom = getPanel()?.querySelector('[data-testid="custom-option"]');
+      expect(custom).not.toBeNull();
+      expect(custom?.textContent).toContain('(custom)');
+    });
+  });
+
+  describe('groupTemplate', () => {
+    it('renders the default plain-label text when unset', async () => {
+      const options: DynamoSelectOption<string>[] = [
+        { label: 'Apple', value: 'apple', group: 'Fruits' },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoAutocomplete, {
+        inputs: { options, ariaLabel: 'Fruit' },
+      });
+      await userEvent.type(within(container).getByRole('combobox'), 'a');
+      await settle(fixture);
+
+      expect(getPanel()?.textContent).toContain('Fruits');
+      expect(
+        getPanel()?.querySelector('[data-testid="custom-group"]'),
+      ).toBeNull();
+    });
+
+    it('renders projected content instead of the plain label when set', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        AutocompleteGroupTemplateHostComponent,
+      );
+      await userEvent.type(within(container).getByRole('combobox'), 'a');
+      await settle(fixture);
+
+      const custom = getPanel()?.querySelector('[data-testid="custom-group"]');
+      expect(custom).not.toBeNull();
+      expect(custom?.textContent).toContain('Fruits —');
+    });
+  });
+});

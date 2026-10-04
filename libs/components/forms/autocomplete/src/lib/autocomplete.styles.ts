@@ -13,7 +13,7 @@ import {
 // exactly this kind of cross-component reuse (DynamoMultiSelect reuses the
 // same ones).
 export const autocompleteFieldStyles = cva(
-  'block w-full rounded-md border bg-surface-0 text-text-primary transition-colors ' +
+  'block rounded-md border bg-surface-0 text-text-primary transition-colors ' +
     'placeholder:text-text-muted ' +
     focusRingClass +
     ' disabled:pointer-events-none disabled:opacity-60',
@@ -24,10 +24,17 @@ export const autocompleteFieldStyles = cva(
         true: 'border-danger ' + focusRingInvalidClass,
         false: 'border-border',
       },
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
       // Reserves trailing space so typed text doesn't collide with the
-      // loading spinner absolutely positioned over the field (see
-      // `autocompleteLoadingIndicatorStyles`).
-      loading: {
+      // loading spinner or the clearable (×) button, both absolutely
+      // positioned over the field in the same trailing slot (see
+      // `autocompleteLoadingIndicatorStyles`) — never shown simultaneously
+      // (the clear button hides itself while loading), but either one
+      // alone still needs the same reserved space.
+      trailingIcon: {
         true: 'pe-8',
         false: '',
       },
@@ -35,7 +42,8 @@ export const autocompleteFieldStyles = cva(
     defaultVariants: {
       size: 'md',
       invalid: false,
-      loading: false,
+      fluid: true,
+      trailingIcon: false,
     },
   },
 );
@@ -47,3 +55,8 @@ export const autocompleteFieldStyles = cva(
 export const autocompleteFieldWrapperStyles = 'relative';
 export const autocompleteLoadingIndicatorStyles =
   'pointer-events-none absolute end-2 top-1/2 -translate-y-1/2';
+// Mirrors `input-text.html`'s own inline clear-button classes exactly — the
+// closest architectural precedent (a bare `<input>` field, not a button
+// trigger), not `DynamoSelect`'s own `clearable`.
+export const autocompleteClearButtonStyles =
+  'absolute inset-y-0 end-0 flex items-center pe-2 text-text-muted hover:text-text-primary';

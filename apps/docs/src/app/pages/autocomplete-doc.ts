@@ -47,6 +47,7 @@ const ALL_CITIES: DynamoSelectOption<string>[] = [
 
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
+  { id: 'template', title: 'Template' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
   { id: 'lazy', title: 'Lazy / Async Search' },
 ];
@@ -74,6 +75,7 @@ const EXAMPLES: DocExampleRef[] = [
             (optionSelect)="lastSelected.set($event.label)"
             ariaLabel="Fruit"
             placeholder="Start typing a fruit..."
+            [clearable]="true"
           />
           @if (lastSelected(); as selected) {
             <p class="mt-2 text-sm text-text-muted">
@@ -84,6 +86,33 @@ const EXAMPLES: DocExampleRef[] = [
         <div code>
           &lt;dg-autocomplete [options]="options" [(value)]="fruit"
           (optionSelect)="onSelect($event)" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="template"
+        title="Template"
+        description="Project an #optionTemplate to render arbitrary content per suggestion — here, a colored dot ahead of the label. Falls back to plain text when omitted."
+      >
+        <div preview class="max-w-sm">
+          <dg-autocomplete
+            [options]="options"
+            [(value)]="templateValue"
+            ariaLabel="Fruit"
+            placeholder="Start typing a fruit..."
+          >
+            <ng-template #optionTemplate let-option>
+              <span
+                class="inline-block h-2.5 w-2.5 rounded-full bg-primary"
+              ></span>
+              <span>{{ option.label }}</span>
+            </ng-template>
+          </dg-autocomplete>
+        </div>
+        <div code>
+          &lt;dg-autocomplete [options]="options" [(value)]="value"&gt;
+          &lt;ng-template #optionTemplate let-option&gt; ...
+          &lt;/ng-template&gt; &lt;/dg-autocomplete&gt;
         </div>
       </docs-example>
 
@@ -165,6 +194,11 @@ const EXAMPLES: DocExampleRef[] = [
               <td class="py-2 font-mono">false</td>
             </tr>
             <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">clearable</td>
+              <td class="py-2 pr-4 font-mono">boolean</td>
+              <td class="py-2 font-mono">false</td>
+            </tr>
+            <tr class="border-b border-border">
               <td class="py-2 pr-4 font-mono">noResultsMessage</td>
               <td class="py-2 pr-4 font-mono">string</td>
               <td class="py-2 font-mono">'No matching options'</td>
@@ -214,6 +248,7 @@ export class AutocompleteDocPage {
   protected readonly options = FRUIT_OPTIONS;
   protected readonly manyOptions = MANY_OPTIONS;
   protected readonly fruit = signal('');
+  protected readonly templateValue = signal('');
   protected readonly lastSelected = signal<string | null>(null);
 
   protected readonly citySuggestions = signal<DynamoSelectOption<string>[]>([]);
