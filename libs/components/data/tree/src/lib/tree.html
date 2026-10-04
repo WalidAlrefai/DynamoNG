@@ -1,6 +1,6 @@
-<div [class]="wrapperClasses()">
+<div [class]="wrapperClasses()" [dgPt]="ptFor('root')">
   @if (filterable()) {
-  <div [class]="filterWrapperClasses">
+  <div [class]="filterWrapperClasses()" [dgPt]="ptFor('filterWrapper')">
     <dg-input-text
       type="search"
       size="sm"
@@ -9,15 +9,18 @@
       ariaLabel="Search tree"
       [placeholder]="filterPlaceholder()"
       [disabled]="loading()"
+      [pt]="{ input: ptFor('filterInput') }"
     />
   </div>
-  } @if (filteredItems().length > 0) {
+  } @if (filteredItems().length > 0) { @if (!virtualScroll()) {
   <div
-    [class]="treeClasses"
+    [class]="treeClasses()"
     role="tree"
-    aria-multiselectable="true"
+    [attr.aria-multiselectable]="ariaMultiselectable()"
     [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
     [attr.aria-busy]="loading() ? 'true' : null"
+    [dgPt]="ptFor('tree')"
   >
     @for (node of filteredItems(); track node.id; let i = $index) {
     <dg-tree-item
@@ -25,10 +28,40 @@
       [depth]="0"
       [posinset]="i + 1"
       [setsize]="filteredItems().length"
+      [pt]="pt()"
+      [nodeTemplate]="nodeTemplate()"
     />
     }
   </div>
   } @else {
+  <div
+    [class]="treeVirtualClasses()"
+    role="tree"
+    [attr.aria-multiselectable]="ariaMultiselectable()"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [attr.aria-busy]="loading() ? 'true' : null"
+    [dgPt]="ptFor('tree')"
+  >
+    <dg-virtual-scroll
+      [items]="visibleEntries()"
+      [itemSize]="virtualScrollItemSize()"
+      [height]="virtualScrollHeight()"
+    >
+      <ng-template let-entry>
+        <dg-tree-item
+          [node]="entry.node"
+          [depth]="entry.depth"
+          [posinset]="entry.posinset"
+          [setsize]="entry.setsize"
+          [renderChildren]="false"
+          [pt]="pt()"
+          [nodeTemplate]="nodeTemplate()"
+        />
+      </ng-template>
+    </dg-virtual-scroll>
+  </div>
+  } } @else {
   <!--
       Not nested inside role="tree" — axe's aria-required-children rule (rightly)
       flags a plain <div> as an invalid child of role="tree" (only role="treeitem"/
@@ -36,10 +69,11 @@
       items anyway, so the tree role itself is simply omitted while empty.
     -->
   <div
-    [class]="emptyStateClasses"
+    [class]="emptyStateClasses()"
     role="status"
     [attr.aria-label]="ariaLabel() ?? null"
     [attr.aria-busy]="loading() ? 'true' : null"
+    [dgPt]="ptFor('emptyState')"
   >
     @if (loading()) {
     <dg-spinner size="sm" />

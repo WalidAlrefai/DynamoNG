@@ -15,5 +15,42 @@ export interface DynamoTreeNode<TValue = unknown> {
   loading?: boolean;
 }
 
+/**
+ * `'checkbox'` (default) is the original, always-cascading tri-state
+ * checkbox model, unchanged. `'single'`/`'multiple'` are new non-cascading
+ * modes (PrimeNG's own three `p-tree` selection modes) that reuse the same
+ * `selected: string[]` model — only the write semantics differ: `'single'`
+ * replaces (never toggles off on re-click), `'multiple'` toggles plain
+ * membership with a bare click (no modifier key required, no cascading).
+ */
+export type DynamoTreeSelectionMode = 'single' | 'multiple' | 'checkbox';
+
 export type DynamoTreePart =
-  'root' | 'row' | 'checkbox' | 'label' | 'chevron' | 'group';
+  | 'root'
+  | 'filterWrapper'
+  | 'filterInput'
+  | 'emptyState'
+  | 'tree'
+  | 'row'
+  | 'chevronButton'
+  | 'chevron'
+  | 'checkbox'
+  | 'label'
+  | 'group';
+
+/**
+ * Template context handed to `nodeTemplate`, matching Angular's `let node` /
+ * `let-x="name"` template-variable conventions — same `$implicit`/explicit-
+ * name-alias shape as `DynamoTableCellContext`/`DynamoTreeTableCellContext`.
+ * No separate `row`/`data` field the way those have: `DynamoTreeNode` already
+ * carries `label`/`value` directly, so `$implicit`/`node` here are a pure
+ * alias pair for explicit-name-binding symmetry, not a meaningful split.
+ */
+export interface DynamoTreeNodeContext<TValue = unknown> {
+  /** The node itself. Bind with Angular's implicit shorthand: `let node`. */
+  $implicit: DynamoTreeNode<TValue>;
+  /** Same value as `$implicit`, available under an explicit name: `let-node="node"`. */
+  node: DynamoTreeNode<TValue>;
+  depth: number;
+  expanded: boolean;
+}

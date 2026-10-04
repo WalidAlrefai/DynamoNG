@@ -1,15 +1,37 @@
-import { Component, input, model, signal } from '@angular/core';
+import {
+  Component,
+  TemplateRef,
+  input,
+  model,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
 } from '@dynamong/testing';
-import { within } from '@testing-library/dom';
+import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
+import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoTree } from './tree';
 import { DynamoTreeHarness } from './tree.harness';
-import type { DynamoTreeNode } from './tree.types';
+import type { DynamoTreeNode, DynamoTreeNodeContext } from './tree.types';
+
+// jsdom has no real `Element.scrollTo` implementation. `virtualScroll`'s
+// focus-into-unmounted-row fix calls the virtual-scroll viewport's own
+// `scrollToIndex()` (via CDK's viewport, which calls `scrollTo`
+// internally) when a keyboard move targets a row outside the currently
+// mounted range. A minimal stub (jsdom-only; this is a real,
+// universally-supported browser API) lets these tests exercise the real
+// keyboard-nav-while-virtualized behavior instead of crashing the run —
+// same gap and fix already established in `select.spec.ts`/`tree-table.spec.ts`.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (): void {
+    /* jsdom gap — see comment above */
+  };
+}
 
 // docs
 //   ├─ resume
@@ -1028,6 +1050,689 @@ describe('DynamoTree', () => {
       );
 
       expect(await harness.isNodeLoading('lazy')).toBe(true);
+    });
+  });
+});
+
+describe('DynamoTree — baseline parity (Phase 0)', () => {
+  describe('passthrough (pt)', () => {
+    it('merges pt class onto every part: root/filterWrapper/filterInput/emptyState/tree/row/chevronButton/chevron/checkbox/label/group', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTree>(
+        DynamoTree,
+        {
+          inputs: {
+            items: sampleItems(),
+            filterable: true,
+            expandedIds: ['photos'],
+            pt: {
+              root: { class: 'pt-root' },
+              filterWrapper: { class: 'pt-filter-wrapper' },
+              filterInput: { class: 'pt-filter-input' },
+              tree: { class: 'pt-tree' },
+              row: { class: 'pt-row' },
+              chevronButton: { class: 'pt-chevron-button' },
+              chevron: { class: 'pt-chevron' },
+              checkbox: { class: 'pt-checkbox' },
+              label: { class: 'pt-label' },
+              group: { class: 'pt-group' },
+            },
+          },
+        },
+      );
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('.pt-filter-wrapper')).not.toBeNull();
+      expect(
+        container.querySelector('input[type="search"].pt-filter-input'),
+      ).not.toBeNull();
+      expect(container.querySelector('[role="tree"].pt-tree')).not.toBeNull();
+      expect(
+        container.querySelector('[role="treeitem"].pt-row'),
+      ).not.toBeNull();
+      expect(
+        container.querySelector('button.pt-chevron-button'),
+      ).not.toBeNull();
+      expect(container.querySelector('svg.pt-chevron')).not.toBeNull();
+      // DynamoCheckbox's own `class` merge lands on its inner <label>, not
+      // the <dg-checkbox> host — same pattern confirmed on Table/TreeTable.
+      expect(container.querySelector('label.pt-checkbox')).not.toBeNull();
+      expect(container.querySelector('span.pt-label')).not.toBeNull();
+      expect(container.querySelector('[role="group"].pt-group')).not.toBeNull();
+    });
+
+    it('also merges pt class onto emptyState while items() is empty', () => {
+      const { container } = renderDynamoComponent<DynamoTree>(DynamoTree, {
+        inputs: {
+          items: [],
+          pt: { emptyState: { class: 'pt-empty-state' } },
+        },
+      });
+      expect(container.querySelector('.pt-empty-state')).not.toBeNull();
+    });
+  });
+
+  describe('fluid / ariaDescribedby', () => {
+    it('defaults fluid to true', () => {
+      const { container } = renderDynamoComponent<DynamoTree>(DynamoTree, {
+        inputs: { items: sampleItems() },
+      });
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('drops w-full when fluid is set to false', () => {
+      const { container } = renderDynamoComponent<DynamoTree>(DynamoTree, {
+        inputs: { items: sampleItems(), fluid: false },
+      });
+      expect(container.querySelector('div')?.className).not.toContain('w-full');
+    });
+
+    it('binds ariaDescribedby onto the role="tree" element', () => {
+      const { container } = renderDynamoComponent<DynamoTree>(DynamoTree, {
+        inputs: { items: sampleItems(), ariaDescribedby: 'hint-id' },
+      });
+      expect(
+        container
+          .querySelector('[role="tree"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('omits aria-describedby when unset', () => {
+      const { container } = renderDynamoComponent<DynamoTree>(DynamoTree, {
+        inputs: { items: sampleItems() },
+      });
+      expect(
+        container
+          .querySelector('[role="tree"]')
+          ?.hasAttribute('aria-describedby'),
+      ).toBe(false);
+    });
+  });
+
+  describe('bug fix: chevron is a real accessible button', () => {
+    it('renders the chevron as a real <button> with a non-empty accessible name, excluded from the Tab sequence', () => {
+      const { container } = renderDynamoComponent(TreeTestHostComponent);
+      const el = chevron(container, 'docs');
+      expect(el.tagName).toBe('BUTTON');
+      expect(el.getAttribute('aria-label')).toBeTruthy();
+      expect(el.tabIndex).toBe(-1);
+    });
+
+    it('still toggles expandedIds when the chevron button is clicked', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeTestHostComponent,
+      );
+      await userEvent.click(chevron(container, 'docs'));
+      expect(componentInstance.expanded()).toEqual(['docs']);
+    });
+
+    it('chevron label reflects collapsed/expanded state', async () => {
+      const { container } = renderDynamoComponent(TreeTestHostComponent);
+      expect(chevron(container, 'docs').getAttribute('aria-label')).toBe(
+        'Expand Documents',
+      );
+      await userEvent.click(chevron(container, 'docs'));
+      expect(chevron(container, 'docs').getAttribute('aria-label')).toBe(
+        'Collapse Documents',
+      );
+    });
+
+    it('has no axe violations, including on the chevron button specifically', async () => {
+      const { container } = renderDynamoComponent(TreeTestHostComponent);
+      const el = chevron(container, 'docs');
+      expect(el.getAttribute('aria-label')?.length).toBeGreaterThan(0);
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+});
+
+@Component({
+  selector: 'dg-tree-node-template-host',
+  standalone: true,
+  imports: [DynamoTree],
+  template: `
+    <ng-template #nodeIcon let-node let-depth="depth" let-expanded="expanded">
+      <span
+        data-testid="custom-node"
+        [attr.data-node-label]="node.label"
+        [attr.data-depth]="depth"
+        [attr.data-expanded]="expanded"
+        >★ {{ node.label }}</span
+      >
+    </ng-template>
+    <dg-tree
+      [items]="items()"
+      [(expandedIds)]="expanded"
+      ariaLabel="Files"
+      [nodeTemplate]="nodeIconTpl()"
+    />
+  `,
+})
+class TreeNodeTemplateHostComponent {
+  readonly items = signal(sampleItems());
+  readonly expanded = model<string[]>(['docs']);
+  readonly nodeIconTpl =
+    viewChild.required<TemplateRef<DynamoTreeNodeContext>>('nodeIcon');
+}
+
+describe('DynamoTree — custom node templating (Phase 1)', () => {
+  it('renders the default plain-label span when nodeTemplate is unset', () => {
+    const { container } = renderDynamoComponent(TreeTestHostComponent);
+    expect(row(container, 'docs').textContent).toContain('Documents');
+    expect(
+      row(container, 'docs').querySelector('[data-testid="custom-node"]'),
+    ).toBeNull();
+  });
+
+  it('renders projected template content instead of the plain label when set', () => {
+    const { container } = renderDynamoComponent(TreeNodeTemplateHostComponent);
+    const custom = row(container, 'docs').querySelector(
+      '[data-testid="custom-node"]',
+    );
+    expect(custom).not.toBeNull();
+    expect(custom?.textContent).toContain('★ Documents');
+    // The plain fallback span never renders alongside the template.
+    expect(row(container, 'docs').querySelector('span.truncate')).toBeNull();
+  });
+
+  it('passes the correct context: node, depth, and expanded', () => {
+    // The host's own `expanded` model defaults to `['docs']`, so "docs" is
+    // already expanded on initial render — no interaction needed here.
+    const { container } = renderDynamoComponent(TreeNodeTemplateHostComponent);
+
+    const docsCustom = row(container, 'docs').querySelector(
+      '[data-testid="custom-node"]',
+    );
+    expect(docsCustom?.getAttribute('data-depth')).toBe('0');
+    expect(docsCustom?.getAttribute('data-expanded')).toBe('true');
+
+    const resumeCustom = row(container, 'resume').querySelector(
+      '[data-testid="custom-node"]',
+    );
+    expect(resumeCustom?.getAttribute('data-depth')).toBe('1');
+    expect(resumeCustom?.getAttribute('data-node-label')).toBe('Resume.pdf');
+  });
+
+  it('forwards the template through recursion — a 2-level-deep child also renders via it', async () => {
+    const { container, fixture } = renderDynamoComponent(
+      TreeNodeTemplateHostComponent,
+    );
+    await userEvent.click(chevron(container, 'photos'));
+    await userEvent.click(chevron(container, 'vacation'));
+    fixture.detectChanges();
+
+    const beachCustom = row(container, 'beach').querySelector(
+      '[data-testid="custom-node"]',
+    );
+    expect(beachCustom).not.toBeNull();
+    expect(beachCustom?.getAttribute('data-depth')).toBe('2');
+  });
+});
+
+@Component({
+  selector: 'dg-tree-selection-mode-host',
+  standalone: true,
+  imports: [DynamoTree],
+  template: `
+    <dg-tree
+      [items]="items()"
+      [(expandedIds)]="expanded"
+      [(selected)]="selected"
+      ariaLabel="Files"
+      [selectionMode]="selectionMode()"
+      (itemSelect)="onItemSelect($event)"
+    />
+  `,
+})
+class TreeSelectionModeHostComponent {
+  readonly items = signal(sampleItems());
+  readonly expanded = model<string[]>([]);
+  readonly selected = model<string[]>([]);
+  readonly selectionMode = input<'single' | 'multiple' | 'checkbox'>(
+    'checkbox',
+  );
+  readonly itemSelects: DynamoTreeNode[] = [];
+
+  onItemSelect(node: DynamoTreeNode): void {
+    this.itemSelects.push(node);
+  }
+}
+
+describe('DynamoTree — selectionMode (Phase 2)', () => {
+  describe('"checkbox" (default) — baseline regression', () => {
+    it('renders a checkbox on every row and cascades exactly as before', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeTestHostComponent,
+      );
+      expect(checkboxInput(container, 'docs')).not.toBeNull();
+      await userEvent.click(checkboxInput(container, 'docs'));
+      expect(componentInstance.selected().sort()).toEqual(['docs', 'resume']);
+    });
+  });
+
+  describe('"single"', () => {
+    it('clicking a row replaces the selection with just that node', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'single' } },
+      );
+      await userEvent.click(row(container, 'docs'));
+      expect(componentInstance.selected()).toEqual(['docs']);
+
+      await userEvent.click(row(container, 'notes'));
+      expect(componentInstance.selected()).toEqual(['notes']);
+    });
+
+    it('clicking the already-selected row leaves it selected (no toggle-off)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'single' } },
+      );
+      await userEvent.click(row(container, 'docs'));
+      await userEvent.click(row(container, 'docs'));
+      expect(componentInstance.selected()).toEqual(['docs']);
+    });
+
+    it('renders no checkbox at all', () => {
+      const { container } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'single' } },
+      );
+      expect(container.querySelector('input[type="checkbox"]')).toBeNull();
+    });
+
+    it('sets aria-selected and omits aria-checked', async () => {
+      const { container } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'single' } },
+      );
+      expect(row(container, 'docs').getAttribute('aria-selected')).toBe(
+        'false',
+      );
+      expect(row(container, 'docs').hasAttribute('aria-checked')).toBe(false);
+
+      await userEvent.click(row(container, 'docs'));
+      expect(row(container, 'docs').getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('sets aria-multiselectable to false on the root', () => {
+      const { container } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'single' } },
+      );
+      expect(
+        container
+          .querySelector('[role="tree"]')
+          ?.getAttribute('aria-multiselectable'),
+      ).toBe('false');
+    });
+
+    it('Enter/Space on the active row also selects it', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'single' } },
+      );
+      row(container, 'docs').focus();
+      await userEvent.keyboard('{Enter}');
+      expect(componentInstance.selected()).toEqual(['docs']);
+    });
+
+    it('does not select a disabled node', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'single' } },
+      );
+      await userEvent.click(chevron(container, 'docs'));
+      await userEvent.click(row(container, 'cover'));
+      expect(componentInstance.selected()).toEqual([]);
+    });
+  });
+
+  describe('"multiple"', () => {
+    it('clicking toggles plain membership without cascading', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'multiple' } },
+      );
+      await userEvent.click(row(container, 'docs'));
+      expect(componentInstance.selected()).toEqual(['docs']);
+      // Adds, doesn't replace — unlike "single".
+      await userEvent.click(row(container, 'photos'));
+      expect(componentInstance.selected().sort()).toEqual(['docs', 'photos']);
+      // Clicking an already-selected node removes it.
+      await userEvent.click(row(container, 'docs'));
+      expect(componentInstance.selected()).toEqual(['photos']);
+    });
+
+    it('renders no checkbox at all', () => {
+      const { container } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'multiple' } },
+      );
+      expect(container.querySelector('input[type="checkbox"]')).toBeNull();
+    });
+
+    it('sets aria-multiselectable to true on the root', () => {
+      const { container } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'multiple' } },
+      );
+      expect(
+        container
+          .querySelector('[role="tree"]')
+          ?.getAttribute('aria-multiselectable'),
+      ).toBe('true');
+    });
+
+    it('sets aria-selected and omits aria-checked', async () => {
+      const { container } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'multiple' } },
+      );
+      await userEvent.click(row(container, 'docs'));
+      expect(row(container, 'docs').getAttribute('aria-selected')).toBe('true');
+      expect(row(container, 'docs').hasAttribute('aria-checked')).toBe(false);
+    });
+
+    it('does not select a disabled node', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'multiple' } },
+      );
+      await userEvent.click(chevron(container, 'docs'));
+      await userEvent.click(row(container, 'cover'));
+      expect(componentInstance.selected()).toEqual([]);
+    });
+  });
+
+  describe('itemSelect cardinality', () => {
+    it('fires once per direct interaction in "checkbox" mode', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'checkbox' } },
+      );
+      await userEvent.click(checkboxInput(container, 'notes'));
+      expect(componentInstance.itemSelects).toHaveLength(1);
+    });
+
+    it('fires once per direct interaction in "single" mode', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'single' } },
+      );
+      await userEvent.click(row(container, 'notes'));
+      expect(componentInstance.itemSelects).toHaveLength(1);
+    });
+
+    it('fires once per direct interaction in "multiple" mode', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'multiple' } },
+      );
+      await userEvent.click(row(container, 'notes'));
+      expect(componentInstance.itemSelects).toHaveLength(1);
+    });
+  });
+
+  describe('accessibility', () => {
+    it('has no axe violations in "single" mode', async () => {
+      const { container } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'single' } },
+      );
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+
+    it('has no axe violations in "multiple" mode', async () => {
+      const { container } = renderDynamoComponent(
+        TreeSelectionModeHostComponent,
+        { inputs: { selectionMode: 'multiple' } },
+      );
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+});
+
+@Component({
+  selector: 'dg-tree-node-template-virtual-host',
+  standalone: true,
+  imports: [DynamoTree],
+  template: `
+    <ng-template #nodeIcon let-node let-depth="depth" let-expanded="expanded">
+      <span
+        data-testid="custom-node"
+        [attr.data-node-label]="node.label"
+        [attr.data-depth]="depth"
+        [attr.data-expanded]="expanded"
+        >★ {{ node.label }}</span
+      >
+    </ng-template>
+    <dg-tree
+      [items]="items()"
+      [(expandedIds)]="expanded"
+      ariaLabel="Files"
+      [nodeTemplate]="nodeIconTpl()"
+      [virtualScroll]="true"
+    />
+  `,
+})
+class TreeNodeTemplateVirtualHostComponent {
+  readonly items = signal(sampleItems());
+  readonly expanded = model<string[]>(['docs']);
+  readonly nodeIconTpl =
+    viewChild.required<TemplateRef<DynamoTreeNodeContext>>('nodeIcon');
+}
+
+describe('DynamoTree — virtual scroll (Phase 3)', () => {
+  // CDK's viewport measures its own size asynchronously (an
+  // `afterNextRender`-driven check, not synchronous with construction)
+  // before deciding how many rows to render — same "flush before
+  // asserting" idiom `@dynamong/virtual-scroll`'s own spec already uses.
+  async function settle(fixture: { detectChanges(): void }): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+  }
+
+  // 200 flat root nodes — deliberately not nested, since virtualization
+  // itself only cares about the flattened visibleEntries() length.
+  function manyNodes(count: number): DynamoTreeNode[] {
+    return Array.from({ length: count }, (_, i) => ({
+      id: `item-${i}`,
+      label: `Item ${i}`,
+    }));
+  }
+
+  // The virtualized path's rows live inside `<dg-virtual-scroll>`, not a
+  // plain recursive layout — but they're still `[role="treeitem"]` with
+  // `[data-node-id]`, so the module-level `row()`/`chevron()` helpers work
+  // unchanged for both paths.
+
+  it('renders role="tree" (not the recursive markup) with real row content through the virtualized path', async () => {
+    const { container, fixture } = renderDynamoComponent<DynamoTree>(
+      DynamoTree,
+      { inputs: { items: manyNodes(200), virtualScroll: true } },
+    );
+    await settle(fixture);
+
+    expect(container.querySelector('[role="tree"]')).not.toBeNull();
+    const rows = container.querySelectorAll('[role="treeitem"]');
+    expect(rows.length).toBeGreaterThan(1);
+    expect(row(container, 'item-0').textContent).toContain('Item 0');
+  });
+
+  it('expand/collapse works through the virtualized path', async () => {
+    const { container, fixture } = renderDynamoComponent<DynamoTree>(
+      DynamoTree,
+      { inputs: { items: sampleItems(), virtualScroll: true } },
+    );
+    await settle(fixture);
+
+    expect(container.querySelector('[data-node-id="resume"]')).toBeNull();
+    await userEvent.click(chevron(container, 'docs'));
+    await settle(fixture);
+
+    expect(container.querySelector('[data-node-id="resume"]')).not.toBeNull();
+  });
+
+  it('"checkbox" selection works through the virtualized path', async () => {
+    const { container, fixture, componentInstance } =
+      renderDynamoComponent<DynamoTree>(DynamoTree, {
+        inputs: {
+          items: sampleItems(),
+          virtualScroll: true,
+          selected: [],
+        },
+      });
+    await settle(fixture);
+
+    await userEvent.click(checkboxInput(container, 'notes'));
+    fixture.detectChanges();
+    expect(componentInstance.selected()).toEqual(['notes']);
+  });
+
+  it('"single"/"multiple" selection works through the virtualized path', async () => {
+    const { container, fixture, componentInstance } =
+      renderDynamoComponent<DynamoTree>(DynamoTree, {
+        inputs: {
+          items: sampleItems(),
+          virtualScroll: true,
+          selectionMode: 'multiple',
+        },
+      });
+    await settle(fixture);
+
+    await userEvent.click(row(container, 'notes'));
+    fixture.detectChanges();
+    expect(componentInstance.selected()).toEqual(['notes']);
+  });
+
+  it('nodeTemplate renders correctly through the virtualized path', async () => {
+    const { container, fixture } = renderDynamoComponent(
+      TreeNodeTemplateVirtualHostComponent,
+    );
+    await settle(fixture);
+
+    const custom = row(container, 'docs').querySelector(
+      '[data-testid="custom-node"]',
+    );
+    expect(custom).not.toBeNull();
+    expect(custom?.textContent).toContain('★ Documents');
+    expect(custom?.getAttribute('data-depth')).toBe('0');
+  });
+
+  it('exposes aria-level/aria-posinset/aria-setsize correctly through the virtualized path', async () => {
+    const { container, fixture } = renderDynamoComponent<DynamoTree>(
+      DynamoTree,
+      { inputs: { items: sampleItems(), virtualScroll: true } },
+    );
+    await settle(fixture);
+    await userEvent.click(chevron(container, 'photos'));
+    await settle(fixture);
+
+    const vacation = row(container, 'vacation');
+    expect(vacation.getAttribute('aria-level')).toBe('2');
+    expect(vacation.getAttribute('aria-posinset')).toBe('1');
+    expect(vacation.getAttribute('aria-setsize')).toBe('2');
+  });
+
+  it('renders the empty-state message instead of the viewport when items is empty', async () => {
+    const { container, fixture } = renderDynamoComponent<DynamoTree>(
+      DynamoTree,
+      { inputs: { items: [], virtualScroll: true } },
+    );
+    await settle(fixture);
+
+    expect(container.querySelector('dg-virtual-scroll')).toBeNull();
+    expect(within(container).getByRole('status').textContent?.trim()).toBe(
+      'No data',
+    );
+  });
+
+  it('does not virtualize when virtualScroll is left at its default (false)', async () => {
+    const { container, fixture } = renderDynamoComponent<DynamoTree>(
+      DynamoTree,
+      { inputs: { items: sampleItems() } },
+    );
+    await settle(fixture);
+
+    expect(container.querySelector('dg-virtual-scroll')).toBeNull();
+    expect(row(container, 'docs')).not.toBeNull();
+  });
+
+  it('merges pt class onto tree/row/chevronButton/chevron/checkbox/label while virtualized', async () => {
+    const { container, fixture } = renderDynamoComponent<DynamoTree>(
+      DynamoTree,
+      {
+        inputs: {
+          items: sampleItems(),
+          virtualScroll: true,
+          pt: {
+            tree: { class: 'pt-tree' },
+            row: { class: 'pt-row' },
+            chevronButton: { class: 'pt-chevron-button' },
+            chevron: { class: 'pt-chevron' },
+            checkbox: { class: 'pt-checkbox' },
+            label: { class: 'pt-label' },
+          },
+        },
+      },
+    );
+    await settle(fixture);
+
+    expect(container.querySelector('[role="tree"].pt-tree')).not.toBeNull();
+    expect(container.querySelector('[role="treeitem"].pt-row')).not.toBeNull();
+    expect(container.querySelector('button.pt-chevron-button')).not.toBeNull();
+    expect(container.querySelector('svg.pt-chevron')).not.toBeNull();
+    expect(container.querySelector('span.pt-label')).not.toBeNull();
+  });
+
+  describe('roving-tabindex focus into an unmounted row', () => {
+    it("End scrolls the viewport to the last row's index when it is not currently mounted", async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTree>(
+        DynamoTree,
+        { inputs: { items: manyNodes(200), virtualScroll: true } },
+      );
+      await settle(fixture);
+
+      const viewportDebugEl = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      );
+      const scrollSpy = vi.spyOn(
+        viewportDebugEl.componentInstance as DynamoVirtualScroll<unknown>,
+        'scrollToIndex',
+      );
+
+      const firstRow = row(container, 'item-0');
+      firstRow.focus();
+      fireEvent.keyDown(firstRow, { key: 'End' });
+      await settle(fixture);
+
+      expect(scrollSpy).toHaveBeenCalledWith(199);
+    });
+
+    it('does not call scrollToIndex when the target row is already mounted', async () => {
+      const { container, fixture } = renderDynamoComponent<DynamoTree>(
+        DynamoTree,
+        { inputs: { items: sampleItems(), virtualScroll: true } },
+      );
+      await settle(fixture);
+
+      const viewportDebugEl = fixture.debugElement.query(
+        (node) => node.componentInstance instanceof DynamoVirtualScroll,
+      );
+      const scrollSpy = vi.spyOn(
+        viewportDebugEl.componentInstance as DynamoVirtualScroll<unknown>,
+        'scrollToIndex',
+      );
+
+      const firstRow = row(container, 'docs');
+      firstRow.focus();
+      fireEvent.keyDown(firstRow, { key: 'ArrowDown' });
+      await settle(fixture);
+
+      expect(scrollSpy).not.toHaveBeenCalled();
     });
   });
 });

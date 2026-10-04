@@ -1,6 +1,6 @@
-import { ElementRef, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import type { DynamoTreeCheckState } from './tree-selection';
-import type { DynamoTreeNode } from './tree.types';
+import type { DynamoTreeNode, DynamoTreeSelectionMode } from './tree.types';
 
 /**
  * Internal, DI-scoped coordination point between the recursive
@@ -17,6 +17,18 @@ import type { DynamoTreeNode } from './tree.types';
  * constructible before that wiring runs. Not exported from `index.ts` — an
  * implementation detail of this one library, not a public `@dynamong/core`
  * service.
+ *
+ * Deliberately has NO row-element registry (an earlier version did,
+ * Map-keyed by node id, for `moveActive`'s roving-focus to call
+ * `focusRow(id)` through). `virtualScroll`'s own `dg-tree-item` instances
+ * are mounted via `dg-virtual-scroll`'s `NgTemplateOutlet`, which CDK can
+ * *recycle* (rebind a different node's data onto an existing component
+ * instance without destroying/recreating it) — a one-shot
+ * construction-time registration would silently go stale the first time a
+ * slot gets reused for a different node. `tree.ts`'s own `focusRow` instead
+ * scans the live DOM by `data-node-id` on demand (same technique
+ * `@dynamong/tree-table`'s equivalent fix already uses), which is immune to
+ * recycling by construction since it never trusts a lifecycle-tied cache.
  */
 @Injectable()
 export class DynamoTreeState {
@@ -26,24 +38,13 @@ export class DynamoTreeState {
   activeId: () => string | undefined = () => undefined;
   checkState: (node: DynamoTreeNode) => DynamoTreeCheckState = () =>
     'unchecked';
+  selectionMode: () => DynamoTreeSelectionMode = () => 'checkbox';
+  isSelected: (node: DynamoTreeNode) => boolean = () => false;
 
   handleKeydown: (event: KeyboardEvent) => void = () => undefined;
   toggleExpanded: (node: DynamoTreeNode) => void = () => undefined;
   toggleChecked: (node: DynamoTreeNode) => void = () => undefined;
+  selectNode: (node: DynamoTreeNode) => void = () => undefined;
   setActive: (id: string) => void = () => undefined;
   activate: (node: DynamoTreeNode) => void = () => undefined;
-
-  private readonly rows = new Map<string, ElementRef<HTMLElement>>();
-
-  registerRow(id: string, ref: ElementRef<HTMLElement>): void {
-    this.rows.set(id, ref);
-  }
-
-  unregisterRow(id: string): void {
-    this.rows.delete(id);
-  }
-
-  focusRow(id: string): void {
-    this.rows.get(id)?.nativeElement.focus();
-  }
 }
