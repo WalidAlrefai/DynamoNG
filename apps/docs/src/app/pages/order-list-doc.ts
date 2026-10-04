@@ -18,6 +18,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'filter', title: 'Filter' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
   { id: 'readonly', title: 'Read-only' },
+  { id: 'reorder-visibility', title: 'Reorder-Controls Visibility' },
 ];
 
 const API: ApiTableRow[] = [
@@ -40,6 +41,9 @@ const API: ApiTableRow[] = [
   { name: 'virtualScroll', type: 'boolean', default: 'false' },
   { name: 'virtualScrollItemSize', type: 'number', default: '36' },
   { name: 'virtualScrollHeight', type: 'number', default: '320' },
+  { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined' },
+  { name: 'fluid', type: 'boolean', default: 'true' },
+  { name: 'showReorderControls', type: 'boolean', default: 'true' },
 ];
 
 const MANY_TASKS: DynamoSelectOption<string>[] = Array.from(
@@ -63,7 +67,7 @@ const MANY_TASKS: DynamoSelectOption<string>[] = Array.from(
         title="Basic"
         description="Two-way bind [(value)]; click/hover a row to make it active, then use the header buttons or ArrowUp/ArrowDown to move it."
       >
-        <div preview class="flex flex-col gap-3">
+        <div preview class="flex max-w-sm flex-col gap-3">
           <dg-order-list [(value)]="tasks" listLabel="Tasks" />
           <p class="text-sm text-text-muted">
             Order: <span class="font-mono">{{ order() }}</span>
@@ -79,7 +83,7 @@ const MANY_TASKS: DynamoSelectOption<string>[] = Array.from(
         title="Filter"
         description="Set filterable to show a search box that narrows rows by label. Drag-and-drop is disabled while a query is active — use the move buttons or ▲/▼ keyboard reorder instead."
       >
-        <div preview class="flex flex-col gap-3">
+        <div preview class="flex max-w-sm flex-col gap-3">
           <dg-order-list
             [(value)]="filterTasks"
             listLabel="Tasks"
@@ -96,7 +100,7 @@ const MANY_TASKS: DynamoSelectOption<string>[] = Array.from(
         title="Virtual Scroll"
         description="Set virtualScroll for large value arrays — only a small rendered window mounts. Drag-and-drop is disabled while virtualized; use the move buttons or ▲/▼ keyboard reorder instead."
       >
-        <div preview class="flex flex-col gap-3">
+        <div preview class="flex max-w-sm flex-col gap-3">
           <dg-order-list
             [(value)]="manyTasks"
             listLabel="Tasks"
@@ -116,7 +120,7 @@ const MANY_TASKS: DynamoSelectOption<string>[] = Array.from(
         title="Read-only"
         description="readOnly keeps rows visible/focusable/navigable, but blocks reordering and selection — unlike disabled, it doesn't dim the list or remove it from the tab order."
       >
-        <div preview class="flex flex-col gap-3">
+        <div preview class="flex max-w-sm flex-col gap-3">
           <dg-order-list
             [value]="readonlyTasks()"
             listLabel="Tasks (read-only)"
@@ -125,6 +129,24 @@ const MANY_TASKS: DynamoSelectOption<string>[] = Array.from(
         </div>
         <div code>
           &lt;dg-order-list [value]="tasks" [readOnly]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="reorder-visibility"
+        title="Reorder-Controls Visibility"
+        description="showReorderControls hides the entire ▲/▼ (and ⤒/⤓) header row — drag-and-drop still works with it hidden."
+      >
+        <div preview class="flex max-w-sm flex-col gap-3">
+          <dg-order-list
+            [(value)]="reorderVisibilityTasks"
+            listLabel="Tasks"
+            [showReorderControls]="false"
+          />
+        </div>
+        <div code>
+          &lt;dg-order-list [(value)]="tasks" [showReorderControls]="false"
+          /&gt;
         </div>
       </docs-example>
 
@@ -171,4 +193,12 @@ export class OrderListDocPage {
 
   protected readonly manyTasks =
     signal<DynamoSelectOption<string>[]>(MANY_TASKS);
+
+  protected readonly reorderVisibilityTasks = signal<
+    DynamoSelectOption<string>[]
+  >([
+    { label: 'Draft the proposal', value: '1' },
+    { label: 'Review with the team', value: '2' },
+    { label: 'Incorporate feedback', value: '3' },
+  ]);
 }

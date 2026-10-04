@@ -9,8 +9,18 @@ import {
 // adapted from `picklist.styles.ts` (OrderList is the single-panel half of
 // Picklist).
 
-export const orderListRootStyles =
-  'flex max-h-96 w-72 flex-col overflow-hidden rounded-md border border-border bg-surface-0';
+export const orderListRootStyles = cva(
+  'flex max-h-96 flex-col overflow-hidden rounded-md border border-border bg-surface-0',
+  {
+    variants: {
+      fluid: {
+        true: 'w-full',
+        false: 'w-72',
+      },
+    },
+    defaultVariants: { fluid: true },
+  },
+);
 
 export const orderListHeaderStyles =
   'flex items-center justify-between gap-2 border-b border-border px-3 py-2';

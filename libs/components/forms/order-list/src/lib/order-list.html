@@ -1,7 +1,16 @@
-<div [class]="rootClasses()" data-testid="DynamoOrderList">
-  <div [class]="headerClasses">
+<div
+  [class]="rootClasses()"
+  data-testid="DynamoOrderList"
+  [dgPt]="ptFor('root')"
+>
+  <div [class]="headerClasses()" [dgPt]="ptFor('header')">
     <span [class]="titleClasses">{{ listLabel() }}</span>
-    <div [class]="controlsClasses" data-part="controls">
+    @if (showReorderControls()) {
+    <div
+      [class]="controlsClasses()"
+      data-part="controls"
+      [dgPt]="ptFor('controls')"
+    >
       @if (moveTopBottom()) {
       <button
         type="button"
@@ -43,6 +52,7 @@
       </button>
       }
     </div>
+    }
   </div>
 
   @if (filterable()) {
@@ -52,8 +62,10 @@
         type="search"
         size="sm"
         [styleClass]="filterInputExtraClasses"
-        [ngModel]="filterText()"
-        (ngModelChange)="onFilterInputChange($event)"
+        [disabled]="disabled() || readOnly()"
+        [pt]="{ input: ptFor('filter') }"
+        [value]="filterText()"
+        (valueChange)="onFilterInputChange($event)"
         (keydown)="onFilterKeydown($event)"
         [placeholder]="filterPlaceholder()"
         [ariaLabel]="'Search ' + listLabel()"
@@ -84,10 +96,13 @@
     [cdkDropListDisabled]="dropListDisabled()"
     [cdkDropListData]="cdkDropListItems()"
     [attr.aria-label]="listLabel()"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
     [attr.aria-multiselectable]="selectable() ? 'true' : null"
     [attr.aria-readonly]="readOnly() ? 'true' : null"
+    [attr.aria-disabled]="disabled() ? 'true' : null"
     [attr.tabindex]="disabled() ? -1 : 0"
     [class]="listClasses()"
+    [dgPt]="ptFor('list')"
     (cdkDropListDropped)="onDropped($event)"
     (keydown)="onKeydown($event)"
   >
@@ -101,7 +116,8 @@
       role="option"
       aria-selected="false"
       aria-disabled="true"
-      [class]="noResultsClasses"
+      [class]="noResultsClasses()"
+      [dgPt]="ptFor('no-results')"
     >
       <span role="status">{{ noResultsMessage() }}</span>
     </li>
@@ -123,11 +139,16 @@
             "
           [attr.aria-disabled]="option.disabled ? 'true' : null"
           [class]="optionClasses(option)"
+          [dgPt]="ptFor('option')"
           (click)="onRowClick(option)"
           (mouseenter)="activeValue.set(option.value)"
         >
           @if (selectable()) {
-          <span [class]="checkboxClasses(option)" [attr.aria-hidden]="true">
+          <span
+            [class]="checkboxClasses(option)"
+            [attr.aria-hidden]="true"
+            [dgPt]="ptFor('checkbox')"
+          >
             @if (isSelected(option)) {
             <dg-icon-check size="sm" />
             }
@@ -152,11 +173,16 @@
         "
       [attr.aria-disabled]="option.disabled ? 'true' : null"
       [class]="optionClasses(option)"
+      [dgPt]="ptFor('option')"
       (click)="onRowClick(option)"
       (mouseenter)="activeValue.set(option.value)"
     >
       @if (selectable()) {
-      <span [class]="checkboxClasses(option)" [attr.aria-hidden]="true">
+      <span
+        [class]="checkboxClasses(option)"
+        [attr.aria-hidden]="true"
+        [dgPt]="ptFor('checkbox')"
+      >
         @if (isSelected(option)) {
         <dg-icon-check size="sm" />
         }
