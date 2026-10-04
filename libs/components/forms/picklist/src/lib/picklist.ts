@@ -93,6 +93,10 @@ export class DynamoPicklist<
   /** Fills the width of its container. Defaults `true` to match every existing consumer's
    *  assumption of a full-width root; set `false` for intrinsic sizing. */
   readonly fluid = input(true);
+  /** Independently shows/hides the source panel's own ▲/▼ reorder-button row. */
+  readonly showSourceReorderButtons = input(true);
+  /** Independently shows/hides the target panel's own ▲/▼ reorder-button row. */
+  readonly showTargetReorderButtons = input(true);
 
   /** Shows a per-panel search box that narrows that panel's rows by label. */
   readonly filterable = input(false);

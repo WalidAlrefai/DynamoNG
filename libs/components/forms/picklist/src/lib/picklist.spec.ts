@@ -1655,3 +1655,117 @@ describe('DynamoPicklist — custom item templates (Phase 1)', () => {
     });
   });
 });
+
+describe('DynamoPicklist — responsive breakpoint stacking (Phase 2)', () => {
+  it('stacks panels vertically below sm and side-by-side at/above it', () => {
+    const { container } = renderDynamoComponent(DynamoPicklist, {
+      inputs: { source: SOURCE, target: TARGET },
+    });
+
+    const rootClassName = container.querySelector('div')?.className ?? '';
+    expect(rootClassName).toContain('flex-col');
+    expect(rootClassName).toContain('sm:flex-row');
+  });
+
+  it('centers children along the cross axis while stacked, so the auto-width move-button row does not stretch away from the fixed-width panels', () => {
+    const { container } = renderDynamoComponent(DynamoPicklist, {
+      inputs: { source: SOURCE, target: TARGET },
+    });
+
+    const rootClassName = container.querySelector('div')?.className ?? '';
+    expect(rootClassName).toContain('items-center');
+    expect(rootClassName).toContain('sm:items-start');
+  });
+
+  it('switches the move-button column between a horizontal row and a vertical column', () => {
+    const { container } = renderDynamoComponent(DynamoPicklist, {
+      inputs: { source: SOURCE, target: TARGET },
+    });
+
+    const moveButtons = container.querySelector(
+      '[data-part="moveButtons"]',
+    ) as HTMLElement;
+    expect(moveButtons.className).toContain('flex-row');
+    expect(moveButtons.className).toContain('sm:flex-col');
+  });
+
+  it('rotates the move-button glyphs so they point the correct direction in both layouts', () => {
+    const { container } = renderDynamoComponent(DynamoPicklist, {
+      inputs: { source: SOURCE, target: TARGET },
+    });
+
+    const glyphs = container.querySelectorAll(
+      '[data-part="moveButtons"] button span',
+    );
+    expect(glyphs).toHaveLength(4);
+    glyphs.forEach((glyph) => {
+      expect(glyph.className).toContain('rotate-90');
+      expect(glyph.className).toContain('sm:rotate-0');
+    });
+  });
+});
+
+function reorderButtons(
+  container: HTMLElement,
+  side: 'source' | 'target',
+): NodeListOf<Element> {
+  return container.querySelectorAll(
+    `[data-part="${side}Panel"] button[aria-label^="Move up"], [data-part="${side}Panel"] button[aria-label^="Move down"]`,
+  );
+}
+
+describe('DynamoPicklist — independent reorder-button visibility (Phase 3)', () => {
+  it('shows both panels own reorder buttons by default', () => {
+    const { container } = renderDynamoComponent(DynamoPicklist, {
+      inputs: { source: SOURCE, target: TARGET },
+    });
+
+    expect(reorderButtons(container, 'source')).toHaveLength(2);
+    expect(reorderButtons(container, 'target')).toHaveLength(2);
+  });
+
+  it('hides only the source panels reorder buttons when showSourceReorderButtons is false', () => {
+    const { container } = renderDynamoComponent(DynamoPicklist, {
+      inputs: {
+        source: SOURCE,
+        target: TARGET,
+        showSourceReorderButtons: false,
+      },
+    });
+
+    expect(reorderButtons(container, 'source')).toHaveLength(0);
+    expect(reorderButtons(container, 'target')).toHaveLength(2);
+  });
+
+  it('hides only the target panels reorder buttons when showTargetReorderButtons is false', () => {
+    const { container } = renderDynamoComponent(DynamoPicklist, {
+      inputs: {
+        source: SOURCE,
+        target: TARGET,
+        showTargetReorderButtons: false,
+      },
+    });
+
+    expect(reorderButtons(container, 'source')).toHaveLength(2);
+    expect(reorderButtons(container, 'target')).toHaveLength(0);
+  });
+
+  it('hiding one panels reorder buttons does not disable the other panels own reorder functionality', () => {
+    const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+      inputs: {
+        source: [],
+        target: TARGET.concat(SOURCE),
+        showSourceReorderButtons: false,
+      },
+    });
+    const list = panelListEl(container, 'target');
+    list.focus();
+    dispatchKey(list, 'ArrowDown');
+    fixture.detectChanges();
+
+    const targetDown = within(container).getByRole('button', {
+      name: 'Move down in Selected',
+    });
+    expect((targetDown as HTMLButtonElement).disabled).toBe(false);
+  });
+});

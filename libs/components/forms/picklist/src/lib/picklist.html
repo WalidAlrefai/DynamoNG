@@ -7,6 +7,7 @@
     >
       <div [class]="panelHeaderClasses">
         <span [class]="panelTitleClasses">{{ sourceLabel() }}</span>
+        @if (showSourceReorderButtons()) {
         <div
           [class]="reorderButtonRowClasses()"
           [dgPt]="ptFor('reorderButtons')"
@@ -30,6 +31,7 @@
             ▼
           </button>
         </div>
+        }
       </div>
       @if (filterable()) {
       <div [class]="filterWrapperClasses" data-part="filter">
@@ -187,7 +189,7 @@
         [attr.aria-label]="'Move selected to ' + targetLabel()"
         (click)="moveSelectedRight()"
       >
-        ▶
+        <span class="inline-block rotate-90 sm:rotate-0">▶</span>
       </button>
       <button
         type="button"
@@ -196,7 +198,7 @@
         [attr.aria-label]="'Move selected to ' + sourceLabel()"
         (click)="moveSelectedLeft()"
       >
-        ◀
+        <span class="inline-block rotate-90 sm:rotate-0">◀</span>
       </button>
       <button
         type="button"
@@ -205,7 +207,7 @@
         [attr.aria-label]="'Move all to ' + targetLabel()"
         (click)="moveAllRight()"
       >
-        ▶▶
+        <span class="inline-block rotate-90 sm:rotate-0">▶▶</span>
       </button>
       <button
         type="button"
@@ -214,7 +216,7 @@
         [attr.aria-label]="'Move all to ' + sourceLabel()"
         (click)="moveAllLeft()"
       >
-        ◀◀
+        <span class="inline-block rotate-90 sm:rotate-0">◀◀</span>
       </button>
     </div>
 
@@ -225,6 +227,7 @@
     >
       <div [class]="panelHeaderClasses">
         <span [class]="panelTitleClasses">{{ targetLabel() }}</span>
+        @if (showTargetReorderButtons()) {
         <div
           [class]="reorderButtonRowClasses()"
           [dgPt]="ptFor('reorderButtons')"
@@ -248,6 +251,7 @@
             ▼
           </button>
         </div>
+        }
       </div>
       @if (filterable()) {
       <div [class]="filterWrapperClasses" data-part="filter">

@@ -19,6 +19,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'filterable', title: 'Filterable' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
   { id: 'templates', title: 'Custom Templates' },
+  { id: 'reorder-visibility', title: 'Reorder-Button Visibility' },
 ];
 
 const API: ApiTableRow[] = [
@@ -44,6 +45,8 @@ const API: ApiTableRow[] = [
   { name: 'virtualScroll', type: 'boolean', default: 'false' },
   { name: 'virtualScrollItemSize', type: 'number', default: '36' },
   { name: 'virtualScrollHeight', type: 'number', default: '320' },
+  { name: 'showSourceReorderButtons', type: 'boolean', default: 'true' },
+  { name: 'showTargetReorderButtons', type: 'boolean', default: 'true' },
 ];
 
 const MANY_SOURCE: DynamoSelectOption<string>[] = Array.from(
@@ -65,7 +68,7 @@ const MANY_SOURCE: DynamoSelectOption<string>[] = Array.from(
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Two-way bind both lists with [(source)] and [(target)]; items move between them via the centre buttons, drag-and-drop, or keyboard."
+        description="Two-way bind both lists with [(source)] and [(target)]; items move between them via the centre buttons, drag-and-drop, or keyboard. Panels stack vertically with a horizontal move-button row below the sm breakpoint — resize your viewport narrow to see it."
       >
         <div preview class="flex flex-col gap-3">
           <dg-picklist
@@ -174,6 +177,26 @@ const MANY_SOURCE: DynamoSelectOption<string>[] = Array.from(
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="reorder-visibility"
+        title="Reorder-Button Visibility"
+        description="showSourceReorderButtons / showTargetReorderButtons independently hide each panel's own ▲/▼ row — here the source panel's is hidden while the target panel's stays available."
+      >
+        <div preview class="flex flex-col gap-3">
+          <dg-picklist
+            [(source)]="reorderVisibilitySource"
+            [(target)]="reorderVisibilityTarget"
+            sourceLabel="Available"
+            targetLabel="Selected"
+            [showSourceReorderButtons]="false"
+          />
+        </div>
+        <div code>
+          &lt;dg-picklist [(source)]="available" [(target)]="selected"
+          [showSourceReorderButtons]="false" /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -227,5 +250,19 @@ export class PicklistDocPage {
   ]);
   protected readonly templateTarget = signal<DynamoSelectOption<string>[]>([
     { label: 'TypeScript', value: 'ts' },
+  ]);
+
+  protected readonly reorderVisibilitySource = signal<
+    DynamoSelectOption<string>[]
+  >([
+    { label: 'Rust', value: 'rust' },
+    { label: 'Go', value: 'go' },
+    { label: 'Python', value: 'py' },
+  ]);
+  protected readonly reorderVisibilityTarget = signal<
+    DynamoSelectOption<string>[]
+  >([
+    { label: 'TypeScript', value: 'ts' },
+    { label: 'JavaScript', value: 'js' },
   ]);
 }
