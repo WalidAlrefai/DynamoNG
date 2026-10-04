@@ -1,13 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  TemplateRef,
   computed,
+  contentChild,
   input,
   model,
   output,
   signal,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   CdkDrag,
   CdkDropList,
@@ -15,8 +18,10 @@ import {
   moveItemInArray,
   type CdkDragDrop,
 } from '@angular/cdk/drag-drop';
-import { FormsModule } from '@angular/forms';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { DynamoCheckIcon } from '@dynamong/icons';
 import { DynamoInputText } from '@dynamong/input-text';
 import { cn } from '@dynamong/utils/class-merge';
@@ -60,7 +65,8 @@ import type {
     DynamoCheckIcon,
     DynamoVirtualScroll,
     DynamoInputText,
-    FormsModule,
+    DynamoPassThroughDirective,
+    NgTemplateOutlet,
   ],
   templateUrl: './picklist.html',
 })
@@ -82,6 +88,11 @@ export class DynamoPicklist<
   readonly readOnly = input(false);
   readonly sourceLabel = input('Available');
   readonly targetLabel = input('Selected');
+  /** Associates both panels' listboxes with an external help/error message element via `aria-describedby`. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true` to match every existing consumer's
+   *  assumption of a full-width root; set `false` for intrinsic sizing. */
+  readonly fluid = input(true);
 
   /** Shows a per-panel search box that narrows that panel's rows by label. */
   readonly filterable = input(false);
@@ -140,6 +151,14 @@ export class DynamoPicklist<
   private readonly targetVirtualScrollRef = viewChild<
     DynamoVirtualScroll<DynamoSelectOption<TValue>>
   >('targetVirtualScroll');
+
+  /** Optional per-option custom rendering, shared across both panels — falls back to plain
+   *  `{{ option.label }}` text when unset. No `side` in the context: a template rendering identically
+   *  regardless of which panel an option currently lives in is the expected case. */
+  protected readonly optionTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoSelectOption<TValue> }>>(
+      'optionTemplate',
+    );
 
   protected readonly canMoveSelectedRight = computed(
     () => this.sourceSelected().size > 0,
@@ -221,21 +240,33 @@ export class DynamoPicklist<
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(picklistRootStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          picklistRootStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
   protected readonly buttonClasses = picklistButtonStyles;
-  protected readonly panelClasses = picklistPanelStyles;
+  protected panelClasses(part: 'sourcePanel' | 'targetPanel'): string {
+    return cn(picklistPanelStyles, this.ptFor(part).class);
+  }
   protected readonly panelHeaderClasses = picklistPanelHeaderStyles;
   protected readonly panelTitleClasses = picklistPanelTitleStyles;
-  protected readonly moveButtonColumnClasses = picklistMoveButtonColumnStyles;
-  protected readonly reorderButtonRowClasses = picklistReorderButtonRowStyles;
+  protected readonly moveButtonColumnClasses = computed(() =>
+    cn(picklistMoveButtonColumnStyles, this.ptFor('moveButtons').class),
+  );
+  protected readonly reorderButtonRowClasses = computed(() =>
+    cn(picklistReorderButtonRowStyles, this.ptFor('reorderButtons').class),
+  );
   protected readonly filterWrapperClasses = picklistFilterWrapperStyles;
   protected readonly filterFieldWrapperClasses =
     picklistFilterFieldWrapperStyles;
   protected readonly filterIconClasses = picklistFilterIconStyles;
   protected readonly filterInputExtraClasses = picklistFilterInputExtraClasses;
-  protected readonly noResultsClasses = picklistNoResultsStyles;
+  protected readonly noResultsClasses = computed(() =>
+    cn(picklistNoResultsStyles, this.ptFor('no-results').class),
+  );
 
   // Trivial today (Picklist has no grouping concept to guard against, unlike
   // Listbox's isVirtualized), but kept as its own computed so both panels
@@ -270,9 +301,12 @@ export class DynamoPicklist<
 
   /** `dg-virtual-scroll`'s own fixed-height viewport is the sole scrolling region while virtualized — this `<ul>` must not also scroll (no double scrollbar). */
   protected readonly panelListClasses = computed(() =>
-    this.isVirtualized()
-      ? picklistPanelListVirtualStyles
-      : picklistPanelListStyles,
+    cn(
+      this.isVirtualized()
+        ? picklistPanelListVirtualStyles
+        : picklistPanelListStyles,
+      this.ptFor('listbox').class,
+    ),
   );
 
   /** Mirrors the existing `@for`'s `track option.value` so item identity stays stable across the virtualized/non-virtualized branches and across reorder/move operations. */
@@ -418,14 +452,14 @@ export class DynamoPicklist<
   // --- keyboard reorder (activeIndex-driven, always-visible buttons) ---
 
   protected canMoveUp(side: DynamoPicklistSide): boolean {
-    if (this.readOnly()) return false;
+    if (this.disabled() || this.readOnly()) return false;
     const idx =
       side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex();
     return idx > 0;
   }
 
   protected canMoveDown(side: DynamoPicklistSide): boolean {
-    if (this.readOnly()) return false;
+    if (this.disabled() || this.readOnly()) return false;
     const idx =
       side === 'source' ? this.sourceActiveIndex() : this.targetActiveIndex();
     const len = (side === 'source' ? this.source() : this.target()).length;
@@ -558,6 +592,9 @@ export class DynamoPicklist<
   // --- filter box, mirrors OrderList's onFilterInputChange/onFilterKeydown ---
 
   protected onFilterInputChange(side: DynamoPicklistSide, value: string): void {
+    if (this.disabled() || this.readOnly()) {
+      return;
+    }
     (side === 'source' ? this.sourceFilterText : this.targetFilterText).set(
       value,
     );
@@ -577,6 +614,9 @@ export class DynamoPicklist<
     side: DynamoPicklistSide,
     event: KeyboardEvent,
   ): void {
+    if (this.disabled() || this.readOnly()) {
+      return;
+    }
     switch (event.key) {
       case 'Escape':
         event.preventDefault();
@@ -615,23 +655,29 @@ export class DynamoPicklist<
     side: DynamoPicklistSide,
     option: DynamoSelectOption<TValue>,
   ): string {
-    return picklistOptionStyles({
-      active:
-        option.value ===
-        (side === 'source'
-          ? this.sourceActiveValue()
-          : this.targetActiveValue()),
-      selected: this.isSelected(side, option),
-      disabled: !!option.disabled,
-    });
+    return cn(
+      picklistOptionStyles({
+        active:
+          option.value ===
+          (side === 'source'
+            ? this.sourceActiveValue()
+            : this.targetActiveValue()),
+        selected: this.isSelected(side, option),
+        disabled: !!option.disabled,
+      }),
+      this.ptFor('option').class,
+    );
   }
 
   protected checkboxClasses(
     side: DynamoPicklistSide,
     option: DynamoSelectOption<TValue>,
   ): string {
-    return picklistOptionCheckboxStyles({
-      checked: this.isSelected(side, option),
-    });
+    return cn(
+      picklistOptionCheckboxStyles({
+        checked: this.isSelected(side, option),
+      }),
+      this.ptFor('checkbox').class,
+    );
   }
 }

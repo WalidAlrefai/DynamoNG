@@ -1,13 +1,20 @@
-<div [class]="rootClasses()">
+<div [class]="rootClasses()" [dgPt]="ptFor('root')">
   <div cdkDropListGroup>
-    <div [class]="panelClasses" data-part="sourcePanel">
+    <div
+      [class]="panelClasses('sourcePanel')"
+      data-part="sourcePanel"
+      [dgPt]="ptFor('sourcePanel')"
+    >
       <div [class]="panelHeaderClasses">
         <span [class]="panelTitleClasses">{{ sourceLabel() }}</span>
-        <div [class]="reorderButtonRowClasses">
+        <div
+          [class]="reorderButtonRowClasses()"
+          [dgPt]="ptFor('reorderButtons')"
+        >
           <button
             type="button"
             [class]="buttonClasses"
-            [disabled]="disabled() || !canMoveUp('source')"
+            [disabled]="!canMoveUp('source')"
             [attr.aria-label]="'Move up in ' + sourceLabel()"
             (click)="reorder('source', -1)"
           >
@@ -16,7 +23,7 @@
           <button
             type="button"
             [class]="buttonClasses"
-            [disabled]="disabled() || !canMoveDown('source')"
+            [disabled]="!canMoveDown('source')"
             [attr.aria-label]="'Move down in ' + sourceLabel()"
             (click)="reorder('source', 1)"
           >
@@ -31,8 +38,10 @@
             type="search"
             size="sm"
             [styleClass]="filterInputExtraClasses"
-            [ngModel]="sourceFilterText()"
-            (ngModelChange)="onFilterInputChange('source', $event)"
+            [disabled]="disabled() || readOnly()"
+            [pt]="{ input: ptFor('filter') }"
+            [value]="sourceFilterText()"
+            (valueChange)="onFilterInputChange('source', $event)"
             (keydown)="onFilterKeydown('source', $event)"
             [placeholder]="filterPlaceholder()"
             [ariaLabel]="'Search ' + sourceLabel()"
@@ -64,9 +73,13 @@
         [cdkDropListData]="cdkSourceItems()"
         [cdkDropListDisabled]="sourceDropListDisabled()"
         [attr.aria-label]="sourceLabel()"
+        [attr.aria-describedby]="ariaDescribedby() ?? null"
+        [attr.aria-multiselectable]="'true'"
         [attr.aria-readonly]="readOnly() ? 'true' : null"
+        [attr.aria-disabled]="disabled() ? 'true' : null"
         [attr.tabindex]="disabled() ? -1 : 0"
         [class]="panelListClasses()"
+        [dgPt]="ptFor('listbox')"
         (cdkDropListDropped)="onDropped($event, 'source')"
         (keydown)="onPanelKeydown($event, 'source')"
       >
@@ -80,7 +93,8 @@
           role="option"
           aria-selected="false"
           aria-disabled="true"
-          [class]="noResultsClasses"
+          [class]="noResultsClasses()"
+          [dgPt]="ptFor('no-results')"
         >
           <span role="status">{{ noResultsMessage() }}</span>
         </li>
@@ -100,18 +114,27 @@
               [attr.aria-selected]="isSelected('source', option)"
               [attr.aria-disabled]="option.disabled ? 'true' : null"
               [class]="optionClasses('source', option)"
+              [dgPt]="ptFor('option')"
               (click)="toggleSelected('source', option)"
               (mouseenter)="sourceActiveValue.set(option.value)"
             >
               <span
                 [class]="checkboxClasses('source', option)"
                 [attr.aria-hidden]="true"
+                [dgPt]="ptFor('checkbox')"
               >
                 @if (isSelected('source', option)) {
                 <dg-icon-check size="sm" />
                 }
               </span>
+              @if (optionTemplate(); as tpl) {
+              <ng-container
+                [ngTemplateOutlet]="tpl"
+                [ngTemplateOutletContext]="{ $implicit: option }"
+              />
+              } @else {
               <span>{{ option.label }}</span>
+              }
             </li>
           </ng-template>
         </dg-virtual-scroll>
@@ -126,24 +149,37 @@
           [attr.aria-selected]="isSelected('source', option)"
           [attr.aria-disabled]="option.disabled ? 'true' : null"
           [class]="optionClasses('source', option)"
+          [dgPt]="ptFor('option')"
           (click)="toggleSelected('source', option)"
           (mouseenter)="sourceActiveValue.set(option.value)"
         >
           <span
             [class]="checkboxClasses('source', option)"
             [attr.aria-hidden]="true"
+            [dgPt]="ptFor('checkbox')"
           >
             @if (isSelected('source', option)) {
             <dg-icon-check size="sm" />
             }
           </span>
+          @if (optionTemplate(); as tpl) {
+          <ng-container
+            [ngTemplateOutlet]="tpl"
+            [ngTemplateOutletContext]="{ $implicit: option }"
+          />
+          } @else {
           <span>{{ option.label }}</span>
+          }
         </li>
         } }
       </ul>
     </div>
 
-    <div [class]="moveButtonColumnClasses" data-part="moveButtons">
+    <div
+      [class]="moveButtonColumnClasses()"
+      data-part="moveButtons"
+      [dgPt]="ptFor('moveButtons')"
+    >
       <button
         type="button"
         [class]="buttonClasses"
@@ -182,14 +218,21 @@
       </button>
     </div>
 
-    <div [class]="panelClasses" data-part="targetPanel">
+    <div
+      [class]="panelClasses('targetPanel')"
+      data-part="targetPanel"
+      [dgPt]="ptFor('targetPanel')"
+    >
       <div [class]="panelHeaderClasses">
         <span [class]="panelTitleClasses">{{ targetLabel() }}</span>
-        <div [class]="reorderButtonRowClasses">
+        <div
+          [class]="reorderButtonRowClasses()"
+          [dgPt]="ptFor('reorderButtons')"
+        >
           <button
             type="button"
             [class]="buttonClasses"
-            [disabled]="disabled() || !canMoveUp('target')"
+            [disabled]="!canMoveUp('target')"
             [attr.aria-label]="'Move up in ' + targetLabel()"
             (click)="reorder('target', -1)"
           >
@@ -198,7 +241,7 @@
           <button
             type="button"
             [class]="buttonClasses"
-            [disabled]="disabled() || !canMoveDown('target')"
+            [disabled]="!canMoveDown('target')"
             [attr.aria-label]="'Move down in ' + targetLabel()"
             (click)="reorder('target', 1)"
           >
@@ -213,8 +256,10 @@
             type="search"
             size="sm"
             [styleClass]="filterInputExtraClasses"
-            [ngModel]="targetFilterText()"
-            (ngModelChange)="onFilterInputChange('target', $event)"
+            [disabled]="disabled() || readOnly()"
+            [pt]="{ input: ptFor('filter') }"
+            [value]="targetFilterText()"
+            (valueChange)="onFilterInputChange('target', $event)"
             (keydown)="onFilterKeydown('target', $event)"
             [placeholder]="filterPlaceholder()"
             [ariaLabel]="'Search ' + targetLabel()"
@@ -246,9 +291,13 @@
         [cdkDropListData]="cdkTargetItems()"
         [cdkDropListDisabled]="targetDropListDisabled()"
         [attr.aria-label]="targetLabel()"
+        [attr.aria-describedby]="ariaDescribedby() ?? null"
+        [attr.aria-multiselectable]="'true'"
         [attr.aria-readonly]="readOnly() ? 'true' : null"
+        [attr.aria-disabled]="disabled() ? 'true' : null"
         [attr.tabindex]="disabled() ? -1 : 0"
         [class]="panelListClasses()"
+        [dgPt]="ptFor('listbox')"
         (cdkDropListDropped)="onDropped($event, 'target')"
         (keydown)="onPanelKeydown($event, 'target')"
       >
@@ -257,7 +306,8 @@
           role="option"
           aria-selected="false"
           aria-disabled="true"
-          [class]="noResultsClasses"
+          [class]="noResultsClasses()"
+          [dgPt]="ptFor('no-results')"
         >
           <span role="status">{{ noResultsMessage() }}</span>
         </li>
@@ -277,18 +327,27 @@
               [attr.aria-selected]="isSelected('target', option)"
               [attr.aria-disabled]="option.disabled ? 'true' : null"
               [class]="optionClasses('target', option)"
+              [dgPt]="ptFor('option')"
               (click)="toggleSelected('target', option)"
               (mouseenter)="targetActiveValue.set(option.value)"
             >
               <span
                 [class]="checkboxClasses('target', option)"
                 [attr.aria-hidden]="true"
+                [dgPt]="ptFor('checkbox')"
               >
                 @if (isSelected('target', option)) {
                 <dg-icon-check size="sm" />
                 }
               </span>
+              @if (optionTemplate(); as tpl) {
+              <ng-container
+                [ngTemplateOutlet]="tpl"
+                [ngTemplateOutletContext]="{ $implicit: option }"
+              />
+              } @else {
               <span>{{ option.label }}</span>
+              }
             </li>
           </ng-template>
         </dg-virtual-scroll>
@@ -303,18 +362,27 @@
           [attr.aria-selected]="isSelected('target', option)"
           [attr.aria-disabled]="option.disabled ? 'true' : null"
           [class]="optionClasses('target', option)"
+          [dgPt]="ptFor('option')"
           (click)="toggleSelected('target', option)"
           (mouseenter)="targetActiveValue.set(option.value)"
         >
           <span
             [class]="checkboxClasses('target', option)"
             [attr.aria-hidden]="true"
+            [dgPt]="ptFor('checkbox')"
           >
             @if (isSelected('target', option)) {
             <dg-icon-check size="sm" />
             }
           </span>
+          @if (optionTemplate(); as tpl) {
+          <ng-container
+            [ngTemplateOutlet]="tpl"
+            [ngTemplateOutletContext]="{ $implicit: option }"
+          />
+          } @else {
           <span>{{ option.label }}</span>
+          }
         </li>
         } }
       </ul>

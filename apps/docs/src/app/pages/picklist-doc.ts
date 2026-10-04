@@ -18,6 +18,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'readonly', title: 'Read-only' },
   { id: 'filterable', title: 'Filterable' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
+  { id: 'templates', title: 'Custom Templates' },
 ];
 
 const API: ApiTableRow[] = [
@@ -146,6 +147,33 @@ const MANY_SOURCE: DynamoSelectOption<string>[] = Array.from(
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="templates"
+        title="Custom Templates"
+        description="Project an #optionTemplate to render arbitrary content per row, shared across both panels — here, a colored dot ahead of the label. Falls back to plain text when omitted."
+      >
+        <div preview class="flex flex-col gap-3">
+          <dg-picklist
+            [(source)]="templateSource"
+            [(target)]="templateTarget"
+            sourceLabel="Available"
+            targetLabel="Selected"
+          >
+            <ng-template #optionTemplate let-option>
+              <span
+                class="inline-block h-2.5 w-2.5 rounded-full bg-primary"
+              ></span>
+              <span>{{ option.label }}</span>
+            </ng-template>
+          </dg-picklist>
+        </div>
+        <div code>
+          &lt;dg-picklist [(source)]="available" [(target)]="selected"&gt;
+          &lt;ng-template #optionTemplate let-option&gt; ...
+          &lt;/ng-template&gt; &lt;/dg-picklist&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -190,5 +218,14 @@ export class PicklistDocPage {
   protected readonly filterableTarget = signal<DynamoSelectOption<string>[]>([
     { label: 'TypeScript', value: 'ts' },
     { label: 'JavaScript', value: 'js' },
+  ]);
+
+  protected readonly templateSource = signal<DynamoSelectOption<string>[]>([
+    { label: 'Rust', value: 'rust' },
+    { label: 'Go', value: 'go' },
+    { label: 'Python', value: 'py' },
+  ]);
+  protected readonly templateTarget = signal<DynamoSelectOption<string>[]>([
+    { label: 'TypeScript', value: 'ts' },
   ]);
 }

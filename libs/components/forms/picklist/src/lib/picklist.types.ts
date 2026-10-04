@@ -6,6 +6,7 @@ export type DynamoPicklistPart =
   | 'root'
   | 'sourcePanel'
   | 'targetPanel'
+  | 'listbox'
   | 'option'
   | 'checkbox'
   | 'moveButtons'

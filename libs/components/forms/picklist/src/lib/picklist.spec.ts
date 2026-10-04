@@ -1,5 +1,6 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import type { CdkDragDrop } from '@angular/cdk/drag-drop';
+import { Component, model } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
   expectNoA11yViolations,
@@ -1328,6 +1329,329 @@ describe('DynamoPicklist', () => {
           }
         ).sourceDropListDisabled(),
       ).toBe(true);
+    });
+  });
+});
+
+describe('DynamoPicklist — baseline parity (Phase 0)', () => {
+  describe('passthrough (pt)', () => {
+    it('merges pt class onto every part: root/sourcePanel/targetPanel/listbox/option/checkbox/moveButtons/reorderButtons/filter/no-results', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: {
+          source: SOURCE,
+          target: TARGET,
+          filterable: true,
+          pt: {
+            root: { class: 'pt-root' },
+            sourcePanel: { class: 'pt-source-panel' },
+            targetPanel: { class: 'pt-target-panel' },
+            listbox: { class: 'pt-listbox' },
+            option: { class: 'pt-option' },
+            checkbox: { class: 'pt-checkbox' },
+            moveButtons: { class: 'pt-move-buttons' },
+            reorderButtons: { class: 'pt-reorder-buttons' },
+            filter: { class: 'pt-filter' },
+            'no-results': { class: 'pt-no-results' },
+          },
+        },
+      });
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('.pt-source-panel')).not.toBeNull();
+      expect(container.querySelector('.pt-target-panel')).not.toBeNull();
+      expect(
+        container.querySelectorAll('[role="listbox"].pt-listbox'),
+      ).toHaveLength(2);
+      expect(
+        container.querySelectorAll('[role="option"].pt-option'),
+      ).toHaveLength(4);
+      expect(container.querySelectorAll('.pt-checkbox')).toHaveLength(4);
+      expect(container.querySelector('.pt-move-buttons')).not.toBeNull();
+      expect(container.querySelectorAll('.pt-reorder-buttons')).toHaveLength(2);
+      expect(
+        container.querySelector('input[type="search"].pt-filter'),
+      ).not.toBeNull();
+    });
+
+    it('merges pt class onto the no-results row', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: {
+          source: FILTER_SOURCE,
+          target: [],
+          filterable: true,
+          sourceFilterText: 'zzz-no-match',
+          pt: { 'no-results': { class: 'pt-no-results' } },
+        },
+      });
+
+      expect(container.querySelector('.pt-no-results')).not.toBeNull();
+    });
+  });
+
+  describe('ariaDescribedby / fluid', () => {
+    it('defaults fluid to true', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET },
+      });
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('drops w-full when fluid is set to false', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, fluid: false },
+      });
+      expect(container.querySelector('div')?.className).not.toContain('w-full');
+    });
+
+    it('forwards ariaDescribedby to both listboxes', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: {
+          source: SOURCE,
+          target: TARGET,
+          ariaDescribedby: 'help-text',
+        },
+      });
+      const listboxes = container.querySelectorAll('[role="listbox"]');
+      expect(listboxes).toHaveLength(2);
+      for (const listbox of Array.from(listboxes)) {
+        expect(listbox.getAttribute('aria-describedby')).toBe('help-text');
+      }
+    });
+  });
+
+  describe('canMoveUp/canMoveDown — disabled-state bug fix', () => {
+    it('returns false when only disabled() is set, not just readOnly()', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, disabled: true },
+      });
+      // Activate a row first (via keyboard nav) so canMoveDown would
+      // otherwise be true — the bug was that `disabled()` alone never
+      // blocked these methods.
+      const list = panelListEl(container, 'source');
+      list.focus();
+      dispatchKey(list, 'ArrowDown');
+      fixture.detectChanges();
+
+      const upButton = within(container).getByRole('button', {
+        name: 'Move up in Available',
+      });
+      const downButton = within(container).getByRole('button', {
+        name: 'Move down in Available',
+      });
+      expect(upButton.hasAttribute('disabled')).toBe(true);
+      expect(downButton.hasAttribute('disabled')).toBe(true);
+    });
+  });
+
+  describe('aria-multiselectable', () => {
+    it('is always "true" on both listboxes, unconditionally', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET },
+      });
+      const listboxes = container.querySelectorAll('[role="listbox"]');
+      expect(listboxes).toHaveLength(2);
+      for (const listbox of Array.from(listboxes)) {
+        expect(listbox.getAttribute('aria-multiselectable')).toBe('true');
+      }
+    });
+  });
+
+  describe('aria-disabled on the root listboxes', () => {
+    it('is "true" on both listboxes when disabled()', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET, disabled: true },
+      });
+      const listboxes = container.querySelectorAll('[role="listbox"]');
+      for (const listbox of Array.from(listboxes)) {
+        expect(listbox.getAttribute('aria-disabled')).toBe('true');
+      }
+    });
+
+    it('is absent when not disabled()', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET },
+      });
+      const listboxes = container.querySelectorAll('[role="listbox"]');
+      for (const listbox of Array.from(listboxes)) {
+        expect(listbox.hasAttribute('aria-disabled')).toBe(false);
+      }
+    });
+  });
+
+  describe('filter boxes genuinely disable', () => {
+    it('does not update sourceFilterText/targetFilterText while disabled()', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: {
+            source: FILTER_SOURCE,
+            target: TARGET,
+            filterable: true,
+            disabled: true,
+          },
+        },
+      );
+
+      const input = panelFilterInput(container, 'source');
+      expect(input.disabled).toBe(true);
+      fireEvent.input(input, { target: { value: 'One' } });
+
+      expect(componentInstance.sourceFilterText()).toBe('');
+    });
+
+    it('does not update sourceFilterText/targetFilterText while readOnly()', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: {
+            source: FILTER_SOURCE,
+            target: TARGET,
+            filterable: true,
+            readOnly: true,
+          },
+        },
+      );
+
+      const input = panelFilterInput(container, 'source');
+      expect(input.disabled).toBe(true);
+      fireEvent.input(input, { target: { value: 'One' } });
+
+      expect(componentInstance.sourceFilterText()).toBe('');
+    });
+
+    it('still updates sourceFilterText when neither disabled() nor readOnly()', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoPicklist,
+        {
+          inputs: { source: FILTER_SOURCE, target: TARGET, filterable: true },
+        },
+      );
+
+      const input = panelFilterInput(container, 'source');
+      expect(input.disabled).toBe(false);
+      fireEvent.input(input, { target: { value: 'One' } });
+
+      expect(componentInstance.sourceFilterText()).toBe('One');
+    });
+  });
+
+  describe('accessibility', () => {
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: {
+          source: SOURCE,
+          target: TARGET,
+          ariaDescribedby: 'help-text',
+        },
+      });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+});
+
+@Component({
+  selector: 'dg-picklist-templates-host',
+  standalone: true,
+  imports: [DynamoPicklist],
+  template: `
+    <dg-picklist
+      [(source)]="source"
+      [(target)]="target"
+      sourceLabel="Available"
+      targetLabel="Selected"
+      [virtualScroll]="virtualScroll()"
+    >
+      <ng-template #optionTemplate let-option>
+        <span data-testid="custom-option">{{ option.label }} (custom)</span>
+      </ng-template>
+    </dg-picklist>
+  `,
+})
+class PicklistOptionTemplateHostComponent {
+  readonly source = model(SOURCE);
+  readonly target = model(TARGET);
+  readonly virtualScroll = model(false);
+}
+
+describe('DynamoPicklist — custom item templates (Phase 1)', () => {
+  describe('optionTemplate', () => {
+    it('renders the default plain-label text when unset, in both panels', () => {
+      const { container } = renderDynamoComponent(DynamoPicklist, {
+        inputs: { source: SOURCE, target: TARGET },
+      });
+
+      expect(panelRowTexts(container, 'source')).toEqual([
+        'Rust',
+        'Go',
+        'Python',
+      ]);
+      expect(panelRowTexts(container, 'target')).toEqual(['TypeScript']);
+      expect(
+        container.querySelector('[data-testid="custom-option"]'),
+      ).toBeNull();
+    });
+
+    it('renders projected content instead of the plain label when set, in both panels', () => {
+      const { container } = renderDynamoComponent(
+        PicklistOptionTemplateHostComponent,
+      );
+
+      const sourceCustom = container.querySelectorAll(
+        '[data-part="sourcePanel"] [data-testid="custom-option"]',
+      );
+      const targetCustom = container.querySelectorAll(
+        '[data-part="targetPanel"] [data-testid="custom-option"]',
+      );
+      expect(sourceCustom).toHaveLength(3);
+      expect(targetCustom).toHaveLength(1);
+      expect(sourceCustom[0]?.textContent).toContain('Rust (custom)');
+      expect(targetCustom[0]?.textContent).toContain('TypeScript (custom)');
+    });
+
+    it('passes the full option as $implicit', () => {
+      const { container } = renderDynamoComponent(
+        PicklistOptionTemplateHostComponent,
+      );
+
+      const sourceCustomTexts = Array.from(
+        container.querySelectorAll(
+          '[data-part="sourcePanel"] [data-testid="custom-option"]',
+        ),
+      ).map((el) => el.textContent?.trim());
+      expect(sourceCustomTexts).toEqual([
+        'Rust (custom)',
+        'Go (custom)',
+        'Python (custom)',
+      ]);
+    });
+
+    it('forwards through the virtualized render path, in both panels', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        PicklistOptionTemplateHostComponent,
+      );
+      componentInstance.source.set(MANY_SOURCE);
+      componentInstance.virtualScroll.set(true);
+      fixture.detectChanges();
+      await settle(fixture);
+
+      expect(
+        container.querySelector('[data-part="sourcePanel"] dg-virtual-scroll'),
+      ).not.toBeNull();
+      expect(
+        container.querySelector('[data-part="targetPanel"] dg-virtual-scroll'),
+      ).not.toBeNull();
+
+      const sourceCustom = container.querySelector(
+        '[data-part="sourcePanel"] [data-testid="custom-option"]',
+      );
+      expect(sourceCustom).not.toBeNull();
+      expect(sourceCustom?.textContent).toContain('(custom)');
+
+      const targetCustom = container.querySelector(
+        '[data-part="targetPanel"] [data-testid="custom-option"]',
+      );
+      expect(targetCustom).not.toBeNull();
+      expect(targetCustom?.textContent).toContain('TypeScript (custom)');
     });
   });
 });

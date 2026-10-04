@@ -4,7 +4,15 @@ import {
   sectionHeadingBaseClass,
 } from '@dynamong/utils/styles';
 
-export const picklistRootStyles = 'flex items-start gap-3';
+export const picklistRootStyles = cva('flex items-start gap-3', {
+  variants: {
+    fluid: {
+      true: 'w-full',
+      false: '',
+    },
+  },
+  defaultVariants: { fluid: true },
+});
 
 export const picklistPanelStyles =
   'flex max-h-80 w-64 flex-col overflow-hidden rounded-md border border-border bg-surface-0';
