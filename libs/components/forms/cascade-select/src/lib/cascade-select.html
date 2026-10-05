@@ -1,16 +1,19 @@
-<div #triggerEl [class]="triggerClasses()">
+<div #triggerEl [class]="triggerClasses()" [dgPt]="ptFor('root')">
   <button
     type="button"
     role="combobox"
-    [class]="triggerButtonClasses"
+    [class]="triggerButtonClasses()"
     [disabled]="isDisabled()"
     aria-haspopup="listbox"
     [attr.aria-expanded]="isOpen()"
-    [attr.aria-controls]="isOpen() ? panelIdForLevel(0) : null"
+    [attr.aria-controls]="isOpen() ? panelIdForLevel(activeLevelIndex()) : null"
     [attr.aria-activedescendant]="isOpen() ? activeDescendantId() : null"
     [attr.aria-invalid]="invalid() ? 'true' : null"
     [attr.aria-busy]="loading() ? 'true' : null"
     [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [attr.aria-readonly]="readOnly() ? 'true' : null"
+    [dgPt]="ptFor('trigger')"
     (click)="toggle()"
     (keydown)="onTriggerKeydown($event)"
   >
@@ -18,12 +21,13 @@
     <dg-spinner size="sm" />
     } {{ selectedLabel() }}
   </button>
-  @if (clearable() && selectedNode()) {
+  @if (clearable() && hasSelection()) {
   <button
     type="button"
-    [class]="clearButtonClasses"
+    [class]="clearButtonClasses()"
     [disabled]="isDisabled()"
     aria-label="Clear selection"
+    [dgPt]="ptFor('clear')"
     (click)="clearValue($event)"
   >
     <svg
@@ -48,6 +52,7 @@
     height="16"
     viewBox="0 0 16 16"
     fill="none"
+    [dgPt]="ptFor('chevron')"
   >
     <path
       d="M4 6l4 4 4-4"
@@ -70,7 +75,7 @@
 -->
 <ng-template #panelTemplate let-levelIndex="levelIndex">
   @if (levels()[levelIndex ?? 0]; as level) {
-  <div [class]="panelWrapperClasses()">
+  <div [class]="panelWrapperClasses()" [dgPt]="ptFor('panel')">
     @if (filterable() && !levelIndex) {
     <div [class]="filterWrapperClasses">
       <div [class]="filterFieldWrapperClasses">
@@ -78,8 +83,10 @@
           type="search"
           size="sm"
           [styleClass]="filterInputExtraClasses"
-          [ngModel]="filterText()"
-          (ngModelChange)="onFilterInputChange($event)"
+          [disabled]="isDisabled() || readOnly()"
+          [pt]="{ input: ptFor('filterInput') }"
+          [value]="filterText()"
+          (valueChange)="onFilterInputChange($event)"
           (keydown)="onFilterKeydown($event)"
           [placeholder]="filterPlaceholder()"
           ariaLabel="Search options"
@@ -114,9 +121,16 @@
       [id]="panelIdForLevel(levelIndex ?? 0)"
       [attr.role]="showNoResults() ? null : 'listbox'"
       [attr.aria-label]="showNoResults() ? null : (ariaLabel() ?? 'Options')"
+      [attr.aria-multiselectable]="
+        showNoResults() ? null : ariaMultiselectable()
+      "
     >
       @if (isFilterActive()) { @if (showNoResults()) {
-      <div role="status" class="px-3 py-2 text-sm text-text-muted">
+      <div
+        role="status"
+        [class]="noResultsClasses()"
+        [dgPt]="ptFor('no-results')"
+      >
         {{ noResultsMessage() }}
       </div>
       } @else if (isVirtualized()) {
@@ -133,10 +147,29 @@
             tabindex="-1"
             [attr.aria-selected]="isSelected(result.node)"
             [attr.aria-disabled]="result.node.disabled ? 'true' : null"
+            [attr.aria-checked]="
+              selectionMode() === 'checkbox'
+                ? ariaCheckedAttr(result.node)
+                : null
+            "
             [class]="filterRowClasses(result.node, i)"
+            [dgPt]="ptFor('row')"
             (mouseenter)="filterActiveIndex.set(i)"
             (click)="onFilterRowActivate(i)"
           >
+            @if (selectionMode() === 'checkbox') {
+            <span
+              [class]="checkboxIndicatorClasses(result.node)"
+              [attr.aria-hidden]="true"
+              [dgPt]="ptFor('checkbox')"
+            >
+              @if (checkState(result.node) === 'indeterminate') {
+              <span [class]="checkboxIndeterminateDashClasses"></span>
+              } @else if (checkState(result.node) === 'checked') {
+              <dg-icon-check size="sm" />
+              }
+            </span>
+            }
             <span class="truncate">
               {{ result.node.label }} @if (result.path.length) {
               <span class="text-text-muted"
@@ -156,10 +189,27 @@
         tabindex="-1"
         [attr.aria-selected]="isSelected(result.node)"
         [attr.aria-disabled]="result.node.disabled ? 'true' : null"
+        [attr.aria-checked]="
+          selectionMode() === 'checkbox' ? ariaCheckedAttr(result.node) : null
+        "
         [class]="filterRowClasses(result.node, i)"
+        [dgPt]="ptFor('row')"
         (mouseenter)="filterActiveIndex.set(i)"
         (click)="onFilterRowActivate(i)"
       >
+        @if (selectionMode() === 'checkbox') {
+        <span
+          [class]="checkboxIndicatorClasses(result.node)"
+          [attr.aria-hidden]="true"
+          [dgPt]="ptFor('checkbox')"
+        >
+          @if (checkState(result.node) === 'indeterminate') {
+          <span [class]="checkboxIndeterminateDashClasses"></span>
+          } @else if (checkState(result.node) === 'checked') {
+          <dg-icon-check size="sm" />
+          }
+        </span>
+        }
         <span class="truncate">
           {{ result.node.label }} @if (result.path.length) {
           <span class="text-text-muted">— {{ result.path.join(' / ') }}</span>
@@ -180,19 +230,43 @@
             tabindex="-1"
             [attr.aria-selected]="isSelected(node)"
             [attr.aria-disabled]="node.disabled ? 'true' : null"
+            [attr.aria-haspopup]="node.children?.length ? 'listbox' : null"
+            [attr.aria-owns]="
+              isRowExpanded(levelIndex ?? 0, i)
+                ? panelIdForLevel((levelIndex ?? 0) + 1)
+                : null
+            "
+            [attr.aria-checked]="
+              selectionMode() === 'checkbox' ? ariaCheckedAttr(node) : null
+            "
             [class]="rowClasses(node, levelIndex ?? 0, i)"
-            (mouseenter)="onRowHover(levelIndex ?? 0, i)"
+            [dgPt]="ptFor('row')"
+            (mouseenter)="onRowHover(levelIndex ?? 0, i, $event)"
             (click)="onRowActivate(levelIndex ?? 0, i)"
           >
+            @if (selectionMode() === 'checkbox') {
+            <span
+              [class]="checkboxIndicatorClasses(node)"
+              [attr.aria-hidden]="true"
+              [dgPt]="ptFor('checkbox')"
+            >
+              @if (checkState(node) === 'indeterminate') {
+              <span [class]="checkboxIndeterminateDashClasses"></span>
+              } @else if (checkState(node) === 'checked') {
+              <dg-icon-check size="sm" />
+              }
+            </span>
+            }
             <span>{{ node.label }}</span>
             @if (node.children?.length) {
             <svg
-              [class]="caretClasses"
+              [class]="caretClasses()"
               width="16"
               height="16"
               viewBox="0 0 16 16"
               fill="none"
               [attr.aria-hidden]="true"
+              [dgPt]="ptFor('caret')"
             >
               <path
                 d="M6 4l4 4-4 4"
@@ -214,19 +288,43 @@
         tabindex="-1"
         [attr.aria-selected]="isSelected(node)"
         [attr.aria-disabled]="node.disabled ? 'true' : null"
+        [attr.aria-haspopup]="node.children?.length ? 'listbox' : null"
+        [attr.aria-owns]="
+          isRowExpanded(levelIndex ?? 0, i)
+            ? panelIdForLevel((levelIndex ?? 0) + 1)
+            : null
+        "
+        [attr.aria-checked]="
+          selectionMode() === 'checkbox' ? ariaCheckedAttr(node) : null
+        "
         [class]="rowClasses(node, levelIndex ?? 0, i)"
-        (mouseenter)="onRowHover(levelIndex ?? 0, i)"
+        [dgPt]="ptFor('row')"
+        (mouseenter)="onRowHover(levelIndex ?? 0, i, $event)"
         (click)="onRowActivate(levelIndex ?? 0, i)"
       >
+        @if (selectionMode() === 'checkbox') {
+        <span
+          [class]="checkboxIndicatorClasses(node)"
+          [attr.aria-hidden]="true"
+          [dgPt]="ptFor('checkbox')"
+        >
+          @if (checkState(node) === 'indeterminate') {
+          <span [class]="checkboxIndeterminateDashClasses"></span>
+          } @else if (checkState(node) === 'checked') {
+          <dg-icon-check size="sm" />
+          }
+        </span>
+        }
         <span>{{ node.label }}</span>
         @if (node.children?.length) {
         <svg
-          [class]="caretClasses"
+          [class]="caretClasses()"
           width="16"
           height="16"
           viewBox="0 0 16 16"
           fill="none"
           [attr.aria-hidden]="true"
+          [dgPt]="ptFor('caret')"
         >
           <path
             d="M6 4l4 4-4 4"
