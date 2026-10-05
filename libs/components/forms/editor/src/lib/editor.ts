@@ -23,7 +23,10 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import {
   DynamoOverlayService,
   type DynamoOverlayHandle,
@@ -32,6 +35,7 @@ import { isBrowser } from '@dynamong/utils/dom';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   editorButtonStyles,
+  editorCharacterCountStyles,
   editorContentStyles,
   editorHeadingSelectStyles,
   editorOverflowItemLabelStyles,
@@ -42,6 +46,7 @@ import {
 import type {
   DynamoEditorBlockFormat,
   DynamoEditorCommand,
+  DynamoEditorImageUploadFn,
   DynamoEditorPart,
   ToolbarItemId,
 } from './editor.types';
@@ -155,7 +160,7 @@ const OVERFLOW_POSITIONS: ConnectedPosition[] = [
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './editor.html',
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, DynamoPassThroughDirective],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -170,13 +175,41 @@ export class DynamoEditor
 {
   /** Accessible name for the editable region when no visible `<label>` wraps it. */
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the editable content region. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** Fills the width of its container. Defaults `true` — a block-level root
+   *  div already does this implicitly, so this is an explicit opt-out for
+   *  intrinsic/content-based width, not a behavior change. */
+  readonly fluid = input(true);
   /** Shown via CSS (`:empty:before`) whenever the content is empty. */
   readonly placeholder = input<string | undefined>(undefined);
   /** HTML `readonly` semantics: the content stays visible, focusable, and selectable (native browser text selection/copy), but typing and toolbar commands are blocked. Unlike `disabled`, does not dim its appearance. */
   readonly readOnly = input(false);
+  /** Strips formatting from pasted content, inserting it as plain text only. */
+  readonly pasteAsPlainText = input(false);
+  /** Shows a `current / max` character count below the content region. A
+   *  soft indicator only — typing/pasting past the limit is still allowed;
+   *  only the count's styling flags it as over-limit. contenteditable has
+   *  no native hard-block equivalent to a `<textarea maxlength>` (a real
+   *  block needs a `beforeinput` listener with its own caret/IME/paste edge
+   *  cases), so this round ships the indicator, not an enforced cap. */
+  readonly maxLength = input<number | undefined>(undefined);
+  /** Restricts the toolbar to a subset of its 14 controls. `undefined`
+   *  (default) shows every control. Controls the configured subset always
+   *  render in the library's own fixed canonical order — this is an
+   *  inclusion filter, not a reordering mechanism. */
+  readonly toolbarButtons = input<readonly ToolbarItemId[] | undefined>(
+    undefined,
+  );
+  /** Intercepts image insertion (e.g. to upload the file and insert a
+   *  hosted URL instead of a base64 data URI). `undefined` (default) keeps
+   *  the base64/FileReader fallback. */
+  readonly onImageUpload = input<DynamoEditorImageUploadFn | undefined>(
+    undefined,
+  );
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`. */
   readonly value = model('');
@@ -196,15 +229,54 @@ export class DynamoEditor
   /** The current block's format, as reflected by the "Text style" `<select>`. */
   protected readonly currentBlockFormat = signal<DynamoEditorBlockFormat>('p');
 
+  // Plain-text length (not raw HTML length) — a consumer configuring
+  // maxLength cares about how much text they typed, not markup byte count.
+  // DOMParser, not el.textContent directly: value() is the sanitized bound
+  // value, the single source of truth this should react to, not a second
+  // read of the live (possibly momentarily stale during focus) DOM node.
+  protected readonly textLength = computed(() => {
+    const html = this.value();
+    if (!isBrowser() || !html) {
+      return 0;
+    }
+    return (
+      new DOMParser().parseFromString(html, 'text/html').body.textContent
+        ?.length ?? 0
+    );
+  });
+  protected readonly isOverMaxLength = computed(() => {
+    const max = this.maxLength();
+    return max !== undefined && this.textLength() > max;
+  });
+
+  // toolbarButtons filters this same canonical array rather than
+  // introducing a second ordering mechanism — a configured subset always
+  // renders in the library's own fixed priority order (= DOM order),
+  // regardless of the order ids appear in the input array. undefined means
+  // "every control" — this input is an inclusion filter, not a reordering
+  // mechanism.
+  protected readonly enabledItemOrder = computed<ToolbarItemId[]>(() => {
+    const configured = this.toolbarButtons();
+    if (!configured) {
+      return TOOLBAR_ITEM_ORDER;
+    }
+    const allowed = new Set(configured);
+    return TOOLBAR_ITEM_ORDER.filter((id) => allowed.has(id));
+  });
+
   // Toolbar-overflow state — see recomputeOverflow(). Starts optimistic
   // ("everything fits") until the first real-layout measurement lands.
+  // TOOLBAR_ITEM_ORDER.length (not enabledItemOrder().length) is just an
+  // upper bound here — enabledItemOrder() can never exceed it, so this
+  // initial value always reads as "nothing overflows yet" regardless of how
+  // many items are actually enabled.
   protected readonly overflowOpen = signal(false);
   private readonly visibleCount = signal(TOOLBAR_ITEM_ORDER.length);
   protected readonly overflowedIds = computed<ReadonlySet<ToolbarItemId>>(
-    () => new Set(TOOLBAR_ITEM_ORDER.slice(this.visibleCount())),
+    () => new Set(this.enabledItemOrder().slice(this.visibleCount())),
   );
   protected readonly hasOverflow = computed(
-    () => this.visibleCount() < TOOLBAR_ITEM_ORDER.length,
+    () => this.visibleCount() < this.enabledItemOrder().length,
   );
 
   private readonly contentEl =
@@ -238,28 +310,50 @@ export class DynamoEditor
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
           editorRootStyles({
             disabled: this.disabled(),
             invalid: this.invalid(),
+            fluid: this.fluid(),
           }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
-  protected readonly toolbarClasses = editorToolbarStyles;
+  protected readonly toolbarClasses = computed(() =>
+    this.unstyled()
+      ? cn(this.ptFor('toolbar').class)
+      : cn(editorToolbarStyles, this.ptFor('toolbar').class),
+  );
   protected readonly headingSelectClasses = editorHeadingSelectStyles;
   protected readonly overflowPanelClasses = editorOverflowPanelStyles;
   protected readonly overflowItemLabelClasses = editorOverflowItemLabelStyles;
   protected readonly contentClasses = computed(() =>
-    editorContentStyles({ disabled: this.disabled() }),
+    this.unstyled()
+      ? cn(this.ptFor('content').class)
+      : cn(
+          editorContentStyles({ disabled: this.disabled() }),
+          this.ptFor('content').class,
+        ),
+  );
+  protected readonly characterCountClasses = computed(() =>
+    this.unstyled()
+      ? cn(this.ptFor('characterCount').class)
+      : cn(
+          editorCharacterCountStyles({ over: this.isOverMaxLength() }),
+          this.ptFor('characterCount').class,
+        ),
   );
   // Reuses editorButtonStyles' own `active` variant so the trigger visually
   // shows "pressed" while its own panel is open — not routed through
   // buttonClasses(), which takes a DynamoEditorCommand (the trigger isn't
   // one, it's a layout affordance, not an execCommand).
   protected readonly overflowTriggerClasses = computed(() =>
-    editorButtonStyles({ active: this.overflowOpen() }),
+    cn(
+      editorButtonStyles({ active: this.overflowOpen() }),
+      this.ptFor('button').class,
+    ),
   );
   protected readonly overflowId = this.idGenerator.next('dg-editor-overflow');
 
@@ -319,6 +413,29 @@ export class DynamoEditor
       }
     });
     this.destroyRef.onDestroy(() => this.destroyOverflowOverlay());
+
+    if (isDevMode()) {
+      effect(() => {
+        const configured = this.toolbarButtons();
+        if (!configured) {
+          return;
+        }
+        if (configured.length === 0) {
+          console.warn(
+            '[dg-editor] toolbarButtons is an empty array — no toolbar controls will render. ' +
+              'Pass undefined (or omit the input) to show the default full set.',
+          );
+          return;
+        }
+        const validIds = new Set<ToolbarItemId>(TOOLBAR_ITEM_ORDER);
+        const unknown = configured.filter((id) => !validIds.has(id));
+        if (unknown.length > 0) {
+          console.warn(
+            `[dg-editor] toolbarButtons contains unrecognized id(s): ${unknown.join(', ')}`,
+          );
+        }
+      });
+    }
   }
 
   writeValue(value: string | null): void {
@@ -347,6 +464,54 @@ export class DynamoEditor
 
   protected onBlur(): void {
     this.onTouchedFn();
+  }
+
+  // The native browser paste handler inserts clipboard HTML directly into
+  // the live contenteditable DOM BEFORE `(input)`/onInput ever runs — and
+  // `commitHtml`'s own sanitize() call only ever runs on the OUTGOING bound
+  // value, never as a guard on what's about to be inserted. Something like
+  // `<img src=x onerror=...>` on the clipboard can self-execute the instant
+  // the browser's own native paste lands it in the DOM, before Angular's
+  // sanitizer ever sees it. Fixed by intercepting paste entirely:
+  // `preventDefault()` blocks the native (unsanitized) insertion, and the
+  // clipboard HTML is sanitized through the SAME DomSanitizer instance
+  // BEFORE it ever touches the DOM, inserted via the same execCommand-based
+  // approach every other mutation in this file already uses (keeps paste in
+  // the native undo stack, unlike a manual Range-API insertion would).
+  protected onPaste(event: ClipboardEvent): void {
+    if (this.disabled() || this.readOnly()) {
+      event.preventDefault();
+      return;
+    }
+    const clipboard = event.clipboardData;
+    if (!clipboard) {
+      return; // no Clipboard API support — native (unsanitized) fallback stands, same as before this fix
+    }
+    event.preventDefault();
+    const el = this.contentEl().nativeElement;
+    el.focus();
+    if (this.pasteAsPlainText()) {
+      document.execCommand(
+        'insertText',
+        false,
+        clipboard.getData('text/plain'),
+      );
+    } else {
+      const html = clipboard.getData('text/html');
+      if (html) {
+        const safe = this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '';
+        document.execCommand('insertHTML', false, safe);
+      } else {
+        document.execCommand(
+          'insertText',
+          false,
+          clipboard.getData('text/plain'),
+        );
+      }
+    }
+    this.commitHtml(el.innerHTML, true);
+    this.refreshActiveStates();
+    this.refreshCurrentBlock();
   }
 
   protected onFormat(command: DynamoEditorArgumentlessCommand): void {
@@ -414,7 +579,7 @@ export class DynamoEditor
     this.imageInputEl().nativeElement.click();
   }
 
-  protected onImageFileChange(event: Event): void {
+  protected async onImageFileChange(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     // Reset so picking the exact same file again still fires `change`.
@@ -425,6 +590,31 @@ export class DynamoEditor
     // accept="image/*" on the input is a soft filter at the OS file-picker
     // level only, not a hard guarantee — verify at runtime too.
     if (!file.type.startsWith('image/')) {
+      return;
+    }
+    const uploadHandler = this.onImageUpload();
+    if (uploadHandler) {
+      // NOTE (documented, not fixed, this round): savedRange is one shared
+      // field — starting a second image insert before this promise settles
+      // overwrites it. Pre-existing (the base64/FileReader path below has a
+      // shorter async window with the same issue), not introduced here. A
+      // cheap future fix is capturing the range in a per-call local instead.
+      try {
+        const url = await uploadHandler(file);
+        if (url) {
+          this.insertImageAtSavedSelection(url);
+        } else {
+          this.savedRange = null; // cancelled — don't leave a stale selection captured
+        }
+      } catch (error) {
+        this.savedRange = null;
+        if (isDevMode()) {
+          console.warn(
+            '[dg-editor] onImageUpload rejected — image insertion cancelled.',
+            error,
+          );
+        }
+      }
       return;
     }
     if (isDevMode() && file.size > IMAGE_SIZE_WARNING_BYTES) {
@@ -441,8 +631,13 @@ export class DynamoEditor
     reader.readAsDataURL(file);
   }
 
-  protected isOverflowed(id: ToolbarItemId): boolean {
-    return this.overflowedIds().has(id);
+  // 'hidden' means toolbarButtons() excluded this id entirely — it renders
+  // in neither the inline toolbar nor the overflow panel.
+  protected locationOf(id: ToolbarItemId): 'inline' | 'overflow' | 'hidden' {
+    if (!this.enabledItemOrder().includes(id)) {
+      return 'hidden';
+    }
+    return this.overflowedIds().has(id) ? 'overflow' : 'inline';
   }
 
   protected toggleOverflow(): void {
@@ -487,9 +682,14 @@ export class DynamoEditor
   // Link/Undo/Redo/Insert-image — which have no "active" concept — can
   // share the same styling helper as the stateful toggle buttons.
   protected buttonClasses(command: DynamoEditorCommand): string {
-    return editorButtonStyles({
-      active: this.isStatefulCommand(command) ? this.isActive(command) : false,
-    });
+    return cn(
+      editorButtonStyles({
+        active: this.isStatefulCommand(command)
+          ? this.isActive(command)
+          : false,
+      }),
+      this.ptFor('button').class,
+    );
   }
 
   private isStatefulCommand(
@@ -518,9 +718,12 @@ export class DynamoEditor
   // of available width + the hardcoded per-item widths above — never reads
   // any item's own rect (unnecessary, since every item's width is already
   // known statically, and jsdom-unfriendly if it weren't). A plain method,
-  // not a computed() — it has zero signal dependencies to pick up, since
-  // currentBlockFormat()/disabled()/readOnly() never affect any item's
-  // fixed width, so only a real container resize should ever trigger it.
+  // not a computed() — it has zero REACTIVE dependencies that should
+  // auto-trigger it; currentBlockFormat()/disabled()/readOnly() never
+  // affect any item's fixed width, and toolbarButtons() is read here only
+  // as the current snapshot for this one measurement (set once per
+  // instance in practice), not tracked — only a real container resize
+  // (ResizeObserver) or the initial afterNextRender should trigger this.
   private recomputeOverflow(): void {
     const available = this.toolbarEl().nativeElement.clientWidth;
     if (available === 0) {
@@ -529,19 +732,17 @@ export class DynamoEditor
       // measured yet" as "collapse everything."
       return;
     }
-    const totalWidth = TOOLBAR_ITEM_ORDER.reduce(
-      (sum, id) => sum + widthOf(id) + GAP_PX,
-      0,
-    );
+    const order = this.enabledItemOrder();
+    const totalWidth = order.reduce((sum, id) => sum + widthOf(id) + GAP_PX, 0);
     if (totalWidth <= available) {
-      this.visibleCount.set(TOOLBAR_ITEM_ORDER.length);
+      this.visibleCount.set(order.length);
       return;
     }
     // Only reserve room for the trigger once we know it will actually render.
     const budget = available - TRIGGER_WIDTH_PX - GAP_PX;
     let used = 0;
     let count = 0;
-    for (const id of TOOLBAR_ITEM_ORDER) {
+    for (const id of order) {
       const next = used + widthOf(id) + GAP_PX;
       if (next > budget) {
         break;

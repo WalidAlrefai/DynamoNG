@@ -1,4 +1,16 @@
-export type DynamoEditorPart = 'root' | 'toolbar' | 'button' | 'content';
+export type DynamoEditorPart =
+  'root' | 'toolbar' | 'button' | 'content' | 'characterCount';
+
+/**
+ * Handles an image selected via the toolbar's Insert Image button. Resolve
+ * with a URL to insert it (typically after uploading `file` somewhere);
+ * resolve with `null` to cancel the insertion silently. A rejected promise
+ * is swallowed defensively (with a dev-mode console warning) rather than
+ * left as an uncaught rejection. When no `onImageUpload` handler is
+ * configured, the default behavior inserts the file as a base64 data URI
+ * instead.
+ */
+export type DynamoEditorImageUploadFn = (file: File) => Promise<string | null>;
 
 export type DynamoEditorCommand =
   | 'bold'

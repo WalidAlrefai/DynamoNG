@@ -24,8 +24,12 @@ export const editorRootStyles = cva(
         true: 'border-danger ' + focusRingInvalidClass,
         false: 'border-border',
       },
+      fluid: {
+        true: 'w-full',
+        false: 'w-auto',
+      },
     },
-    defaultVariants: { disabled: false, invalid: false },
+    defaultVariants: { disabled: false, invalid: false, fluid: true },
   },
 );
 
@@ -125,3 +129,19 @@ export const editorOverflowPanelStyles =
   overlayPanelClass;
 
 export const editorOverflowItemLabelStyles = 'text-sm text-text-primary';
+
+// A soft indicator, not a hard block (contenteditable has no native
+// maxlength equivalent) — `over` only flips the count's own color, it never
+// prevents typing/pasting past the limit.
+export const editorCharacterCountStyles = cva(
+  'border-t border-border px-3 py-1 text-end text-xs',
+  {
+    variants: {
+      over: {
+        true: 'text-danger',
+        false: 'text-text-muted',
+      },
+    },
+    defaultVariants: { over: false },
+  },
+);

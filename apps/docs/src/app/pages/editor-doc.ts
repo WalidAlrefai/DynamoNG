@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { DynamoEditor } from '@dynamong/editor';
+import { DynamoEditor, type DynamoEditorImageUploadFn } from '@dynamong/editor';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
 import {
@@ -13,13 +13,37 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'rich-formatting', title: 'Rich formatting' },
   { id: 'placeholder', title: 'Placeholder' },
   { id: 'read-only', title: 'Read-Only' },
+  { id: 'paste-as-plain-text', title: 'Paste as Plain Text' },
+  { id: 'character-limit', title: 'Character Limit' },
+  { id: 'custom-toolbar', title: 'Custom Toolbar' },
+  { id: 'image-upload', title: 'Image Upload Hook' },
 ];
 
 const API: ApiTableRow[] = [
+  { name: 'value', type: 'string (model)', default: "''" },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
+  {
+    name: 'ariaDescribedby',
+    type: 'string | undefined',
+    default: 'undefined',
+  },
+  { name: 'invalid', type: 'boolean', default: 'false' },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  { name: 'fluid', type: 'boolean', default: 'true' },
   { name: 'placeholder', type: 'string | undefined', default: 'undefined' },
   { name: 'readOnly', type: 'boolean', default: 'false' },
+  { name: 'pasteAsPlainText', type: 'boolean', default: 'false' },
+  { name: 'maxLength', type: 'number | undefined', default: 'undefined' },
+  {
+    name: 'toolbarButtons',
+    type: 'readonly ToolbarItemId[] | undefined',
+    default: 'undefined',
+  },
+  {
+    name: 'onImageUpload',
+    type: '((file: File) => Promise<string | null>) | undefined',
+    default: 'undefined',
+  },
 ];
 
 @Component({
@@ -100,6 +124,76 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="paste-as-plain-text"
+        title="Paste as Plain Text"
+        description="pasteAsPlainText strips all formatting from pasted content, inserting it as plain text only — useful when consumers paste from documents/web pages carrying styling you don't want to inherit."
+      >
+        <div preview class="max-w-lg">
+          <dg-editor
+            [formControl]="plainPasteControl"
+            ariaLabel="Notes"
+            [pasteAsPlainText]="true"
+          />
+        </div>
+        <div code>
+          &lt;dg-editor [formControl]="control" [pasteAsPlainText]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="character-limit"
+        title="Character Limit"
+        description="maxLength shows a current / max character count below the content region. It's a soft indicator only — typing or pasting past the limit is still allowed, the count just switches to a danger color."
+      >
+        <div preview class="max-w-lg">
+          <dg-editor
+            [formControl]="limitedControl"
+            ariaLabel="Notes"
+            [maxLength]="40"
+          />
+        </div>
+        <div code>
+          &lt;dg-editor [formControl]="control" [maxLength]="40" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="custom-toolbar"
+        title="Custom Toolbar"
+        description="toolbarButtons restricts the toolbar to a subset of its controls — useful for a lightweight comment box that only needs basic formatting. It's an inclusion filter: configured controls always render in the library's own fixed order, not the order you list them in."
+      >
+        <div preview class="max-w-lg">
+          <dg-editor
+            [formControl]="customToolbarControl"
+            ariaLabel="Comment"
+            [toolbarButtons]="['bold', 'italic', 'link']"
+          />
+        </div>
+        <div code>
+          &lt;dg-editor [formControl]="control" [toolbarButtons]="['bold',
+          'italic', 'link']" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="image-upload"
+        title="Image Upload Hook"
+        description="onImageUpload intercepts the Insert Image button, letting you upload the file yourself and insert a hosted URL instead of the default base64 data URI. This demo simulates a short upload delay, then resolves a fake CDN URL — resolve null to cancel the insertion silently."
+      >
+        <div preview class="max-w-lg">
+          <dg-editor
+            [formControl]="imageUploadControl"
+            ariaLabel="Notes"
+            [onImageUpload]="demoImageUpload"
+          />
+        </div>
+        <div code>
+          &lt;dg-editor [formControl]="control" [onImageUpload]="myUploadFn"
+          /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -121,4 +215,27 @@ export class EditorDocPage {
     '<p>This content cannot be edited.</p>',
     { nonNullable: true },
   );
+  protected readonly plainPasteControl = new FormControl('', {
+    nonNullable: true,
+  });
+  protected readonly limitedControl = new FormControl(
+    '<p>Getting close to the limit here</p>',
+    { nonNullable: true },
+  );
+  protected readonly customToolbarControl = new FormControl(
+    '<p>Nice work on this!</p>',
+    { nonNullable: true },
+  );
+  protected readonly imageUploadControl = new FormControl('', {
+    nonNullable: true,
+  });
+
+  // Demo only — simulates uploading the file, then resolves a fake hosted
+  // URL instead of the default base64 data URI.
+  protected readonly demoImageUpload: DynamoEditorImageUploadFn = async (
+    file,
+  ) => {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    return `https://cdn.example.com/uploads/${encodeURIComponent(file.name)}`;
+  };
 }
