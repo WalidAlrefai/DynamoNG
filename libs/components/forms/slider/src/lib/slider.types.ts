@@ -1,7 +1,8 @@
 /** `'vertical'` grows the fill upward from the bottom (a volume-slider convention) instead of left-to-right. */
 export type DynamoSliderOrientation = 'horizontal' | 'vertical';
 
-export type DynamoSliderPart = 'root' | 'track' | 'fill' | 'thumb';
+export type DynamoSliderPart =
+  'root' | 'track' | 'fill' | 'thumb' | 'tick' | 'tickLabel';
 
 /**
  * The `value` shape when `range` is `true` — named fields (not `min`/`max`,

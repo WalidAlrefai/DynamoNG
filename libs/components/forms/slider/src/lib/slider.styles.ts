@@ -11,11 +11,19 @@ import { focusRingClass } from '@dynamong/utils/styles';
 export const sliderRootStyles = cva('relative', {
   variants: {
     orientation: {
-      horizontal: 'w-full py-2',
+      horizontal: 'py-2',
       vertical: 'inline-flex px-2',
     },
+    fluid: {
+      true: '',
+      false: '',
+    },
   },
-  defaultVariants: { orientation: 'horizontal' },
+  compoundVariants: [
+    { orientation: 'horizontal', fluid: true, class: 'w-full' },
+    { orientation: 'horizontal', fluid: false, class: 'w-72' },
+  ],
+  defaultVariants: { orientation: 'horizontal', fluid: true },
 });
 
 export const sliderTrackStyles = cva('relative rounded-full bg-surface-200', {
@@ -110,6 +118,22 @@ export const sliderTickStyles = cva(
       orientation: {
         horizontal: 'top-full mt-1.5 -translate-x-1/2',
         vertical: 'start-full ms-1.5 translate-y-1/2',
+      },
+    },
+    defaultVariants: { orientation: 'horizontal' },
+  },
+);
+
+// Positioned via the same [style] percentStyle() produces for the tick dot
+// it labels — offset further from the track than the dot so the label
+// clears it, same reasoning sliderTickStyles already has for its own offset.
+export const sliderTickLabelStyles = cva(
+  'absolute whitespace-nowrap text-[10px] text-text-muted',
+  {
+    variants: {
+      orientation: {
+        horizontal: 'top-full mt-4 -translate-x-1/2',
+        vertical: 'start-full ms-4 translate-y-1/2',
       },
     },
     defaultVariants: { orientation: 'horizontal' },
