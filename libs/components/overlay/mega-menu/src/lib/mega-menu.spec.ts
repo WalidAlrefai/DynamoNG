@@ -9,7 +9,10 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoMegaMenu } from './mega-menu';
 import { DynamoMegaMenuHarness } from './mega-menu.harness';
-import type { DynamoMegaMenuItem } from './mega-menu.types';
+import type {
+  DynamoMegaMenuItem,
+  DynamoMegaMenuLinkEntry,
+} from './mega-menu.types';
 
 const openSpy = vi.fn();
 const leafSpy = vi.fn();
@@ -493,6 +496,59 @@ describe('DynamoMegaMenu', () => {
       await settle(fixture);
       expect(getPanel()).toBeNull();
     });
+
+    it('vertical+open: ArrowDown/ArrowUp switch to the sibling bar item (the orientation fix)', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS, orientation: 'vertical' },
+      });
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
+      first.focus();
+
+      await userEvent.keyboard('{ArrowRight}'); // opens Products' panel
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+
+      await userEvent.keyboard('{ArrowDown}'); // switches to Services — matches what ArrowDown already meant while closed
+      await settle(fixture);
+      expect(document.activeElement?.textContent).toContain('Services');
+      expect(getPanel()?.textContent).toContain('Warranty');
+
+      await userEvent.keyboard('{ArrowUp}'); // switches back to Products
+      await settle(fixture);
+      expect(document.activeElement?.textContent).toContain('Products');
+    });
+
+    it('vertical+open: ArrowLeft/ArrowRight navigate panel content without switching or closing', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS, orientation: 'vertical' },
+      });
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
+      first.focus();
+
+      await userEvent.keyboard('{ArrowRight}'); // opens Products' panel
+      await settle(fixture);
+      const combobox = within(container).getByRole('combobox');
+      const firstLinkId = (
+        getPanel()?.querySelector('[role="menuitem"]') as HTMLElement
+      ).id;
+      expect(combobox.getAttribute('aria-activedescendant')).toBe(firstLinkId);
+
+      await userEvent.keyboard('{ArrowRight}'); // moves within the panel, does not switch/close
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+      expect(document.activeElement?.textContent).toContain('Products');
+      expect(combobox.getAttribute('aria-activedescendant')).not.toBe(
+        firstLinkId,
+      );
+
+      await userEvent.keyboard('{ArrowLeft}'); // moves back
+      await settle(fixture);
+      expect(combobox.getAttribute('aria-activedescendant')).toBe(firstLinkId);
+    });
   });
 
   describe('accessibility', () => {
@@ -608,6 +664,399 @@ describe('DynamoMegaMenu', () => {
           document.body.querySelector('.cdk-overlay-container') as HTMLElement,
         ),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('separator', () => {
+    const SEPARATOR_ITEMS: DynamoMegaMenuItem[] = [
+      {
+        label: 'Products',
+        columns: [
+          {
+            items: [
+              { label: 'New' } satisfies DynamoMegaMenuLinkEntry,
+              { label: 'Open' } satisfies DynamoMegaMenuLinkEntry,
+              { separator: true } satisfies DynamoMegaMenuLinkEntry,
+              { label: 'Exit' } satisfies DynamoMegaMenuLinkEntry,
+            ],
+          },
+        ],
+      },
+    ];
+
+    it('renders a separator with role="separator", not role="menuitem"', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: SEPARATOR_ITEMS },
+      });
+      await userEvent.click(
+        within(container).getAllByRole('menuitem')[0] as HTMLElement,
+      );
+      await settle(fixture);
+
+      const panel = getPanel();
+      expect(panel?.querySelectorAll('[role="separator"]')).toHaveLength(1);
+      // 3 real links (New, Open, Exit) inside the panel — the separator
+      // isn't counted among role="menuitem" rows. The bar's own "Products"
+      // button is also role="menuitem"/"combobox", so scope to the panel.
+      expect(panel?.querySelectorAll('[role="menuitem"]')).toHaveLength(3);
+    });
+
+    it('keyboard nav skips the separator in both directions', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: SEPARATOR_ITEMS },
+      });
+      await userEvent.click(
+        within(container).getAllByRole('menuitem')[0] as HTMLElement,
+      );
+      await settle(fixture);
+      const panel = getPanel() as HTMLElement;
+      const combobox = within(container).getByRole('combobox');
+
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+      const exitId = Array.from(
+        panel.querySelectorAll('[role="menuitem"]'),
+      ).find((el) => el.textContent?.trim() === 'Exit')?.id;
+      expect(combobox.getAttribute('aria-activedescendant')).toBe(exitId);
+
+      await userEvent.keyboard('{ArrowUp}');
+      await settle(fixture);
+      const openId = Array.from(
+        panel.querySelectorAll('[role="menuitem"]'),
+      ).find((el) => el.textContent?.trim() === 'Open')?.id;
+      expect(combobox.getAttribute('aria-activedescendant')).toBe(openId);
+    });
+
+    it('clicking a separator is a no-op', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: SEPARATOR_ITEMS },
+      });
+      await userEvent.click(
+        within(container).getAllByRole('menuitem')[0] as HTMLElement,
+      );
+      await settle(fixture);
+      const separator = getPanel()?.querySelector(
+        '[role="separator"]',
+      ) as HTMLElement;
+
+      await userEvent.click(separator);
+      await settle(fixture);
+
+      // Still open — clicking a separator didn't commit/close anything.
+      expect(getPanel()).not.toBeNull();
+    });
+
+    it('has no axe violations with a separator present', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: SEPARATOR_ITEMS },
+      });
+      await userEvent.click(
+        within(container).getAllByRole('menuitem')[0] as HTMLElement,
+      );
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(
+          document.body.querySelector('.cdk-overlay-container') as HTMLElement,
+        ),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('pt passthrough', () => {
+    it('merges pt class onto root/bar/start/end/item', () => {
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: {
+          items: ITEMS,
+          pt: {
+            root: { class: 'pt-root' },
+            bar: { class: 'pt-bar' },
+            start: { class: 'pt-start' },
+            end: { class: 'pt-end' },
+            item: { class: 'pt-item' },
+          },
+        },
+      });
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('.pt-bar')).not.toBeNull();
+      expect(container.querySelector('.pt-start')).not.toBeNull();
+      expect(container.querySelector('.pt-end')).not.toBeNull();
+      expect(container.querySelectorAll('.pt-item').length).toBeGreaterThan(1);
+    });
+
+    it('merges pt class onto panel/column/columnHeader/link once a panel is open', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: {
+          items: ITEMS,
+          pt: {
+            panel: { class: 'pt-panel' },
+            column: { class: 'pt-column' },
+            columnHeader: { class: 'pt-column-header' },
+            link: { class: 'pt-link' },
+          },
+        },
+      });
+      await userEvent.click(
+        within(container).getAllByRole('menuitem')[0] as HTMLElement,
+      );
+      await settle(fixture);
+
+      const panel = getPanel();
+      expect(panel?.classList.contains('pt-panel')).toBe(true);
+      expect(panel?.querySelectorAll('.pt-column').length).toBeGreaterThan(1);
+      expect(panel?.querySelector('.pt-column-header')).not.toBeNull();
+      expect(panel?.querySelectorAll('.pt-link').length).toBeGreaterThan(1);
+    });
+
+    it('merges a non-class pt attribute onto the bar', () => {
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: {
+          items: ITEMS,
+          pt: { bar: { 'data-testid': 'bar-el' } },
+        },
+      });
+
+      expect(container.querySelector('[data-testid="bar-el"]')).not.toBeNull();
+    });
+  });
+
+  describe('ariaDescribedby / fluid', () => {
+    it('is absent by default', () => {
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS },
+      });
+
+      expect(
+        within(container).getByRole('menubar').getAttribute('aria-describedby'),
+      ).toBeNull();
+    });
+
+    it('is forwarded to the bar when set', () => {
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS, ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        within(container).getByRole('menubar').getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('defaults fluid to true (w-full) in horizontal orientation', () => {
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS },
+      });
+
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('switches to no width class when fluid is false (horizontal)', () => {
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS, fluid: false },
+      });
+
+      const rootClass = container.querySelector('div')?.className ?? '';
+      expect(rootClass).not.toContain('w-full');
+    });
+
+    it('vertical orientation keeps its own intrinsic width regardless of fluid', () => {
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS, orientation: 'vertical', fluid: false },
+      });
+
+      expect(container.querySelector('div')?.className).toContain('w-56');
+    });
+
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: {
+          items: ITEMS,
+          ariaLabel: 'Main',
+          ariaDescribedby: 'hint-id',
+          fluid: false,
+          pt: { root: { class: 'pt-root' } },
+        },
+      });
+
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('visible / shortcut / badge', () => {
+    it('hides a visible:false bar item and excludes it from keyboard roving', async () => {
+      const VISIBLE_ITEMS: DynamoMegaMenuItem[] = [
+        { label: 'One' },
+        { label: 'Hidden', visible: false },
+        { label: 'Three' },
+      ];
+      const { container } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: VISIBLE_ITEMS },
+      });
+
+      // Hidden via [hidden] (display:none) — not exposed to the a11y tree,
+      // so getAllByRole naturally excludes it.
+      expect(within(container).getAllByRole('menuitem')).toHaveLength(2);
+
+      const first = within(container).getAllByRole(
+        'menuitem',
+      )[0] as HTMLElement;
+      first.focus();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(document.activeElement?.textContent).toContain('Three');
+    });
+
+    it('omits a visible:false link from render AND keyboard nav', async () => {
+      const ITEMS_WITH_HIDDEN_LINK: DynamoMegaMenuItem[] = [
+        {
+          label: 'Products',
+          columns: [
+            {
+              items: [
+                { label: 'New' } satisfies DynamoMegaMenuLinkEntry,
+                {
+                  label: 'Hidden',
+                  visible: false,
+                } satisfies DynamoMegaMenuLinkEntry,
+                { label: 'Exit' } satisfies DynamoMegaMenuLinkEntry,
+              ],
+            },
+          ],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS_WITH_HIDDEN_LINK },
+      });
+      await userEvent.click(
+        within(container).getAllByRole('menuitem')[0] as HTMLElement,
+      );
+      await settle(fixture);
+      const panel = getPanel() as HTMLElement;
+
+      // No DOM node at all for the hidden link — true omission.
+      expect(panel.querySelectorAll('[role="menuitem"]')).toHaveLength(2);
+      expect(
+        Array.from(panel.querySelectorAll('[role="menuitem"]')).some(
+          (el) => el.textContent?.trim() === 'Hidden',
+        ),
+      ).toBe(false);
+
+      // ArrowDown from the seeded "New" skips straight to "Exit".
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+      const combobox = within(container).getByRole('combobox');
+      const exitId = Array.from(
+        panel.querySelectorAll('[role="menuitem"]'),
+      ).find((el) => el.textContent?.trim() === 'Exit')?.id;
+      expect(combobox.getAttribute('aria-activedescendant')).toBe(exitId);
+    });
+
+    it('renders a shortcut as aria-hidden trailing text', async () => {
+      const ITEMS_WITH_SHORTCUT: DynamoMegaMenuItem[] = [
+        {
+          label: 'Products',
+          columns: [
+            {
+              items: [
+                {
+                  label: 'Save',
+                  shortcut: '⌘S',
+                } satisfies DynamoMegaMenuLinkEntry,
+              ],
+            },
+          ],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS_WITH_SHORTCUT },
+      });
+      await userEvent.click(
+        within(container).getAllByRole('menuitem')[0] as HTMLElement,
+      );
+      await settle(fixture);
+      const panel = getPanel() as HTMLElement;
+
+      const shortcutEl = Array.from(panel.querySelectorAll('span')).find(
+        (el) => el.textContent?.trim() === '⌘S' && el.children.length === 0,
+      );
+      expect(shortcutEl).toBeTruthy();
+      expect(shortcutEl?.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('renders a badge via dg-badge for both string and number values', async () => {
+      const ITEMS_WITH_BADGE: DynamoMegaMenuItem[] = [
+        {
+          label: 'Products',
+          columns: [
+            {
+              items: [
+                { label: 'Inbox', badge: 3 } satisfies DynamoMegaMenuLinkEntry,
+                {
+                  label: 'Drafts',
+                  badge: 'New',
+                } satisfies DynamoMegaMenuLinkEntry,
+              ],
+            },
+          ],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS_WITH_BADGE },
+      });
+      await userEvent.click(
+        within(container).getAllByRole('menuitem')[0] as HTMLElement,
+      );
+      await settle(fixture);
+      const panel = getPanel() as HTMLElement;
+      const badges = Array.from(panel.querySelectorAll('dg-badge')).map((el) =>
+        el.textContent?.trim(),
+      );
+
+      expect(badges).toEqual(['3', 'New']);
+    });
+
+    it('has no axe violations with visible/shortcut/badge set', async () => {
+      const ITEMS_WITH_ALL: DynamoMegaMenuItem[] = [
+        { label: 'One' },
+        { label: 'Hidden', visible: false },
+        {
+          label: 'Products',
+          columns: [
+            {
+              items: [
+                {
+                  label: 'Save',
+                  shortcut: '⌘S',
+                  badge: 2,
+                } satisfies DynamoMegaMenuLinkEntry,
+              ],
+            },
+          ],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: ITEMS_WITH_ALL },
+      });
+
+      // Closed-bar state first — validates the visible:false bar item.
+      await expectNoA11yViolations(container);
+
+      const productsButton = Array.from(
+        within(container).getAllByRole('menuitem'),
+      ).find((el) => el.textContent?.trim() === 'Products') as HTMLElement;
+      await userEvent.click(productsButton);
+      await settle(fixture);
+
+      // Scoped to the overlay panel, not `container` — same precedent as
+      // the 'separator' describe block's own axe test: while a panel is
+      // open, the bar item that owns it has role="combobox" (not a
+      // menuitem-family role), which is a known, pre-existing,
+      // already-accepted aria-required-children false positive on the bar
+      // itself, unrelated to this round's visible/shortcut/badge fields.
+      await expectNoA11yViolations(
+        document.body.querySelector('.cdk-overlay-container') as HTMLElement,
+      );
     });
   });
 });

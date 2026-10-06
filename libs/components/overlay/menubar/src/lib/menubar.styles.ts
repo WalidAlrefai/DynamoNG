@@ -7,8 +7,15 @@ import { focusRingClass, overlayPanelClass } from '@dynamong/utils/styles';
 // `@dynamong/tiered-menu`'s own tiered-menu.styles.ts (same precedent as
 // Tiered Menu keeping its own copy of `@dynamong/menu`'s shapes rather than
 // composing it).
-export const menubarRootStyles =
-  'flex items-center gap-2 rounded-md border border-border bg-surface-0 p-1';
+export const menubarRootStyles = cva(
+  'flex items-center gap-2 rounded-md border border-border bg-surface-0 p-1',
+  {
+    variants: {
+      fluid: { true: 'w-full', false: '' },
+    },
+    defaultVariants: { fluid: true },
+  },
+);
 
 // The actual `role="menubar"` element is just a flex row of items now — the
 // bordered/padded pill look lives on `menubarRootStyles` (the outer wrapper
@@ -66,7 +73,10 @@ export const menubarPanelStyles =
 // Rows are virtual-focus-only (aria-activedescendant, not real DOM focus —
 // see menubar.ts's doc comment), so `active` is a real, JS-driven visual
 // variant here rather than relying on :focus-visible — same idiom as Tiered
-// Menu's own tieredMenuItemStyles.
+// Menu's own tieredMenuItemStyles. `justify-between` here acts on exactly two
+// direct children — the leading (icon+label) and trailing (shortcut+badge+
+// caret) groups below — so it still spreads correctly now that a row can
+// carry more than the original icon/label/caret trio.
 export const menubarRowStyles = cva(
   'flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2 text-start text-sm text-text-primary',
   {
@@ -92,3 +102,15 @@ export const menubarCaretStyles = 'h-4 w-4 shrink-0 text-text-muted';
 // component's item-type doc comment for why icons are a plain string, not
 // wired to @dynamong/icons.
 export const menubarItemIconClasses = 'shrink-0';
+
+// Verbatim copy of @dynamong/menu's own menuSeparatorStyles — role="separator"
+// is an ARIA-spec-permitted child of role="menu" (unlike role="presentation",
+// which trips aria-required-children).
+export const menubarSeparatorStyles = 'my-1 h-px bg-border';
+
+// A row's own icon+label group (leading) vs shortcut+badge+caret group
+// (trailing) — see menubarRowStyles' own comment for why these exist as a
+// sibling pair rather than flattening everything into the row itself.
+export const menubarRowLeadingClasses = 'flex min-w-0 items-center gap-1.5';
+export const menubarRowTrailingClasses = 'flex shrink-0 items-center gap-1.5';
+export const menubarShortcutClasses = 'text-xs text-text-muted';

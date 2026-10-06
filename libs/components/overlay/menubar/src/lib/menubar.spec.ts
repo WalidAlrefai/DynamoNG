@@ -1149,4 +1149,340 @@ describe('DynamoMenubar', () => {
       }
     });
   });
+
+  describe('separator', () => {
+    const SEPARATOR_ITEMS: DynamoMenubarItem[] = [
+      {
+        label: 'File',
+        children: [
+          { label: 'New' },
+          { label: 'Open' },
+          { separator: true },
+          { label: 'Exit' },
+        ],
+      },
+    ];
+
+    it('renders a separator with role="separator", not role="menuitem"', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: SEPARATOR_ITEMS },
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+
+      const menu = getMenus()[0] as HTMLElement;
+      expect(menu.querySelectorAll('[role="separator"]')).toHaveLength(1);
+      // 3 real rows (New, Open, Exit) — the separator isn't counted among
+      // role="menuitem" rows.
+      expect(getRowsIn(menu)).toHaveLength(3);
+    });
+
+    it('keyboard nav skips the separator in both directions', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: SEPARATOR_ITEMS },
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      // Seeded active is "New"; two ArrowDowns should land on "Exit",
+      // skipping over the separator entirely.
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+      const combobox = container.querySelector('[role="combobox"]');
+      const activeId = combobox?.getAttribute('aria-activedescendant');
+      expect(getRowByText(menu, 'Exit').id).toBe(activeId);
+
+      // One ArrowUp back should land on "Open", not the separator.
+      await userEvent.keyboard('{ArrowUp}');
+      await settle(fixture);
+      expect(
+        container
+          .querySelector('[role="combobox"]')
+          ?.getAttribute('aria-activedescendant'),
+      ).toBe(getRowByText(menu, 'Open').id);
+    });
+
+    it('clicking a separator is a no-op', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: SEPARATOR_ITEMS },
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+      const separator = menu.querySelector('[role="separator"]') as HTMLElement;
+
+      await userEvent.click(separator);
+      await settle(fixture);
+
+      // Still open — clicking a separator didn't commit/close anything.
+      expect(getMenus()).toHaveLength(1);
+    });
+
+    it('Home/End never land on the separator', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: SEPARATOR_ITEMS },
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      await userEvent.keyboard('{End}');
+      await settle(fixture);
+      expect(
+        container
+          .querySelector('[role="combobox"]')
+          ?.getAttribute('aria-activedescendant'),
+      ).toBe(getRowByText(menu, 'Exit').id);
+
+      await userEvent.keyboard('{Home}');
+      await settle(fixture);
+      expect(
+        container
+          .querySelector('[role="combobox"]')
+          ?.getAttribute('aria-activedescendant'),
+      ).toBe(getRowByText(menu, 'New').id);
+    });
+
+    it('has no axe violations with a separator present', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: SEPARATOR_ITEMS },
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+
+      for (const menu of getMenus()) {
+        await expect(expectNoA11yViolations(menu)).resolves.toBeUndefined();
+      }
+    });
+  });
+
+  describe('pt passthrough', () => {
+    it('merges pt class onto root/bar/start/end/item', () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: {
+          items: ITEMS,
+          pt: {
+            root: { class: 'pt-root' },
+            bar: { class: 'pt-bar' },
+            start: { class: 'pt-start' },
+            end: { class: 'pt-end' },
+            item: { class: 'pt-item' },
+          },
+        },
+      });
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('.pt-bar')).not.toBeNull();
+      expect(container.querySelector('.pt-start')).not.toBeNull();
+      expect(container.querySelector('.pt-end')).not.toBeNull();
+      expect(container.querySelectorAll('.pt-item').length).toBeGreaterThan(1);
+    });
+
+    it('merges pt class onto panel/row once a dropdown is open', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: {
+          items: ITEMS,
+          pt: {
+            panel: { class: 'pt-panel' },
+            row: { class: 'pt-row' },
+          },
+        },
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+
+      const menu = getMenus()[0] as HTMLElement;
+      expect(menu.classList.contains('pt-panel')).toBe(true);
+      expect(menu.querySelectorAll('.pt-row').length).toBeGreaterThan(1);
+    });
+
+    it('merges a non-class pt attribute onto the bar', () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: {
+          items: ITEMS,
+          pt: { bar: { 'data-testid': 'bar-el' } },
+        },
+      });
+
+      expect(container.querySelector('[data-testid="bar-el"]')).not.toBeNull();
+    });
+  });
+
+  describe('ariaDescribedby / fluid', () => {
+    it('is absent by default', () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
+
+      expect(
+        container
+          .querySelector('[role="menubar"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBeNull();
+    });
+
+    it('is forwarded to the bar when set', () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS, ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        container
+          .querySelector('[role="menubar"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('defaults fluid to true, rendering w-full', () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
+
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('switches to no width class when fluid is false', () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS, fluid: false },
+      });
+
+      expect(container.querySelector('div')?.className ?? '').not.toContain(
+        'w-full',
+      );
+    });
+
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: {
+          items: ITEMS,
+          ariaLabel: 'Main',
+          ariaDescribedby: 'hint-id',
+          fluid: false,
+          pt: { root: { class: 'pt-root' } },
+        },
+      });
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('visible / shortcut / badge', () => {
+    const VISIBLE_ITEMS: DynamoMenubarItem[] = [
+      { label: 'File' },
+      { label: 'Hidden', visible: false },
+      { label: 'Edit' },
+    ];
+
+    it('hides a visible:false bar item and excludes it from keyboard roving', async () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: VISIBLE_ITEMS },
+      });
+
+      const hidden = getBarItemByText(container, 'Hidden');
+      expect(hidden.hidden).toBe(true);
+
+      // ArrowRight from File should skip Hidden and land on Edit.
+      getBarItemByText(container, 'File').focus();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(document.activeElement).toBe(getBarItemByText(container, 'Edit'));
+    });
+
+    it('omits a visible:false dropdown row from render AND keyboard nav', async () => {
+      const ITEMS_WITH_HIDDEN_ROW: DynamoMenubarItem[] = [
+        {
+          label: 'File',
+          children: [
+            { label: 'New' },
+            { label: 'Hidden Row', visible: false },
+            { label: 'Exit' },
+          ],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS_WITH_HIDDEN_ROW },
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      // No DOM node at all for the hidden row — true omission.
+      expect(getRowsIn(menu)).toHaveLength(2);
+      expect(
+        Array.from(menu.querySelectorAll('[role="menuitem"]')).some(
+          (el) => el.textContent?.trim() === 'Hidden Row',
+        ),
+      ).toBe(false);
+
+      // ArrowDown from the seeded "New" skips straight to "Exit".
+      await userEvent.keyboard('{ArrowDown}');
+      await settle(fixture);
+      const combobox = container.querySelector('[role="combobox"]');
+      expect(combobox?.getAttribute('aria-activedescendant')).toBe(
+        getRowByText(menu, 'Exit').id,
+      );
+    });
+
+    it('renders a shortcut as aria-hidden trailing text', async () => {
+      const ITEMS_WITH_SHORTCUT: DynamoMenubarItem[] = [
+        {
+          label: 'File',
+          children: [{ label: 'Save', shortcut: '⌘S' }],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS_WITH_SHORTCUT },
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      const shortcutEl = Array.from(menu.querySelectorAll('span')).find(
+        (el) => el.textContent?.trim() === '⌘S' && el.children.length === 0,
+      );
+      expect(shortcutEl).toBeTruthy();
+      expect(shortcutEl?.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('renders a badge via dg-badge for both string and number values', async () => {
+      const ITEMS_WITH_BADGE: DynamoMenubarItem[] = [
+        {
+          label: 'File',
+          children: [
+            { label: 'Inbox', badge: 3 },
+            { label: 'Drafts', badge: 'New' },
+          ],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS_WITH_BADGE },
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+      const badges = Array.from(menu.querySelectorAll('dg-badge')).map((el) =>
+        el.textContent?.trim(),
+      );
+
+      expect(badges).toEqual(['3', 'New']);
+    });
+
+    it('has no axe violations with visible/shortcut/badge set', async () => {
+      const ITEMS_WITH_ALL: DynamoMenubarItem[] = [
+        { label: 'File' },
+        { label: 'Hidden', visible: false },
+        {
+          label: 'Edit',
+          children: [{ label: 'Save', shortcut: '⌘S', badge: 2 }],
+        },
+      ];
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS_WITH_ALL },
+      });
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
 });

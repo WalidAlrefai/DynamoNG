@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoTieredMenu } from '@dynamong/tiered-menu';
-import type { DynamoTieredMenuItem } from '@dynamong/tiered-menu';
+import type { DynamoTieredMenuEntry } from '@dynamong/tiered-menu';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
 import {
@@ -82,7 +82,15 @@ const API: ApiTableRow[] = [
           <code class="font-mono">icon?</code> (a plain glyph/emoji string),
           <code class="font-mono">disabled?</code>,
           <code class="font-mono">children?</code>,
-          <code class="font-mono">command?</code>.
+          <code class="font-mono">command?</code>. Any level's own item array —
+          including the root <code class="font-mono">items</code> — can also
+          hold <code class="font-mono">{{ '{ separator: true }' }}</code>
+          entries for a non-interactive divider row. An item also accepts
+          <code class="font-mono">visible?</code> (false omits it from render
+          and keyboard nav entirely), <code class="font-mono">shortcut?</code>
+          (a display-only keyboard-hint string, no binding registered), and
+          <code class="font-mono">badge?</code> (a small trailing
+          <code class="font-mono">dg-badge</code>).
         </p>
       </div>
     </docs-examples-layout>
@@ -92,7 +100,7 @@ export class TieredMenuDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows = API;
   protected readonly lastSelected = signal<string | null>(null);
-  protected readonly items: DynamoTieredMenuItem[] = [
+  protected readonly items: DynamoTieredMenuEntry[] = [
     {
       label: 'New',
       icon: '📄',
@@ -103,7 +111,10 @@ export class TieredMenuDocPage {
       ],
     },
     { label: 'Export', children: [{ label: 'PDF' }, { label: 'CSV' }] },
-    { label: 'Print', icon: '🖨️' },
+    { label: 'Print', icon: '🖨️', shortcut: '⌘P' },
+    { label: 'Comments', badge: 3 },
+    { separator: true },
     { label: 'Share', disabled: true },
+    { label: 'Hidden for now', visible: false },
   ];
 }

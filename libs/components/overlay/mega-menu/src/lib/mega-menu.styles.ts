@@ -17,10 +17,17 @@ export const megaMenuRootStyles = cva(
     variants: {
       orientation: {
         horizontal: 'flex-row items-center',
+        // w-56 stays unconditional here — a vertical bar already has an
+        // explicit intrinsic width (a sidebar-like fixed column), so
+        // `fluid` has nothing meaningful to toggle for this orientation.
         vertical: 'w-56 flex-col items-stretch',
       },
+      fluid: { true: '', false: '' },
     },
-    defaultVariants: { orientation: 'horizontal' },
+    compoundVariants: [
+      { orientation: 'horizontal', fluid: true, class: 'w-full' },
+    ],
+    defaultVariants: { orientation: 'horizontal', fluid: true },
   },
 );
 
@@ -99,3 +106,16 @@ export const megaMenuLinkStyles = cva(
 // icon-less link's rendering byte-for-byte unchanged.
 export const megaMenuLinkContentStyles = 'flex items-center gap-1.5';
 export const megaMenuLinkIconClasses = 'shrink-0';
+
+// Verbatim copy of @dynamong/menu's own menuSeparatorStyles.
+export const megaMenuLinkSeparatorStyles = 'my-1 h-px bg-border';
+
+// The outer row wrapper for a link's leading (icon+label, via
+// megaMenuLinkContentStyles above) and trailing (shortcut+badge) groups —
+// `w-full` + `justify-between` so an absent trailing group (no shortcut/
+// badge) leaves the leading group exactly where it already rendered before
+// this pair existed.
+export const megaMenuLinkRowStyles =
+  'flex w-full items-center justify-between gap-2';
+export const megaMenuLinkTrailingClasses = 'flex shrink-0 items-center gap-1.5';
+export const megaMenuShortcutClasses = 'text-xs text-text-muted';

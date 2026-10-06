@@ -1,5 +1,13 @@
-<div [class]="rootClasses()" [attr.data-testid]="'DynamoMenubar'">
-  <div [class]="startClasses" data-testid="DynamoMenubar-start">
+<div
+  [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
+  [attr.data-testid]="'DynamoMenubar'"
+>
+  <div
+    [class]="startClasses()"
+    [dgPt]="ptFor('start')"
+    data-testid="DynamoMenubar-start"
+  >
     <ng-content select="[start]" />
   </div>
 
@@ -7,7 +15,9 @@
     role="menubar"
     tabindex="-1"
     [attr.aria-label]="ariaLabel() ?? null"
-    [class]="barClasses"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [class]="barClasses()"
+    [dgPt]="ptFor('bar')"
     (keydown)="onMenubarKeydown($event)"
   >
     @for (item of items(); track item; let i = $index) {
@@ -23,6 +33,8 @@
     <button
       #barItemEl
       type="button"
+      [hidden]="item.visible === false"
+      [attr.aria-hidden]="item.visible === false ? 'true' : null"
       [attr.role]="openIndex() === i ? 'combobox' : 'menuitem'"
       [tabindex]="focusedIndex() === i ? 0 : -1"
       [attr.aria-haspopup]="item.children?.length ? 'menu' : null"
@@ -31,6 +43,7 @@
       [attr.aria-activedescendant]="openIndex() === i ? activeDescendantId() : null"
       [attr.aria-disabled]="item.disabled ? 'true' : null"
       [class]="barItemClasses(i, item)"
+      [dgPt]="ptFor('item')"
       (mouseenter)="onBarItemHover(i)"
       (click)="onBarItemClick(i)"
     >
@@ -38,7 +51,13 @@
       <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon }}</span>
       }
       <span>{{ item.label }}</span>
-      @if (item.children?.length) {
+      @if (item.shortcut) {
+      <span [class]="shortcutClasses" aria-hidden="true"
+        >{{ item.shortcut }}</span
+      >
+      } @if (item.badge !== undefined) {
+      <dg-badge size="sm">{{ item.badge }}</dg-badge>
+      } @if (item.children?.length) {
       <svg
         [class]="chevronClasses(i)"
         [attr.aria-hidden]="true"
@@ -60,7 +79,11 @@
     }
   </div>
 
-  <div [class]="endClasses" data-testid="DynamoMenubar-end">
+  <div
+    [class]="endClasses()"
+    [dgPt]="ptFor('end')"
+    data-testid="DynamoMenubar-end"
+  >
     <ng-content select="[end]" />
   </div>
 </div>
@@ -79,9 +102,13 @@
     [id]="panelIdForLevel(levelIndex)"
     role="menu"
     [attr.aria-label]="ariaLabel() ?? null"
-    [class]="panelClasses"
+    [class]="panelClasses()"
+    [dgPt]="ptFor('panel')"
   >
-    @for (item of level.items; track item; let i = $index) {
+    @for (item of level.items; track item; let i = $index) { @if
+    (isSeparator(item)) {
+    <div role="separator" [class]="separatorClasses"></div>
+    } @else if (item.visible !== false) {
     <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the bar's own keydown (see menubar.ts's class doc comment on the aria-activedescendant focus model) -->
     <div
       [id]="rowId(levelIndex, i)"
@@ -89,33 +116,46 @@
       tabindex="-1"
       [attr.aria-disabled]="item.disabled ? 'true' : null"
       [class]="rowClasses(item, levelIndex, i)"
+      [dgPt]="ptFor('row')"
       (mouseenter)="onRowHover(levelIndex, i)"
       (click)="onRowClick(levelIndex, i)"
     >
-      @if (item.icon) {
-      <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon }}</span>
-      }
-      <span>{{ item.label }}</span>
-      @if (item.children?.length) {
-      <svg
-        [class]="caretClasses"
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        [attr.aria-hidden]="true"
-      >
-        <path
-          d="M6 4l4 4-4 4"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-      }
+      <span [class]="rowLeadingClasses">
+        @if (item.icon) {
+        <span [class]="itemIconClasses" aria-hidden="true"
+          >{{ item.icon }}</span
+        >
+        }
+        <span>{{ item.label }}</span>
+      </span>
+      <span [class]="rowTrailingClasses">
+        @if (item.shortcut) {
+        <span [class]="shortcutClasses" aria-hidden="true"
+          >{{ item.shortcut }}</span
+        >
+        } @if (item.badge !== undefined) {
+        <dg-badge size="sm">{{ item.badge }}</dg-badge>
+        } @if (item.children?.length) {
+        <svg
+          [class]="caretClasses"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          [attr.aria-hidden]="true"
+        >
+          <path
+            d="M6 4l4 4-4 4"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        }
+      </span>
     </div>
-    }
+    } }
   </div>
   }
 </ng-template>

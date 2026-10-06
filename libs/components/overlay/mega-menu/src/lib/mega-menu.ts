@@ -17,7 +17,11 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
+import { DynamoBadge } from '@dynamong/badge';
 import {
   DynamoOverlayService,
   type DynamoOverlayHandle,
@@ -34,16 +38,21 @@ import {
   megaMenuItemStyles,
   megaMenuLinkContentStyles,
   megaMenuLinkIconClasses,
+  megaMenuLinkRowStyles,
+  megaMenuLinkSeparatorStyles,
   megaMenuLinkStyles,
+  megaMenuLinkTrailingClasses,
   megaMenuPanelStyles,
   megaMenuRootStyles,
+  megaMenuShortcutClasses,
   megaMenuStartStyles,
 } from './mega-menu.styles';
-import type {
-  DynamoMegaMenuItem,
-  DynamoMegaMenuLink,
-  DynamoMegaMenuOrientation,
-  DynamoMegaMenuPart,
+import {
+  isMegaMenuLinkSeparator,
+  type DynamoMegaMenuItem,
+  type DynamoMegaMenuLink,
+  type DynamoMegaMenuOrientation,
+  type DynamoMegaMenuPart,
 } from './mega-menu.types';
 
 /** One entry in the flattened, panel-wide list the virtual-focus cursor moves over. */
@@ -75,11 +84,18 @@ interface FlatLink {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mega-menu.html',
+  imports: [DynamoPassThroughDirective, DynamoBadge],
 })
 export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
   readonly items = input.required<DynamoMegaMenuItem[]>();
   readonly orientation = input<DynamoMegaMenuOrientation>('horizontal');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the `role="menubar"` bar element. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container in horizontal orientation. Vertical
+   *  orientation is unaffected — its width is intrinsic (a fixed sidebar-
+   *  like column). Defaults `true`. */
+  readonly fluid = input(true);
   /** Two-way bindable: which bar item's mega panel is open, or `null`. */
   readonly openIndex = model<number | null>(null);
   readonly linkSelect = output<DynamoMegaMenuLink>();
@@ -108,11 +124,19 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
     return this.items()[idx]?.columns ?? [];
   });
 
+  // Separators AND visible:false links are excluded here entirely (not
+  // merely skipped during navigation, the way `disabled` links are) — a
+  // separator never receives virtual focus or an `aria-activedescendant`
+  // id, and neither does a hidden link, so neither must ever appear in this
+  // list at all. The template still renders separators in their own
+  // position within `column.items` directly, not from this flattened list;
+  // a visible:false link renders nothing at all (see mega-menu.html).
   private readonly flatLinks = computed<FlatLink[]>(() => {
     const flat: FlatLink[] = [];
     this.openColumns().forEach((column, columnIndex) => {
-      column.items.forEach((link, rowIndex) => {
-        flat.push({ columnIndex, rowIndex, link });
+      column.items.forEach((entry, rowIndex) => {
+        if (isMegaMenuLinkSeparator(entry) || entry.visible === false) return;
+        flat.push({ columnIndex, rowIndex, link: entry });
       });
     });
     return flat;
@@ -127,23 +151,45 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
-          megaMenuRootStyles({ orientation: this.orientation() }),
+          megaMenuRootStyles({
+            orientation: this.orientation(),
+            fluid: this.fluid(),
+          }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
   protected readonly barClasses = computed(() =>
-    megaMenuBarStyles({ orientation: this.orientation() }),
+    cn(
+      megaMenuBarStyles({ orientation: this.orientation() }),
+      this.ptFor('bar').class,
+    ),
   );
-  protected readonly startClasses = megaMenuStartStyles;
-  protected readonly endClasses = megaMenuEndStyles;
-  protected readonly panelClasses = megaMenuPanelStyles;
-  protected readonly columnClasses = megaMenuColumnStyles;
-  protected readonly columnHeaderClasses = megaMenuColumnHeaderStyles;
+  protected readonly startClasses = computed(() =>
+    cn(megaMenuStartStyles, this.ptFor('start').class),
+  );
+  protected readonly endClasses = computed(() =>
+    cn(megaMenuEndStyles, this.ptFor('end').class),
+  );
+  protected readonly panelClasses = computed(() =>
+    cn(megaMenuPanelStyles, this.ptFor('panel').class),
+  );
+  protected readonly columnClasses = computed(() =>
+    cn(megaMenuColumnStyles, this.ptFor('column').class),
+  );
+  protected readonly columnHeaderClasses = computed(() =>
+    cn(megaMenuColumnHeaderStyles, this.ptFor('columnHeader').class),
+  );
   protected readonly itemIconClasses = megaMenuItemIconClasses;
   protected readonly linkContentClasses = megaMenuLinkContentStyles;
   protected readonly linkIconClasses = megaMenuLinkIconClasses;
+  protected readonly linkSeparatorClasses = megaMenuLinkSeparatorStyles;
+  protected readonly linkRowClasses = megaMenuLinkRowStyles;
+  protected readonly linkTrailingClasses = megaMenuLinkTrailingClasses;
+  protected readonly shortcutClasses = megaMenuShortcutClasses;
+  protected readonly isLinkSeparator = isMegaMenuLinkSeparator;
 
   constructor() {
     super();
@@ -176,10 +222,13 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
   }
 
   protected barItemClasses(index: number, item: DynamoMegaMenuItem): string {
-    return megaMenuItemStyles({
-      open: this.openIndex() === index,
-      disabled: !!item.disabled,
-    });
+    return cn(
+      megaMenuItemStyles({
+        open: this.openIndex() === index,
+        disabled: !!item.disabled,
+      }),
+      this.ptFor('item').class,
+    );
   }
 
   protected chevronClasses(index: number): string {
@@ -187,10 +236,13 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
   }
 
   protected linkClasses(link: DynamoMegaMenuLink, flatIndex: number): string {
-    return megaMenuLinkStyles({
-      active: flatIndex === this.activeLinkIndex(),
-      disabled: !!link.disabled,
-    });
+    return cn(
+      megaMenuLinkStyles({
+        active: flatIndex === this.activeLinkIndex(),
+        disabled: !!link.disabled,
+      }),
+      this.ptFor('link').class,
+    );
   }
 
   /** Flat index of a link, for the `active`/`aria-activedescendant` wiring in the template. */
@@ -286,13 +338,25 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
     }
   }
 
+  // Orientation-aware so the bar-roving axis never changes meaning across
+  // the open/closed boundary: horizontal keeps Left/Right as sibling-switch
+  // (unchanged from before this fix) with Down/Up newly bound to
+  // panel-internal nav; vertical mirrors that exactly, keeping Up/Down as
+  // sibling-switch (what they already meant one keystroke earlier, while
+  // closed — see onClosedKeydown) with Left/Right taking panel-internal nav.
   private onOpenKeydown(event: KeyboardEvent, idx: number): void {
+    const vertical = this.orientation() === 'vertical';
+    const switchNextKey = vertical ? 'ArrowDown' : 'ArrowRight';
+    const switchPrevKey = vertical ? 'ArrowUp' : 'ArrowLeft';
+    const navNextKey = vertical ? 'ArrowRight' : 'ArrowDown';
+    const navPrevKey = vertical ? 'ArrowLeft' : 'ArrowUp';
+
     switch (event.key) {
-      case 'ArrowDown':
+      case navNextKey:
         event.preventDefault();
         this.moveActiveLink(1);
         break;
-      case 'ArrowUp':
+      case navPrevKey:
         event.preventDefault();
         this.moveActiveLink(-1);
         break;
@@ -304,11 +368,11 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
         event.preventDefault();
         this.activeLinkIndex.set(this.lastEnabledLink());
         break;
-      case 'ArrowRight':
+      case switchNextKey:
         event.preventDefault();
         this.siblingSwitch(idx, 1);
         break;
-      case 'ArrowLeft':
+      case switchPrevKey:
         event.preventDefault();
         this.siblingSwitch(idx, -1);
         break;
@@ -377,14 +441,15 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
     this.openIndex.set(item.columns?.length ? index : null);
   }
 
-  /** Wrapping scan for the next enabled bar item — copy of Menubar's own `findEnabledBarIndex`. */
+  /** Wrapping scan for the next enabled, visible bar item — copy of Menubar's own `findEnabledBarIndex`. */
   private findEnabledBarIndex(from: number, delta: number): number | null {
     const itemsArr = this.items();
     if (itemsArr.length === 0) return null;
     let index = from;
     for (let step = 0; step < itemsArr.length; step++) {
       index = (index + delta + itemsArr.length) % itemsArr.length;
-      if (!itemsArr[index]?.disabled) return index;
+      const item = itemsArr[index];
+      if (item && !item.disabled && item.visible !== false) return index;
     }
     return null;
   }

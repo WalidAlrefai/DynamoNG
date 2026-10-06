@@ -1,5 +1,13 @@
-<div [class]="rootClasses()" data-testid="DynamoMegaMenu">
-  <div [class]="startClasses" data-testid="DynamoMegaMenu-start">
+<div
+  [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
+  data-testid="DynamoMegaMenu"
+>
+  <div
+    [class]="startClasses()"
+    [dgPt]="ptFor('start')"
+    data-testid="DynamoMegaMenu-start"
+  >
     <ng-content select="[start]" />
   </div>
 
@@ -8,7 +16,9 @@
     tabindex="-1"
     [attr.aria-label]="ariaLabel() ?? null"
     [attr.aria-orientation]="orientation()"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
     [class]="barClasses()"
+    [dgPt]="ptFor('bar')"
     (keydown)="onBarKeydown($event)"
   >
     @for (item of items(); track item; let i = $index) {
@@ -20,6 +30,8 @@
     <button
       #barItemEl
       type="button"
+      [hidden]="item.visible === false"
+      [attr.aria-hidden]="item.visible === false ? 'true' : null"
       [attr.role]="openIndex() === i ? 'combobox' : 'menuitem'"
       [tabindex]="focusedIndex() === i ? 0 : -1"
       [attr.aria-haspopup]="item.columns?.length ? 'menu' : null"
@@ -28,6 +40,7 @@
       [attr.aria-activedescendant]="openIndex() === i ? activeDescendantId() : null"
       [attr.aria-disabled]="item.disabled ? 'true' : null"
       [class]="barItemClasses(i, item)"
+      [dgPt]="ptFor('item')"
       (mouseenter)="onBarItemHover(i)"
       (click)="onBarItemClick(i)"
     >
@@ -35,7 +48,13 @@
       <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon }}</span>
       }
       <span>{{ item.label }}</span>
-      @if (item.columns?.length) {
+      @if (item.shortcut) {
+      <span [class]="shortcutClasses" aria-hidden="true"
+        >{{ item.shortcut }}</span
+      >
+      } @if (item.badge !== undefined) {
+      <dg-badge size="sm">{{ item.badge }}</dg-badge>
+      } @if (item.columns?.length) {
       <svg
         [class]="chevronClasses(i)"
         [attr.aria-hidden]="true"
@@ -57,7 +76,11 @@
     }
   </div>
 
-  <div [class]="endClasses" data-testid="DynamoMegaMenu-end">
+  <div
+    [class]="endClasses()"
+    [dgPt]="ptFor('end')"
+    data-testid="DynamoMegaMenu-end"
+  >
     <ng-content select="[end]" />
   </div>
 </div>
@@ -67,20 +90,29 @@
     [id]="megaMenuId + '-panel'"
     role="menu"
     [attr.aria-label]="ariaLabel() ?? null"
-    [class]="panelClasses"
+    [class]="panelClasses()"
+    [dgPt]="ptFor('panel')"
     data-testid="DynamoMegaMenu-panel"
   >
     @for (column of openColumns(); track column; let c = $index) {
     <div
       role="group"
       [attr.aria-label]="column.header ?? null"
-      [class]="columnClasses"
+      [class]="columnClasses()"
+      [dgPt]="ptFor('column')"
     >
       @if (column.header) {
-      <div [class]="columnHeaderClasses" [attr.aria-hidden]="true">
+      <div
+        [class]="columnHeaderClasses()"
+        [dgPt]="ptFor('columnHeader')"
+        [attr.aria-hidden]="true"
+      >
         {{ column.header }}
       </div>
-      } @for (link of column.items; track link; let r = $index) {
+      } @for (link of column.items; track link; let r = $index) { @if
+      (isLinkSeparator(link)) {
+      <div role="separator" [class]="linkSeparatorClasses"></div>
+      } @else if (link.visible !== false) {
       <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- links are tabindex="-1"/mouse-only; keyboard handling lives on the bar's own keydown (virtual-focus model, see mega-menu.ts) -->
       <div
         [id]="linkId(c, r)"
@@ -88,18 +120,30 @@
         tabindex="-1"
         [attr.aria-disabled]="link.disabled ? 'true' : null"
         [class]="linkClasses(link, flatIndexOf(c, r))"
+        [dgPt]="ptFor('link')"
         (mouseenter)="onLinkHover(flatIndexOf(c, r))"
         (click)="onLinkClick(link)"
       >
-        <span [class]="linkContentClasses">
-          @if (link.icon) {
-          <span [class]="linkIconClasses" aria-hidden="true"
-            >{{ link.icon }}</span
-          >
-          } {{ link.label }}
+        <span [class]="linkRowClasses">
+          <span [class]="linkContentClasses">
+            @if (link.icon) {
+            <span [class]="linkIconClasses" aria-hidden="true"
+              >{{ link.icon }}</span
+            >
+            } {{ link.label }}
+          </span>
+          <span [class]="linkTrailingClasses">
+            @if (link.shortcut) {
+            <span [class]="shortcutClasses" aria-hidden="true"
+              >{{ link.shortcut }}</span
+            >
+            } @if (link.badge !== undefined) {
+            <dg-badge size="sm">{{ link.badge }}</dg-badge>
+            }
+          </span>
         </span>
       </div>
-      }
+      } }
     </div>
     }
   </div>

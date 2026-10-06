@@ -16,9 +16,11 @@ const ITEMS: DynamoMegaMenuItem[] = [
       {
         header: 'Laptops',
         items: [
-          { label: 'MacBook Air', icon: '💻' },
-          { label: 'MacBook Pro', icon: '💻' },
+          { label: 'MacBook Air', icon: '💻', shortcut: '⌘1' },
+          { label: 'MacBook Pro', icon: '💻', badge: 'New' },
+          { separator: true },
           { label: 'Compare models' },
+          { label: 'Coming soon', visible: false },
         ],
       },
       {
@@ -64,7 +66,10 @@ const ITEMS: DynamoMegaMenuItem[] = [
   { label: 'Contact' },
 ];
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'vertical', title: 'Vertical' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'items', type: 'DynamoMegaMenuItem[] (required)', default: '—' },
@@ -99,6 +104,24 @@ const API: ApiTableRow[] = [
         <div code>&lt;dg-mega-menu [items]="items" ariaLabel="Main" /&gt;</div>
       </docs-example>
 
+      <docs-example
+        exampleId="vertical"
+        title="Vertical"
+        description='orientation="vertical" renders a sidebar-like column. Once a panel is open, the sibling-switch keys always match whichever pair roves the closed bar for the current orientation (Up/Down here) — the orthogonal pair (Left/Right) moves within the open panel.'
+      >
+        <div preview>
+          <dg-mega-menu
+            [items]="items"
+            orientation="vertical"
+            ariaLabel="Main vertical"
+          />
+        </div>
+        <div code>
+          &lt;dg-mega-menu [items]="items" orientation="vertical"
+          ariaLabel="Main" /&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -110,7 +133,16 @@ const API: ApiTableRow[] = [
           <code class="font-mono">command?</code>. Each
           <code class="font-mono">DynamoMegaMenuLink</code> inside a column's
           <code class="font-mono">items</code> also accepts
-          <code class="font-mono">icon?</code>.
+          <code class="font-mono">icon?</code>. A column's own
+          <code class="font-mono">items</code> array can also hold
+          <code class="font-mono">{{ '{ separator: true }' }}</code> entries for
+          a non-interactive divider row — valid inside any column's link list,
+          never at the bar level itself. A bar item or link also accepts
+          <code class="font-mono">visible?</code> (false omits it from render
+          and keyboard nav entirely), <code class="font-mono">shortcut?</code>
+          (a display-only keyboard-hint string, no binding registered), and
+          <code class="font-mono">badge?</code> (a small trailing
+          <code class="font-mono">dg-badge</code>).
         </p>
       </div>
     </docs-examples-layout>

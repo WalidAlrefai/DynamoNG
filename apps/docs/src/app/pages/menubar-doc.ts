@@ -76,7 +76,17 @@ const API: ApiTableRow[] = [
           <code class="font-mono">disabled?</code>,
           <code class="font-mono">children?</code> (nested items),
           <code class="font-mono">command?</code>. A top-level item with no
-          children commits directly. <code class="font-mono">[start]</code> /
+          children commits directly. A dropdown's own
+          <code class="font-mono">children</code> array can also hold
+          <code class="font-mono">{{ '{ separator: true }' }}</code> entries for
+          a non-interactive divider row — valid inside any dropdown/ flyout,
+          never at the bar level itself. An item also accepts
+          <code class="font-mono">visible?</code> (false omits it from render
+          and keyboard nav entirely), <code class="font-mono">shortcut?</code>
+          (a display-only keyboard-hint string, no binding registered), and
+          <code class="font-mono">badge?</code> (a small trailing
+          <code class="font-mono">dg-badge</code>).
+          <code class="font-mono">[start]</code> /
           <code class="font-mono">[end]</code> content sits outside the
           <code class="font-mono">role="menubar"</code> element, since ARIA only
           permits menuitem-family children there.
@@ -103,8 +113,10 @@ export class MenubarDocPage {
           ],
         },
         { label: 'Export', children: [{ label: 'PDF' }, { label: 'CSV' }] },
-        { label: 'Print' },
+        { label: 'Print', shortcut: '⌘P' },
+        { separator: true },
         { label: 'Share', disabled: true },
+        { label: 'Hidden for now', visible: false },
       ],
     },
     {
@@ -116,6 +128,7 @@ export class MenubarDocPage {
         { label: 'Cut' },
         { label: 'Copy' },
         { label: 'Paste' },
+        { label: 'Comments', badge: 3 },
       ],
     },
     {
