@@ -1,13 +1,15 @@
 import { Component, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { provideRouter } from '@angular/router';
+import type { Routes } from '@angular/router';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
 } from '@dynamong/testing';
 import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DynamoMenubar } from './menubar';
 import { DynamoMenubarHarness } from './menubar.harness';
 import type { DynamoMenubarItem } from './menubar.types';
@@ -1544,6 +1546,310 @@ describe('DynamoMenubar', () => {
 
       expect(getBarItemByText(container, 'File')).toBeTruthy();
       expect(container.querySelector('[data-testid="custom-item"]')).toBeNull();
+    });
+  });
+
+  describe('routerLink', () => {
+    const commandSpy = vi.fn();
+    // A wildcard catch-all route so Router.navigateByUrl() (triggered by
+    // RouterLink's own click handling) resolves instead of rejecting with
+    // "Cannot match any routes" — we only care about the generated href and
+    // our own side effects, never about what the route actually renders.
+    @Component({ selector: 'dg-blank-test', template: '', standalone: true })
+    class BlankRouteComponent {}
+    const TEST_ROUTES: Routes = [
+      { path: '**', component: BlankRouteComponent },
+    ];
+
+    it('renders a leaf bar item with routerLink as a real <a> with the router-generated href', () => {
+      const ROUTER_ITEMS: DynamoMenubarItem[] = [
+        { label: 'Docs', routerLink: '/components/badge' },
+      ];
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ROUTER_ITEMS },
+        providers: [provideRouter(TEST_ROUTES)],
+      });
+
+      const link = container.querySelector(
+        '[role="menubar"] a[role="menuitem"]',
+      );
+      expect(link).toBeTruthy();
+      expect(link?.getAttribute('href')).toBe('/components/badge');
+    });
+
+    it('fires both itemSelect/command and closes on click, alongside navigation', async () => {
+      commandSpy.mockClear();
+      const ROUTER_ITEMS: DynamoMenubarItem[] = [
+        {
+          label: 'File',
+          children: [
+            {
+              label: 'Docs',
+              routerLink: '/components/badge',
+              command: commandSpy,
+            },
+          ],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ROUTER_ITEMS },
+        providers: [provideRouter(TEST_ROUTES)],
+      });
+      await userEvent.click(getBarItemByText(container, 'File'));
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+      const link = menu.querySelector('a[role="menuitem"]') as HTMLElement;
+      expect(link.getAttribute('href')).toBe('/components/badge');
+
+      await userEvent.click(link);
+      await settle(fixture);
+
+      expect(commandSpy).toHaveBeenCalledOnce();
+      // Closed, like any other committed leaf.
+      expect(getMenus()).toHaveLength(0);
+    });
+
+    it('renders a disabled routerLink entry with no href (inert)', () => {
+      const ROUTER_ITEMS: DynamoMenubarItem[] = [
+        { label: 'Docs', routerLink: '/components/badge', disabled: true },
+      ];
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ROUTER_ITEMS },
+        providers: [provideRouter(TEST_ROUTES)],
+      });
+
+      const link = container.querySelector(
+        '[role="menubar"] a[role="menuitem"]',
+      );
+      expect(link).toBeTruthy();
+      expect(link?.getAttribute('href')).toBeNull();
+    });
+
+    it('a branch item with routerLink also set still opens its dropdown as a <button>, never an <a>', async () => {
+      const ROUTER_ITEMS: DynamoMenubarItem[] = [
+        {
+          label: 'File',
+          routerLink: '/components/badge',
+          children: [{ label: 'New' }],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ROUTER_ITEMS },
+        providers: [provideRouter(TEST_ROUTES)],
+      });
+
+      const barItem = container.querySelector('[role="menubar"] > *');
+      expect(barItem?.tagName).toBe('BUTTON');
+
+      await userEvent.click(barItem as HTMLElement);
+      await settle(fixture);
+      expect(getMenus()).toHaveLength(1);
+    });
+
+    it('an item with only command (no routerLink) is unaffected, still a plain button', () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
+
+      expect(getBarItemByText(container, 'Help').tagName).toBe('BUTTON');
+    });
+  });
+
+  describe('collapse / drawer', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    // jsdom never fires a real ResizeObserver, so this stubs the global
+    // class, captures its constructor callback, and exposes a trigger(width)
+    // that invokes it with a fake entries array — mirrors editor.spec.ts's
+    // own established `stubResizeObserver()` technique, adapted to pass the
+    // width through the `entries[0].contentRect.width` argument the way
+    // menubar.ts's own callback actually reads it (rather than editor.ts's
+    // own `clientWidth`-reading style).
+    function stubResizeObserver(): { trigger: (width: number) => void } {
+      let callback: ((entries: ResizeObserverEntry[]) => void) | null = null;
+      class FakeResizeObserver {
+        constructor(cb: (entries: ResizeObserverEntry[]) => void) {
+          callback = cb;
+        }
+        observe(): void {
+          /* no-op */
+        }
+        unobserve(): void {
+          /* no-op */
+        }
+        disconnect(): void {
+          /* no-op */
+        }
+      }
+      vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+      return {
+        trigger: (width: number) =>
+          callback?.([{ contentRect: { width } } as ResizeObserverEntry]),
+      };
+    }
+
+    // Not a role-based query — the hamburger's own role swaps between
+    // "menuitem"/"combobox" (same pattern as every other bar item, see
+    // menubar.html), never the implicit "button" role, so a `getByRole`
+    // lookup would be as flaky as it would be for a regular bar item.
+    function getHamburger(container: HTMLElement): HTMLElement {
+      const el = container.querySelector('[role="menubar"] > button');
+      if (!el) throw new Error('No hamburger trigger found');
+      return el as HTMLElement;
+    }
+
+    it('collapses below the breakpoint, rendering the hamburger instead of bar items', async () => {
+      const resizeObserver = stubResizeObserver();
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS, collapseBreakpoint: 400 },
+      });
+      await settle(fixture);
+      resizeObserver.trigger(300);
+      await settle(fixture);
+
+      expect(getHamburger(container)).toBeTruthy();
+      // Only the hamburger itself — none of the original item labels still
+      // render as bar items.
+      expect(getBarItems(container)).toHaveLength(1);
+      expect(
+        getBarItems(container).some((el) => el.textContent?.includes('File')),
+      ).toBe(false);
+    });
+
+    it('stays expanded at or above the breakpoint', async () => {
+      const resizeObserver = stubResizeObserver();
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS, collapseBreakpoint: 400 },
+      });
+      await settle(fixture);
+      resizeObserver.trigger(500);
+      await settle(fixture);
+
+      expect(getBarItemByText(container, 'File')).toBeTruthy();
+      expect(getBarItemByText(container, 'Help')).toBeTruthy();
+    });
+
+    it('never collapses when collapseBreakpoint is unset (null), regardless of width', async () => {
+      const resizeObserver = stubResizeObserver();
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS },
+      });
+      await settle(fixture);
+      resizeObserver.trigger(50);
+      await settle(fixture);
+
+      expect(getBarItemByText(container, 'File')).toBeTruthy();
+      expect(getBarItems(container).length).toBeGreaterThan(1);
+    });
+
+    it('opens the drawer via the hamburger and shows the full item list', async () => {
+      const resizeObserver = stubResizeObserver();
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS, collapseBreakpoint: 400 },
+      });
+      await settle(fixture);
+      resizeObserver.trigger(300);
+      await settle(fixture);
+
+      await userEvent.click(getHamburger(container));
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      expect(getRowByText(menu, 'File')).toBeTruthy();
+      expect(getRowByText(menu, 'Edit')).toBeTruthy();
+      expect(getRowByText(menu, 'Help')).toBeTruthy();
+    });
+
+    it('drills into a branch row inside the drawer via ArrowRight/Enter', async () => {
+      const resizeObserver = stubResizeObserver();
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS, collapseBreakpoint: 400 },
+      });
+      await settle(fixture);
+      resizeObserver.trigger(300);
+      await settle(fixture);
+
+      const hamburger = getHamburger(container);
+      await userEvent.click(hamburger);
+      await settle(fixture);
+      // Seeded active is "File" (first enabled row).
+      await userEvent.keyboard('{ArrowRight}');
+      await settle(fixture);
+
+      expect(getMenus()).toHaveLength(2); // drawer + File's own flyout
+      expect(getRowByText(getMenus()[1] as HTMLElement, 'New')).toBeTruthy();
+    });
+
+    it('commits a leaf row inside the drawer, closing it and refocusing the hamburger', async () => {
+      const resizeObserver = stubResizeObserver();
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS, collapseBreakpoint: 400 },
+      });
+      await settle(fixture);
+      resizeObserver.trigger(300);
+      await settle(fixture);
+
+      const hamburger = getHamburger(container);
+      await userEvent.click(hamburger);
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      await userEvent.click(getRowByText(menu, 'Help'));
+      await settle(fixture);
+
+      expect(getMenus()).toHaveLength(0);
+      expect(document.activeElement).toBe(hamburger);
+    });
+
+    it('Escape closes the drawer and refocuses the hamburger', async () => {
+      const resizeObserver = stubResizeObserver();
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS, collapseBreakpoint: 400 },
+      });
+      await settle(fixture);
+      resizeObserver.trigger(300);
+      await settle(fixture);
+
+      const hamburger = getHamburger(container);
+      await userEvent.click(hamburger);
+      await settle(fixture);
+      await userEvent.keyboard('{Escape}');
+      await settle(fixture);
+
+      expect(getMenus()).toHaveLength(0);
+      expect(document.activeElement).toBe(hamburger);
+    });
+
+    it('has no axe violations when collapsed, both closed and with the drawer open', async () => {
+      const resizeObserver = stubResizeObserver();
+      const { container, fixture } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: ITEMS, collapseBreakpoint: 400 },
+      });
+      await settle(fixture);
+      resizeObserver.trigger(300);
+      await settle(fixture);
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+
+      await userEvent.click(getHamburger(container));
+      await settle(fixture);
+
+      // Scoped to the overlay panel, not `container`, once the drawer is
+      // open — same precedent as the 'separator'/'routerLink' describe
+      // blocks' own axe tests: the hamburger's role temporarily becomes
+      // "combobox" while its own drawer is open (for aria-activedescendant
+      // validity, same as every other bar item), which is a known,
+      // pre-existing, already-accepted aria-required-children false
+      // positive — it only surfaces here because the collapsed bar has
+      // exactly one child, so it has no sibling "menuitem"-role child left
+      // to satisfy the rule once that one child becomes "combobox".
+      await expect(
+        expectNoA11yViolations(
+          document.body.querySelector('.cdk-overlay-container') as HTMLElement,
+        ),
+      ).resolves.toBeUndefined();
     });
   });
 });

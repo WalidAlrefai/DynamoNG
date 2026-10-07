@@ -16,6 +16,12 @@ export interface DynamoMegaMenuLink {
   /** A small trailing badge/count, rendered via `@dynamong/badge`. Purely cosmetic — no keyboard/command semantics. */
   badge?: string | number;
   command?: () => void;
+  /** Navigates via Angular Router instead of (or alongside) `command` when set. Same shape as RouterLink's own `routerLink` input. */
+  routerLink?: string | string[];
+  /** Forwarded to RouterLink's own `queryParams` input when `routerLink` is set. */
+  queryParams?: Record<string, unknown>;
+  /** Forwarded to RouterLink's own `fragment` input when `routerLink` is set. */
+  fragment?: string;
 }
 
 /**
@@ -63,6 +69,12 @@ export interface DynamoMegaMenuItem {
   badge?: string | number;
   columns?: DynamoMegaMenuColumn[];
   command?: () => void;
+  /** Navigates via Angular Router instead of (or alongside) `command` when set. Same shape as RouterLink's own `routerLink` input. Only honored on a leaf entry (no `columns`) — a branch always opens its mega panel regardless of `routerLink`. */
+  routerLink?: string | string[];
+  /** Forwarded to RouterLink's own `queryParams` input when `routerLink` is set. */
+  queryParams?: Record<string, unknown>;
+  /** Forwarded to RouterLink's own `fragment` input when `routerLink` is set. */
+  fragment?: string;
 }
 
 export type DynamoMegaMenuOrientation = 'horizontal' | 'vertical';
@@ -76,4 +88,7 @@ export type DynamoMegaMenuPart =
   | 'panel'
   | 'column'
   | 'columnHeader'
-  | 'link';
+  | 'link'
+  | 'collapseTrigger'
+  | 'drawer'
+  | 'drawerItem';

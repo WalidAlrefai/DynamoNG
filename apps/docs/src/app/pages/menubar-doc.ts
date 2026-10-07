@@ -12,6 +12,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'item-template', title: 'Custom Item Template' },
+  { id: 'collapse', title: 'Responsive Collapse' },
 ];
 
 const API: ApiTableRow[] = [
@@ -22,6 +23,7 @@ const API: ApiTableRow[] = [
     default: "'bottom-start'",
   },
   { name: 'openIndex', type: 'number | null (model)', default: 'null' },
+  { name: 'collapseBreakpoint', type: 'number | null', default: 'null' },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
 ];
 
@@ -90,6 +92,26 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="collapse"
+        title="Responsive Collapse"
+        description="Set collapseBreakpoint to a px width; once the bar's own measured width drops below it, the bar collapses into a hamburger trigger opening a drawer with the full item list. This preview container is narrow enough to stay collapsed."
+      >
+        <div preview>
+          <div class="max-w-[220px]">
+            <dg-menubar
+              [items]="items"
+              ariaLabel="Example"
+              [collapseBreakpoint]="400"
+            />
+          </div>
+        </div>
+        <div code>
+          &lt;dg-menubar [items]="items" ariaLabel="Example"
+          [collapseBreakpoint]="400" /&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -111,7 +133,17 @@ const API: ApiTableRow[] = [
           <code class="font-mono">dg-badge</code>). Project an
           <code class="font-mono">#itemTemplate</code> to replace every row's
           plain label text with custom markup (icon/shortcut/badge/chevron still
-          render around it). <code class="font-mono">[start]</code> /
+          render around it).
+          <code class="font-mono">routerLink?</code> (leaf-only) renders a real
+          <code class="font-mono">&lt;a [routerLink]&gt;</code> instead of a
+          button/div, so middle-click/ctrl-click "open in new tab" work
+          natively; <code class="font-mono">queryParams?</code>/<code
+            class="font-mono"
+            >fragment?</code
+          >
+          forward to RouterLink's own inputs — if
+          <code class="font-mono">command</code> is also set, both fire.
+          <code class="font-mono">[start]</code> /
           <code class="font-mono">[end]</code> content sits outside the
           <code class="font-mono">role="menubar"</code> element, since ARIA only
           permits menuitem-family children there.
@@ -139,6 +171,7 @@ export class MenubarDocPage {
         },
         { label: 'Export', children: [{ label: 'PDF' }, { label: 'CSV' }] },
         { label: 'Print', shortcut: '⌘P' },
+        { label: 'Open Badge docs', routerLink: '/components/badge' },
         { separator: true },
         { label: 'Share', disabled: true },
         { label: 'Hidden for now', visible: false },

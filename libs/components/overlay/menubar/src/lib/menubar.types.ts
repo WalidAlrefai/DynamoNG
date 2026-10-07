@@ -1,5 +1,12 @@
 export type DynamoMenubarPart =
-  'root' | 'bar' | 'start' | 'end' | 'item' | 'panel' | 'row';
+  | 'root'
+  | 'bar'
+  | 'start'
+  | 'end'
+  | 'item'
+  | 'panel'
+  | 'row'
+  | 'collapseTrigger';
 
 /** Level-0 dropdown corner — the same vocabulary as `@dynamong/menu`'s `DynamoMenuPosition` and `@dynamong/tiered-menu`'s `DynamoTieredMenuPosition`. */
 export type DynamoMenubarPosition =
@@ -27,6 +34,12 @@ export interface DynamoMenubarItem {
   children?: DynamoMenubarEntry[];
   /** Invoked when this item is committed (only meaningful on a leaf — an item with no `children`). */
   command?: () => void;
+  /** Navigates via Angular Router instead of (or alongside) `command` when set. Same shape as RouterLink's own `routerLink` input. Only honored on a leaf entry (no `children`) — a branch always opens its dropdown regardless of `routerLink`. */
+  routerLink?: string | string[];
+  /** Forwarded to RouterLink's own `queryParams` input when `routerLink` is set. */
+  queryParams?: Record<string, unknown>;
+  /** Forwarded to RouterLink's own `fragment` input when `routerLink` is set. */
+  fragment?: string;
 }
 
 /**

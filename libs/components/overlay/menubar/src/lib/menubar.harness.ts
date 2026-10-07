@@ -10,8 +10,10 @@ export class DynamoMenubarHarness extends ComponentHarness {
   // Panels are portaled outside dg-menubar's own host subtree by CDK
   // Overlay, so they must be located from the document root — same
   // technique as DynamoTieredMenuHarness/DynamoCascadeSelectHarness.
-  private readonly openPanelLocator = this.documentRootLocatorFactory().locatorForOptional('[role="menu"]');
-  private readonly menuLocators = this.documentRootLocatorFactory().locatorForAll('[role="menu"]');
+  private readonly openPanelLocator =
+    this.documentRootLocatorFactory().locatorForOptional('[role="menu"]');
+  private readonly menuLocators =
+    this.documentRootLocatorFactory().locatorForAll('[role="menu"]');
 
   async getTopLevelLabels(): Promise<string[]> {
     const items = await this.barItemLocators();
@@ -20,6 +22,21 @@ export class DynamoMenubarHarness extends ComponentHarness {
 
   async isOpen(): Promise<boolean> {
     return (await this.openPanelLocator()) !== null;
+  }
+
+  /** Whether the bar is currently collapsed into its hamburger trigger (see `collapseBreakpoint`) — the hamburger carries no visible label text, so it isn't reachable via `getTopLevelLabels`/`openTopLevel`. */
+  async isCollapsed(): Promise<boolean> {
+    const items = await this.barItemLocators();
+    if (items.length !== 1) return false;
+    const label = (await items[0]?.getAttribute('aria-label')) ?? '';
+    return label.toLowerCase().includes('menu');
+  }
+
+  /** Opens the collapsed hamburger's own drawer (no-op if not collapsed, or already open). */
+  async openDrawer(): Promise<void> {
+    if (!(await this.isCollapsed()) || (await this.isOpen())) return;
+    const items = await this.barItemLocators();
+    await items[0]?.click();
   }
 
   /** Opens the given top-level item's dropdown (no-op if it's already open, or the item has no children). */
@@ -93,10 +110,15 @@ export class DynamoMenubarHarness extends ComponentHarness {
     const menu = menus[depth];
     if (!menu) return [];
     const menuId = await menu.getAttribute('id');
-    return this.documentRootLocatorFactory().locatorForAll(`#${menuId} [role="menuitem"]`)();
+    return this.documentRootLocatorFactory().locatorForAll(
+      `#${menuId} [role="menuitem"]`,
+    )();
   }
 
-  private async findRowAtLevel(depth: number, label: string): Promise<TestElement> {
+  private async findRowAtLevel(
+    depth: number,
+    label: string,
+  ): Promise<TestElement> {
     const rows = await this.rowsAtLevel(depth);
     for (const row of rows) {
       if ((await row.text()).trim() === label) {

@@ -55,7 +55,27 @@
     @for (item of level.items; track item; let i = $index) { @if
     (isSeparator(item)) {
     <div role="separator" [class]="separatorClasses"></div>
-    } @else if (item.visible !== false) {
+    } @else if (item.visible !== false) { @if (!item.children?.length &&
+    item.routerLink) {
+    <a
+      [id]="rowId(levelIndex ?? 0, i)"
+      role="menuitem"
+      tabindex="-1"
+      [attr.aria-disabled]="item.disabled ? 'true' : null"
+      [class]="itemClasses(item, levelIndex ?? 0, i)"
+      [dgPt]="ptFor('item')"
+      [routerLink]="item.disabled ? null : item.routerLink"
+      [queryParams]="item.queryParams"
+      [fragment]="item.fragment"
+      (mouseenter)="onItemHover(levelIndex ?? 0, i)"
+      (click)="onItemClick(levelIndex ?? 0, i)"
+    >
+      <ng-container
+        [ngTemplateOutlet]="rowContent"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
+    </a>
+    } @else {
     <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown (see tiered-menu.ts's class doc comment on the aria-activedescendant focus model) -->
     <div
       [id]="rowId(levelIndex ?? 0, i)"
@@ -67,48 +87,53 @@
       (mouseenter)="onItemHover(levelIndex ?? 0, i)"
       (click)="onItemClick(levelIndex ?? 0, i)"
     >
-      <span [class]="itemLeadingClasses">
-        @if (item.icon) {
-        <span [class]="itemIconClasses" aria-hidden="true"
-          >{{ item.icon }}</span
-        >
-        } @if (itemTemplate(); as tpl) {
-        <ng-container
-          [ngTemplateOutlet]="tpl"
-          [ngTemplateOutletContext]="{ $implicit: item }"
-        />
-        } @else {
-        <span>{{ item.label }}</span>
-        }
-      </span>
-      <span [class]="itemTrailingClasses">
-        @if (item.shortcut) {
-        <span [class]="shortcutClasses" aria-hidden="true"
-          >{{ item.shortcut }}</span
-        >
-        } @if (item.badge !== undefined) {
-        <dg-badge size="sm">{{ item.badge }}</dg-badge>
-        } @if (item.children?.length) {
-        <svg
-          [class]="caretClasses"
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          [attr.aria-hidden]="true"
-        >
-          <path
-            d="M6 4l4 4-4 4"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        }
-      </span>
+      <ng-container
+        [ngTemplateOutlet]="rowContent"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
     </div>
-    } }
+    } } }
   </div>
   }
+
+  <ng-template #rowContent let-item>
+    <span [class]="itemLeadingClasses">
+      @if (item.icon) {
+      <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon }}</span>
+      } @if (itemTemplate(); as tpl) {
+      <ng-container
+        [ngTemplateOutlet]="tpl"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
+      } @else {
+      <span>{{ item.label }}</span>
+      }
+    </span>
+    <span [class]="itemTrailingClasses">
+      @if (item.shortcut) {
+      <span [class]="shortcutClasses" aria-hidden="true"
+        >{{ item.shortcut }}</span
+      >
+      } @if (item.badge !== undefined) {
+      <dg-badge size="sm">{{ item.badge }}</dg-badge>
+      } @if (item.children?.length) {
+      <svg
+        [class]="caretClasses"
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        [attr.aria-hidden]="true"
+      >
+        <path
+          d="M6 4l4 4-4 4"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      }
+    </span>
+  </ng-template>
 </ng-template>

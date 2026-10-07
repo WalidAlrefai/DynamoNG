@@ -115,6 +115,14 @@ const API: ApiTableRow[] = [
           <code class="font-mono">#itemTemplate</code> to replace every row's
           plain label text with custom markup (icon/shortcut/badge/chevron still
           render around it).
+          <code class="font-mono">routerLink?</code> (leaf-only) renders a real
+          <code class="font-mono">&lt;a [routerLink]&gt;</code> instead of a
+          div, so middle-click/ctrl-click "open in new tab" work natively;
+          <code class="font-mono">queryParams?</code>/<code class="font-mono"
+            >fragment?</code
+          >
+          forward to RouterLink's own inputs — if
+          <code class="font-mono">command</code> is also set, both fire.
         </p>
       </div>
     </docs-examples-layout>
@@ -137,6 +145,7 @@ export class TieredMenuDocPage {
     { label: 'Export', children: [{ label: 'PDF' }, { label: 'CSV' }] },
     { label: 'Print', icon: '🖨️', shortcut: '⌘P' },
     { label: 'Comments', badge: 3 },
+    { label: 'Open Badge docs', routerLink: '/components/badge' },
     { separator: true },
     { label: 'Share', disabled: true },
     { label: 'Hidden for now', visible: false },

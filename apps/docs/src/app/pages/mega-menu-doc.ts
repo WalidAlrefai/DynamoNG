@@ -21,6 +21,7 @@ const ITEMS: DynamoMegaMenuItem[] = [
           { separator: true },
           { label: 'Compare models' },
           { label: 'Coming soon', visible: false },
+          { label: 'Open Badge docs', routerLink: '/components/badge' },
         ],
       },
       {
@@ -70,6 +71,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'vertical', title: 'Vertical' },
   { id: 'item-template', title: 'Custom Item/Link Template' },
+  { id: 'collapse', title: 'Responsive Collapse' },
 ];
 
 const API: ApiTableRow[] = [
@@ -80,6 +82,7 @@ const API: ApiTableRow[] = [
     default: "'horizontal'",
   },
   { name: 'openIndex', type: 'number | null (model)', default: 'null' },
+  { name: 'collapseBreakpoint', type: 'number | null', default: 'null' },
   { name: 'linkSelect', type: 'output<DynamoMegaMenuLink>', default: '—' },
 ];
 
@@ -148,6 +151,26 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="collapse"
+        title="Responsive Collapse"
+        description="Set collapseBreakpoint to a px width; once the bar's own measured width drops below it, the bar collapses into a hamburger trigger opening a drawer with the full item list. This preview container is narrow enough to stay collapsed."
+      >
+        <div preview>
+          <div class="max-w-[220px]">
+            <dg-mega-menu
+              [items]="items"
+              ariaLabel="Main"
+              [collapseBreakpoint]="400"
+            />
+          </div>
+        </div>
+        <div code>
+          &lt;dg-mega-menu [items]="items" ariaLabel="Main"
+          [collapseBreakpoint]="400" /&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -173,6 +196,16 @@ const API: ApiTableRow[] = [
           <code class="font-mono">#linkTemplate</code> to replace a bar item's
           or panel link's plain label text with custom markup
           (icon/shortcut/badge/chevron still render around it).
+          <code class="font-mono">routerLink?</code> (on either shape; leaf-only
+          for bar items) renders a real
+          <code class="font-mono">&lt;a [routerLink]&gt;</code> instead of a
+          button/div, so middle-click/ctrl-click "open in new tab" work
+          natively; <code class="font-mono">queryParams?</code>/<code
+            class="font-mono"
+            >fragment?</code
+          >
+          forward to RouterLink's own inputs — if
+          <code class="font-mono">command</code> is also set, both fire.
         </p>
       </div>
     </docs-examples-layout>

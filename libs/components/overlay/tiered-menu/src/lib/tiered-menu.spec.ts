@@ -1,6 +1,8 @@
 import { Component, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { provideRouter } from '@angular/router';
+import type { Routes } from '@angular/router';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -1057,6 +1059,118 @@ describe('DynamoTieredMenu', () => {
 
       expect(getItemByText(menu, 'New')).toBeTruthy();
       expect(menu.querySelector('[data-testid="custom-item"]')).toBeNull();
+    });
+  });
+
+  describe('routerLink', () => {
+    const commandSpy = vi.fn();
+    // A wildcard catch-all route so Router.navigateByUrl() (triggered by
+    // RouterLink's own click handling) resolves instead of rejecting with
+    // "Cannot match any routes" — we only care about the generated href and
+    // our own side effects, never about what the route actually renders.
+    @Component({ selector: 'dg-blank-test', template: '', standalone: true })
+    class BlankRouteComponent {}
+    const TEST_ROUTES: Routes = [
+      { path: '**', component: BlankRouteComponent },
+    ];
+
+    it('renders a leaf row with routerLink as a real <a> with the router-generated href', async () => {
+      const ROUTER_ITEMS: DynamoTieredMenuEntry[] = [
+        { label: 'Docs', routerLink: '/components/badge' },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ROUTER_ITEMS, label: 'File' },
+        providers: [provideRouter(TEST_ROUTES)],
+      });
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      const link = menu.querySelector('a[role="menuitem"]');
+      expect(link).toBeTruthy();
+      expect(link?.getAttribute('href')).toBe('/components/badge');
+    });
+
+    it('fires both itemSelect/command and closes on click, alongside navigation', async () => {
+      commandSpy.mockClear();
+      const ROUTER_ITEMS: DynamoTieredMenuEntry[] = [
+        { label: 'Docs', routerLink: '/components/badge', command: commandSpy },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ROUTER_ITEMS, label: 'File' },
+        providers: [provideRouter(TEST_ROUTES)],
+      });
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+      const link = menu.querySelector('a[role="menuitem"]') as HTMLElement;
+
+      await userEvent.click(link);
+      await settle(fixture);
+
+      expect(commandSpy).toHaveBeenCalledOnce();
+      expect(getMenus()).toHaveLength(0);
+    });
+
+    it('renders a disabled routerLink entry with no href (inert)', async () => {
+      const ROUTER_ITEMS: DynamoTieredMenuEntry[] = [
+        { label: 'Docs', routerLink: '/components/badge', disabled: true },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ROUTER_ITEMS, label: 'File' },
+        providers: [provideRouter(TEST_ROUTES)],
+      });
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      const link = menu.querySelector('a[role="menuitem"]');
+      expect(link).toBeTruthy();
+      expect(link?.getAttribute('href')).toBeNull();
+    });
+
+    it('a branch entry with routerLink also set still drills in as a <div>, never an <a>', async () => {
+      const ROUTER_ITEMS: DynamoTieredMenuEntry[] = [
+        {
+          label: 'File',
+          routerLink: '/components/badge',
+          children: [{ label: 'New' }],
+        },
+      ];
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ROUTER_ITEMS, label: 'File' },
+        providers: [provideRouter(TEST_ROUTES)],
+      });
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+      const row = getItemByText(menu, 'File');
+      expect(row.tagName).toBe('DIV');
+
+      await userEvent.click(row);
+      await settle(fixture);
+      expect(getMenus()).toHaveLength(2);
+    });
+
+    it('an item with only command (no routerLink) is unaffected, still a plain div', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: ITEMS, label: 'File' },
+      });
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      expect(getItemByText(menu, 'Print').tagName).toBe('DIV');
     });
   });
 });

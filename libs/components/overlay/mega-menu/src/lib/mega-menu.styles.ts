@@ -65,6 +65,54 @@ export const megaMenuItemStyles = cva(
 // wired to @dynamong/icons.
 export const megaMenuItemIconClasses = 'shrink-0';
 
+// The hamburger trigger shown instead of the bar's own `@for` of items once
+// `collapsed()` is true — a single icon-only button, square rather than
+// `megaMenuItemStyles`' label-shaped pill.
+export const megaMenuCollapseTriggerStyles = cva(
+  'flex cursor-pointer items-center justify-center rounded-md p-2 text-text-primary transition-colors ' +
+    focusRingClass,
+  {
+    variants: {
+      open: {
+        true: 'bg-surface-100',
+        false: 'hover:bg-surface-100',
+      },
+    },
+    defaultVariants: { open: false },
+  },
+);
+
+// The collapsed drawer's own panel — a plain vertical list (unlike the
+// multi-column `megaMenuPanelStyles` mega panel), so it gets its own
+// min-width/padding rather than reusing that one.
+export const megaMenuDrawerPanelStyles =
+  'z-dropdown min-w-[12rem] py-1 ' + overlayPanelClass;
+
+// Drawer rows are virtual-focus-only (aria-activedescendant on the
+// hamburger, not real DOM focus — see mega-menu.ts's own doc comment on why
+// the drawer generalizes the same bar-item/panel-link virtual-focus
+// relationship one level up), so `active` is a JS-driven visual variant
+// here, same idiom as `megaMenuLinkStyles`. `justify-between` acts on the
+// leading/trailing group pair below, same shape as Menubar's own
+// `menubarRowStyles`.
+export const megaMenuDrawerItemStyles = cva(
+  'flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2 text-start text-sm text-text-primary',
+  {
+    variants: {
+      active: { true: 'bg-surface-100', false: '' },
+      disabled: {
+        true: 'cursor-not-allowed opacity-60',
+        false: 'hover:bg-surface-100',
+      },
+    },
+    defaultVariants: { active: false, disabled: false },
+  },
+);
+export const megaMenuDrawerItemLeadingClasses =
+  'flex min-w-0 items-center gap-1.5';
+export const megaMenuDrawerItemTrailingClasses =
+  'flex shrink-0 items-center gap-1.5';
+
 export const megaMenuChevronStyles = cva(
   'shrink-0 transition-transform duration-200 ease-out',
   {

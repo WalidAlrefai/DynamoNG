@@ -17,6 +17,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import {
@@ -163,7 +164,12 @@ function findEnabledItemIndex(
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tiered-menu.html',
-  imports: [DynamoPassThroughDirective, DynamoBadge, NgTemplateOutlet],
+  imports: [
+    DynamoPassThroughDirective,
+    DynamoBadge,
+    NgTemplateOutlet,
+    RouterLink,
+  ],
 })
 export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> {
   readonly items = input.required<DynamoTieredMenuEntry[]>();

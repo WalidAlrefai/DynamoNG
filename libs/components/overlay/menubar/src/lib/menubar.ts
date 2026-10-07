@@ -6,6 +6,7 @@ import {
   ElementRef,
   TemplateRef,
   ViewContainerRef,
+  afterNextRender,
   computed,
   contentChild,
   effect,
@@ -18,6 +19,7 @@ import {
   viewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import {
@@ -35,6 +37,7 @@ import {
   menubarBarStyles,
   menubarCaretStyles,
   menubarChevronStyles,
+  menubarCollapseTriggerStyles,
   menubarEndStyles,
   menubarItemIconClasses,
   menubarItemStyles,
@@ -206,7 +209,12 @@ function findEnabledItemIndex(
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './menubar.html',
-  imports: [DynamoPassThroughDirective, DynamoBadge, NgTemplateOutlet],
+  imports: [
+    DynamoPassThroughDirective,
+    DynamoBadge,
+    NgTemplateOutlet,
+    RouterLink,
+  ],
 })
 export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   readonly items = input.required<DynamoMenubarItem[]>();
@@ -216,12 +224,18 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   readonly ariaDescribedby = input<string | undefined>(undefined);
   /** Fills the width of its container. Defaults `true`. */
   readonly fluid = input(true);
+  /** px width threshold below which the bar collapses into a hamburger trigger opening a drawer with the full item list. `null` (default) disables the feature entirely — zero behavior change for every existing consumer. */
+  readonly collapseBreakpoint = input<number | null>(null);
   /** Two-way bindable: `<dg-menubar [(openIndex)]="openIndex">` — which bar item's dropdown is currently open, or `null` if none. */
   readonly openIndex = model<number | null>(null);
   readonly itemSelect = output<DynamoMenubarItem>();
 
+  private readonly rootEl =
+    viewChild.required<ElementRef<HTMLElement>>('rootEl');
   private readonly barItemEls =
     viewChildren<ElementRef<HTMLElement>>('barItemEl');
+  private readonly collapseTriggerEl =
+    viewChild<ElementRef<HTMLElement>>('collapseTriggerEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
   /** Optional per-item custom rendering — falls back to plain `{{ item.label }}` text when unset. Shared by both the bar's own items and every dropdown row, since they're the same `DynamoMenubarItem` shape. */
@@ -244,12 +258,17 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   private readonly flyoutHandles: (DynamoOverlayHandle & {
     anchorEl: HTMLElement;
   })[] = [];
-  /** Backs `levels()[0]`. Tracks which bar item it's anchored to, so a sibling switch can detect the mismatch and re-anchor. */
+  /** Backs `levels()[0]`. Tracks which bar item it's anchored to, so a sibling switch can detect the mismatch and re-anchor. `forIndex` is `-1` for the collapsed drawer's own root overlay (anchored to the hamburger, not a bar item). */
   private rootHandle: (DynamoOverlayHandle & { forIndex: number }) | null =
     null;
+  /** Derived from `collapseBreakpoint()` vs. the root element's own measured width — see the constructor's `afterNextRender`. */
+  protected readonly collapsed = signal(false);
+  /** Whether the collapsed hamburger's own drawer (a level-0 dropdown over the FULL `items()` list, anchored to the hamburger) is open. Independent of `openIndex` — the two are never both relevant at once, since the bar's own per-item buttons aren't rendered while collapsed. */
+  protected readonly drawerOpen = signal(false);
+  private resizeObserver?: ResizeObserver;
 
   protected readonly activeDescendantId = computed(() => {
-    if (this.openIndex() === null) return null;
+    if (this.openIndex() === null && !this.drawerOpen()) return null;
     const levelIndex = this.activeLevelIndex();
     const level = this.levels()[levelIndex];
     if (!level || level.activeIndex < 0) return null;
@@ -280,6 +299,12 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   protected readonly panelClasses = computed(() =>
     cn(menubarPanelStyles, this.ptFor('panel').class),
   );
+  protected readonly collapseTriggerClasses = computed(() =>
+    cn(
+      menubarCollapseTriggerStyles({ open: this.drawerOpen() }),
+      this.ptFor('collapseTrigger').class,
+    ),
+  );
   protected readonly caretClasses = menubarCaretStyles;
   protected readonly itemIconClasses = menubarItemIconClasses;
   protected readonly separatorClasses = menubarSeparatorStyles;
@@ -291,11 +316,22 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   constructor() {
     super();
 
-    // Effect 1 — seeds/clears `levels` reactively off `openIndex()` itself
-    // (not just from this component's own open-triggering methods) — same
-    // reasoning as Tiered Menu's identical seed effect, so an external
-    // `[(openIndex)]` two-way write still populates level 0 correctly.
+    // Effect 1 — seeds/clears `levels` reactively off `openIndex()`/
+    // `drawerOpen()` themselves (not just from this component's own
+    // open-triggering methods) — same reasoning as Tiered Menu's identical
+    // seed effect, so an external `[(openIndex)]` two-way write still
+    // populates level 0 correctly. The collapsed drawer takes priority: it
+    // seeds level 0 from the FULL `items()` array (anchored to the
+    // hamburger) rather than one bar item's own `children`, since the
+    // drawer's whole job is standing in for the entire bar at once.
     effect(() => {
+      if (this.drawerOpen()) {
+        const anchorEl = this.collapseTriggerEl()?.nativeElement ?? null;
+        const activeIndex = findEnabledItemIndex(this.items(), -1, 1) ?? -1;
+        this.levels.set([{ items: this.items(), activeIndex, anchorEl }]);
+        this.activeLevelIndex.set(0);
+        return;
+      }
       const idx = this.openIndex();
       if (idx === null) {
         this.levels.set([]);
@@ -310,11 +346,19 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
     });
 
     // Effect 2 — attach/detach/re-anchor the level-0 (root) overlay off
-    // `openIndex()`. Unlike Tiered Menu, whose single trigger never moves
-    // (so it only ever attaches/detaches one overlay), Menubar has N
-    // possible anchors — switching between sibling bar items must dispose
-    // and recreate the overlay rather than just re-show it.
+    // `openIndex()`/`drawerOpen()`. Unlike Tiered Menu, whose single trigger
+    // never moves (so it only ever attaches/detaches one overlay), Menubar
+    // has N possible anchors — switching between sibling bar items must
+    // dispose and recreate the overlay rather than just re-show it. The
+    // drawer has exactly one possible anchor (the hamburger), so no
+    // re-anchor-detection is needed for it — only attach/detach.
     effect(() => {
+      if (this.drawerOpen()) {
+        if (!this.rootHandle) {
+          this.attachRoot(null);
+        }
+        return;
+      }
       const idx = this.openIndex();
       if (idx === null) {
         this.destroyRoot();
@@ -360,11 +404,35 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
       }
     });
 
+    // Effect 4 — measures the root element's own width against
+    // `collapseBreakpoint()` to drive `collapsed`. Guarded exactly like the
+    // established precedent (`listbox-base.component.ts`/`scroll-panel.ts`):
+    // `viewChild.required()` only resolves once the view is initialized, so
+    // the observer is created inside `afterNextRender` rather than the
+    // constructor body directly. Created whenever `ResizeObserver` exists in
+    // the environment (not gated on `collapseBreakpoint()` at setup time) so
+    // a consumer setting `collapseBreakpoint` after initial render still
+    // gets correct behavior on the next resize — `null` is instead checked
+    // inside the callback itself, where `collapsed` is explicitly reset to
+    // `false` for that case (covers a consumer flipping the breakpoint back
+    // to `null` while already collapsed).
+    afterNextRender(() => {
+      if (typeof ResizeObserver === 'undefined') return;
+      this.resizeObserver = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect.width;
+        if (width === undefined) return;
+        const breakpoint = this.collapseBreakpoint();
+        this.collapsed.set(breakpoint !== null && width < breakpoint);
+      });
+      this.resizeObserver.observe(this.rootEl().nativeElement);
+    });
+
     this.destroyRef.onDestroy(() => {
       this.destroyRoot();
       while (this.flyoutHandles.length > 0) {
         this.flyoutHandles.pop()?.overlayRef.dispose();
       }
+      this.resizeObserver?.disconnect();
     });
   }
 
@@ -698,15 +766,130 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
     this.itemSelect.emit(item);
     item.command?.();
     this.closeAll();
-    this.barItemEls()[this.focusedIndex()]?.nativeElement.focus();
+    if (this.collapsed()) {
+      this.collapseTriggerEl()?.nativeElement.focus();
+    } else {
+      this.barItemEls()[this.focusedIndex()]?.nativeElement.focus();
+    }
   }
 
   private closeAll(): void {
     this.openIndex.set(null);
+    this.drawerOpen.set(false);
   }
 
-  private attachRoot(idx: number): void {
-    const anchorEl = this.barItemEls()[idx]?.nativeElement;
+  protected onCollapseTriggerClick(): void {
+    this.drawerOpen.update((open) => !open);
+  }
+
+  protected onCollapseTriggerKeydown(event: KeyboardEvent): void {
+    if (!this.drawerOpen()) {
+      switch (event.key) {
+        case 'ArrowDown':
+        case 'Enter':
+        case ' ':
+          event.preventDefault();
+          this.drawerOpen.set(true);
+          break;
+      }
+      return;
+    }
+    this.onDrawerKeydown(event);
+  }
+
+  // The drawer is architecturally "always level 0 of a dropdown whose items
+  // are the full bar," so most of this mirrors `onOpenDropdownKeydown`
+  // directly — except there is no sibling to switch to (the hamburger is the
+  // only "bar item"), so ArrowRight on a leaf row and ArrowLeft at level 0
+  // are no-ops/close rather than a sideways switch.
+  private onDrawerKeydown(event: KeyboardEvent): void {
+    const levelIndex = this.activeLevelIndex();
+    const level = this.levels()[levelIndex];
+    if (!level) return;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.moveActive(1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.moveActive(-1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        this.moveActiveOnly(
+          levelIndex,
+          findEnabledItemIndex(level.items, -1, 1) ?? -1,
+        );
+        break;
+      case 'End':
+        event.preventDefault();
+        this.moveActiveOnly(
+          levelIndex,
+          findEnabledItemIndex(level.items, level.items.length, -1) ?? -1,
+        );
+        break;
+      case 'ArrowRight': {
+        event.preventDefault();
+        const row = level.items[level.activeIndex];
+        if (
+          row &&
+          !isMenubarSeparator(row) &&
+          !row.disabled &&
+          row.children?.length
+        ) {
+          this.drillInto(levelIndex, level.activeIndex);
+          this.activeLevelIndex.set(levelIndex + 1);
+        }
+        // A leaf row has no sibling to switch to inside a vertical drawer
+        // list — no-op, same as any deeper level already behaves.
+        break;
+      }
+      case 'ArrowLeft': {
+        event.preventDefault();
+        if (levelIndex > 0) {
+          this.levels.update((current) => current.slice(0, levelIndex));
+          this.activeLevelIndex.set(levelIndex - 1);
+        } else {
+          // At the drawer's own top level, "back" closes the whole drawer —
+          // mirrors Escape, since there's no shallower level to back out to.
+          this.closeAll();
+          this.collapseTriggerEl()?.nativeElement.focus();
+        }
+        break;
+      }
+      case 'Enter':
+      case ' ': {
+        event.preventDefault();
+        const row = level.items[level.activeIndex];
+        if (!row || isMenubarSeparator(row)) break;
+        if (row.children?.length) {
+          this.drillInto(levelIndex, level.activeIndex);
+          this.activeLevelIndex.set(levelIndex + 1);
+        } else {
+          this.commitItem(row);
+        }
+        break;
+      }
+      case 'Escape':
+        event.preventDefault();
+        this.closeAll();
+        this.collapseTriggerEl()?.nativeElement.focus();
+        break;
+      case 'Tab':
+        this.closeAll();
+        break;
+      default:
+        return;
+    }
+  }
+
+  private attachRoot(idx: number | null): void {
+    const anchorEl =
+      idx === null
+        ? this.collapseTriggerEl()?.nativeElement
+        : this.barItemEls()[idx]?.nativeElement;
     if (!anchorEl) return;
     const handle = this.overlayService.createConnectedOverlay(
       anchorEl,
@@ -722,7 +905,7 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
         levelIndex: 0,
       }),
     );
-    this.rootHandle = { ...handle, forIndex: idx };
+    this.rootHandle = { ...handle, forIndex: idx ?? -1 };
   }
 
   // Always fully disposes rather than detach-and-keep (contrast with Tiered

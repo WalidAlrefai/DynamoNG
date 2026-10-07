@@ -54,6 +54,25 @@ export const menubarItemStyles = cva(
   },
 );
 
+// The hamburger trigger shown instead of the bar's own `@for` of items once
+// `collapsed()` is true — a single icon-only button, square rather than
+// `menubarItemStyles`' label-shaped pill. Its own open panel is the exact
+// same `panelTemplate`/`menubarPanelStyles` every other dropdown already
+// uses, just anchored here instead of to a specific bar item.
+export const menubarCollapseTriggerStyles = cva(
+  'flex cursor-pointer items-center justify-center rounded-md p-2 text-text-primary transition-colors ' +
+    focusRingClass,
+  {
+    variants: {
+      open: {
+        true: 'bg-surface-100',
+        false: 'hover:bg-surface-100',
+      },
+    },
+    defaultVariants: { open: false },
+  },
+);
+
 export const menubarChevronStyles = cva(
   'shrink-0 transition-transform duration-200 ease-out',
   {

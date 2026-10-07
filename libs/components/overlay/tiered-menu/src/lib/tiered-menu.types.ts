@@ -23,6 +23,12 @@ export interface DynamoTieredMenuItem {
   children?: DynamoTieredMenuEntry[];
   /** Invoked when this item is committed (only meaningful on a leaf — an item with no `children`). */
   command?: () => void;
+  /** Navigates via Angular Router instead of (or alongside) `command` when set. Same shape as RouterLink's own `routerLink` input. Only honored on a leaf entry (no `children`) — a branch always opens its flyout regardless of `routerLink`. */
+  routerLink?: string | string[];
+  /** Forwarded to RouterLink's own `queryParams` input when `routerLink` is set. */
+  queryParams?: Record<string, unknown>;
+  /** Forwarded to RouterLink's own `fragment` input when `routerLink` is set. */
+  fragment?: string;
 }
 
 /**
