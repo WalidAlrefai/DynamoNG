@@ -33,6 +33,21 @@ protected readonly items: DynamoMenubarItem[] = [
 protected onItemSelect(item: DynamoMenubarItem): void { ... }
 ```
 
+## Custom item template
+
+One optional projected template, falling back to plain text when omitted — mirrors `@dynamong/select`'s
+own `contentChild(TemplateRef)` idiom:
+
+```html
+<dg-menubar [items]="items">
+  <ng-template #itemTemplate let-item>...</ng-template>
+</dg-menubar>
+```
+
+- `#itemTemplate` (`let-item: DynamoMenubarItem`) — replaces every row's plain `{{ item.label }}` text,
+  both at the bar level and inside every dropdown/flyout (they share the same item shape). The item's
+  `icon`/`shortcut`/`badge`/children-chevron still render around it unconditionally.
+
 ## Inputs
 
 | Input             | Type                             | Default          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |

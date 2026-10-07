@@ -20,6 +20,21 @@ across every open level at once.
 protected onItemSelect(item: DynamoTieredMenuItem): void { ... }
 ```
 
+## Custom item template
+
+One optional projected template, falling back to plain text when omitted — mirrors `@dynamong/select`'s
+own `contentChild(TemplateRef)` idiom:
+
+```html
+<dg-tiered-menu label="File" [items]="items">
+  <ng-template #itemTemplate let-item>...</ng-template>
+</dg-tiered-menu>
+```
+
+- `#itemTemplate` (`let-item: DynamoTieredMenuItem`) — replaces every row's plain `{{ item.label }}`
+  text, at every level (root + every flyout, since they all share the same item shape). The item's
+  `icon`/`shortcut`/`badge`/children-chevron still render around it unconditionally.
+
 ## Inputs
 
 | Input             | Type                                 | Default          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |

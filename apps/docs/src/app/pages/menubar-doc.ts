@@ -9,7 +9,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'item-template', title: 'Custom Item Template' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'items', type: 'DynamoMenubarItem[] (required)', default: '—' },
@@ -67,6 +70,26 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="item-template"
+        title="Custom Item Template"
+        description="Project an #itemTemplate to replace every row's plain label text with custom markup — icon/shortcut/badge/chevron still render around it."
+      >
+        <div preview>
+          <dg-menubar [items]="templateItems" ariaLabel="Account menu">
+            <ng-template #itemTemplate let-item>
+              <span class="font-semibold text-primary">{{ item.label }}</span>
+            </ng-template>
+          </dg-menubar>
+        </div>
+        <div code>
+          &lt;dg-menubar [items]="items" ariaLabel="Account menu"&gt;
+          &lt;ng-template #itemTemplate let-item&gt; &lt;span
+          class="font-semibold text-primary"&gt;{{ '{{ item.label }}'
+          }}&lt;/span&gt; &lt;/ng-template&gt; &lt;/dg-menubar&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -85,8 +108,10 @@ const API: ApiTableRow[] = [
           and keyboard nav entirely), <code class="font-mono">shortcut?</code>
           (a display-only keyboard-hint string, no binding registered), and
           <code class="font-mono">badge?</code> (a small trailing
-          <code class="font-mono">dg-badge</code>).
-          <code class="font-mono">[start]</code> /
+          <code class="font-mono">dg-badge</code>). Project an
+          <code class="font-mono">#itemTemplate</code> to replace every row's
+          plain label text with custom markup (icon/shortcut/badge/chevron still
+          render around it). <code class="font-mono">[start]</code> /
           <code class="font-mono">[end]</code> content sits outside the
           <code class="font-mono">role="menubar"</code> element, since ARIA only
           permits menuitem-family children there.
@@ -140,5 +165,10 @@ export class MenubarDocPage {
       ],
     },
     { label: 'Help', icon: '❓' },
+  ];
+  protected readonly templateItems: DynamoMenubarItem[] = [
+    { label: 'Profile' },
+    { label: 'Billing' },
+    { label: 'Sign out' },
   ];
 }

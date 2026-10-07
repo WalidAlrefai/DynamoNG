@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import {
@@ -1057,6 +1058,75 @@ describe('DynamoMegaMenu', () => {
       await expectNoA11yViolations(
         document.body.querySelector('.cdk-overlay-container') as HTMLElement,
       );
+    });
+  });
+
+  describe('custom item/link template', () => {
+    const TEMPLATE_ITEMS: DynamoMegaMenuItem[] = [
+      {
+        label: 'Products',
+        columns: [{ items: [{ label: 'MacBook Air' }] }],
+      },
+      { label: 'Pricing' },
+    ];
+
+    @Component({
+      selector: 'dg-mega-menu-template-host',
+      standalone: true,
+      imports: [DynamoMegaMenu],
+      template: `
+        <dg-mega-menu [items]="items" ariaLabel="Main">
+          <ng-template #itemTemplate let-item>
+            <span data-testid="custom-item">{{ item.label }} (custom)</span>
+          </ng-template>
+          <ng-template #linkTemplate let-link>
+            <span data-testid="custom-link">{{ link.label }} (custom)</span>
+          </ng-template>
+        </dg-mega-menu>
+      `,
+    })
+    class MegaMenuTemplateHostComponent {
+      readonly items = TEMPLATE_ITEMS;
+    }
+
+    it('renders the custom item template on the bar instead of the plain label', () => {
+      const { container } = renderDynamoComponent(
+        MegaMenuTemplateHostComponent,
+      );
+
+      const customItems = within(container).getAllByTestId('custom-item');
+      expect(customItems.map((el) => el.textContent?.trim())).toEqual([
+        'Products (custom)',
+        'Pricing (custom)',
+      ]);
+    });
+
+    it('renders the custom link template inside an open panel', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MegaMenuTemplateHostComponent,
+      );
+      await userEvent.click(within(container).getByText('Products (custom)'));
+      await settle(fixture);
+      const panel = getPanel() as HTMLElement;
+
+      expect(within(panel).getByTestId('custom-link').textContent?.trim()).toBe(
+        'MacBook Air (custom)',
+      );
+    });
+
+    it('falls back to the plain label when no template is projected', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoMegaMenu, {
+        inputs: { items: TEMPLATE_ITEMS },
+      });
+      await userEvent.click(
+        within(container).getAllByRole('menuitem')[0] as HTMLElement,
+      );
+      await settle(fixture);
+      const panel = getPanel() as HTMLElement;
+
+      expect(within(panel).getByText('MacBook Air')).toBeTruthy();
+      expect(container.querySelector('[data-testid="custom-item"]')).toBeNull();
+      expect(panel.querySelector('[data-testid="custom-link"]')).toBeNull();
     });
   });
 });

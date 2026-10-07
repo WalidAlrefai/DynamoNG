@@ -5,6 +5,7 @@ import {
   expectNoA11yViolations,
   renderDynamoComponent,
 } from '@dynamong/testing';
+import { within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DynamoMenubar } from './menubar';
@@ -1483,6 +1484,66 @@ describe('DynamoMenubar', () => {
       });
 
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('custom item template', () => {
+    const TEMPLATE_ITEMS: DynamoMenubarItem[] = [
+      {
+        label: 'File',
+        children: [{ label: 'New' }],
+      },
+      { label: 'Help' },
+    ];
+
+    @Component({
+      selector: 'dg-menubar-item-template-host',
+      standalone: true,
+      imports: [DynamoMenubar],
+      template: `
+        <dg-menubar [items]="items" ariaLabel="Main menu">
+          <ng-template #itemTemplate let-item>
+            <span data-testid="custom-item">{{ item.label }} (custom)</span>
+          </ng-template>
+        </dg-menubar>
+      `,
+    })
+    class MenubarItemTemplateHostComponent {
+      readonly items = TEMPLATE_ITEMS;
+    }
+
+    it('renders the custom template on the bar instead of the plain label', () => {
+      const { container } = renderDynamoComponent(
+        MenubarItemTemplateHostComponent,
+      );
+
+      const customItems = within(container).getAllByTestId('custom-item');
+      expect(customItems.map((el) => el.textContent?.trim())).toEqual([
+        'File (custom)',
+        'Help (custom)',
+      ]);
+    });
+
+    it('renders the custom template inside an open dropdown row too', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenubarItemTemplateHostComponent,
+      );
+      await userEvent.click(getBarItemByText(container, 'File (custom)'));
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      expect(within(menu).getByTestId('custom-item').textContent?.trim()).toBe(
+        'New (custom)',
+      );
+    });
+
+    it('falls back to the plain label when no template is projected', () => {
+      const { container } = renderDynamoComponent(DynamoMenubar, {
+        inputs: { items: TEMPLATE_ITEMS },
+      });
+
+      expect(getBarItemByText(container, 'File')).toBeTruthy();
+      expect(container.querySelector('[data-testid="custom-item"]')).toBeNull();
     });
   });
 });

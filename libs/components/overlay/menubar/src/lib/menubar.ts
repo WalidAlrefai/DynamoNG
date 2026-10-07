@@ -1,4 +1,4 @@
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,6 +7,7 @@ import {
   TemplateRef,
   ViewContainerRef,
   computed,
+  contentChild,
   effect,
   inject,
   input,
@@ -205,7 +206,7 @@ function findEnabledItemIndex(
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './menubar.html',
-  imports: [DynamoPassThroughDirective, DynamoBadge],
+  imports: [DynamoPassThroughDirective, DynamoBadge, NgTemplateOutlet],
 })
 export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
   readonly items = input.required<DynamoMenubarItem[]>();
@@ -223,6 +224,9 @@ export class DynamoMenubar extends DynamoBaseComponent<DynamoMenubarPart> {
     viewChildren<ElementRef<HTMLElement>>('barItemEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  /** Optional per-item custom rendering — falls back to plain `{{ item.label }}` text when unset. Shared by both the bar's own items and every dropdown row, since they're the same `DynamoMenubarItem` shape. */
+  protected readonly itemTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoMenubarItem }>>('itemTemplate');
   private readonly overlayService = inject(DynamoOverlayService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);

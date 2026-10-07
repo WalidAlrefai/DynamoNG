@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,6 +7,7 @@ import {
   TemplateRef,
   ViewContainerRef,
   computed,
+  contentChild,
   effect,
   inject,
   input,
@@ -84,7 +86,7 @@ interface FlatLink {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mega-menu.html',
-  imports: [DynamoPassThroughDirective, DynamoBadge],
+  imports: [DynamoPassThroughDirective, DynamoBadge, NgTemplateOutlet],
 })
 export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
   readonly items = input.required<DynamoMegaMenuItem[]>();
@@ -104,6 +106,16 @@ export class DynamoMegaMenu extends DynamoBaseComponent<DynamoMegaMenuPart> {
     viewChildren<ElementRef<HTMLElement>>('barItemEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  /** Optional per-bar-item custom rendering — falls back to plain `{{ item.label }}` text when unset. */
+  protected readonly itemTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoMegaMenuItem }>>(
+      'itemTemplate',
+    );
+  /** Optional per-panel-link custom rendering — falls back to plain `{{ link.label }}` text when unset. Independent from `itemTemplate` since bar items and panel links are distinct types rendered in different DOM locations. */
+  protected readonly linkTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoMegaMenuLink }>>(
+      'linkTemplate',
+    );
   private readonly overlayService = inject(DynamoOverlayService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);

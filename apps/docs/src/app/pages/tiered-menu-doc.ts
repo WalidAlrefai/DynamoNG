@@ -11,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'no-auto-display', title: 'No Auto Display' },
+  { id: 'item-template', title: 'Custom Item Template' },
 ];
 
 const API: ApiTableRow[] = [
@@ -74,6 +75,26 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="item-template"
+        title="Custom Item Template"
+        description="Project an #itemTemplate to replace every row's plain label text with custom markup — icon/shortcut/badge/chevron still render around it."
+      >
+        <div preview>
+          <dg-tiered-menu label="Account" [items]="templateItems">
+            <ng-template #itemTemplate let-item>
+              <span class="font-semibold text-primary">{{ item.label }}</span>
+            </ng-template>
+          </dg-tiered-menu>
+        </div>
+        <div code>
+          &lt;dg-tiered-menu label="Account" [items]="items"&gt; &lt;ng-template
+          #itemTemplate let-item&gt; &lt;span class="font-semibold
+          text-primary"&gt;{{ '{{ item.label }}' }}&lt;/span&gt;
+          &lt;/ng-template&gt; &lt;/dg-tiered-menu&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -90,7 +111,10 @@ const API: ApiTableRow[] = [
           and keyboard nav entirely), <code class="font-mono">shortcut?</code>
           (a display-only keyboard-hint string, no binding registered), and
           <code class="font-mono">badge?</code> (a small trailing
-          <code class="font-mono">dg-badge</code>).
+          <code class="font-mono">dg-badge</code>). Project an
+          <code class="font-mono">#itemTemplate</code> to replace every row's
+          plain label text with custom markup (icon/shortcut/badge/chevron still
+          render around it).
         </p>
       </div>
     </docs-examples-layout>
@@ -116,5 +140,10 @@ export class TieredMenuDocPage {
     { separator: true },
     { label: 'Share', disabled: true },
     { label: 'Hidden for now', visible: false },
+  ];
+  protected readonly templateItems: DynamoTieredMenuEntry[] = [
+    { label: 'Profile' },
+    { label: 'Billing' },
+    { label: 'Sign out' },
   ];
 }

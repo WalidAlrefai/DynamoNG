@@ -33,6 +33,25 @@ protected readonly items: DynamoMegaMenuItem[] = [
 protected onLinkSelect(link: DynamoMegaMenuLink): void { ... }
 ```
 
+## Custom item/link templates
+
+Two independent, optional projected templates — each falls back to plain text when omitted, mirroring
+`@dynamong/select`'s own `contentChild(TemplateRef)` idiom:
+
+```html
+<dg-mega-menu [items]="items">
+  <ng-template #itemTemplate let-item>...</ng-template>
+  <ng-template #linkTemplate let-link>...</ng-template>
+</dg-mega-menu>
+```
+
+- `#itemTemplate` (`let-item: DynamoMegaMenuItem`) — replaces every bar item's plain `{{ item.label }}`
+  text.
+- `#linkTemplate` (`let-link: DynamoMegaMenuLink`) — replaces every panel link's plain
+  `{{ link.label }}` text. Independent from `#itemTemplate` since bar items and panel links are distinct
+  types. Either item/link's `icon`/`shortcut`/`badge`/children-chevron still render around it
+  unconditionally.
+
 ## Inputs
 
 | Input             | Type                              | Default        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |

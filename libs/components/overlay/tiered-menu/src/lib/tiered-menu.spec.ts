@@ -988,4 +988,75 @@ describe('DynamoTieredMenu', () => {
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });
+
+  describe('custom item template', () => {
+    const TEMPLATE_ITEMS: DynamoTieredMenuEntry[] = [
+      { label: 'New', children: [{ label: 'Document' }] },
+      { label: 'Print' },
+    ];
+
+    @Component({
+      selector: 'dg-tiered-menu-item-template-host',
+      standalone: true,
+      imports: [DynamoTieredMenu],
+      template: `
+        <dg-tiered-menu label="File" [items]="items">
+          <ng-template #itemTemplate let-item>
+            <span data-testid="custom-item">{{ item.label }} (custom)</span>
+          </ng-template>
+        </dg-tiered-menu>
+      `,
+    })
+    class TieredMenuItemTemplateHostComponent {
+      readonly items = TEMPLATE_ITEMS;
+    }
+
+    it('renders the custom template for every root-level row', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuItemTemplateHostComponent,
+      );
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      const customItems = within(menu).getAllByTestId('custom-item');
+      expect(customItems.map((el) => el.textContent?.trim())).toEqual([
+        'New (custom)',
+        'Print (custom)',
+      ]);
+    });
+
+    it('renders the custom template inside a nested flyout too', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        TieredMenuItemTemplateHostComponent,
+      );
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      await userEvent.keyboard('{ArrowRight}');
+      await settle(fixture);
+      const flyout = getMenus()[1] as HTMLElement;
+
+      expect(
+        within(flyout).getByTestId('custom-item').textContent?.trim(),
+      ).toBe('Document (custom)');
+    });
+
+    it('falls back to the plain label when no template is projected', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoTieredMenu, {
+        inputs: { items: TEMPLATE_ITEMS, label: 'File' },
+      });
+      await userEvent.click(
+        within(container).getByRole('combobox', { name: 'File' }),
+      );
+      await settle(fixture);
+      const menu = getMenus()[0] as HTMLElement;
+
+      expect(getItemByText(menu, 'New')).toBeTruthy();
+      expect(menu.querySelector('[data-testid="custom-item"]')).toBeNull();
+    });
+  });
 });

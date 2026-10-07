@@ -49,9 +49,14 @@
     >
       @if (item.icon) {
       <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon }}</span>
-      }
+      } @if (itemTemplate(); as tpl) {
+      <ng-container
+        [ngTemplateOutlet]="tpl"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
+      } @else {
       <span>{{ item.label }}</span>
-      @if (item.shortcut) {
+      } @if (item.shortcut) {
       <span [class]="shortcutClasses" aria-hidden="true"
         >{{ item.shortcut }}</span
       >
@@ -125,8 +130,14 @@
         <span [class]="itemIconClasses" aria-hidden="true"
           >{{ item.icon }}</span
         >
-        }
+        } @if (itemTemplate(); as tpl) {
+        <ng-container
+          [ngTemplateOutlet]="tpl"
+          [ngTemplateOutletContext]="{ $implicit: item }"
+        />
+        } @else {
         <span>{{ item.label }}</span>
+        }
       </span>
       <span [class]="rowTrailingClasses">
         @if (item.shortcut) {

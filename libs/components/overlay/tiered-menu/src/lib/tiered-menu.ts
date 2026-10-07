@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,6 +7,7 @@ import {
   TemplateRef,
   ViewContainerRef,
   computed,
+  contentChild,
   effect,
   inject,
   input,
@@ -161,7 +163,7 @@ function findEnabledItemIndex(
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tiered-menu.html',
-  imports: [DynamoPassThroughDirective, DynamoBadge],
+  imports: [DynamoPassThroughDirective, DynamoBadge, NgTemplateOutlet],
 })
 export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> {
   readonly items = input.required<DynamoTieredMenuEntry[]>();
@@ -183,6 +185,11 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  /** Optional per-item custom rendering — falls back to plain `{{ item.label }}` text when unset. One shared template for every level (root + flyouts), since they all share the same `DynamoTieredMenuItem` shape. */
+  protected readonly itemTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoTieredMenuItem }>>(
+      'itemTemplate',
+    );
   private readonly overlayService = inject(DynamoOverlayService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);

@@ -69,6 +69,7 @@ const ITEMS: DynamoMegaMenuItem[] = [
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'vertical', title: 'Vertical' },
+  { id: 'item-template', title: 'Custom Item/Link Template' },
 ];
 
 const API: ApiTableRow[] = [
@@ -122,6 +123,31 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="item-template"
+        title="Custom Item/Link Template"
+        description="Project #itemTemplate and/or #linkTemplate to replace the plain label text on bar items and panel links independently — icon/shortcut/badge/chevron still render around them."
+      >
+        <div preview>
+          <dg-mega-menu [items]="templateItems" ariaLabel="Account menu">
+            <ng-template #itemTemplate let-item>
+              <span class="font-semibold text-primary">{{ item.label }}</span>
+            </ng-template>
+            <ng-template #linkTemplate let-link>
+              <em>{{ link.label }}</em>
+            </ng-template>
+          </dg-mega-menu>
+        </div>
+        <div code>
+          &lt;dg-mega-menu [items]="items" ariaLabel="Account menu"&gt;
+          &lt;ng-template #itemTemplate let-item&gt; &lt;span
+          class="font-semibold text-primary"&gt;{{ '{{ item.label }}'
+          }}&lt;/span&gt; &lt;/ng-template&gt; &lt;ng-template #linkTemplate
+          let-link&gt; &lt;em&gt;{{ '{{ link.label }}' }}&lt;/em&gt;
+          &lt;/ng-template&gt; &lt;/dg-mega-menu&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -142,7 +168,11 @@ const API: ApiTableRow[] = [
           and keyboard nav entirely), <code class="font-mono">shortcut?</code>
           (a display-only keyboard-hint string, no binding registered), and
           <code class="font-mono">badge?</code> (a small trailing
-          <code class="font-mono">dg-badge</code>).
+          <code class="font-mono">dg-badge</code>). Project an
+          <code class="font-mono">#itemTemplate</code> and/or
+          <code class="font-mono">#linkTemplate</code> to replace a bar item's
+          or panel link's plain label text with custom markup
+          (icon/shortcut/badge/chevron still render around it).
         </p>
       </div>
     </docs-examples-layout>
@@ -152,4 +182,11 @@ export class MegaMenuDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows = API;
   protected readonly items = ITEMS;
+  protected readonly templateItems: DynamoMegaMenuItem[] = [
+    {
+      label: 'Account',
+      columns: [{ items: [{ label: 'Profile' }, { label: 'Billing' }] }],
+    },
+    { label: 'Sign out' },
+  ];
 }
