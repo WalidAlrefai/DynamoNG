@@ -16,9 +16,12 @@ const ITEMS: DynamoMegaMenuItem[] = [
       {
         header: 'Laptops',
         items: [
-          { label: 'MacBook Air', icon: '💻' },
-          { label: 'MacBook Pro', icon: '💻' },
+          { label: 'MacBook Air', icon: '💻', shortcut: '⌘1' },
+          { label: 'MacBook Pro', icon: '💻', badge: 'New' },
+          { separator: true },
           { label: 'Compare models' },
+          { label: 'Coming soon', visible: false },
+          { label: 'Open Badge docs', routerLink: '/components/badge' },
         ],
       },
       {
@@ -64,7 +67,12 @@ const ITEMS: DynamoMegaMenuItem[] = [
   { label: 'Contact' },
 ];
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'vertical', title: 'Vertical' },
+  { id: 'item-template', title: 'Custom Item/Link Template' },
+  { id: 'collapse', title: 'Responsive Collapse' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'items', type: 'DynamoMegaMenuItem[] (required)', default: '—' },
@@ -74,6 +82,7 @@ const API: ApiTableRow[] = [
     default: "'horizontal'",
   },
   { name: 'openIndex', type: 'number | null (model)', default: 'null' },
+  { name: 'collapseBreakpoint', type: 'number | null', default: 'null' },
   { name: 'linkSelect', type: 'output<DynamoMegaMenuLink>', default: '—' },
 ];
 
@@ -99,6 +108,69 @@ const API: ApiTableRow[] = [
         <div code>&lt;dg-mega-menu [items]="items" ariaLabel="Main" /&gt;</div>
       </docs-example>
 
+      <docs-example
+        exampleId="vertical"
+        title="Vertical"
+        description='orientation="vertical" renders a sidebar-like column. Once a panel is open, the sibling-switch keys always match whichever pair roves the closed bar for the current orientation (Up/Down here) — the orthogonal pair (Left/Right) moves within the open panel.'
+      >
+        <div preview>
+          <dg-mega-menu
+            [items]="items"
+            orientation="vertical"
+            ariaLabel="Main vertical"
+          />
+        </div>
+        <div code>
+          &lt;dg-mega-menu [items]="items" orientation="vertical"
+          ariaLabel="Main" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="item-template"
+        title="Custom Item/Link Template"
+        description="Project #itemTemplate and/or #linkTemplate to replace the plain label text on bar items and panel links independently — icon/shortcut/badge/chevron still render around them."
+      >
+        <div preview>
+          <dg-mega-menu [items]="templateItems" ariaLabel="Account menu">
+            <ng-template #itemTemplate let-item>
+              <span class="font-semibold text-primary">{{ item.label }}</span>
+            </ng-template>
+            <ng-template #linkTemplate let-link>
+              <em>{{ link.label }}</em>
+            </ng-template>
+          </dg-mega-menu>
+        </div>
+        <div code>
+          &lt;dg-mega-menu [items]="items" ariaLabel="Account menu"&gt;
+          &lt;ng-template #itemTemplate let-item&gt; &lt;span
+          class="font-semibold text-primary"&gt;{{ '{{ item.label }}'
+          }}&lt;/span&gt; &lt;/ng-template&gt; &lt;ng-template #linkTemplate
+          let-link&gt; &lt;em&gt;{{ '{{ link.label }}' }}&lt;/em&gt;
+          &lt;/ng-template&gt; &lt;/dg-mega-menu&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="collapse"
+        title="Responsive Collapse"
+        description="Set collapseBreakpoint to a px width; once the bar's own measured width drops below it, the bar collapses into a hamburger trigger opening a drawer with the full item list. This preview container is narrow enough to stay collapsed."
+      >
+        <div preview>
+          <div class="max-w-[220px]">
+            <dg-mega-menu
+              [items]="items"
+              ariaLabel="Main"
+              [collapseBreakpoint]="400"
+            />
+          </div>
+        </div>
+        <div code>
+          &lt;dg-mega-menu [items]="items" ariaLabel="Main"
+          [collapseBreakpoint]="400" /&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -110,7 +182,30 @@ const API: ApiTableRow[] = [
           <code class="font-mono">command?</code>. Each
           <code class="font-mono">DynamoMegaMenuLink</code> inside a column's
           <code class="font-mono">items</code> also accepts
-          <code class="font-mono">icon?</code>.
+          <code class="font-mono">icon?</code>. A column's own
+          <code class="font-mono">items</code> array can also hold
+          <code class="font-mono">{{ '{ separator: true }' }}</code> entries for
+          a non-interactive divider row — valid inside any column's link list,
+          never at the bar level itself. A bar item or link also accepts
+          <code class="font-mono">visible?</code> (false omits it from render
+          and keyboard nav entirely), <code class="font-mono">shortcut?</code>
+          (a display-only keyboard-hint string, no binding registered), and
+          <code class="font-mono">badge?</code> (a small trailing
+          <code class="font-mono">dg-badge</code>). Project an
+          <code class="font-mono">#itemTemplate</code> and/or
+          <code class="font-mono">#linkTemplate</code> to replace a bar item's
+          or panel link's plain label text with custom markup
+          (icon/shortcut/badge/chevron still render around it).
+          <code class="font-mono">routerLink?</code> (on either shape; leaf-only
+          for bar items) renders a real
+          <code class="font-mono">&lt;a [routerLink]&gt;</code> instead of a
+          button/div, so middle-click/ctrl-click "open in new tab" work
+          natively; <code class="font-mono">queryParams?</code>/<code
+            class="font-mono"
+            >fragment?</code
+          >
+          forward to RouterLink's own inputs — if
+          <code class="font-mono">command</code> is also set, both fire.
         </p>
       </div>
     </docs-examples-layout>
@@ -120,4 +215,11 @@ export class MegaMenuDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows = API;
   protected readonly items = ITEMS;
+  protected readonly templateItems: DynamoMegaMenuItem[] = [
+    {
+      label: 'Account',
+      columns: [{ items: [{ label: 'Profile' }, { label: 'Billing' }] }],
+    },
+    { label: 'Sign out' },
+  ];
 }

@@ -14,8 +14,10 @@ import {
   moveItemInArray,
   type CdkDragDrop,
 } from '@angular/cdk/drag-drop';
-import { FormsModule } from '@angular/forms';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { DynamoCheckIcon } from '@dynamong/icons';
 import { DynamoInputText } from '@dynamong/input-text';
 import { cn } from '@dynamong/utils/class-merge';
@@ -59,7 +61,7 @@ import type {
     DynamoCheckIcon,
     DynamoVirtualScroll,
     DynamoInputText,
-    FormsModule,
+    DynamoPassThroughDirective,
   ],
   templateUrl: './order-list.html',
 })
@@ -77,12 +79,20 @@ export class DynamoOrderList<
    *  reordering (drag, ▲/▼, ⤒/⤓) and selection are both blocked. Unlike
    *  `disabled`, doesn't dim the list or remove it from the tab order. */
   readonly readOnly = input(false);
+  /** Forwarded as `aria-describedby` on the listbox. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true` to match every other
+   *  reviewed component's own convention; `false` keeps the list at its
+   *  original fixed card width. */
+  readonly fluid = input(true);
   /** When true, rows carry a checkbox and click/Enter toggles multi-selection. */
   readonly selectable = input(false);
   /** Allow CDK drag reordering. */
   readonly dragdrop = input(true);
   /** Also render "move to top" / "move to bottom" buttons. */
   readonly moveTopBottom = input(true);
+  /** Shows/hides the entire ▲/▼ (and ⤒/⤓) controls row. */
+  readonly showReorderControls = input(true);
   /** Shows a search box above the list that narrows rows by label. */
   readonly filterable = input(false);
   /** Two-way bindable filter query. */
@@ -192,14 +202,25 @@ export class DynamoOrderList<
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(orderListRootStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          orderListRootStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
-  protected readonly headerClasses = orderListHeaderStyles;
+  protected readonly headerClasses = computed(() =>
+    cn(orderListHeaderStyles, this.ptFor('header').class),
+  );
   protected readonly titleClasses = orderListTitleStyles;
-  protected readonly controlsClasses = orderListControlsStyles;
+  protected readonly controlsClasses = computed(() =>
+    cn(orderListControlsStyles, this.ptFor('controls').class),
+  );
   protected readonly listClasses = computed(() =>
-    this.isVirtualized() ? orderListListVirtualStyles : orderListListStyles,
+    cn(
+      this.isVirtualized() ? orderListListVirtualStyles : orderListListStyles,
+      this.ptFor('list').class,
+    ),
   );
   protected readonly buttonClasses = orderListButtonStyles;
   protected readonly filterWrapperClasses = orderListFilterWrapperStyles;
@@ -207,7 +228,9 @@ export class DynamoOrderList<
     orderListFilterFieldWrapperStyles;
   protected readonly filterIconClasses = orderListFilterIconStyles;
   protected readonly filterInputExtraClasses = orderListFilterInputExtraClasses;
-  protected readonly noResultsClasses = orderListNoResultsStyles;
+  protected readonly noResultsClasses = computed(() =>
+    cn(orderListNoResultsStyles, this.ptFor('no-results').class),
+  );
 
   /** `dg-virtual-scroll`'s own `trackBy` — mirrors the `@for`'s `track option.value` so item identity stays stable across the virtualized/non-virtualized branches. */
   protected readonly virtualTrackBy = (
@@ -215,15 +238,21 @@ export class DynamoOrderList<
   ): unknown => option.value;
 
   protected optionClasses(option: DynamoSelectOption<TValue>): string {
-    return orderListOptionStyles({
-      active: option.value === this.activeValue(),
-      selected: this.isSelected(option),
-      disabled: !!option.disabled,
-    });
+    return cn(
+      orderListOptionStyles({
+        active: option.value === this.activeValue(),
+        selected: this.isSelected(option),
+        disabled: !!option.disabled,
+      }),
+      this.ptFor('option').class,
+    );
   }
 
   protected checkboxClasses(option: DynamoSelectOption<TValue>): string {
-    return orderListCheckboxStyles({ checked: this.isSelected(option) });
+    return cn(
+      orderListCheckboxStyles({ checked: this.isSelected(option) }),
+      this.ptFor('checkbox').class,
+    );
   }
 
   protected isSelected(option: DynamoSelectOption<TValue>): boolean {
@@ -335,6 +364,9 @@ export class DynamoOrderList<
   // --- filter box, mirrors Listbox's `onFilterInputChange`/`onFilterKeydown` ---
 
   protected onFilterInputChange(value: string): void {
+    if (this.disabled() || this.readOnly()) {
+      return;
+    }
     this.filterText.set(value);
     // filteredItems() is read AFTER the set above, so it already reflects
     // the new query (signals recompute synchronously on read).
@@ -345,6 +377,9 @@ export class DynamoOrderList<
   }
 
   protected onFilterKeydown(event: KeyboardEvent): void {
+    if (this.disabled() || this.readOnly()) {
+      return;
+    }
     switch (event.key) {
       case 'Escape':
         event.preventDefault();

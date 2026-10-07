@@ -65,15 +65,31 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'clearable', title: 'Clearable' },
   { id: 'filterable', title: 'Filterable' },
   { id: 'virtual-scroll', title: 'Virtual Scroll' },
+  { id: 'selection-mode', title: 'Selection Mode' },
 ];
 
 const API: ApiTableRow[] = [
   { name: 'nodes', type: 'DynamoTreeNode[]', default: 'required' },
+  { name: 'value', type: 'TValue | TValue[] | null (model)', default: 'null' },
   { name: 'placeholder', type: 'string', default: "'Select...'" },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'invalid', type: 'boolean', default: 'false' },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  { name: 'loading', type: 'boolean', default: 'false' },
+  { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
+  {
+    name: 'ariaDescribedby',
+    type: 'string | undefined',
+    default: 'undefined',
+  },
+  { name: 'fluid', type: 'boolean', default: 'true' },
+  { name: 'readOnly', type: 'boolean', default: 'false' },
   { name: 'clearable', type: 'boolean', default: 'false' },
+  {
+    name: 'selectionMode',
+    type: "'single' | 'multiple' | 'checkbox'",
+    default: "'single'",
+  },
   { name: 'virtualScroll', type: 'boolean', default: 'false' },
   { name: 'virtualScrollItemSize', type: 'number', default: '36' },
   { name: 'virtualScrollHeight', type: 'number', default: '240' },
@@ -183,6 +199,31 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="selection-mode"
+        title="Selection Mode"
+        description="selectionMode='checkbox' cascades tri-state selection to enabled descendants — clicking any row (branch or leaf) toggles it instead of drilling; hover/ArrowRight still browse deeper."
+      >
+        <div preview class="max-w-xs">
+          <dg-cascade-select
+            [nodes]="nodes"
+            [(value)]="checkboxValue"
+            selectionMode="checkbox"
+            ariaLabel="Locations"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Value:
+            <span class="font-mono">{{
+              checkboxValue().join(', ') || '(none)'
+            }}</span>
+          </p>
+        </div>
+        <div code>
+          &lt;dg-cascade-select [nodes]="nodes" [(value)]="value"
+          selectionMode="checkbox" /&gt;
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -196,4 +237,5 @@ export class CascadeSelectDocPage {
   protected readonly manyValue = signal<string | null>(null);
   protected readonly clearableValue = signal<string | null>('mexico');
   protected readonly filterableValue = signal<string | null>(null);
+  protected readonly checkboxValue = signal<string[]>([]);
 }

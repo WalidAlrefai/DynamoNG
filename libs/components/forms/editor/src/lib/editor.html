@@ -1,18 +1,21 @@
-<div [class]="rootClasses()">
+<div [class]="rootClasses()" [dgPt]="ptFor('root')">
   <!--
     Every toolbar control is declared exactly once here and rendered via
     two ngTemplateOutlets below — one inline in the toolbar row, one inside
     the portaled overflow panel — each item's own @if is mutually exclusive
-    between the two locations (isOverflowed() decides which), so a given
-    control's markup only ever actually renders in one place at a time.
-    The trailing label <span> only renders in the overflow location, since
-    a vertical list of unlabeled icon-only buttons is hard to scan.
+    between the two locations (locationOf() decides which; a third possible
+    result, 'hidden', means toolbarButtons() excluded the item — it renders
+    in neither location), so a given control's markup only ever actually
+    renders in one place at a time. The trailing label <span> only renders
+    in the overflow location, since a vertical list of unlabeled icon-only
+    buttons is hard to scan.
   -->
   <ng-template #toolbarItems let-location="location">
-    @if ((isOverflowed('undo') ? 'overflow' : 'inline') === location) {
+    @if (locationOf('undo') === location) {
     <button
       type="button"
       [class]="buttonClasses('undo')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       aria-label="Undo"
       (click)="onFormat('undo')"
@@ -40,10 +43,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Undo</span>
-    } } @if ((isOverflowed('redo') ? 'overflow' : 'inline') === location) {
+    } } @if (locationOf('redo') === location) {
     <button
       type="button"
       [class]="buttonClasses('redo')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       aria-label="Redo"
       (click)="onFormat('redo')"
@@ -71,10 +75,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Redo</span>
-    } } @if ((isOverflowed('bold') ? 'overflow' : 'inline') === location) {
+    } } @if (locationOf('bold') === location) {
     <button
       type="button"
       [class]="buttonClasses('bold')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       [attr.aria-pressed]="isActive('bold')"
       aria-label="Bold"
@@ -84,10 +89,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Bold</span>
-    } } @if ((isOverflowed('italic') ? 'overflow' : 'inline') === location) {
+    } } @if (locationOf('italic') === location) {
     <button
       type="button"
       [class]="buttonClasses('italic')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       [attr.aria-pressed]="isActive('italic')"
       aria-label="Italic"
@@ -97,10 +103,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Italic</span>
-    } } @if ((isOverflowed('underline') ? 'overflow' : 'inline') === location) {
+    } } @if (locationOf('underline') === location) {
     <button
       type="button"
       [class]="buttonClasses('underline')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       [attr.aria-pressed]="isActive('underline')"
       aria-label="Underline"
@@ -110,10 +117,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Underline</span>
-    } } @if ((isOverflowed('alignLeft') ? 'overflow' : 'inline') === location) {
+    } } @if (locationOf('alignLeft') === location) {
     <button
       type="button"
       [class]="buttonClasses('justifyLeft')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       [attr.aria-pressed]="isActive('justifyLeft')"
       aria-label="Align left"
@@ -163,11 +171,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Align left</span>
-    } } @if ((isOverflowed('alignCenter') ? 'overflow' : 'inline') === location)
-    {
+    } } @if (locationOf('alignCenter') === location) {
     <button
       type="button"
       [class]="buttonClasses('justifyCenter')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       [attr.aria-pressed]="isActive('justifyCenter')"
       aria-label="Align center"
@@ -217,11 +225,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Align center</span>
-    } } @if ((isOverflowed('alignRight') ? 'overflow' : 'inline') === location)
-    {
+    } } @if (locationOf('alignRight') === location) {
     <button
       type="button"
       [class]="buttonClasses('justifyRight')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       [attr.aria-pressed]="isActive('justifyRight')"
       aria-label="Align right"
@@ -271,10 +279,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Align right</span>
-    } } @if ((isOverflowed('justify') ? 'overflow' : 'inline') === location) {
+    } } @if (locationOf('justify') === location) {
     <button
       type="button"
       [class]="buttonClasses('justifyFull')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       [attr.aria-pressed]="isActive('justifyFull')"
       aria-label="Justify"
@@ -324,11 +333,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Justify</span>
-    } } @if ((isOverflowed('bulletedList') ? 'overflow' : 'inline') ===
-    location) {
+    } } @if (locationOf('bulletedList') === location) {
     <button
       type="button"
       [class]="buttonClasses('insertUnorderedList')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       [attr.aria-pressed]="isActive('insertUnorderedList')"
       aria-label="Bulleted list"
@@ -373,11 +382,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Bulleted list</span>
-    } } @if ((isOverflowed('numberedList') ? 'overflow' : 'inline') ===
-    location) {
+    } } @if (locationOf('numberedList') === location) {
     <button
       type="button"
       [class]="buttonClasses('insertOrderedList')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       [attr.aria-pressed]="isActive('insertOrderedList')"
       aria-label="Numbered list"
@@ -428,7 +437,7 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Numbered list</span>
-    } } @if ((isOverflowed('heading') ? 'overflow' : 'inline') === location) {
+    } } @if (locationOf('heading') === location) {
     <select
       [class]="headingSelectClasses"
       [disabled]="disabled() || readOnly()"
@@ -441,10 +450,11 @@
       <option value="h2">Heading 2</option>
       <option value="h3">Heading 3</option>
     </select>
-    } @if ((isOverflowed('link') ? 'overflow' : 'inline') === location) {
+    } @if (locationOf('link') === location) {
     <button
       type="button"
       [class]="buttonClasses('createLink')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       aria-label="Insert link"
       (click)="onLink()"
@@ -471,10 +481,11 @@
     </button>
     @if (location === 'overflow') {
     <span [class]="overflowItemLabelClasses">Insert link</span>
-    } } @if ((isOverflowed('image') ? 'overflow' : 'inline') === location) {
+    } } @if (locationOf('image') === location) {
     <button
       type="button"
       [class]="buttonClasses('insertImage')"
+      [dgPt]="ptFor('button')"
       [disabled]="disabled() || readOnly()"
       aria-label="Insert image"
       (click)="onImageButtonClick()"
@@ -511,9 +522,10 @@
 
   <div
     #toolbarEl
-    [class]="toolbarClasses"
+    [class]="toolbarClasses()"
     role="toolbar"
     aria-label="Formatting"
+    [dgPt]="ptFor('toolbar')"
   >
     <ng-container
       [ngTemplateOutlet]="toolbarItems"
@@ -545,6 +557,7 @@
       [attr.aria-expanded]="overflowOpen()"
       [attr.aria-controls]="overflowOpen() ? overflowId : null"
       aria-label="More formatting options"
+      [dgPt]="ptFor('button')"
       (click)="toggleOverflow()"
       (keydown)="onTriggerKeydown($event)"
     >
@@ -569,6 +582,7 @@
     role="textbox"
     aria-multiline="true"
     [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
     [attr.aria-invalid]="invalid() ? true : null"
     [attr.aria-readonly]="readOnly() ? 'true' : null"
     [attr.data-placeholder]="placeholder() ?? null"
@@ -576,9 +590,16 @@
       disabled() ? null : readOnly() ? 'false' : 'true'
     "
     [attr.tabindex]="readOnly() ? 0 : null"
+    [dgPt]="ptFor('content')"
     (input)="onInput($event)"
+    (paste)="onPaste($event)"
     (blur)="onBlur()"
   ></div>
+  @if (maxLength() !== undefined) {
+  <div [class]="characterCountClasses()" [dgPt]="ptFor('characterCount')">
+    {{ textLength() }} / {{ maxLength() }}
+  </div>
+  }
 </div>
 
 <ng-template #overflowPanelTemplate>

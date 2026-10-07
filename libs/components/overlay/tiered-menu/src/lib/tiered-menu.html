@@ -8,7 +8,9 @@
   [attr.aria-expanded]="open()"
   [attr.aria-controls]="open() ? menuId : null"
   [attr.aria-activedescendant]="activeDescendantId()"
+  [attr.aria-describedby]="ariaDescribedby() ?? null"
   [class]="triggerClasses()"
+  [dgPt]="triggerPt()"
   (click)="toggle()"
   (keydown)="onTriggerKeydown($event)"
 >
@@ -47,9 +49,33 @@
     role="menu"
     [attr.aria-label]="ariaLabel() ?? null"
     [attr.aria-labelledby]="ariaLabel() ? null : triggerId"
-    [class]="panelClasses"
+    [class]="panelClasses()"
+    [dgPt]="ptFor('panel')"
   >
-    @for (item of level.items; track item; let i = $index) {
+    @for (item of level.items; track item; let i = $index) { @if
+    (isSeparator(item)) {
+    <div role="separator" [class]="separatorClasses"></div>
+    } @else if (item.visible !== false) { @if (!item.children?.length &&
+    item.routerLink) {
+    <a
+      [id]="rowId(levelIndex ?? 0, i)"
+      role="menuitem"
+      tabindex="-1"
+      [attr.aria-disabled]="item.disabled ? 'true' : null"
+      [class]="itemClasses(item, levelIndex ?? 0, i)"
+      [dgPt]="ptFor('item')"
+      [routerLink]="item.disabled ? null : item.routerLink"
+      [queryParams]="item.queryParams"
+      [fragment]="item.fragment"
+      (mouseenter)="onItemHover(levelIndex ?? 0, i)"
+      (click)="onItemClick(levelIndex ?? 0, i)"
+    >
+      <ng-container
+        [ngTemplateOutlet]="rowContent"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
+    </a>
+    } @else {
     <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the trigger's own keydown (see tiered-menu.ts's class doc comment on the aria-activedescendant focus model) -->
     <div
       [id]="rowId(levelIndex ?? 0, i)"
@@ -57,14 +83,40 @@
       tabindex="-1"
       [attr.aria-disabled]="item.disabled ? 'true' : null"
       [class]="itemClasses(item, levelIndex ?? 0, i)"
+      [dgPt]="ptFor('item')"
       (mouseenter)="onItemHover(levelIndex ?? 0, i)"
       (click)="onItemClick(levelIndex ?? 0, i)"
     >
+      <ng-container
+        [ngTemplateOutlet]="rowContent"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
+    </div>
+    } } }
+  </div>
+  }
+
+  <ng-template #rowContent let-item>
+    <span [class]="itemLeadingClasses">
       @if (item.icon) {
       <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon }}</span>
-      }
+      } @if (itemTemplate(); as tpl) {
+      <ng-container
+        [ngTemplateOutlet]="tpl"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
+      } @else {
       <span>{{ item.label }}</span>
-      @if (item.children?.length) {
+      }
+    </span>
+    <span [class]="itemTrailingClasses">
+      @if (item.shortcut) {
+      <span [class]="shortcutClasses" aria-hidden="true"
+        >{{ item.shortcut }}</span
+      >
+      } @if (item.badge !== undefined) {
+      <dg-badge size="sm">{{ item.badge }}</dg-badge>
+      } @if (item.children?.length) {
       <svg
         [class]="caretClasses"
         width="16"
@@ -82,8 +134,6 @@
         />
       </svg>
       }
-    </div>
-    }
-  </div>
-  }
+    </span>
+  </ng-template>
 </ng-template>

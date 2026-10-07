@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { DynamoTieredMenu } from '@dynamong/tiered-menu';
-import type { DynamoTieredMenuItem } from '@dynamong/tiered-menu';
+import type { DynamoTieredMenuEntry } from '@dynamong/tiered-menu';
 import { DocApiTable, type ApiTableRow } from '../components/api-table';
 import { DocExample } from '../components/example-block';
 import {
@@ -11,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'no-auto-display', title: 'No Auto Display' },
+  { id: 'item-template', title: 'Custom Item Template' },
 ];
 
 const API: ApiTableRow[] = [
@@ -74,6 +75,26 @@ const API: ApiTableRow[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="item-template"
+        title="Custom Item Template"
+        description="Project an #itemTemplate to replace every row's plain label text with custom markup — icon/shortcut/badge/chevron still render around it."
+      >
+        <div preview>
+          <dg-tiered-menu label="Account" [items]="templateItems">
+            <ng-template #itemTemplate let-item>
+              <span class="font-semibold text-primary">{{ item.label }}</span>
+            </ng-template>
+          </dg-tiered-menu>
+        </div>
+        <div code>
+          &lt;dg-tiered-menu label="Account" [items]="items"&gt; &lt;ng-template
+          #itemTemplate let-item&gt; &lt;span class="font-semibold
+          text-primary"&gt;{{ '{{ item.label }}' }}&lt;/span&gt;
+          &lt;/ng-template&gt; &lt;/dg-tiered-menu&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <docs-api-table [rows]="apiRows" />
         <p class="text-sm text-text-muted">
@@ -82,7 +103,26 @@ const API: ApiTableRow[] = [
           <code class="font-mono">icon?</code> (a plain glyph/emoji string),
           <code class="font-mono">disabled?</code>,
           <code class="font-mono">children?</code>,
-          <code class="font-mono">command?</code>.
+          <code class="font-mono">command?</code>. Any level's own item array —
+          including the root <code class="font-mono">items</code> — can also
+          hold <code class="font-mono">{{ '{ separator: true }' }}</code>
+          entries for a non-interactive divider row. An item also accepts
+          <code class="font-mono">visible?</code> (false omits it from render
+          and keyboard nav entirely), <code class="font-mono">shortcut?</code>
+          (a display-only keyboard-hint string, no binding registered), and
+          <code class="font-mono">badge?</code> (a small trailing
+          <code class="font-mono">dg-badge</code>). Project an
+          <code class="font-mono">#itemTemplate</code> to replace every row's
+          plain label text with custom markup (icon/shortcut/badge/chevron still
+          render around it).
+          <code class="font-mono">routerLink?</code> (leaf-only) renders a real
+          <code class="font-mono">&lt;a [routerLink]&gt;</code> instead of a
+          div, so middle-click/ctrl-click "open in new tab" work natively;
+          <code class="font-mono">queryParams?</code>/<code class="font-mono"
+            >fragment?</code
+          >
+          forward to RouterLink's own inputs — if
+          <code class="font-mono">command</code> is also set, both fire.
         </p>
       </div>
     </docs-examples-layout>
@@ -92,7 +132,7 @@ export class TieredMenuDocPage {
   protected readonly examples = EXAMPLES;
   protected readonly apiRows = API;
   protected readonly lastSelected = signal<string | null>(null);
-  protected readonly items: DynamoTieredMenuItem[] = [
+  protected readonly items: DynamoTieredMenuEntry[] = [
     {
       label: 'New',
       icon: '📄',
@@ -103,7 +143,16 @@ export class TieredMenuDocPage {
       ],
     },
     { label: 'Export', children: [{ label: 'PDF' }, { label: 'CSV' }] },
-    { label: 'Print', icon: '🖨️' },
+    { label: 'Print', icon: '🖨️', shortcut: '⌘P' },
+    { label: 'Comments', badge: 3 },
+    { label: 'Open Badge docs', routerLink: '/components/badge' },
+    { separator: true },
     { label: 'Share', disabled: true },
+    { label: 'Hidden for now', visible: false },
+  ];
+  protected readonly templateItems: DynamoTieredMenuEntry[] = [
+    { label: 'Profile' },
+    { label: 'Billing' },
+    { label: 'Sign out' },
   ];
 }

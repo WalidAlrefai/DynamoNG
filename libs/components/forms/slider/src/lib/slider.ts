@@ -5,6 +5,7 @@ import {
   type OnInit,
   computed,
   forwardRef,
+  inject,
   input,
   isDevMode,
   model,
@@ -12,13 +13,18 @@ import {
   viewChild,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import { Directionality } from '@angular/cdk/bidi';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import type { DynamoSeverity, DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   sliderFillStyles,
   sliderRootStyles,
   sliderThumbStyles,
+  sliderTickLabelStyles,
   sliderTickStyles,
   sliderTooltipStyles,
   sliderTrackStyles,
@@ -34,6 +40,7 @@ import type {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './slider.html',
+  imports: [DynamoPassThroughDirective],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -56,17 +63,24 @@ export class DynamoSlider
   readonly min = input(0);
   readonly max = input(100);
   readonly step = input(1);
+  /** Overrides `step` for keyboard Arrow/Page increments only. Unset falls
+   *  back to `step()` — zero behavior change by default. Pointer-drag
+   *  snapping always uses `step()`, never this. */
+  readonly keyboardStep = input<number | undefined>(undefined);
   /**
    * Opt-in — renders two independently-draggable thumbs instead of one,
-   * and `value` becomes a `DynamoSliderRange` instead of a plain number
-   * (mirrors PrimeNG's own `p-slider[range]`). Thumbs can touch but never
-   * cross (the min-thumb's value can never exceed the max-thumb's, and
-   * vice versa) — see `clampPair`. Track-click-to-jump is intentionally
-   * NOT supported here (a bare track click is ambiguous about which
-   * thumb should respond); only dragging a handle directly, or its own
-   * keyboard interaction, moves it.
+   * and `value` becomes a `DynamoSliderRange` instead of a plain number.
+   * Thumbs can touch but never cross (the min-thumb's value can never
+   * exceed the max-thumb's, and vice versa) — see `clampPair`.
+   * Track-click-to-jump is intentionally NOT supported here (a bare track
+   * click is ambiguous about which thumb should respond); only dragging a
+   * handle directly, or its own keyboard interaction, moves it.
    */
   readonly range = input(false);
+  /** Range mode only. Minimum distance enforced between the two thumbs —
+   *  default `0` preserves the original "can touch, never cross" behavior
+   *  exactly. */
+  readonly minRange = input(0);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
   /** HTML `readonly` semantics: the thumb stays visible/focusable, but
@@ -76,6 +90,13 @@ export class DynamoSlider
   readonly size = input<DynamoSize>('md');
   readonly severity = input<DynamoSeverity>('primary');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the thumb (both thumbs, in range mode). */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true`; the root was already
+   *  unconditionally full-width in horizontal orientation before this input
+   *  existed, so this is a pure opt-out, not a behavior change. Vertical
+   *  orientation is untouched — its footprint is intrinsic. */
+  readonly fluid = input(true);
   /** `'vertical'` renders a bottom-anchored track that grows upward, matching a volume-slider convention. Keyboard arrows are unaffected — Right/Up already increment and Left/Down already decrement in both orientations. */
   readonly orientation = input<DynamoSliderOrientation>('horizontal');
   /** Track height in px — only consulted while `orientation` is `'vertical'`; there's no natural intrinsic height for a vertical track (same reasoning as VirtualScroll's own `height` input). */
@@ -84,6 +105,10 @@ export class DynamoSlider
   readonly showTicks = input(false);
   /** Explicit, sparse tick positions (e.g. `[0, 25, 50, 75, 100]`), overriding `showTicks`' step-based generation. Values outside `[min, max]` are dropped. */
   readonly tickValues = input<number[] | undefined>(undefined);
+  /** Renders each tick's numeric value as a label. Orthogonal to both
+   *  `showTicks` and `tickValues` — reuses whichever set of tick positions
+   *  they produce. */
+  readonly showTickLabels = input(false);
   /**
    * Shows the live value in a small bubble while a thumb is actively being
    * dragged (not on plain keyboard focus — a deliberate scope cut, same as
@@ -98,6 +123,8 @@ export class DynamoSlider
   private onTouchedFn: () => void = () => {
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
+
+  private readonly directionality = inject(Directionality);
 
   private readonly trackRef =
     viewChild.required<ElementRef<HTMLElement>>('track');
@@ -154,35 +181,57 @@ export class DynamoSlider
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
-          sliderRootStyles({ orientation: this.orientation() }),
+          sliderRootStyles({
+            orientation: this.orientation(),
+            fluid: this.fluid(),
+          }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
   protected readonly trackClasses = computed(() =>
-    sliderTrackStyles({
-      size: this.size(),
-      disabled: this.disabled(),
-      orientation: this.orientation(),
-    }),
+    cn(
+      sliderTrackStyles({
+        size: this.size(),
+        disabled: this.disabled(),
+        orientation: this.orientation(),
+      }),
+      this.ptFor('track').class,
+    ),
   );
   protected readonly fillClasses = computed(() =>
-    sliderFillStyles({
-      severity: this.severity(),
-      orientation: this.orientation(),
-    }),
+    cn(
+      sliderFillStyles({
+        severity: this.severity(),
+        orientation: this.orientation(),
+      }),
+      this.ptFor('fill').class,
+    ),
   );
   protected readonly thumbClasses = computed(() =>
-    sliderThumbStyles({
-      size: this.size(),
-      severity: this.severity(),
-      disabled: this.disabled(),
-      orientation: this.orientation(),
-    }),
+    cn(
+      sliderThumbStyles({
+        size: this.size(),
+        severity: this.severity(),
+        disabled: this.disabled(),
+        orientation: this.orientation(),
+      }),
+      this.ptFor('thumb').class,
+    ),
   );
   protected readonly tickClasses = computed(() =>
-    sliderTickStyles({ orientation: this.orientation() }),
+    cn(
+      sliderTickStyles({ orientation: this.orientation() }),
+      this.ptFor('tick').class,
+    ),
+  );
+  protected readonly tickLabelClasses = computed(() =>
+    cn(
+      sliderTickLabelStyles({ orientation: this.orientation() }),
+      this.ptFor('tickLabel').class,
+    ),
   );
   protected readonly tooltipClasses = computed(() =>
     sliderTooltipStyles({ orientation: this.orientation() }),
@@ -220,7 +269,14 @@ export class DynamoSlider
     if (!isDevMode()) return;
     if (this.showTicks() && !this.tickValues() && this.ticks().length > 50) {
       console.warn(
-        '[dg-slider] `showTicks` generated more than 50 tick marks from `step` — consider passing `tickValues` for a sparse, explicit set instead.',
+        this.showTickLabels()
+          ? '[dg-slider] `showTicks` generated more than 50 tick marks from `step`, each with its own label — consider passing `tickValues` for a sparse, explicit set instead.'
+          : '[dg-slider] `showTicks` generated more than 50 tick marks from `step` — consider passing `tickValues` for a sparse, explicit set instead.',
+      );
+    }
+    if (this.range() && this.minRange() > this.max() - this.min()) {
+      console.warn(
+        "[dg-slider] `minRange` exceeds the slider's overall span (max - min) — thumbs will clamp to the slider's bounds rather than maintaining the full requested gap.",
       );
     }
   }
@@ -235,7 +291,12 @@ export class DynamoSlider
     percent: number,
     dimension?: number,
   ): Record<string, string> {
-    const axis = this.orientation() === 'vertical' ? 'bottom' : 'left';
+    // insetInlineStart, not left: a logical CSS property that the browser
+    // auto-mirrors under dir="rtl" with zero JS direction detection needed —
+    // vertical's `bottom` is untouched, since the block axis has no RTL
+    // concern (only the inline/horizontal axis does).
+    const axis =
+      this.orientation() === 'vertical' ? 'bottom' : 'insetInlineStart';
     const style: Record<string, string> = { [axis]: `${percent}%` };
     if (dimension !== undefined) {
       style[this.orientation() === 'vertical' ? 'height' : 'width'] =
@@ -270,15 +331,21 @@ export class DynamoSlider
     return this.range() ? this.dragThumb() === thumb : this.dragging();
   }
 
+  // Bounds + NaN-guard only — grid-snapping is the caller's job (see
+  // snapToStep), applied once at commit time with whichever grid that
+  // specific commit origin uses (step() for drag, keyboardStep() ?? step()
+  // for keyboard). This also means display (clampedValue/currentMin/
+  // currentMax, below) never re-grids an already-stored value onto step()'s
+  // grid — needed so a keyboardStep()-grid value displays correctly instead
+  // of silently snapping back onto step()'s grid for render purposes only.
   private clamp(raw: number): number {
     if (Number.isNaN(raw)) {
       return this.min();
     }
-    return Math.min(this.max(), Math.max(this.min(), this.snapToStep(raw)));
+    return Math.min(this.max(), Math.max(this.min(), raw));
   }
 
-  private snapToStep(raw: number): number {
-    const step = this.step();
+  private snapToStep(raw: number, step: number): number {
     if (step <= 0) {
       return raw;
     }
@@ -293,17 +360,20 @@ export class DynamoSlider
   }
 
   /**
-   * Applies the existing single-value `clamp()` (NaN-guard + step-snap +
-   * min/max bound) unchanged, then — range mode only — additionally
-   * clamps against the OTHER thumb's current raw value so the min-thumb
-   * can never exceed the max-thumb and vice versa. Gap is 0 (thumbs may
-   * touch), matching PrimeNG's own default; no configurable gap in v1.
+   * Applies the existing single-value `clamp()` (NaN-guard + min/max bound
+   * — `raw` is expected to already be snapped to whichever grid the caller
+   * wants) unchanged, then — range mode only — additionally clamps against
+   * the OTHER thumb's current raw value, offset by `minRange()`, so the
+   * min-thumb can never come within that distance of the max-thumb and vice
+   * versa. `minRange` defaults to `0` (thumbs may touch but never cross —
+   * the original behavior, unchanged).
    */
   private clampPair(raw: number, thumb: 'min' | 'max'): number {
     const base = this.clamp(raw);
     if (!this.range()) {
       return base;
     }
+    const gap = Math.max(0, this.minRange());
     const value = this.value();
     const other = this.isRangeValue(value)
       ? thumb === 'min'
@@ -312,14 +382,16 @@ export class DynamoSlider
       : thumb === 'min'
         ? this.max()
         : this.min();
-    return thumb === 'min' ? Math.min(base, other) : Math.max(base, other);
+    return thumb === 'min'
+      ? Math.min(base, Math.max(this.min(), other - gap))
+      : Math.max(base, Math.min(this.max(), other + gap));
   }
 
   protected onThumbKeydown(thumb: 'min' | 'max', event: KeyboardEvent): void {
     if (this.disabled() || this.readOnly()) {
       return;
     }
-    const step = this.step();
+    const step = this.keyboardStep() ?? this.step();
     const current = !this.range()
       ? this.clampedValue()
       : thumb === 'min'
@@ -351,7 +423,7 @@ export class DynamoSlider
         return;
     }
     event.preventDefault();
-    this.commitThumb(thumb, next);
+    this.commitThumb(thumb, next, step);
   }
 
   // Both click-to-jump and drag are handled here rather than split between
@@ -398,6 +470,18 @@ export class DynamoSlider
   }
 
   protected onTrackPointerMove(event: PointerEvent): void {
+    if (this.disabled() || this.readOnly()) {
+      // Ends the drag cleanly rather than merely ignoring further moves —
+      // otherwise showTooltipFor() would keep rendering a frozen, stale
+      // tooltip indefinitely on a now-disabled/readOnly slider until some
+      // future pointerup happens to arrive, which isn't guaranteed (pointer
+      // capture behavior under a mid-drag disabled flip is inconsistent
+      // across browsers). No onTouchedFn() call — no value changed, matching
+      // onThumbKeydown's own disabled/readOnly guard.
+      this.dragging.set(false);
+      this.dragThumb.set(null);
+      return;
+    }
     if (this.range()) {
       const thumb = this.dragThumb();
       if (!thumb) {
@@ -425,6 +509,10 @@ export class DynamoSlider
     event: PointerEvent,
   ): void {
     const rect = this.trackRef().nativeElement.getBoundingClientRect();
+    // CSS logical properties alone can't fix drag math — event.clientX is
+    // always a physical viewport coordinate, so direction has to be read
+    // explicitly here to know which edge "increasing value" drags toward.
+    const isRtl = this.directionality.value === 'rtl';
     const ratio =
       this.orientation() === 'vertical'
         ? rect.height > 0
@@ -434,9 +522,21 @@ export class DynamoSlider
             )
           : 0
         : rect.width > 0
-          ? Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))
+          ? Math.min(
+              1,
+              Math.max(
+                0,
+                isRtl
+                  ? (rect.right - event.clientX) / rect.width
+                  : (event.clientX - rect.left) / rect.width,
+              ),
+            )
           : 0;
-    this.commitThumb(thumb, this.min() + ratio * (this.max() - this.min()));
+    this.commitThumb(
+      thumb,
+      this.min() + ratio * (this.max() - this.min()),
+      this.step(),
+    );
   }
 
   private commit(next: number): void {
@@ -454,9 +554,12 @@ export class DynamoSlider
    * non-range mode (always short-circuits to the plain `commit()` path),
    * so the single existing thumb can keep calling this with a literal
    * `'min'` without ever actually branching into range-shaped commits.
+   * `step` is the grid this specific commit snaps to — keyboard passes
+   * `keyboardStep() ?? step()`, pointer-drag always passes `step()`.
    */
-  private commitThumb(thumb: 'min' | 'max', next: number): void {
-    const clamped = this.clampPair(next, thumb);
+  private commitThumb(thumb: 'min' | 'max', next: number, step: number): void {
+    const snapped = this.snapToStep(next, step);
+    const clamped = this.clampPair(snapped, thumb);
     if (!this.range()) {
       this.commit(clamped);
       return;

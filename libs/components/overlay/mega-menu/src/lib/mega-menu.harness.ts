@@ -10,15 +10,18 @@ export class DynamoMegaMenuHarness extends ComponentHarness {
   // The mega panel is portaled outside the host subtree by CDK Overlay, so
   // it must be located from the document root — same technique as Menubar's
   // harness.
-  private readonly panelLocator = this.documentRootLocatorFactory().locatorForOptional(
-    '[data-testid="DynamoMegaMenu-panel"]',
-  );
-  private readonly linkLocators = this.documentRootLocatorFactory().locatorForAll(
-    '[data-testid="DynamoMegaMenu-panel"] [role="menuitem"]',
-  );
-  private readonly columnLocators = this.documentRootLocatorFactory().locatorForAll(
-    '[data-testid="DynamoMegaMenu-panel"] [role="group"]',
-  );
+  private readonly panelLocator =
+    this.documentRootLocatorFactory().locatorForOptional(
+      '[data-testid="DynamoMegaMenu-panel"]',
+    );
+  private readonly linkLocators =
+    this.documentRootLocatorFactory().locatorForAll(
+      '[data-testid="DynamoMegaMenu-panel"] [role="menuitem"]',
+    );
+  private readonly columnLocators =
+    this.documentRootLocatorFactory().locatorForAll(
+      '[data-testid="DynamoMegaMenu-panel"] [role="group"]',
+    );
 
   async getRootItemLabels(): Promise<string[]> {
     const items = await this.barItemLocators();
@@ -27,6 +30,22 @@ export class DynamoMegaMenuHarness extends ComponentHarness {
 
   async isOpen(): Promise<boolean> {
     return (await this.panelLocator()) !== null;
+  }
+
+  /** Whether the bar is currently collapsed into its hamburger trigger (see `collapseBreakpoint`) — the hamburger carries no visible label text, so it isn't reachable via `getRootItemLabels`/`open`. */
+  async isCollapsed(): Promise<boolean> {
+    const items = await this.barItemLocators();
+    if (items.length !== 1) return false;
+    const label = (await items[0]?.getAttribute('aria-label')) ?? '';
+    return label.toLowerCase().includes('menu');
+  }
+
+  /** Opens the collapsed hamburger's own drawer (no-op if not collapsed, or already open). */
+  async openDrawer(): Promise<void> {
+    if (!(await this.isCollapsed())) return;
+    const items = await this.barItemLocators();
+    if ((await items[0]?.getAttribute('aria-expanded')) === 'true') return;
+    await items[0]?.click();
   }
 
   async open(label: string): Promise<void> {

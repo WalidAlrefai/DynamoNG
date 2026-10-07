@@ -58,6 +58,19 @@ function selectOutsideElement(): HTMLElement {
   return outside;
 }
 
+// Same shape as chips-input.spec.ts's own pasteEvent() helper, extended to
+// respond per-MIME-type (a real ClipboardEvent's clipboardData.getData
+// returns different content for 'text/html' vs 'text/plain').
+function pasteEvent(html: string | null, text = ''): Event {
+  const event = new Event('paste', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'clipboardData', {
+    value: {
+      getData: (type: string) => (type === 'text/html' ? (html ?? '') : text),
+    },
+  });
+  return event;
+}
+
 function stubExecCommand(returnValue = true): void {
   document.execCommand = vi
     .fn()
@@ -1268,6 +1281,494 @@ describe('DynamoEditor', () => {
       TestBed.flushEffects();
 
       expect(within(container).getByRole('textbox').innerHTML).toBe('');
+    });
+  });
+});
+
+describe('DynamoEditor — baseline parity (Phase 0)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('passthrough (pt)', () => {
+    it('merges pt class onto every part: root/toolbar/button/content', () => {
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: {
+          ariaLabel: 'Notes',
+          pt: {
+            root: { class: 'pt-root' },
+            toolbar: { class: 'pt-toolbar' },
+            button: { class: 'pt-button' },
+            content: { class: 'pt-content' },
+          },
+        },
+      });
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('.pt-toolbar')).not.toBeNull();
+      expect(container.querySelectorAll('.pt-button').length).toBeGreaterThan(
+        1,
+      );
+      expect(container.querySelector('.pt-content')).not.toBeNull();
+    });
+  });
+
+  describe('ariaDescribedby / fluid', () => {
+    it('defaults fluid to true', () => {
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes' },
+      });
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('switches to intrinsic width when fluid is set to false', () => {
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes', fluid: false },
+      });
+      expect(container.querySelector('div')?.className).toContain('w-auto');
+      expect(container.querySelector('div')?.className).not.toContain('w-full');
+    });
+
+    it('forwards ariaDescribedby to the content region', () => {
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes', ariaDescribedby: 'help-text' },
+      });
+      expect(
+        within(container).getByRole('textbox').getAttribute('aria-describedby'),
+      ).toBe('help-text');
+    });
+  });
+
+  describe('paste interception (security fix)', () => {
+    it('sanitizes a pasted script tag before it ever reaches the DOM', () => {
+      stubExecCommand();
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes' },
+      });
+      const content = within(container).getByRole('textbox');
+
+      content.dispatchEvent(pasteEvent('<p>hi</p><script>alert(1)</script>'));
+
+      expect(document.execCommand).toHaveBeenCalledWith(
+        'insertHTML',
+        false,
+        expect.not.stringContaining('<script'),
+      );
+    });
+
+    it('strips an onerror attribute from pasted HTML before insertion', () => {
+      stubExecCommand();
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes' },
+      });
+      const content = within(container).getByRole('textbox');
+
+      content.dispatchEvent(pasteEvent('<img src="x" onerror="alert(1)">'));
+
+      expect(document.execCommand).toHaveBeenCalledWith(
+        'insertHTML',
+        false,
+        expect.not.stringContaining('onerror'),
+      );
+    });
+
+    it('blocks the native (unsanitized) paste from ever landing in the DOM', () => {
+      stubExecCommand();
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes' },
+      });
+      const content = within(container).getByRole('textbox');
+      const event = pasteEvent('<p>hi</p>');
+      const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+
+      content.dispatchEvent(event);
+
+      expect(preventDefaultSpy).toHaveBeenCalled();
+    });
+
+    it('falls back to execCommand("insertText") when no text/html clipboard flavor is present', () => {
+      stubExecCommand();
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes' },
+      });
+      const content = within(container).getByRole('textbox');
+
+      content.dispatchEvent(pasteEvent(null, 'plain text'));
+
+      expect(document.execCommand).toHaveBeenCalledWith(
+        'insertText',
+        false,
+        'plain text',
+      );
+    });
+
+    it('never calls execCommand while disabled', () => {
+      stubExecCommand();
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes', disabled: true },
+      });
+      const content = within(container).getByRole('textbox');
+
+      content.dispatchEvent(pasteEvent('<p>hi</p>'));
+
+      expect(document.execCommand).not.toHaveBeenCalled();
+    });
+
+    it('never calls execCommand while readOnly', () => {
+      stubExecCommand();
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes', readOnly: true },
+      });
+      const content = within(container).getByRole('textbox');
+
+      content.dispatchEvent(pasteEvent('<p>hi</p>'));
+
+      expect(document.execCommand).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('accessibility', () => {
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { container } = renderDynamoComponent(DynamoEditor, {
+        inputs: { ariaLabel: 'Notes', ariaDescribedby: 'help-text' },
+      });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+});
+
+describe('DynamoEditor — paste-as-plain-text toggle (Phase 1)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('inserts as plain text even when a text/html clipboard flavor is available', () => {
+    stubExecCommand();
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', pasteAsPlainText: true },
+    });
+    const content = within(container).getByRole('textbox');
+
+    content.dispatchEvent(
+      pasteEvent('<p><b>bold html</b></p>', 'plain fallback text'),
+    );
+
+    // The toggle must win over an available HTML flavor, not just apply
+    // when no HTML flavor is present.
+    expect(document.execCommand).toHaveBeenCalledWith(
+      'insertText',
+      false,
+      'plain fallback text',
+    );
+    expect(document.execCommand).not.toHaveBeenCalledWith(
+      'insertHTML',
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it('defaults to false — HTML paste still inserts as HTML', () => {
+    stubExecCommand();
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes' },
+    });
+    const content = within(container).getByRole('textbox');
+
+    content.dispatchEvent(pasteEvent('<p><b>bold html</b></p>', 'plain'));
+
+    expect(document.execCommand).toHaveBeenCalledWith(
+      'insertHTML',
+      false,
+      expect.stringContaining('<b>'),
+    );
+  });
+});
+
+describe('DynamoEditor — character count / maxLength (Phase 2)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('merges pt class onto the characterCount part', () => {
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: {
+        ariaLabel: 'Notes',
+        maxLength: 10,
+        pt: { characterCount: { class: 'pt-character-count' } },
+      },
+    });
+
+    expect(container.querySelector('.pt-character-count')).not.toBeNull();
+  });
+
+  it('renders no count element when maxLength is unset', () => {
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes' },
+    });
+
+    expect(within(container).queryByText(/\d+ \/ \d+/)).toBeNull();
+  });
+
+  it('renders and updates the count as plain-text content changes', () => {
+    const { container, fixture } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', maxLength: 10 },
+    });
+
+    expect(within(container).getByText('0 / 10')).toBeTruthy();
+
+    const content = within(container).getByRole('textbox') as HTMLDivElement;
+    typeIntoEditor(content, '<p>hello</p>');
+    fixture.detectChanges();
+
+    expect(within(container).getByText('5 / 10')).toBeTruthy();
+  });
+
+  it('counts plain text, not raw HTML markup', () => {
+    const { container, fixture } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', maxLength: 20 },
+    });
+
+    const content = within(container).getByRole('textbox') as HTMLDivElement;
+    typeIntoEditor(content, '<p><b>bold</b> text</p>');
+    fixture.detectChanges();
+
+    // "bold text" = 9 characters, not the raw HTML's byte length.
+    expect(within(container).getByText('9 / 20')).toBeTruthy();
+  });
+
+  it('is a soft indicator — content past the limit is still accepted, only styling flags it', () => {
+    stubExecCommand();
+    const { container, fixture } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', maxLength: 5 },
+    });
+
+    const content = within(container).getByRole('textbox') as HTMLDivElement;
+    typeIntoEditor(content, '<p>this is way over the limit</p>');
+    fixture.detectChanges();
+
+    const count = within(container).getByText(/\d+ \/ 5/);
+    expect(count.className).toContain('text-danger');
+    // Content was still accepted — no hard block.
+    expect(content.innerHTML).toContain('way over the limit');
+  });
+});
+
+describe('DynamoEditor — toolbar customization (Phase 3)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('undefined (default) renders every control — regression guard', () => {
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes' },
+    });
+
+    for (const name of ALL_TOOLBAR_BUTTON_NAMES) {
+      expect(within(container).getByRole('button', { name })).toBeTruthy();
+    }
+  });
+
+  it('renders only the configured subset, in the canonical fixed order', () => {
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', toolbarButtons: ['italic', 'bold'] },
+    });
+
+    expect(
+      within(container).getByRole('button', { name: 'Bold' }),
+    ).toBeTruthy();
+    expect(
+      within(container).getByRole('button', { name: 'Italic' }),
+    ).toBeTruthy();
+    for (const name of ALL_TOOLBAR_BUTTON_NAMES) {
+      if (name === 'Bold' || name === 'Italic') {
+        continue;
+      }
+      expect(within(container).queryByRole('button', { name })).toBeNull();
+    }
+    // Canonical order (bold before italic) wins regardless of the input
+    // array's own order (['italic', 'bold']) — inclusion only, not reorder.
+    const toolbar = within(container).getByRole('toolbar');
+    const labels = [...toolbar.querySelectorAll('button')].map((btn) =>
+      btn.getAttribute('aria-label'),
+    );
+    expect(labels.indexOf('Bold')).toBeLessThan(labels.indexOf('Italic'));
+  });
+
+  it('overflow math respects the filtered set at a narrow width', async () => {
+    const resizeObserver = stubResizeObserver();
+    const { container, fixture } = renderDynamoComponent(DynamoEditor, {
+      inputs: {
+        ariaLabel: 'Notes',
+        toolbarButtons: ['undo', 'redo', 'bold', 'italic'],
+      },
+    });
+    await settle(fixture);
+    // Fits only ~2 of the 4 configured items plus the trigger.
+    stubToolbarWidth(container, 70);
+    resizeObserver.trigger();
+    await settle(fixture);
+
+    expect(
+      within(container).getByRole('button', {
+        name: 'More formatting options',
+      }),
+    ).toBeTruthy();
+    expect(
+      within(container).queryByRole('button', { name: 'Underline' }),
+    ).toBeNull(); // never configured in, not merely overflowed
+  });
+
+  it('warns in dev mode on an empty toolbarButtons array', () => {
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+
+    renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', toolbarButtons: [] },
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('toolbarButtons is an empty array'),
+    );
+  });
+
+  it('warns in dev mode on an unrecognized id', () => {
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+
+    renderDynamoComponent(DynamoEditor, {
+      inputs: {
+        ariaLabel: 'Notes',
+        toolbarButtons: ['bold', 'notARealId' as never],
+      },
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('unrecognized id'),
+    );
+  });
+
+  it('harness fail-fast: clicking an excluded button throws a clear error', async () => {
+    const { fixture } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', toolbarButtons: ['bold'] },
+    });
+    const harness = await TestbedHarnessEnvironment.harnessForFixture(
+      fixture,
+      DynamoEditorHarness,
+    );
+
+    await expect(harness.clickItalic()).rejects.toThrow(
+      /excluded via toolbarButtons/,
+    );
+  });
+});
+
+describe('DynamoEditor — image-upload hook (Phase 4)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('handler resolving a URL inserts that exact URL, not a base64 data URI', async () => {
+    stubExecCommand();
+    const onImageUpload = vi
+      .fn()
+      .mockResolvedValue('https://cdn.example.com/pic.png');
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', onImageUpload },
+    });
+    within(container).getByRole('button', { name: 'Insert image' }).click();
+    const input = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = makeImageFile('pic.png');
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await vi.waitFor(() => {
+      expect(document.execCommand).toHaveBeenCalledWith(
+        'insertImage',
+        false,
+        'https://cdn.example.com/pic.png',
+      );
+    });
+    expect(onImageUpload).toHaveBeenCalledWith(file);
+  });
+
+  it('handler resolving null cancels the insertion silently', async () => {
+    stubExecCommand();
+    const onImageUpload = vi.fn().mockResolvedValue(null);
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', onImageUpload },
+    });
+    within(container).getByRole('button', { name: 'Insert image' }).click();
+    const input = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { files: [makeImageFile('pic.png')] } });
+
+    await vi.waitFor(() => {
+      expect(onImageUpload).toHaveBeenCalled();
+    });
+    expect(document.execCommand).not.toHaveBeenCalledWith(
+      'insertImage',
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it('a rejected handler is swallowed — no uncaught rejection, component stays usable', async () => {
+    stubExecCommand();
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined);
+    const onImageUpload = vi.fn().mockRejectedValue(new Error('upload failed'));
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes', onImageUpload },
+    });
+    within(container).getByRole('button', { name: 'Insert image' }).click();
+    const input = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { files: [makeImageFile('pic.png')] } });
+
+    await vi.waitFor(() => {
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('onImageUpload rejected'),
+        expect.any(Error),
+      );
+    });
+    expect(document.execCommand).not.toHaveBeenCalledWith(
+      'insertImage',
+      expect.anything(),
+      expect.anything(),
+    );
+    // Component still functions normally afterward — Bold still works.
+    within(container).getByRole('button', { name: 'Bold' }).click();
+    expect(document.execCommand).toHaveBeenCalledWith('bold', false);
+  });
+
+  it('onImageUpload unset — existing base64/FileReader path is unchanged (regression guard)', async () => {
+    stubExecCommand();
+    const { container } = renderDynamoComponent(DynamoEditor, {
+      inputs: { ariaLabel: 'Notes' },
+    });
+    within(container).getByRole('button', { name: 'Insert image' }).click();
+    const input = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { files: [makeImageFile('pic.png')] } });
+
+    await vi.waitFor(() => {
+      expect(document.execCommand).toHaveBeenCalledWith(
+        'insertImage',
+        false,
+        expect.stringMatching(/^data:image\/png;base64,/),
+      );
     });
   });
 });

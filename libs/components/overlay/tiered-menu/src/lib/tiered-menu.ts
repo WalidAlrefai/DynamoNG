@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,6 +7,7 @@ import {
   TemplateRef,
   ViewContainerRef,
   computed,
+  contentChild,
   effect,
   inject,
   input,
@@ -15,9 +17,15 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
+import type { DynamoPassThroughAttrs } from '@dynamong/core/api';
+import { DynamoBadge } from '@dynamong/badge';
 import {
   DynamoOverlayService,
   type DynamoOverlayHandle,
@@ -28,18 +36,24 @@ import {
   tieredMenuCaretStyles,
   tieredMenuChevronStyles,
   tieredMenuItemIconClasses,
+  tieredMenuItemLeadingClasses,
   tieredMenuItemStyles,
+  tieredMenuItemTrailingClasses,
   tieredMenuPanelStyles,
+  tieredMenuSeparatorStyles,
+  tieredMenuShortcutClasses,
   tieredMenuTriggerStyles,
 } from './tiered-menu.styles';
-import type {
-  DynamoTieredMenuItem,
-  DynamoTieredMenuPart,
-  DynamoTieredMenuPosition,
+import {
+  isTieredMenuSeparator,
+  type DynamoTieredMenuEntry,
+  type DynamoTieredMenuItem,
+  type DynamoTieredMenuPart,
+  type DynamoTieredMenuPosition,
 } from './tiered-menu.types';
 
 interface DynamoTieredMenuLevel {
-  items: DynamoTieredMenuItem[];
+  items: DynamoTieredMenuEntry[];
   activeIndex: number;
   /** The row DOM element (in the *previous* level) this level's flyout is anchored to. `null` only for level 0, which anchors to the trigger instead. */
   anchorEl: HTMLElement | null;
@@ -98,17 +112,24 @@ function buildRootPositions(
 }
 
 // Mirrors Cascade Select's findEnabledNodeIndex shape (linear scan, skip
-// disabled, no wrap) — deliberately NOT Menu's flat findEnabledIndex, which
-// wraps; multi-level nav doesn't wrap within a level, matching how real
-// nested/submenu systems (and Cascade Select) behave.
+// disabled/separator entries, no wrap) — deliberately NOT Menu's flat
+// findEnabledIndex, which wraps; multi-level nav doesn't wrap within a
+// level, matching how real nested/submenu systems (and Cascade Select)
+// behave.
 function findEnabledItemIndex(
-  items: DynamoTieredMenuItem[],
+  items: DynamoTieredMenuEntry[],
   current: number,
   delta: number,
 ): number | null {
   let index = current + delta;
   while (index >= 0 && index < items.length) {
-    if (!items[index]?.disabled) {
+    const entry = items[index];
+    if (
+      entry &&
+      !isTieredMenuSeparator(entry) &&
+      !entry.disabled &&
+      entry.visible !== false
+    ) {
       return index;
     }
     index += delta;
@@ -143,13 +164,23 @@ function findEnabledItemIndex(
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tiered-menu.html',
+  imports: [
+    DynamoPassThroughDirective,
+    DynamoBadge,
+    NgTemplateOutlet,
+    RouterLink,
+  ],
 })
 export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> {
-  readonly items = input.required<DynamoTieredMenuItem[]>();
+  readonly items = input.required<DynamoTieredMenuEntry[]>();
   /** Trigger button text, e.g. `<dg-tiered-menu label="File">`. */
   readonly label = input.required<string>();
   readonly position = input<DynamoTieredMenuPosition>('bottom-start');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the trigger button. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true`. */
+  readonly fluid = input(true);
   /** Two-way bindable: `<dg-tiered-menu [(open)]="isOpen">`. */
   readonly open = model(false);
   /** Whether hovering a branch row opens its flyout automatically. When `false`, hover only moves the active-row highlight — the flyout opens via click, or Enter/Space/ArrowRight from the keyboard. */
@@ -160,6 +191,11 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
   private readonly panelTemplate =
     viewChild.required<TemplateRef<unknown>>('panelTemplate');
+  /** Optional per-item custom rendering — falls back to plain `{{ item.label }}` text when unset. One shared template for every level (root + flyouts), since they all share the same `DynamoTieredMenuItem` shape. */
+  protected readonly itemTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoTieredMenuItem }>>(
+      'itemTemplate',
+    );
   private readonly overlayService = inject(DynamoOverlayService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -195,17 +231,43 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
     return this.rowId(levelIndex, level.activeIndex);
   });
 
+  // No separate root wrapper element exists — the single top-level element
+  // IS the trigger button, so `root` and `trigger` both merge onto it. Both
+  // parts' non-class attrs are combined here (trigger's own win on a key
+  // collision); each part's own `class` is merged separately below into
+  // `triggerClasses`, matching this codebase's standing "pt directive never
+  // handles class" convention.
+  protected readonly triggerPt = computed<DynamoPassThroughAttrs>(() => ({
+    ...this.ptFor('root'),
+    ...this.ptFor('trigger'),
+  }));
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(tieredMenuTriggerStyles(), this.styleClass()),
+      ? cn(
+          this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('trigger').class,
+        )
+      : cn(
+          tieredMenuTriggerStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('trigger').class,
+        ),
   );
   protected readonly chevronClasses = computed(() =>
     tieredMenuChevronStyles({ open: this.open() }),
   );
-  protected readonly panelClasses = tieredMenuPanelStyles;
+  protected readonly panelClasses = computed(() =>
+    cn(tieredMenuPanelStyles, this.ptFor('panel').class),
+  );
   protected readonly caretClasses = tieredMenuCaretStyles;
   protected readonly itemIconClasses = tieredMenuItemIconClasses;
+  protected readonly separatorClasses = tieredMenuSeparatorStyles;
+  protected readonly itemLeadingClasses = tieredMenuItemLeadingClasses;
+  protected readonly itemTrailingClasses = tieredMenuItemTrailingClasses;
+  protected readonly shortcutClasses = tieredMenuShortcutClasses;
+  protected readonly isSeparator = isTieredMenuSeparator;
 
   constructor() {
     super();
@@ -290,10 +352,13 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
     index: number,
   ) {
     const level = this.levels()[levelIndex];
-    return tieredMenuItemStyles({
-      active: level?.activeIndex === index,
-      disabled: !!item.disabled,
-    });
+    return cn(
+      tieredMenuItemStyles({
+        active: level?.activeIndex === index,
+        disabled: !!item.disabled,
+      }),
+      this.ptFor('item').class,
+    );
   }
 
   protected toggle(): void {
@@ -337,7 +402,7 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
   protected onItemClick(levelIndex: number, index: number): void {
     const level = this.levels()[levelIndex];
     const item = level?.items[index];
-    if (!item || item.disabled) return;
+    if (!item || isTieredMenuSeparator(item) || item.disabled) return;
     if (item.children?.length) {
       // Always drills in on click regardless of `autoDisplay` — that input
       // only gates hover-driven opening.
@@ -392,7 +457,13 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
       case 'ArrowRight': {
         event.preventDefault();
         const item = level.items[level.activeIndex];
-        if (!item || item.disabled || !item.children?.length) break;
+        if (
+          !item ||
+          isTieredMenuSeparator(item) ||
+          item.disabled ||
+          !item.children?.length
+        )
+          break;
         this.drillInto(levelIndex, level.activeIndex);
         this.activeLevelIndex.set(levelIndex + 1);
         break;
@@ -408,7 +479,7 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
       case ' ': {
         event.preventDefault();
         const item = level.items[level.activeIndex];
-        if (!item) break;
+        if (!item || isTieredMenuSeparator(item)) break;
         if (item.children?.length) {
           this.drillInto(levelIndex, level.activeIndex);
           this.activeLevelIndex.set(levelIndex + 1);
@@ -461,7 +532,12 @@ export class DynamoTieredMenu extends DynamoBaseComponent<DynamoTieredMenuPart> 
       if (!level) return current;
       next[levelIndex] = { ...level, activeIndex: index };
       const item = level.items[index];
-      if (item && !item.disabled && item.children?.length) {
+      if (
+        item &&
+        !isTieredMenuSeparator(item) &&
+        !item.disabled &&
+        item.children?.length
+      ) {
         const childItems = item.children;
         const seededActive = findEnabledItemIndex(childItems, -1, 1) ?? -1;
         next.push({

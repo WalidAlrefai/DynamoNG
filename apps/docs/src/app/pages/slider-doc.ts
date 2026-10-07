@@ -11,6 +11,8 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'range', title: 'Range' },
+  { id: 'min-range', title: 'Minimum Gap' },
+  { id: 'keyboard-step', title: 'Keyboard Step' },
   { id: 'severity-size', title: 'Severity & Size' },
   { id: 'disabled', title: 'Disabled' },
   { id: 'readonly', title: 'Read-only' },
@@ -60,6 +62,45 @@ const EXAMPLES: DocExampleRef[] = [
             [min]="0"
             [max]="200"
             ariaLabel="Price"
+          />
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="min-range"
+        title="Minimum Gap"
+        description="minRange enforces a minimum distance between the two thumbs in range mode — neither thumb can be dragged or keyboard-moved to within that distance of the other."
+        [code]="minRangeCode"
+      >
+        <div preview class="flex flex-col gap-2">
+          <span class="text-sm text-text-muted"
+            >{{ gappedRange().minValue }} – {{ gappedRange().maxValue }} (min
+            gap: 20)</span
+          >
+          <dg-slider
+            [(value)]="gappedRange"
+            [range]="true"
+            [minRange]="20"
+            ariaLabel="Gapped range"
+          />
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="keyboard-step"
+        title="Keyboard Step"
+        description="keyboardStep overrides step for keyboard Arrow/Page increments only — pointer-drag snapping still always uses step. Here step is 10 but keyboardStep is 3, so dragging snaps to multiples of 10 while arrow keys move in increments of 3."
+        [code]="keyboardStepCode"
+      >
+        <div preview class="flex flex-col gap-2">
+          <span class="text-sm text-text-muted"
+            >{{ keyboardStepValue() }} (step: 10, keyboardStep: 3)</span
+          >
+          <dg-slider
+            [(value)]="keyboardStepValue"
+            [step]="10"
+            [keyboardStep]="3"
+            ariaLabel="Fine keyboard step"
           />
         </div>
       </docs-example>
@@ -121,10 +162,10 @@ const EXAMPLES: DocExampleRef[] = [
       <docs-example
         exampleId="ticks"
         title="Tick Marks"
-        description="showTicks renders a dot per step; tickValues renders an explicit, sparse set instead, ignoring step."
+        description="showTicks renders a dot per step; tickValues renders an explicit, sparse set instead, ignoring step. showTickLabels adds a numeric label under each tick."
         [code]="ticksCode"
       >
-        <div preview class="flex flex-col gap-2">
+        <div preview class="flex flex-col gap-3">
           <dg-slider
             [value]="60"
             [step]="20"
@@ -135,6 +176,13 @@ const EXAMPLES: DocExampleRef[] = [
             [value]="60"
             [tickValues]="[0, 25, 50, 75, 100]"
             ariaLabel="Sparse ticks"
+          />
+          <dg-slider
+            class="mt-4"
+            [value]="60"
+            [tickValues]="[0, 25, 50, 75, 100]"
+            [showTickLabels]="true"
+            ariaLabel="Labeled ticks"
           />
         </div>
       </docs-example>
@@ -191,9 +239,19 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 font-mono">0 / 100 / 1</td>
           </tr>
           <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">keyboardStep</td>
+            <td class="py-2 pr-4 font-mono">number | undefined</td>
+            <td class="py-2 font-mono">undefined</td>
+          </tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">range</td>
             <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">minRange</td>
+            <td class="py-2 pr-4 font-mono">number</td>
+            <td class="py-2 font-mono">0</td>
           </tr>
           <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">disabled</td>
@@ -224,6 +282,16 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 font-mono">undefined ('Slider')</td>
           </tr>
           <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">ariaDescribedby</td>
+            <td class="py-2 pr-4 font-mono">string | undefined</td>
+            <td class="py-2 font-mono">undefined</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">fluid</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">true</td>
+          </tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">orientation</td>
             <td class="py-2 pr-4 font-mono">'horizontal' | 'vertical'</td>
             <td class="py-2 font-mono">'horizontal'</td>
@@ -243,6 +311,11 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 pr-4 font-mono">number[] | undefined</td>
             <td class="py-2 font-mono">undefined</td>
           </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">showTickLabels</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">false</td>
+          </tr>
           <tr>
             <td class="py-2 pr-4 font-mono">showTooltip</td>
             <td class="py-2 pr-4 font-mono">boolean</td>
@@ -260,6 +333,11 @@ export class SliderDocPage {
     minValue: 20,
     maxValue: 80,
   });
+  protected readonly gappedRange = signal<DynamoSliderRange>({
+    minValue: 20,
+    maxValue: 80,
+  });
+  protected readonly keyboardStepValue = signal(50);
 
   protected readonly verticalVolume = signal(50);
 
@@ -269,6 +347,8 @@ export class SliderDocPage {
 
   protected readonly basicCode = `<dg-slider [(value)]="volume" ariaLabel="Volume" />`;
   protected readonly rangeCode = `<dg-slider [(value)]="priceRange" [range]="true" [min]="0" [max]="200" ariaLabel="Price" />`;
+  protected readonly minRangeCode = `<dg-slider [(value)]="gappedRange" [range]="true" [minRange]="20" ariaLabel="Gapped range" />`;
+  protected readonly keyboardStepCode = `<dg-slider [(value)]="value" [step]="10" [keyboardStep]="3" ariaLabel="Fine keyboard step" />`;
   protected readonly severitySizeCode = `<dg-slider [value]="70" severity="success" size="lg" ariaLabel="Brightness" />`;
   protected readonly disabledCode = `<dg-slider [value]="40" [disabled]="true" ariaLabel="Disabled" />`;
   protected readonly readonlyCode = `<dg-slider [value]="60" [readOnly]="true" ariaLabel="Read-only" />`;

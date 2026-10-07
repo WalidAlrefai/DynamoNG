@@ -15,7 +15,6 @@ import {
 } from '@angular/core';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { FormsModule } from '@angular/forms';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import {
   DynamoListboxBase,
@@ -31,9 +30,11 @@ import {
   selectTriggerButtonStyles,
   selectTriggerStyles,
 } from '@dynamong/select';
+import { DynamoPassThroughDirective } from '@dynamong/core/base';
 import { DynamoInputText } from '@dynamong/input-text';
 import { DynamoSpinner } from '@dynamong/spinner';
 import { DynamoVirtualScroll } from '@dynamong/virtual-scroll';
+import { DynamoCheckIcon } from '@dynamong/icons';
 import type { DynamoTreeNode } from '@dynamong/tree';
 import type { DynamoOverlayHandle } from '@dynamong/core/overlay';
 import type { DynamoSize } from '@dynamong/core/api';
@@ -47,9 +48,14 @@ import { flattenCascadeFilterResults } from './cascade-select.filter';
 import { buildCascadePositions } from './cascade-select.positioning';
 import {
   cascadeSelectCaretStyles,
+  cascadeSelectCheckboxIndeterminateDashStyles,
+  cascadeSelectCheckboxIndicatorStyles,
   cascadeSelectRowStyles,
 } from './cascade-select.styles';
-import type { DynamoCascadeSelectPart } from './cascade-select.types';
+import type {
+  DynamoCascadeSelectPart,
+  DynamoCascadeSelectSelectionMode,
+} from './cascade-select.types';
 
 interface DynamoCascadeLevel<TValue> {
   nodes: DynamoTreeNode<TValue>[];
@@ -91,6 +97,72 @@ function containsValue<TValue>(
   return node.children?.some((child) => containsValue(child, value)) ?? false;
 }
 
+type DynamoCascadeSelectCheckState = 'checked' | 'unchecked' | 'indeterminate';
+
+// Local, value-keyed port of `@dynamong/tree-select`'s own `selectionMode`
+// algorithm (`computeNodeCheckState`/`shouldCascadeCheck`/
+// `collectCascadeValues`), duplicated rather than shared — matching this
+// codebase's own established precedent of `DynamoTreeSelect` itself
+// duplicating from `DynamoTree`'s own `tree-selection.ts` rather than
+// extracting a shared util (this is now the third independent copy of the
+// same tree-shaped algorithm across the three components; the duplication
+// is a deliberate, confirmed call, not an oversight — see the README's
+// Design notes).
+function computeNodeCheckState<TValue>(
+  node: DynamoTreeNode<TValue>,
+  selectedValues: ReadonlySet<TValue>,
+): DynamoCascadeSelectCheckState {
+  if (!node.children?.length) {
+    return selectedValues.has(nodeValue(node)) ? 'checked' : 'unchecked';
+  }
+  const states = node.children.map((child) =>
+    computeNodeCheckState(child, selectedValues),
+  );
+  if (states.every((state) => state === 'checked')) {
+    return 'checked';
+  }
+  if (states.every((state) => state === 'unchecked')) {
+    return 'unchecked';
+  }
+  return 'indeterminate';
+}
+
+// Whether toggling `node` should check (true) or uncheck (false) its
+// subtree — ignores disabled descendants entirely, so a branch with any
+// disabled, unchecked descendant doesn't get stuck permanently
+// indeterminate.
+function shouldCascadeCheck<TValue>(
+  node: DynamoTreeNode<TValue>,
+  selectedValues: ReadonlySet<TValue>,
+): boolean {
+  const enabledLeafStates: boolean[] = [];
+  const walk = (current: DynamoTreeNode<TValue>): void => {
+    if (current.disabled) return;
+    if (!current.children?.length) {
+      enabledLeafStates.push(selectedValues.has(nodeValue(current)));
+      return;
+    }
+    current.children.forEach(walk);
+  };
+  walk(node);
+  return enabledLeafStates.length === 0 || !enabledLeafStates.every(Boolean);
+}
+
+// Every value in `node`'s own subtree (including itself) whose checked
+// state changes together when `node` is toggled. Disabled descendants are
+// excluded so a cascading check/uncheck never silently flips a disabled
+// node's own state.
+function collectCascadeValues<TValue>(node: DynamoTreeNode<TValue>): TValue[] {
+  const values: TValue[] = [];
+  const walk = (current: DynamoTreeNode<TValue>): void => {
+    if (current.disabled) return;
+    values.push(nodeValue(current));
+    current.children?.forEach(walk);
+  };
+  walk(node);
+  return values;
+}
+
 // Mirrors TreeSelect's `findEnabledEntryIndex` shape (linear scan, skip
 // disabled, no wrap) — reimplemented locally since each level's `nodes` is
 // already a flat array here (no depth/parentId bookkeeping needed).
@@ -113,7 +185,13 @@ function findEnabledNodeIndex<TValue>(
   selector: 'dg-cascade-select',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoSpinner, DynamoVirtualScroll, DynamoInputText, FormsModule],
+  imports: [
+    DynamoSpinner,
+    DynamoVirtualScroll,
+    DynamoInputText,
+    DynamoPassThroughDirective,
+    DynamoCheckIcon,
+  ],
   templateUrl: './cascade-select.html',
   providers: [
     {
@@ -138,10 +216,29 @@ export class DynamoCascadeSelect<TValue = string>
    *  drives it. */
   readonly loading = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the trigger. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true` — `selectTriggerStyles`'
+   *  own default variant already renders the trigger full-width, so this is
+   *  purely an escape hatch, not a behavior change. */
+  readonly fluid = input(true);
+  /** HTML `readonly` semantics: the trigger stays focusable and the panel
+   *  still opens for browsing/drilling, but committing a leaf (or, once
+   *  `selectionMode !== 'single'`, toggling any row) is blocked. Unlike
+   *  `disabled`, doesn't dim it or remove it from the tab order. */
+  readonly readOnly = input(false);
   /** Shows a clear (×) button next to the trigger once a value is selected — mirrors `DynamoSelect`'s own `clearable`. */
   readonly clearable = input(false);
-  /** Two-way bindable; also driven by Angular forms via `writeValue`. */
-  readonly value = model<TValue | null>(null);
+  /** `'single'` (default) is this component's original, only-ever behavior — a plain scalar `value`,
+   *  replaced on each pick, panel closes on commit, and only a drilled-into-a-leaf row commits at all.
+   *  `'multiple'`/`'checkbox'` are new, non-default modes that make `value` an array: clicking/activating
+   *  ANY row (branch or leaf) toggles it instead of drilling — hover/ArrowRight remain the sole drilling
+   *  triggers in every mode, unchanged. `'checkbox'` cascades tri-state to enabled descendants, mirroring
+   *  `DynamoTreeSelect`'s own `selectionMode='checkbox'` — see the README's Design notes. */
+  readonly selectionMode = input<DynamoCascadeSelectSelectionMode>('single');
+  /** Two-way bindable; also driven by Angular forms via `writeValue`. A plain `TValue | null` in
+   *  `'single'` mode; `TValue[] | null` in `'multiple'`/`'checkbox'` mode. */
+  readonly value = model<TValue | TValue[] | null>(null);
   /** Fires once a leaf node is committed (click or keyboard Enter/Space) with the full node object — not while drilling into a branch. */
   readonly itemSelect = output<DynamoTreeNode<TValue>>();
   /**
@@ -187,7 +284,7 @@ export class DynamoCascadeSelect<TValue = string>
 
   protected readonly panelId = this.idGenerator.next('dg-cascade-select-panel');
 
-  private onChangeFn: (value: TValue | null) => void = () => {
+  private onChangeFn: (value: TValue | TValue[] | null) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
   };
   private onTouchedFn: () => void = () => {
@@ -204,12 +301,54 @@ export class DynamoCascadeSelect<TValue = string>
   private readonly flyoutHandles: (DynamoOverlayHandle & {
     anchorEl: HTMLElement;
   })[] = [];
+  /** Incremented on every `openPanel()`/`close()` — guards the restore-
+   *  drilled-path `requestAnimationFrame` poll against a rapid close then
+   *  reopen (with a different value) racing a still-in-flight poll from the
+   *  PREVIOUS open. See `pollForAnchorAndAdvance`'s own doc comment. */
+  private openGenerationCounter = 0;
 
-  protected readonly selectedNode = computed(() =>
-    findNodeByValue(this.nodes(), this.value()),
+  /** Normalizes `value()` into a `Set` regardless of mode/shape — the single source every selection
+   *  query (`isSelected`/`checkState`/`hasSelection`) reads from. */
+  private readonly selectedValuesSet = computed(() => {
+    const current = this.value();
+    return new Set<TValue>(
+      Array.isArray(current) ? current : current == null ? [] : [current],
+    );
+  });
+  protected readonly hasSelection = computed(
+    () => this.selectedValuesSet().size > 0,
   );
-  protected readonly selectedLabel = computed(
-    () => this.selectedNode()?.label ?? this.placeholder(),
+  /** Only meaningful in `'single'` mode — `undefined` whenever `value()` is an array. */
+  protected readonly selectedNode = computed(() => {
+    const current = this.value();
+    return Array.isArray(current)
+      ? undefined
+      : findNodeByValue(this.nodes(), current);
+  });
+  /** Every currently-selected node, in tree order — used for `'multiple'`/`'checkbox'`'s comma-joined
+   *  trigger label. */
+  protected readonly selectedNodesList = computed(() => {
+    const ids = this.selectedValuesSet();
+    if (ids.size === 0) return [];
+    const result: DynamoTreeNode<TValue>[] = [];
+    const walk = (list: DynamoTreeNode<TValue>[]): void => {
+      for (const node of list) {
+        if (ids.has(nodeValue(node))) result.push(node);
+        if (node.children) walk(node.children);
+      }
+    };
+    walk(this.nodes());
+    return result;
+  });
+  protected readonly selectedLabel = computed(() => {
+    if (this.selectionMode() === 'single') {
+      return this.selectedNode()?.label ?? this.placeholder();
+    }
+    const labels = this.selectedNodesList().map((node) => node.label);
+    return labels.length > 0 ? labels.join(', ') : this.placeholder();
+  });
+  protected readonly ariaMultiselectable = computed(
+    () => this.selectionMode() !== 'single',
   );
   protected readonly activeDescendantId = computed(() => {
     if (!this.isOpen()) return null;
@@ -255,32 +394,51 @@ export class DynamoCascadeSelect<TValue = string>
 
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
           selectTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
+            fluid: this.fluid(),
             disabled: this.isDisabled(),
           }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
-  protected readonly triggerButtonClasses = selectTriggerButtonStyles;
-  protected readonly clearButtonClasses = selectClearButtonStyles;
+  protected readonly triggerButtonClasses = computed(() =>
+    cn(selectTriggerButtonStyles, this.ptFor('trigger').class),
+  );
+  protected readonly clearButtonClasses = computed(() =>
+    cn(selectClearButtonStyles, this.ptFor('clear').class),
+  );
   protected readonly chevronClasses = computed(() =>
-    selectChevronStyles({ open: this.isOpen() }),
+    cn(
+      selectChevronStyles({ open: this.isOpen() }),
+      this.ptFor('chevron').class,
+    ),
   );
   /** Switches to `selectPanelWrapperVirtualStyles` while virtualized — see that constant's own doc comment for the "double scrollbar" bug this avoids. */
   protected readonly panelWrapperClasses = computed(() =>
-    this.isVirtualized()
-      ? selectPanelWrapperVirtualStyles
-      : selectPanelWrapperStyles,
+    cn(
+      this.isVirtualized()
+        ? selectPanelWrapperVirtualStyles
+        : selectPanelWrapperStyles,
+      this.ptFor('panel').class,
+    ),
   );
-  protected readonly caretClasses = cascadeSelectCaretStyles;
+  protected readonly caretClasses = computed(() =>
+    cn(cascadeSelectCaretStyles, this.ptFor('caret').class),
+  );
+  protected readonly noResultsClasses = computed(() =>
+    cn('px-3 py-2 text-sm text-text-muted', this.ptFor('no-results').class),
+  );
   protected readonly filterWrapperClasses = selectFilterWrapperStyles;
   protected readonly filterFieldWrapperClasses = selectFilterFieldWrapperStyles;
   protected readonly filterIconClasses = selectFilterIconStyles;
   protected readonly filterInputExtraClasses = selectFilterInputExtraClasses;
+  protected readonly checkboxIndeterminateDashClasses =
+    cascadeSelectCheckboxIndeterminateDashStyles;
 
   constructor() {
     super();
@@ -349,11 +507,11 @@ export class DynamoCascadeSelect<TValue = string>
     });
   }
 
-  writeValue(value: TValue | null): void {
+  writeValue(value: TValue | TValue[] | null): void {
     this.value.set(value);
   }
 
-  registerOnChange(fn: (value: TValue | null) => void): void {
+  registerOnChange(fn: (value: TValue | TValue[] | null) => void): void {
     this.onChangeFn = fn;
   }
 
@@ -386,7 +544,32 @@ export class DynamoCascadeSelect<TValue = string>
   }
 
   protected isSelected(node: DynamoTreeNode<TValue>): boolean {
-    return nodeValue(node) === this.value();
+    return this.selectedValuesSet().has(nodeValue(node));
+  }
+
+  /** Only meaningful in `'checkbox'` mode — a branch's state is always derived from its children. */
+  protected checkState(
+    node: DynamoTreeNode<TValue>,
+  ): DynamoCascadeSelectCheckState {
+    return computeNodeCheckState(node, this.selectedValuesSet());
+  }
+
+  protected ariaCheckedAttr(
+    node: DynamoTreeNode<TValue>,
+  ): 'true' | 'false' | 'mixed' {
+    const state = this.checkState(node);
+    return state === 'checked'
+      ? 'true'
+      : state === 'indeterminate'
+        ? 'mixed'
+        : 'false';
+  }
+
+  protected checkboxIndicatorClasses(node: DynamoTreeNode<TValue>): string {
+    return cn(
+      cascadeSelectCheckboxIndicatorStyles({ state: this.checkState(node) }),
+      this.ptFor('checkbox').class,
+    );
   }
 
   protected rowClasses(
@@ -395,22 +578,28 @@ export class DynamoCascadeSelect<TValue = string>
     index: number,
   ): string {
     const level = this.levels()[levelIndex];
-    return cascadeSelectRowStyles({
-      active: level?.activeIndex === index,
-      selected: this.isSelected(node),
-      disabled: !!node.disabled,
-    });
+    return cn(
+      cascadeSelectRowStyles({
+        active: level?.activeIndex === index,
+        selected: this.isSelected(node),
+        disabled: !!node.disabled,
+      }),
+      this.ptFor('row').class,
+    );
   }
 
   protected filterRowClasses(
     node: DynamoTreeNode<TValue>,
     index: number,
   ): string {
-    return cascadeSelectRowStyles({
-      active: this.filterActiveIndex() === index,
-      selected: this.isSelected(node),
-      disabled: !!node.disabled,
-    });
+    return cn(
+      cascadeSelectRowStyles({
+        active: this.filterActiveIndex() === index,
+        selected: this.isSelected(node),
+        disabled: !!node.disabled,
+      }),
+      this.ptFor('row').class,
+    );
   }
 
   protected onFilterRowActivate(index: number): void {
@@ -420,6 +609,9 @@ export class DynamoCascadeSelect<TValue = string>
   }
 
   protected onFilterInputChange(value: string): void {
+    if (this.isDisabled() || this.readOnly()) {
+      return;
+    }
     this.filterText.set(value);
     // filteredResults() is read AFTER the set above, so it already reflects
     // the new query (signals recompute synchronously on read).
@@ -435,6 +627,9 @@ export class DynamoCascadeSelect<TValue = string>
   }
 
   protected onFilterKeydown(event: KeyboardEvent): void {
+    if (this.isDisabled() || this.readOnly()) {
+      return;
+    }
     switch (event.key) {
       case 'Escape':
         event.preventDefault();
@@ -490,13 +685,32 @@ export class DynamoCascadeSelect<TValue = string>
 
   protected openPanel(): void {
     if (this.isDisabled()) return;
+    this.openGenerationCounter++;
     this.isOpen.set(true);
-    this.levels.set(this.buildInitialLevels());
+    // Restoring the drilled path only makes sense in 'single' mode — "the"
+    // path is ambiguous once a selection can span multiple scattered
+    // branches, so 'multiple'/'checkbox' always reopen at the root,
+    // matching this component's pre-Phase-1 behavior.
+    const current = this.value();
+    const restoreValue =
+      this.selectionMode() === 'single' && !Array.isArray(current)
+        ? current
+        : null;
+    const chain = this.buildAncestorChain(restoreValue);
+    const root = chain[0];
+    if (!root) return;
+    this.levels.set([
+      { nodes: root.nodes, activeIndex: root.activeIndex, anchorEl: null },
+    ]);
     this.activeLevelIndex.set(0);
     this.scrollActiveIntoView(0);
+    if (chain.length > 1) {
+      this.restoreDrilledPath(chain);
+    }
   }
 
   close(): void {
+    this.openGenerationCounter++;
     this.isOpen.set(false);
     this.levels.set([]);
     this.activeLevelIndex.set(0);
@@ -508,30 +722,89 @@ export class DynamoCascadeSelect<TValue = string>
 
   protected clearValue(event: MouseEvent): void {
     event.stopPropagation();
-    if (this.isDisabled()) return;
-    this.value.set(null);
-    this.onChangeFn(null);
+    if (this.isDisabled() || this.readOnly()) return;
+    const next = this.selectionMode() === 'single' ? null : [];
+    this.value.set(next);
+    this.onChangeFn(next);
   }
 
+  /** Dispatches by `selectionMode()`. `'single'` replaces the value and closes the panel (the original,
+   *  only-ever behavior). `'multiple'`/`'checkbox'` leave the panel open — picking one of several items
+   *  shouldn't force a reopen for the next. */
   protected selectNode(node: DynamoTreeNode<TValue>): void {
-    if (node.disabled) return;
-    const next = nodeValue(node);
+    if (node.disabled || this.readOnly()) return;
+    switch (this.selectionMode()) {
+      case 'checkbox':
+        this.toggleChecked(node);
+        return;
+      case 'multiple':
+        this.toggleMultiple(node);
+        return;
+      case 'single':
+      default: {
+        const next = nodeValue(node);
+        this.value.set(next);
+        this.onChangeFn(next);
+        this.itemSelect.emit(node);
+        this.close();
+        this.triggerEl().nativeElement.focus();
+      }
+    }
+  }
+
+  private toggleChecked(node: DynamoTreeNode<TValue>): void {
+    const selectedValues = this.selectedValuesSet();
+    const willCheck = shouldCascadeCheck(node, selectedValues);
+    const next = new Set(selectedValues);
+    for (const v of collectCascadeValues(node)) {
+      if (willCheck) next.add(v);
+      else next.delete(v);
+    }
+    this.value.set([...next]);
+    this.onChangeFn([...next]);
+    this.itemSelect.emit(node);
+  }
+
+  private toggleMultiple(node: DynamoTreeNode<TValue>): void {
+    const v = nodeValue(node);
+    const current = this.value();
+    const arr = Array.isArray(current) ? current : [];
+    const next = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
     this.value.set(next);
     this.onChangeFn(next);
     this.itemSelect.emit(node);
-    this.close();
-    this.triggerEl().nativeElement.focus();
   }
 
-  protected onRowHover(levelIndex: number, index: number): void {
+  protected isRowExpanded(levelIndex: number, index: number): boolean {
+    const level = this.levels()[levelIndex];
+    return (
+      level?.activeIndex === index && this.levels().length > levelIndex + 1
+    );
+  }
+
+  protected onRowHover(
+    levelIndex: number,
+    index: number,
+    event?: MouseEvent,
+  ): void {
     this.activeLevelIndex.set(levelIndex);
-    this.drillInto(levelIndex, index);
+    this.drillInto(
+      levelIndex,
+      index,
+      event?.currentTarget as HTMLElement | undefined,
+    );
   }
 
   protected onRowActivate(levelIndex: number, index: number): void {
     const level = this.levels()[levelIndex];
     const node = level?.nodes[index];
     if (!node || node.disabled) return;
+    if (this.selectionMode() !== 'single') {
+      // Branch or leaf — toggle, never drill. Hover/ArrowRight remain the
+      // sole drilling triggers in every mode, unchanged.
+      this.selectNode(node);
+      return;
+    }
     if (node.children?.length) {
       this.onRowHover(levelIndex, index);
     } else {
@@ -587,6 +860,7 @@ export class DynamoCascadeSelect<TValue = string>
         event.preventDefault();
         const node = level.nodes[level.activeIndex];
         if (!node || node.disabled || !node.children?.length) break;
+        this.scrollActiveIntoView(levelIndex);
         this.drillInto(levelIndex, level.activeIndex);
         this.activeLevelIndex.set(levelIndex + 1);
         this.scrollActiveIntoView(levelIndex + 1);
@@ -607,7 +881,12 @@ export class DynamoCascadeSelect<TValue = string>
         event.preventDefault();
         const node = level.nodes[level.activeIndex];
         if (!node) break;
+        if (this.selectionMode() !== 'single') {
+          this.selectNode(node);
+          break;
+        }
         if (node.children?.length) {
+          this.scrollActiveIntoView(levelIndex);
           this.drillInto(levelIndex, level.activeIndex);
           this.activeLevelIndex.set(levelIndex + 1);
           this.scrollActiveIntoView(levelIndex + 1);
@@ -725,9 +1004,18 @@ export class DynamoCascadeSelect<TValue = string>
 
   // Sets the active row within a level AND opens its child flyout if it has
   // children, truncating any deeper levels first. Used by hover, ArrowRight,
-  // and Enter/Space on a branch row.
-  private drillInto(levelIndex: number, index: number): void {
-    const anchor = this.getRowElement(levelIndex, index);
+  // and Enter/Space on a branch row. `explicitAnchor` lets the mouse path
+  // (onRowHover) hand over the real DOM element straight from the triggering
+  // MouseEvent — a mouseenter can only ever fire on an element already in
+  // the DOM, so this sidesteps the racy post-hoc `getRowElement` ID lookup
+  // entirely for that path (the lookup can return null for a row that's
+  // hovered before a virtualized viewport has mounted it yet).
+  private drillInto(
+    levelIndex: number,
+    index: number,
+    explicitAnchor?: HTMLElement,
+  ): void {
+    const anchor = explicitAnchor ?? this.getRowElement(levelIndex, index);
     this.levels.update((current) => {
       const next = current.slice(0, levelIndex + 1);
       const level = next[levelIndex];
@@ -756,25 +1044,128 @@ export class DynamoCascadeSelect<TValue = string>
     return doc.getElementById(this.rowId(levelIndex, index));
   }
 
-  // Seeds the root level's active row to the top-level ancestor of the
-  // current value (so keyboard nav starts at the right root branch) — does
-  // NOT pre-drill into child/grandchild flyouts on reopen. Doing that would
-  // need each intermediate level's row DOM element to already exist, which
-  // isn't true until the previous level has actually rendered — a real
-  // render-order dependency, not just an easy lookup. Cut as a nice-to-have,
-  // same call this session made for FileUpload/InputNumber/Rating/TreeSelect/
-  // Listbox: reopening always starts at the root, with the right branch
-  // pre-highlighted, rather than a fully pre-drilled path.
-  private buildInitialLevels(): DynamoCascadeLevel<TValue>[] {
-    const rootNodes = this.nodes();
-    const value = this.value();
-    let activeIndex =
-      value == null
-        ? -1
-        : rootNodes.findIndex((node) => containsValue(node, value));
-    if (activeIndex < 0) {
-      activeIndex = findEnabledNodeIndex(rootNodes, -1, 1) ?? -1;
+  // Walks from the root down `value`'s ancestor chain, purely from `nodes()`
+  // data — no DOM involved, so this is always safe to call synchronously.
+  // Returns one entry per level from the root to `value`'s own leaf (or, if
+  // `value` is null/not found, a single root-only entry). `openPanel` seeds
+  // `levels()[0]` from `chain[0]` synchronously; any further entries are
+  // opened progressively by `restoreDrilledPath`, since each one needs the
+  // previous level's row DOM element to exist first — see that method's own
+  // doc comment.
+  private buildAncestorChain(
+    forValue: TValue | null,
+  ): { nodes: DynamoTreeNode<TValue>[]; activeIndex: number }[] {
+    const chain: { nodes: DynamoTreeNode<TValue>[]; activeIndex: number }[] =
+      [];
+    let currentNodes = this.nodes();
+    if (forValue == null) {
+      return [
+        {
+          nodes: currentNodes,
+          activeIndex: findEnabledNodeIndex(currentNodes, -1, 1) ?? -1,
+        },
+      ];
     }
-    return [{ nodes: rootNodes, activeIndex, anchorEl: null }];
+    for (;;) {
+      const index = currentNodes.findIndex((node) =>
+        containsValue(node, forValue),
+      );
+      if (index < 0) {
+        if (chain.length === 0) {
+          chain.push({
+            nodes: currentNodes,
+            activeIndex: findEnabledNodeIndex(currentNodes, -1, 1) ?? -1,
+          });
+        }
+        break;
+      }
+      chain.push({ nodes: currentNodes, activeIndex: index });
+      const node = currentNodes[index];
+      if (!node?.children?.length || nodeValue(node) === forValue) break;
+      currentNodes = node.children;
+    }
+    return chain;
+  }
+
+  // Progressively opens every level in `chain` beyond the root (already
+  // seeded synchronously by `openPanel`), one confirmed-mounted level at a
+  // time — reusing `DynamoTree.focusRow`'s own bounded
+  // `requestAnimationFrame`-poll pattern (a single `afterNextRender` was
+  // tried there first and found insufficient: CDK's own mount after
+  // `scrollToIndex` settles over several render passes, not just the next
+  // one, which applies here too once a level is virtualized). `generation`
+  // guards against a rapid close -> reopen racing a still-in-flight poll
+  // from the PREVIOUS open — a real hazard now that this spans multiple
+  // frames, unlike the rest of this file's fully-synchronous level changes.
+  private restoreDrilledPath(
+    chain: { nodes: DynamoTreeNode<TValue>[]; activeIndex: number }[],
+  ): void {
+    const generation = this.openGenerationCounter;
+    this.advanceDrilledPath(chain, 1, generation);
+  }
+
+  private advanceDrilledPath(
+    chain: { nodes: DynamoTreeNode<TValue>[]; activeIndex: number }[],
+    step: number,
+    generation: number,
+  ): void {
+    if (step >= chain.length) return;
+    this.pollForAnchorAndAdvance(chain, step, generation, 20);
+  }
+
+  // If the walk stalls (a disabled ancestor row, a row that never mounts),
+  // it stops silently at the deepest confirmed level once `framesLeft`
+  // expires — degrading to the pre-Phase-1 root-only-with-the-right-branch-
+  // highlighted behavior in the worst case, never a broken half-open state,
+  // matching this file's existing defensive posture elsewhere (the
+  // flyout-resync effect's own `if (!anchor) break;`).
+  private pollForAnchorAndAdvance(
+    chain: { nodes: DynamoTreeNode<TValue>[]; activeIndex: number }[],
+    step: number,
+    generation: number,
+    framesLeft: number,
+  ): void {
+    if (
+      framesLeft <= 0 ||
+      generation !== this.openGenerationCounter ||
+      !this.isOpen()
+    ) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      if (generation !== this.openGenerationCounter || !this.isOpen()) return;
+      // Deliberately called here, inside the rAF callback, rather than
+      // synchronously before scheduling it — `openPanel()`'s own effect
+      // (which attaches the overlay and mounts level `step - 1`'s virtual-
+      // scroll viewport, when virtualized) hasn't necessarily run yet at
+      // the point this poll is first kicked off, since Angular's `effect()`
+      // always flushes asynchronously relative to the signal write that
+      // triggered it — by the time ANY `requestAnimationFrame` callback
+      // fires, that effect is guaranteed to have already run, so the
+      // viewport ref `scrollActiveIntoView` reads is reliably populated
+      // here, unlike at the call site in `advanceDrilledPath`.
+      this.scrollActiveIntoView(step - 1);
+      const prevLevel = this.levels()[step - 1];
+      const anchor = prevLevel
+        ? this.getRowElement(step - 1, prevLevel.activeIndex)
+        : null;
+      if (!anchor) {
+        this.pollForAnchorAndAdvance(chain, step, generation, framesLeft - 1);
+        return;
+      }
+      const entry = chain[step];
+      if (!entry) return;
+      this.levels.update((current) => [
+        ...current.slice(0, step),
+        {
+          nodes: entry.nodes,
+          activeIndex: entry.activeIndex,
+          anchorEl: anchor,
+        },
+      ]);
+      this.activeLevelIndex.set(step);
+      this.scrollActiveIntoView(step);
+      this.advanceDrilledPath(chain, step + 1, generation);
+    });
   }
 }

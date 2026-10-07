@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { Directionality } from '@angular/cdk/bidi';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -87,6 +88,16 @@ function getThumb(container: HTMLElement, which: 'min' | 'max'): HTMLElement {
   return el as HTMLElement;
 }
 
+// Forces a deterministic RTL direction via DI override, rather than relying
+// on jsdom's own dir-attribute resolution — confirmed directly that jsdom's
+// getComputedStyle(...).direction does NOT resolve an inherited dir="rtl"
+// here, which is exactly why the component reads an injected Directionality
+// instead.
+const rtlProvider = {
+  provide: Directionality,
+  useValue: { value: 'rtl', change: new EventEmitter<string>() },
+};
+
 describe('DynamoSlider', () => {
   describe('creation', () => {
     it('renders a role="slider" element', () => {
@@ -128,14 +139,35 @@ describe('DynamoSlider', () => {
       },
     );
 
-    it('snaps a non-step-aligned value to the nearest step', () => {
+    it('displays an externally-set non-step-aligned value as-is, bounds-clamped but not re-snapped', () => {
+      // Deliberate behavior (Phase 3): display only bounds-clamps, it never
+      // re-grids a stored value onto step()'s grid — needed so a
+      // keyboardStep()-committed value (which can legitimately sit off
+      // step()'s own grid) displays correctly instead of silently snapping
+      // back. An externally-set off-grid value (via [(value)]/writeValue,
+      // as here) is a narrow side effect of that: it now displays exactly
+      // as given, not re-snapped — the stored value() was never touched
+      // either way, only the display read-back changed.
       const { container } = renderDynamoComponent(DynamoSlider, {
         inputs: { value: 23, step: 10 },
       });
 
       expect(
         within(container).getByRole('slider').getAttribute('aria-valuenow'),
-      ).toBe('20');
+      ).toBe('23');
+    });
+
+    it('still snaps a user-driven keyboard commit to the step grid', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 23, step: 10 } },
+      );
+      within(container).getByRole('slider').focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+
+      // 23 + 10 = 33, snapped to the nearest multiple-of-10-from-min grid.
+      expect(componentInstance.value()).toBe(30);
     });
   });
 
@@ -655,6 +687,227 @@ describe('DynamoSlider', () => {
     });
   });
 
+  describe('minRange', () => {
+    it('default 0 preserves "thumbs can touch" behavior exactly (regression)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            value: { minValue: 20, maxValue: 25 } as DynamoSliderRange,
+          },
+        },
+      );
+      getThumb(container, 'min').focus();
+
+      await userEvent.keyboard('{PageUp}');
+
+      expect(componentInstance.value()).toEqual({ minValue: 25, maxValue: 25 });
+    });
+
+    it('keyboard: min-thumb clamps at max - minRange, not at the max-thumb itself', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            minRange: 10,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          },
+        },
+      );
+      getThumb(container, 'min').focus();
+
+      // step 1, x10 pushes toward 30, well past max-10 (70) — clamps at 70.
+      for (let i = 0; i < 6; i++) {
+        await userEvent.keyboard('{PageUp}');
+      }
+
+      expect((componentInstance.value() as DynamoSliderRange).minValue).toBe(
+        70,
+      );
+    });
+
+    it('keyboard: max-thumb clamps at min + minRange, not at the min-thumb itself', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            minRange: 10,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          },
+        },
+      );
+      getThumb(container, 'max').focus();
+
+      for (let i = 0; i < 6; i++) {
+        await userEvent.keyboard('{PageDown}');
+      }
+
+      expect((componentInstance.value() as DynamoSliderRange).maxValue).toBe(
+        30,
+      );
+    });
+
+    it('pointer-drag respects the gap', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            minRange: 10,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          },
+        },
+      );
+      mockTrackRect(container, 0, 200);
+      const track = getThumb(container, 'min').parentElement as HTMLElement;
+
+      // Drag the min-thumb toward clientX 200 (value 100) — should stop at
+      // max(80) - minRange(10) = 70, not reach the max-thumb's own value.
+      fireEvent.pointerDown(getThumb(container, 'min'), { clientX: 0 });
+      fireEvent.pointerMove(track, { clientX: 200 });
+
+      expect((componentInstance.value() as DynamoSliderRange).minValue).toBe(
+        70,
+      );
+    });
+
+    it('warns in dev mode when minRange exceeds the overall span', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          min: 0,
+          max: 10,
+          minRange: 20,
+          value: { minValue: 2, maxValue: 8 } as DynamoSliderRange,
+        },
+      });
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('`minRange` exceeds'),
+      );
+      warn.mockRestore();
+    });
+
+    it('has no axe violations with minRange set', async () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          minRange: 10,
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          ariaLabel: 'Price',
+        },
+      });
+
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('keyboardStep', () => {
+    it('default unset — keyboard behaves exactly as before (regression)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 50, step: 5 } },
+      );
+      within(container).getByRole('slider').focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+      expect(componentInstance.value()).toBe(55);
+
+      await userEvent.keyboard('{PageUp}');
+      // 55 + 5*10 = 105, clamped to max (100).
+      expect(componentInstance.value()).toBe(100);
+    });
+
+    it('overrides step for ArrowRight/ArrowLeft', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 50, step: 1, keyboardStep: 10 } },
+      );
+      within(container).getByRole('slider').focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+      expect(componentInstance.value()).toBe(60);
+
+      await userEvent.keyboard('{ArrowLeft}');
+      await userEvent.keyboard('{ArrowLeft}');
+      expect(componentInstance.value()).toBe(40);
+    });
+
+    it('also governs PageUp/PageDown (×10 of keyboardStep, not step)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 50, step: 1, keyboardStep: 10 } },
+      );
+      within(container).getByRole('slider').focus();
+
+      await userEvent.keyboard('{PageUp}');
+      // 50 + 10*10 = 150, clamped to max (100).
+      expect(componentInstance.value()).toBe(100);
+    });
+
+    it('governs both thumbs independently in range mode', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            step: 1,
+            keyboardStep: 10,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          },
+        },
+      );
+
+      getThumb(container, 'min').focus();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(componentInstance.value()).toEqual({ minValue: 30, maxValue: 80 });
+
+      getThumb(container, 'max').focus();
+      await userEvent.keyboard('{ArrowLeft}');
+      expect(componentInstance.value()).toEqual({ minValue: 30, maxValue: 70 });
+    });
+
+    it('snaps a keyboard commit to its own grid even when it does not align with step (the eaten-keypress repro)', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 20, step: 10, keyboardStep: 3 } },
+      );
+      within(container).getByRole('slider').focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+
+      // Naively re-snapping to step()'s grid (10) would round 20+3=23 back
+      // to 20, silently eating the keypress. Snapping to keyboardStep's own
+      // grid (3) instead lands on the nearest multiple of 3 from min (0),
+      // which is 24 — the exact value doesn't matter as much as the fact
+      // that it moved at all, which is the property this fix guarantees.
+      expect(componentInstance.value()).toBe(24);
+    });
+
+    it('does not affect pointer-drag snapping, which always uses step', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 0, step: 10, keyboardStep: 1 } },
+      );
+      mockTrackRect(container, 0, 200);
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+
+      // clientX 33 of 200 == ratio 0.165 == raw value 16.5 — step(10) snaps
+      // this to 20, not keyboardStep(1)'s own finer grid.
+      fireEvent.pointerDown(track, { clientX: 33 });
+
+      expect(componentInstance.value()).toBe(20);
+    });
+  });
+
   describe('orientation', () => {
     it('defaults to horizontal, rendering identically to before orientation existed', () => {
       const { container } = renderDynamoComponent(DynamoSlider, {
@@ -665,7 +918,7 @@ describe('DynamoSlider', () => {
         ?.parentElement as HTMLElement;
       const thumb = container.querySelector('[role="slider"]') as HTMLElement;
       expect(track.style.height).toBe('');
-      expect(thumb.style.left).toBe('50%');
+      expect(thumb.style.insetInlineStart).toBe('50%');
       expect(thumb.style.bottom).toBe('');
     });
 
@@ -679,14 +932,14 @@ describe('DynamoSlider', () => {
       expect(track.style.height).toBe('300px');
     });
 
-    it('positions the thumb from the bottom, not the left', () => {
+    it('positions the thumb from the bottom, not the inline-start edge', () => {
       const { container } = renderDynamoComponent(DynamoSlider, {
         inputs: { orientation: 'vertical', value: 25 },
       });
 
       const thumb = container.querySelector('[role="slider"]') as HTMLElement;
       expect(thumb.style.bottom).toBe('25%');
-      expect(thumb.style.left).toBe('');
+      expect(thumb.style.insetInlineStart).toBe('');
     });
 
     it('dragging up increases the value and dragging down decreases it', () => {
@@ -790,7 +1043,7 @@ describe('DynamoSlider', () => {
         ?.parentElement as HTMLElement;
       const ticks = Array.from(track.querySelectorAll(':scope > span'));
       expect(ticks).toHaveLength(3);
-      expect((ticks[1] as HTMLElement).style.left).toBe('50%');
+      expect((ticks[1] as HTMLElement).style.insetInlineStart).toBe('50%');
     });
 
     it('drops tickValues entries outside [min, max]', () => {
@@ -833,6 +1086,115 @@ describe('DynamoSlider', () => {
 
       expect(warn).not.toHaveBeenCalled();
       warn.mockRestore();
+    });
+  });
+
+  describe('showTickLabels', () => {
+    it('renders no label spans by default, even with showTicks set', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { min: 0, max: 20, step: 5, showTicks: true },
+      });
+
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      // 5 tick dots, 0 labels — same :scope > span query the showTicks
+      // describe block uses, since labels are plain sibling <span>s too.
+      expect(track.querySelectorAll(':scope > span')).toHaveLength(5);
+    });
+
+    it('renders one label per step-generated tick, matching its numeric value', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          min: 0,
+          max: 20,
+          step: 5,
+          showTicks: true,
+          showTickLabels: true,
+        },
+      });
+
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      // 5 dots + 5 labels interleaved.
+      expect(track.querySelectorAll(':scope > span')).toHaveLength(10);
+      const labels = Array.from(
+        track.querySelectorAll(':scope > span.text-text-muted'),
+      ).map((el) => el.textContent);
+      expect(labels).toEqual(['0', '5', '10', '15', '20']);
+    });
+
+    it('renders labels only for the sparse explicit tickValues set', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          min: 0,
+          max: 100,
+          step: 1,
+          showTicks: true,
+          tickValues: [0, 50, 100],
+          showTickLabels: true,
+        },
+      });
+
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      expect(track.querySelectorAll(':scope > span')).toHaveLength(6);
+      const labels = Array.from(
+        track.querySelectorAll(':scope > span.text-text-muted'),
+      ).map((el) => el.textContent);
+      expect(labels).toEqual(['0', '50', '100']);
+    });
+
+    it('renders without error in vertical orientation, with vertical classes', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          orientation: 'vertical',
+          min: 0,
+          max: 10,
+          step: 5,
+          showTicks: true,
+          showTickLabels: true,
+        },
+      });
+
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+      const labels = track.querySelectorAll(':scope > span');
+      expect(labels.length).toBeGreaterThan(0);
+    });
+
+    it('merges pt class onto tick and tickLabel parts', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          min: 0,
+          max: 10,
+          step: 5,
+          showTicks: true,
+          showTickLabels: true,
+          pt: {
+            tick: { class: 'pt-tick' },
+            tickLabel: { class: 'pt-tick-label' },
+          },
+        },
+      });
+
+      expect(container.querySelector('.pt-tick')).not.toBeNull();
+      expect(container.querySelector('.pt-tick-label')).not.toBeNull();
+    });
+
+    it('has no axe violations with showTicks, showTickLabels, and showTooltip all on', async () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          min: 0,
+          max: 20,
+          step: 5,
+          showTicks: true,
+          showTickLabels: true,
+          showTooltip: true,
+          value: 10,
+        },
+      });
+
+      await expectNoA11yViolations(container);
     });
   });
 
@@ -910,6 +1272,321 @@ describe('DynamoSlider', () => {
           step: 25,
           showTooltip: true,
           value: 50,
+        },
+      });
+
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('pt passthrough', () => {
+    it('merges pt class onto root/track/fill/thumb (non-range)', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          value: 50,
+          pt: {
+            root: { class: 'pt-root' },
+            track: { class: 'pt-track' },
+            fill: { class: 'pt-fill' },
+            thumb: { class: 'pt-thumb' },
+          },
+        },
+      });
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('.pt-track')).not.toBeNull();
+      expect(container.querySelector('.pt-fill')).not.toBeNull();
+      expect(container.querySelector('.pt-thumb')).not.toBeNull();
+    });
+
+    it('merges a non-class pt attribute onto root/track/fill/thumb', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          value: 50,
+          pt: {
+            root: { 'data-testid': 'root-el' },
+            track: { 'data-testid': 'track-el' },
+            fill: { 'data-testid': 'fill-el' },
+            thumb: { 'data-testid': 'thumb-el' },
+          },
+        },
+      });
+
+      expect(container.querySelector('[data-testid="root-el"]')).not.toBeNull();
+      expect(
+        container.querySelector('[data-testid="track-el"]'),
+      ).not.toBeNull();
+      expect(container.querySelector('[data-testid="fill-el"]')).not.toBeNull();
+      expect(
+        container.querySelector('[data-testid="thumb-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('applies the same pt.thumb attrs to both thumbs in range mode', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          pt: { thumb: { 'data-testid': 'range-thumb' } },
+        },
+      });
+
+      expect(
+        container.querySelectorAll('[data-testid="range-thumb"]'),
+      ).toHaveLength(2);
+    });
+  });
+
+  describe('ariaDescribedby', () => {
+    it('is absent by default', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50 },
+      });
+
+      expect(
+        within(container).getByRole('slider').getAttribute('aria-describedby'),
+      ).toBeNull();
+    });
+
+    it('is forwarded to the thumb when set', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50, ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        within(container).getByRole('slider').getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('is forwarded to both thumbs in range mode', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          ariaDescribedby: 'hint-id',
+        },
+      });
+
+      expect(getThumb(container, 'min').getAttribute('aria-describedby')).toBe(
+        'hint-id',
+      );
+      expect(getThumb(container, 'max').getAttribute('aria-describedby')).toBe(
+        'hint-id',
+      );
+    });
+  });
+
+  describe('fluid', () => {
+    it('defaults to true, rendering w-full in horizontal orientation', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50 },
+      });
+
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('renders w-72 when set to false', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50, fluid: false },
+      });
+
+      const rootClass = container.querySelector('div')?.className ?? '';
+      expect(rootClass).toContain('w-72');
+      expect(rootClass).not.toContain('w-full');
+    });
+
+    it('does not add a width class to vertical orientation when true', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50, orientation: 'vertical', fluid: true },
+      });
+
+      const rootClass = container.querySelector('div')?.className ?? '';
+      expect(rootClass).not.toContain('w-full');
+      expect(rootClass).not.toContain('w-72');
+    });
+
+    it('does not add a width class to vertical orientation when false', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50, orientation: 'vertical', fluid: false },
+      });
+
+      const rootClass = container.querySelector('div')?.className ?? '';
+      expect(rootClass).not.toContain('w-full');
+      expect(rootClass).not.toContain('w-72');
+    });
+  });
+
+  describe('aria-orientation', () => {
+    it('reflects horizontal by default', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50 },
+      });
+
+      expect(
+        within(container).getByRole('slider').getAttribute('aria-orientation'),
+      ).toBe('horizontal');
+    });
+
+    it('reflects vertical when set', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 50, orientation: 'vertical' },
+      });
+
+      expect(
+        within(container).getByRole('slider').getAttribute('aria-orientation'),
+      ).toBe('vertical');
+    });
+
+    it('reflects on both thumbs in range mode', () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          range: true,
+          orientation: 'vertical',
+          value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+        },
+      });
+
+      expect(getThumb(container, 'min').getAttribute('aria-orientation')).toBe(
+        'vertical',
+      );
+      expect(getThumb(container, 'max').getAttribute('aria-orientation')).toBe(
+        'vertical',
+      );
+    });
+  });
+
+  describe('disabled/readOnly mid-drag', () => {
+    it('stops responding to pointermove once disabled flips true mid-drag, and stays stopped', () => {
+      const { container, componentInstance, setInputs } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 0 } },
+      );
+      mockTrackRect(container, 0, 200);
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+
+      fireEvent.pointerDown(track, { clientX: 0 });
+      expect(componentInstance.value()).toBe(0);
+
+      setInputs({ disabled: true });
+      fireEvent.pointerMove(track, { clientX: 100 });
+      expect(componentInstance.value()).toBe(0);
+
+      // Flip disabled back off WITHOUT a new pointerdown — proves the drag
+      // was fully ended, not merely frozen-but-resumable.
+      setInputs({ disabled: false });
+      fireEvent.pointerMove(track, { clientX: 150 });
+      expect(componentInstance.value()).toBe(0);
+    });
+
+    it('stops responding to pointermove once readOnly flips true mid-drag, and stays stopped', () => {
+      const { container, componentInstance, setInputs } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 0 } },
+      );
+      mockTrackRect(container, 0, 200);
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+
+      fireEvent.pointerDown(track, { clientX: 0 });
+      setInputs({ readOnly: true });
+      fireEvent.pointerMove(track, { clientX: 100 });
+      expect(componentInstance.value()).toBe(0);
+
+      setInputs({ readOnly: false });
+      fireEvent.pointerMove(track, { clientX: 150 });
+      expect(componentInstance.value()).toBe(0);
+    });
+
+    it('also ends a range-mode drag cleanly, hiding a stuck tooltip', () => {
+      const { container, componentInstance, setInputs, fixture } =
+        renderDynamoComponent(DynamoSlider, {
+          inputs: {
+            range: true,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+            showTooltip: true,
+          },
+        });
+      mockTrackRect(container, 0, 200);
+      const track = getThumb(container, 'min').parentElement as HTMLElement;
+
+      fireEvent.pointerDown(getThumb(container, 'min'), { clientX: 0 });
+      fixture.detectChanges();
+      expect(getThumb(container, 'min').querySelector('span')).not.toBeNull();
+
+      setInputs({ disabled: true });
+      fireEvent.pointerMove(track, { clientX: 100 });
+      fixture.detectChanges();
+
+      expect((componentInstance.value() as DynamoSliderRange).minValue).toBe(
+        20,
+      );
+      expect(getThumb(container, 'min').querySelector('span')).toBeNull();
+    });
+  });
+
+  describe('RTL', () => {
+    it('positions the thumb from the logical inline-start edge, auto-mirroring under dir="rtl" CSS', () => {
+      // insetInlineStart is a logical property — this test only confirms
+      // the component still writes to it under an RTL-forced Directionality;
+      // the actual visual mirroring is the browser's own job via CSS, not
+      // something jsdom can verify.
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: { value: 25 },
+        providers: [rtlProvider],
+      });
+
+      const thumb = container.querySelector('[role="slider"]') as HTMLElement;
+      expect(thumb.style.insetInlineStart).toBe('25%');
+    });
+
+    it('dragging toward the physical right decreases the value under RTL', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        { inputs: { value: 50 }, providers: [rtlProvider] },
+      );
+      mockTrackRect(container, 0, 200);
+      const track = container.querySelector('[role="slider"]')
+        ?.parentElement as HTMLElement;
+
+      // Physical right edge (clientX near the track's own right bound) is
+      // the RTL "start" (lowest value) — mirror image of the LTR case.
+      fireEvent.pointerDown(track, { clientX: 200 });
+      expect(componentInstance.value()).toBe(0);
+
+      fireEvent.pointerMove(track, { clientX: 0 });
+      expect(componentInstance.value()).toBe(100);
+    });
+
+    it('dragging each range thumb respects RTL-flipped drag direction', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoSlider,
+        {
+          inputs: {
+            range: true,
+            value: { minValue: 20, maxValue: 80 } as DynamoSliderRange,
+          },
+          providers: [rtlProvider],
+        },
+      );
+      mockTrackRect(container, 0, 200);
+      const track = getThumb(container, 'min').parentElement as HTMLElement;
+
+      fireEvent.pointerDown(getThumb(container, 'min'), { clientX: 200 });
+      fireEvent.pointerMove(track, { clientX: 190 });
+
+      expect((componentInstance.value() as DynamoSliderRange).minValue).toBe(5);
+    });
+  });
+
+  describe('baseline accessibility', () => {
+    it('has no axe violations with pt/ariaDescribedby/fluid all set', async () => {
+      const { container } = renderDynamoComponent(DynamoSlider, {
+        inputs: {
+          value: 55,
+          ariaDescribedby: 'hint-id',
+          fluid: false,
+          pt: { root: { class: 'pt-root' } },
         },
       });
 

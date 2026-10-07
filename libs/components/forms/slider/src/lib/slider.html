@@ -1,7 +1,8 @@
-<div [class]="rootClasses()">
+<div [class]="rootClasses()" [dgPt]="ptFor('root')">
   <div
     #track
     [class]="trackClasses()"
+    [dgPt]="ptFor('track')"
     [style.height.px]="orientation() === 'vertical' ? verticalHeight() : null"
     (pointerdown)="onTrackPointerDown($event)"
     (pointermove)="onTrackPointerMove($event)"
@@ -12,9 +13,21 @@
     <span
       [class]="tickClasses()"
       [style]="percentStyle(tickPercent(tick))"
+      [dgPt]="ptFor('tick')"
     ></span>
-    } @if (range()) {
-    <div [class]="fillClasses()" [style]="fillStyle()"></div>
+    @if (showTickLabels()) {
+    <span
+      [class]="tickLabelClasses()"
+      [style]="percentStyle(tickPercent(tick))"
+      [dgPt]="ptFor('tickLabel')"
+      >{{ tick }}</span
+    >
+    } } @if (range()) {
+    <div
+      [class]="fillClasses()"
+      [style]="fillStyle()"
+      [dgPt]="ptFor('fill')"
+    ></div>
     <div
       #minThumb
       role="slider"
@@ -22,12 +35,15 @@
       [tabindex]="disabled() ? -1 : 0"
       [class]="thumbClasses()"
       [style]="thumbStyle('min')"
+      [dgPt]="ptFor('thumb')"
       [attr.aria-valuenow]="currentMin()"
       [attr.aria-valuemin]="min()"
       [attr.aria-valuemax]="currentMax()"
+      [attr.aria-orientation]="orientation()"
       [attr.aria-disabled]="disabled() ? 'true' : null"
       [attr.aria-readonly]="readOnly() ? 'true' : null"
       [attr.aria-label]="minThumbLabel()"
+      [attr.aria-describedby]="ariaDescribedby() ?? null"
       (keydown)="onThumbKeydown('min', $event)"
       (pointerdown)="onThumbPointerDown('min', $event)"
     >
@@ -42,12 +58,15 @@
       [tabindex]="disabled() ? -1 : 0"
       [class]="thumbClasses()"
       [style]="thumbStyle('max')"
+      [dgPt]="ptFor('thumb')"
       [attr.aria-valuenow]="currentMax()"
       [attr.aria-valuemin]="currentMin()"
       [attr.aria-valuemax]="max()"
+      [attr.aria-orientation]="orientation()"
       [attr.aria-disabled]="disabled() ? 'true' : null"
       [attr.aria-readonly]="readOnly() ? 'true' : null"
       [attr.aria-label]="maxThumbLabel()"
+      [attr.aria-describedby]="ariaDescribedby() ?? null"
       (keydown)="onThumbKeydown('max', $event)"
       (pointerdown)="onThumbPointerDown('max', $event)"
     >
@@ -56,19 +75,26 @@
       }
     </div>
     } @else {
-    <div [class]="fillClasses()" [style]="fillStyle()"></div>
+    <div
+      [class]="fillClasses()"
+      [style]="fillStyle()"
+      [dgPt]="ptFor('fill')"
+    ></div>
     <div
       #thumb
       role="slider"
       [tabindex]="disabled() ? -1 : 0"
       [class]="thumbClasses()"
       [style]="thumbStyle('min')"
+      [dgPt]="ptFor('thumb')"
       [attr.aria-valuenow]="clampedValue()"
       [attr.aria-valuemin]="min()"
       [attr.aria-valuemax]="max()"
+      [attr.aria-orientation]="orientation()"
       [attr.aria-disabled]="disabled() ? 'true' : null"
       [attr.aria-readonly]="readOnly() ? 'true' : null"
       [attr.aria-label]="ariaLabel() ?? 'Slider'"
+      [attr.aria-describedby]="ariaDescribedby() ?? null"
       (keydown)="onThumbKeydown('min', $event)"
     >
       @if (showTooltipFor('min')) {

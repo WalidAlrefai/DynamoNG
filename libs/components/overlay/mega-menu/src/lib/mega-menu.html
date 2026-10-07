@@ -1,5 +1,14 @@
-<div [class]="rootClasses()" data-testid="DynamoMegaMenu">
-  <div [class]="startClasses" data-testid="DynamoMegaMenu-start">
+<div
+  #rootEl
+  [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
+  data-testid="DynamoMegaMenu"
+>
+  <div
+    [class]="startClasses()"
+    [dgPt]="ptFor('start')"
+    data-testid="DynamoMegaMenu-start"
+  >
     <ng-content select="[start]" />
   </div>
 
@@ -8,18 +17,78 @@
     tabindex="-1"
     [attr.aria-label]="ariaLabel() ?? null"
     [attr.aria-orientation]="orientation()"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
     [class]="barClasses()"
+    [dgPt]="ptFor('bar')"
     (keydown)="onBarKeydown($event)"
   >
-    @for (item of items(); track item; let i = $index) {
+    @if (collapsed()) {
+    <button
+      #collapseTriggerEl
+      type="button"
+      aria-haspopup="menu"
+      [attr.role]="drawerOpen() ? 'combobox' : 'menuitem'"
+      [attr.aria-label]="ariaLabel() ? ariaLabel() + ' menu' : 'Menu'"
+      [attr.aria-expanded]="drawerOpen()"
+      [attr.aria-controls]="drawerOpen() ? megaMenuId + '-drawer' : null"
+      [attr.aria-activedescendant]="
+        drawerOpen()
+          ? (openIndex() !== null ? activeDescendantId() : activeDrawerDescendantId())
+          : null
+      "
+      [class]="collapseTriggerClasses()"
+      [dgPt]="ptFor('collapseTrigger')"
+      (click)="onCollapseTriggerClick()"
+      (keydown)="onCollapseTriggerKeydown($event)"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        [attr.aria-hidden]="true"
+      >
+        <path
+          d="M3 5h14M3 10h14M3 15h14"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+    } @else { @for (item of items(); track item; let i = $index) {
     <!--
         role swaps to "combobox" only while THIS item's panel is open —
         aria-activedescendant isn't valid on a plain "menuitem". Same
         per-item axe-core workaround as Menubar.
       -->
+    @if (!item.columns?.length && item.routerLink) {
+    <a
+      #barItemEl
+      [hidden]="item.visible === false"
+      [attr.aria-hidden]="item.visible === false ? 'true' : null"
+      role="menuitem"
+      [tabindex]="focusedIndex() === i ? 0 : -1"
+      [attr.aria-disabled]="item.disabled ? 'true' : null"
+      [class]="barItemClasses(i, item)"
+      [dgPt]="ptFor('item')"
+      [routerLink]="item.disabled ? null : item.routerLink"
+      [queryParams]="item.queryParams"
+      [fragment]="item.fragment"
+      (mouseenter)="onBarItemHover(i)"
+      (click)="onBarItemClick(i)"
+    >
+      <ng-container
+        [ngTemplateOutlet]="barItemContent"
+        [ngTemplateOutletContext]="{ $implicit: item, index: i }"
+      />
+    </a>
+    } @else {
     <button
       #barItemEl
       type="button"
+      [hidden]="item.visible === false"
+      [attr.aria-hidden]="item.visible === false ? 'true' : null"
       [attr.role]="openIndex() === i ? 'combobox' : 'menuitem'"
       [tabindex]="focusedIndex() === i ? 0 : -1"
       [attr.aria-haspopup]="item.columns?.length ? 'menu' : null"
@@ -28,21 +97,249 @@
       [attr.aria-activedescendant]="openIndex() === i ? activeDescendantId() : null"
       [attr.aria-disabled]="item.disabled ? 'true' : null"
       [class]="barItemClasses(i, item)"
+      [dgPt]="ptFor('item')"
       (mouseenter)="onBarItemHover(i)"
       (click)="onBarItemClick(i)"
     >
+      <ng-container
+        [ngTemplateOutlet]="barItemContent"
+        [ngTemplateOutletContext]="{ $implicit: item, index: i }"
+      />
+    </button>
+    } } }
+  </div>
+
+  <ng-template #barItemContent let-item let-i="index">
+    @if (item.icon) {
+    <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon }}</span>
+    } @if (itemTemplate(); as tpl) {
+    <ng-container
+      [ngTemplateOutlet]="tpl"
+      [ngTemplateOutletContext]="{ $implicit: item }"
+    />
+    } @else {
+    <span>{{ item.label }}</span>
+    } @if (item.shortcut) {
+    <span [class]="shortcutClasses" aria-hidden="true"
+      >{{ item.shortcut }}</span
+    >
+    } @if (item.badge !== undefined) {
+    <dg-badge size="sm">{{ item.badge }}</dg-badge>
+    } @if (item.columns?.length) {
+    <svg
+      [class]="chevronClasses(i)"
+      [attr.aria-hidden]="true"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+    >
+      <path
+        d="M4 6l4 4 4-4"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+    }
+  </ng-template>
+
+  <div
+    [class]="endClasses()"
+    [dgPt]="ptFor('end')"
+    data-testid="DynamoMegaMenu-end"
+  >
+    <ng-content select="[end]" />
+  </div>
+</div>
+
+<ng-template #panelTemplate>
+  <div
+    [id]="megaMenuId + '-panel'"
+    role="menu"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [class]="panelClasses()"
+    [dgPt]="ptFor('panel')"
+    data-testid="DynamoMegaMenu-panel"
+  >
+    @for (column of openColumns(); track column; let c = $index) {
+    <div
+      role="group"
+      [attr.aria-label]="column.header ?? null"
+      [class]="columnClasses()"
+      [dgPt]="ptFor('column')"
+    >
+      @if (column.header) {
+      <div
+        [class]="columnHeaderClasses()"
+        [dgPt]="ptFor('columnHeader')"
+        [attr.aria-hidden]="true"
+      >
+        {{ column.header }}
+      </div>
+      } @for (link of column.items; track link; let r = $index) { @if
+      (isLinkSeparator(link)) {
+      <div role="separator" [class]="linkSeparatorClasses"></div>
+      } @else if (link.visible !== false) { @if (link.routerLink) {
+      <a
+        [id]="linkId(c, r)"
+        role="menuitem"
+        tabindex="-1"
+        [attr.aria-disabled]="link.disabled ? 'true' : null"
+        [class]="linkClasses(link, flatIndexOf(c, r))"
+        [dgPt]="ptFor('link')"
+        [routerLink]="link.disabled ? null : link.routerLink"
+        [queryParams]="link.queryParams"
+        [fragment]="link.fragment"
+        (mouseenter)="onLinkHover(flatIndexOf(c, r))"
+        (click)="onLinkClick(link)"
+      >
+        <ng-container
+          [ngTemplateOutlet]="linkContent"
+          [ngTemplateOutletContext]="{ $implicit: link }"
+        />
+      </a>
+      } @else {
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- links are tabindex="-1"/mouse-only; keyboard handling lives on the bar's own keydown (virtual-focus model, see mega-menu.ts) -->
+      <div
+        [id]="linkId(c, r)"
+        role="menuitem"
+        tabindex="-1"
+        [attr.aria-disabled]="link.disabled ? 'true' : null"
+        [class]="linkClasses(link, flatIndexOf(c, r))"
+        [dgPt]="ptFor('link')"
+        (mouseenter)="onLinkHover(flatIndexOf(c, r))"
+        (click)="onLinkClick(link)"
+      >
+        <ng-container
+          [ngTemplateOutlet]="linkContent"
+          [ngTemplateOutletContext]="{ $implicit: link }"
+        />
+      </div>
+      } } }
+    </div>
+    }
+  </div>
+
+  <ng-template #linkContent let-link>
+    <span [class]="linkRowClasses">
+      <span [class]="linkContentClasses">
+        @if (link.icon) {
+        <span [class]="linkIconClasses" aria-hidden="true"
+          >{{ link.icon }}</span
+        >
+        } @if (linkTemplate(); as tpl) {
+        <ng-container
+          [ngTemplateOutlet]="tpl"
+          [ngTemplateOutletContext]="{ $implicit: link }"
+        />
+        } @else { {{ link.label }} }
+      </span>
+      <span [class]="linkTrailingClasses">
+        @if (link.shortcut) {
+        <span [class]="shortcutClasses" aria-hidden="true"
+          >{{ link.shortcut }}</span
+        >
+        } @if (link.badge !== undefined) {
+        <dg-badge size="sm">{{ link.badge }}</dg-badge>
+        }
+      </span>
+    </span>
+  </ng-template>
+</ng-template>
+
+<!--
+  The collapsed hamburger's own drawer — architecturally "the bar, but
+  vertical and inside an overlay, with virtual instead of real focus" (see
+  mega-menu.ts's own `drawerOpen` doc comment). A branch row's own panel
+  reuses the EXACT SAME #panelTemplate above, anchored to the hamburger
+  instead of a bar item (see attachPanel's own collapsed-anchor fallback) —
+  this template only ever renders the top-level items() list itself.
+-->
+<ng-template #drawerTemplate>
+  <div
+    [id]="megaMenuId + '-drawer'"
+    role="menu"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [class]="drawerPanelClasses()"
+    [dgPt]="ptFor('drawer')"
+    data-testid="DynamoMegaMenu-drawer"
+  >
+    @for (item of items(); track item; let i = $index) { @if
+    (!item.columns?.length && item.routerLink) {
+    <a
+      [id]="drawerItemId(i)"
+      role="menuitem"
+      tabindex="-1"
+      [hidden]="item.visible === false"
+      [attr.aria-hidden]="item.visible === false ? 'true' : null"
+      [attr.aria-disabled]="item.disabled ? 'true' : null"
+      [class]="drawerItemClasses(i, item)"
+      [dgPt]="ptFor('drawerItem')"
+      [routerLink]="item.disabled ? null : item.routerLink"
+      [queryParams]="item.queryParams"
+      [fragment]="item.fragment"
+      (mouseenter)="onDrawerItemHover(i)"
+      (click)="onDrawerItemClick(i)"
+    >
+      <ng-container
+        [ngTemplateOutlet]="drawerItemContent"
+        [ngTemplateOutletContext]="{ $implicit: item, index: i }"
+      />
+    </a>
+    } @else {
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- rows are intentionally tabindex="-1", mouse-only; all keyboard interaction is handled on the hamburger's own keydown (see mega-menu.ts's class doc comment on the aria-activedescendant focus model) -->
+    <div
+      [id]="drawerItemId(i)"
+      role="menuitem"
+      tabindex="-1"
+      [hidden]="item.visible === false"
+      [attr.aria-hidden]="item.visible === false ? 'true' : null"
+      [attr.aria-haspopup]="item.columns?.length ? 'menu' : null"
+      [attr.aria-expanded]="item.columns?.length ? openIndex() === i : null"
+      [attr.aria-disabled]="item.disabled ? 'true' : null"
+      [class]="drawerItemClasses(i, item)"
+      [dgPt]="ptFor('drawerItem')"
+      (mouseenter)="onDrawerItemHover(i)"
+      (click)="onDrawerItemClick(i)"
+    >
+      <ng-container
+        [ngTemplateOutlet]="drawerItemContent"
+        [ngTemplateOutletContext]="{ $implicit: item, index: i }"
+      />
+    </div>
+    } }
+  </div>
+
+  <ng-template #drawerItemContent let-item let-i="index">
+    <span [class]="drawerItemLeadingClasses">
       @if (item.icon) {
       <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon }}</span>
-      }
+      } @if (itemTemplate(); as tpl) {
+      <ng-container
+        [ngTemplateOutlet]="tpl"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
+      } @else {
       <span>{{ item.label }}</span>
-      @if (item.columns?.length) {
+      }
+    </span>
+    <span [class]="drawerItemTrailingClasses">
+      @if (item.shortcut) {
+      <span [class]="shortcutClasses" aria-hidden="true"
+        >{{ item.shortcut }}</span
+      >
+      } @if (item.badge !== undefined) {
+      <dg-badge size="sm">{{ item.badge }}</dg-badge>
+      } @if (item.columns?.length) {
       <svg
         [class]="chevronClasses(i)"
-        [attr.aria-hidden]="true"
         width="16"
         height="16"
         viewBox="0 0 16 16"
         fill="none"
+        [attr.aria-hidden]="true"
       >
         <path
           d="M4 6l4 4 4-4"
@@ -53,54 +350,6 @@
         />
       </svg>
       }
-    </button>
-    }
-  </div>
-
-  <div [class]="endClasses" data-testid="DynamoMegaMenu-end">
-    <ng-content select="[end]" />
-  </div>
-</div>
-
-<ng-template #panelTemplate>
-  <div
-    [id]="megaMenuId + '-panel'"
-    role="menu"
-    [attr.aria-label]="ariaLabel() ?? null"
-    [class]="panelClasses"
-    data-testid="DynamoMegaMenu-panel"
-  >
-    @for (column of openColumns(); track column; let c = $index) {
-    <div
-      role="group"
-      [attr.aria-label]="column.header ?? null"
-      [class]="columnClasses"
-    >
-      @if (column.header) {
-      <div [class]="columnHeaderClasses" [attr.aria-hidden]="true">
-        {{ column.header }}
-      </div>
-      } @for (link of column.items; track link; let r = $index) {
-      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- links are tabindex="-1"/mouse-only; keyboard handling lives on the bar's own keydown (virtual-focus model, see mega-menu.ts) -->
-      <div
-        [id]="linkId(c, r)"
-        role="menuitem"
-        tabindex="-1"
-        [attr.aria-disabled]="link.disabled ? 'true' : null"
-        [class]="linkClasses(link, flatIndexOf(c, r))"
-        (mouseenter)="onLinkHover(flatIndexOf(c, r))"
-        (click)="onLinkClick(link)"
-      >
-        <span [class]="linkContentClasses">
-          @if (link.icon) {
-          <span [class]="linkIconClasses" aria-hidden="true"
-            >{{ link.icon }}</span
-          >
-          } {{ link.label }}
-        </span>
-      </div>
-      }
-    </div>
-    }
-  </div>
+    </span>
+  </ng-template>
 </ng-template>

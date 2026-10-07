@@ -932,4 +932,233 @@ describe('DynamoOrderList', () => {
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });
+
+  describe('pt passthrough (pt) — baseline parity (Phase 0)', () => {
+    it('merges pt class onto every part: root/header/list/option/checkbox/controls/filter/no-results', async () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: {
+          value: ITEMS,
+          selectable: true,
+          filterable: true,
+          filterText: 'zzz-no-match',
+          pt: {
+            root: { class: 'pt-root' },
+            header: { class: 'pt-header' },
+            list: { class: 'pt-list' },
+            option: { class: 'pt-option' },
+            checkbox: { class: 'pt-checkbox' },
+            controls: { class: 'pt-controls' },
+            'no-results': { class: 'pt-no-results' },
+          },
+        },
+      });
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('.pt-header')).not.toBeNull();
+      expect(container.querySelector('.pt-list')).not.toBeNull();
+      expect(container.querySelector('.pt-controls')).not.toBeNull();
+      expect(container.querySelector('.pt-no-results')).not.toBeNull();
+    });
+
+    it('merges pt class onto option/checkbox when results are present', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: {
+          value: ITEMS,
+          selectable: true,
+          pt: {
+            option: { class: 'pt-option' },
+            checkbox: { class: 'pt-checkbox' },
+          },
+        },
+      });
+
+      expect(container.querySelector('.pt-option')).not.toBeNull();
+      expect(container.querySelector('.pt-checkbox')).not.toBeNull();
+    });
+  });
+
+  describe('ariaDescribedby / fluid', () => {
+    it('defaults fluid to true', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS },
+      });
+      expect(container.querySelector('div')?.className).toContain('w-full');
+    });
+
+    it('uses the fixed card width when fluid is set to false', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, fluid: false },
+      });
+      expect(container.querySelector('div')?.className).toContain('w-72');
+      expect(container.querySelector('div')?.className).not.toContain('w-full');
+    });
+
+    it('forwards ariaDescribedby to the listbox', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, ariaDescribedby: 'help-text' },
+      });
+      expect(getList(container).getAttribute('aria-describedby')).toBe(
+        'help-text',
+      );
+    });
+
+    it('omits aria-describedby when unset', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS },
+      });
+      expect(getList(container).hasAttribute('aria-describedby')).toBe(false);
+    });
+  });
+
+  describe('aria-disabled on the listbox', () => {
+    it('is set when disabled() is true', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, disabled: true },
+      });
+      expect(getList(container).getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('is absent when disabled() is false', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS },
+      });
+      expect(getList(container).hasAttribute('aria-disabled')).toBe(false);
+    });
+  });
+
+  describe('canMoveUp/canMoveDown and aria-multiselectable — unchanged regression check', () => {
+    it('canMoveUp/canMoveDown already correctly gate on disabled() alone (no fix needed, unlike Picklist)', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, disabled: true },
+      });
+      const list = getList(container);
+      list.focus();
+      dispatchKey(list, 'ArrowDown');
+      fixture.detectChanges();
+
+      const upButton = within(container).getByRole('button', {
+        name: 'Move up in Items',
+      });
+      const downButton = within(container).getByRole('button', {
+        name: 'Move down in Items',
+      });
+      expect(upButton.hasAttribute('disabled')).toBe(true);
+      expect(downButton.hasAttribute('disabled')).toBe(true);
+    });
+
+    it('aria-multiselectable is absent when selectable() is false (unchanged from before this round)', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS },
+      });
+      expect(getList(container).hasAttribute('aria-multiselectable')).toBe(
+        false,
+      );
+    });
+
+    it('aria-multiselectable is "true" when selectable() is true (unchanged from before this round)', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, selectable: true },
+      });
+      expect(getList(container).getAttribute('aria-multiselectable')).toBe(
+        'true',
+      );
+    });
+  });
+
+  describe('filter box genuinely disables (Phase 0 bug fix)', () => {
+    it('disables the native input and does not update filterText when disabled() is set', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        {
+          inputs: { value: ITEMS, filterable: true, disabled: true },
+        },
+      );
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      expect(input.disabled).toBe(true);
+
+      fireEvent.input(input, { target: { value: 'a' } });
+      expect(componentInstance.filterText()).toBe('');
+    });
+
+    it('disables the native input and does not update filterText when readOnly() is set', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        {
+          inputs: { value: ITEMS, filterable: true, readOnly: true },
+        },
+      );
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      expect(input.disabled).toBe(true);
+
+      fireEvent.input(input, { target: { value: 'a' } });
+      expect(componentInstance.filterText()).toBe('');
+    });
+
+    it('stays enabled and updates filterText when neither disabled() nor readOnly() is set', () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        DynamoOrderList,
+        {
+          inputs: { value: ITEMS, filterable: true },
+        },
+      );
+      const input = container.querySelector(
+        'input[type="search"]',
+      ) as HTMLInputElement;
+      expect(input.disabled).toBe(false);
+
+      fireEvent.input(input, { target: { value: 'a' } });
+      expect(componentInstance.filterText()).toBe('a');
+    });
+  });
+
+  describe('accessibility — baseline parity (Phase 0)', () => {
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: {
+          value: ITEMS,
+          ariaDescribedby: 'help-text',
+        },
+      });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('showReorderControls (Phase 1)', () => {
+    it('renders the controls row by default', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS },
+      });
+      expect(container.querySelector('[data-part="controls"]')).not.toBeNull();
+    });
+
+    it('hides the controls row entirely when set to false', () => {
+      const { container } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, showReorderControls: false },
+      });
+      expect(container.querySelector('[data-part="controls"]')).toBeNull();
+    });
+
+    it('does not affect drag-and-drop reordering while hidden', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoOrderList, {
+        inputs: { value: ITEMS, showReorderControls: false },
+      });
+
+      (
+        componentInstance as unknown as {
+          onDropped: (e: CdkDragDrop<unknown>) => void;
+        }
+      ).onDropped(dropEvent(0, 2));
+
+      expect(componentInstance.value().map((o) => o.label)).toEqual([
+        'Bravo',
+        'Charlie',
+        'Alpha',
+        'Delta',
+      ]);
+    });
+  });
 });

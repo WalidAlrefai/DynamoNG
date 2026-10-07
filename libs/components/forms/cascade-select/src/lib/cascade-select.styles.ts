@@ -30,3 +30,25 @@ export const cascadeSelectRowStyles = cva(
 );
 
 export const cascadeSelectCaretStyles = 'h-4 w-4 shrink-0 text-text-muted';
+
+// Verbatim port of `treeSelectCheckboxIndicatorStyles`/
+// `treeSelectCheckboxIndeterminateDashStyles` (`tree-select.styles.ts`) —
+// decorative, `aria-hidden` indicator only, never a real focusable
+// checkbox, same reasoning as TreeSelect's own round (rows here are
+// `tabindex="-1"`/mouse-only, same as TreeSelect's own `treeitem` rows).
+export const cascadeSelectCheckboxIndicatorStyles = cva(
+  'flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+  {
+    variants: {
+      state: {
+        checked: 'bg-primary border-primary text-on-primary',
+        indeterminate: 'bg-primary border-primary text-on-primary',
+        unchecked: 'bg-surface-0 border-border text-transparent',
+      },
+    },
+    defaultVariants: { state: 'unchecked' },
+  },
+);
+
+export const cascadeSelectCheckboxIndeterminateDashStyles =
+  'h-0.5 w-2 rounded-full bg-current';

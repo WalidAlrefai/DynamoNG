@@ -10,6 +10,12 @@ export const tieredMenuTriggerStyles = cva(
   'flex items-center justify-between gap-2 rounded-md border border-border bg-surface-0 ' +
     'px-4 py-2 text-start text-sm text-text-primary transition-colors hover:bg-surface-50 ' +
     focusRingClass,
+  {
+    variants: {
+      fluid: { true: 'w-full', false: '' },
+    },
+    defaultVariants: { fluid: true },
+  },
 );
 
 export const tieredMenuChevronStyles = cva(
@@ -34,6 +40,10 @@ export const tieredMenuPanelStyles =
 // menuItemStyles does — same idiom as Cascade Select's cascadeSelectRowStyles
 // `active` variant, minus its `selected` axis (nothing here is ever
 // persistently "selected" the way a cascade value is).
+// `justify-between` here acts on exactly two direct children — the leading
+// (icon+label) and trailing (shortcut+badge+caret) groups below — so it
+// still spreads correctly now that a row can carry more than the original
+// icon/label/caret trio.
 export const tieredMenuItemStyles = cva(
   'flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2 text-start text-sm text-text-primary',
   {
@@ -59,3 +69,14 @@ export const tieredMenuCaretStyles = 'h-4 w-4 shrink-0 text-text-muted';
 // component's item-type doc comment for why icons are a plain string, not
 // wired to @dynamong/icons.
 export const tieredMenuItemIconClasses = 'shrink-0';
+
+// Verbatim copy of @dynamong/menu's own menuSeparatorStyles.
+export const tieredMenuSeparatorStyles = 'my-1 h-px bg-border';
+
+// A row's own icon+label group (leading) vs shortcut+badge+caret group
+// (trailing) — see tieredMenuItemStyles' own comment for why these exist as
+// a sibling pair rather than flattening everything into the row itself.
+export const tieredMenuItemLeadingClasses = 'flex min-w-0 items-center gap-1.5';
+export const tieredMenuItemTrailingClasses =
+  'flex shrink-0 items-center gap-1.5';
+export const tieredMenuShortcutClasses = 'text-xs text-text-muted';
