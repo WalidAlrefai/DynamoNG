@@ -49,12 +49,15 @@ export interface DynamoHsv {
   v: number; // 0-1
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
+// Exported (not just used internally by hsvOf/hexFromHsv below) so
+// color-picker.format.ts can convert between hex and the rgb()/hsb()
+// string formats without duplicating this math.
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const n = parseInt(hex.slice(1), 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
-function rgbToHex(r: number, g: number, b: number): string {
+export function rgbToHex(r: number, g: number, b: number): string {
   const clampByte = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
   return (
     '#' +

@@ -12,10 +12,12 @@ export const contextMenuTriggerStyles = '';
 export const contextMenuPanelStyles =
   'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;
 
-// flex (not block) so an optional leading icon sits beside the label
-// instead of just flowing inline before it.
+// justify-between still works correctly with exactly two children (the
+// leading and trailing groups below) even when the trailing group is
+// empty — flexbox simply leaves the leading group where it already was.
+// Mirrors @dynamong/menu's own identical item-styles shape.
 export const contextMenuItemStyles = cva(
-  'flex w-full items-center gap-2 cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
+  'flex w-full items-center justify-between gap-2 cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
     'focus-visible:outline-none focus-visible:bg-surface-100',
   {
     variants: {
@@ -27,6 +29,12 @@ export const contextMenuItemStyles = cva(
     defaultVariants: { disabled: false },
   },
 );
+
+export const contextMenuItemLeadingClasses =
+  'flex min-w-0 items-center gap-1.5';
+export const contextMenuItemTrailingClasses =
+  'flex shrink-0 items-center gap-1.5';
+export const contextMenuShortcutClasses = 'text-xs text-text-muted';
 
 export const contextMenuItemIconClasses = 'shrink-0';
 

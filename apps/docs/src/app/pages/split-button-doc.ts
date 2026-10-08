@@ -11,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'split-disabled', title: 'Split Disabled' },
+  { id: 'fluid', title: 'Fluid' },
 ];
 
 const API: ApiTableRow[] = [
@@ -30,6 +31,8 @@ const API: ApiTableRow[] = [
   },
   { name: 'open', type: 'boolean (model)', default: 'false' },
   { name: 'ariaLabel', type: 'string | undefined', default: "'More actions'" },
+  { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined' },
+  { name: 'fluid', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -52,7 +55,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="(action) fires for the primary button; (itemSelect) fires with the full chosen menu item ({ value, label, disabled })."
+        description="(action) fires for the primary button; (itemSelect) fires with the full chosen menu item ({ value, label, disabled, icon? }). shortcut renders a display-only trailing hint; badge renders a small trailing dg-badge; visible: false omits an item from render AND keyboard nav entirely; separator renders a non-interactive divider row; routerLink (on an item) renders a real <a> instead of a <button>."
       >
         <div preview>
           <dg-split-button
@@ -60,8 +63,20 @@ const API: ApiTableRow[] = [
             (action)="lastAction.set('save')"
             (itemSelect)="lastAction.set($event.value)"
           >
-            <dg-menu-item value="save-as" label="Save as..." />
+            <dg-menu-item value="save-as" label="Save as..." shortcut="⌘S" />
             <dg-menu-item value="duplicate" label="Duplicate" />
+            <dg-menu-item value="shared" label="Shared with" [badge]="3" />
+            <dg-menu-item
+              value="hidden"
+              label="Hidden for now"
+              [visible]="false"
+            />
+            <dg-menu-item [separator]="true" value="" label="" />
+            <dg-menu-item
+              value="docs"
+              label="Open Badge docs"
+              routerLink="/components/badge"
+            />
             <dg-menu-item value="delete" label="Delete" [disabled]="true" />
           </dg-split-button>
           @if (lastAction(); as action) {
@@ -73,7 +88,8 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-split-button label="Save" (action)="onSave()"
           (itemSelect)="onSelect($event)"&gt; &lt;dg-menu-item value="save-as"
-          label="Save as..." /&gt; &lt;/dg-split-button&gt;
+          label="Save as..." shortcut="⌘S" /&gt; &lt;dg-menu-item value="shared"
+          label="Shared with" [badge]="3" /&gt; &lt;/dg-split-button&gt;
         </div>
       </docs-example>
 
@@ -99,6 +115,22 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-split-button label="Save"
           [menuButtonDisabled]="true"&gt;...&lt;/dg-split-button&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="fluid"
+        title="Fluid"
+        description="fluid fills the width of its container — the primary action button grows to fill the extra space while the chevron trigger stays a fixed aspect-square."
+      >
+        <div preview class="w-full">
+          <dg-split-button label="Save" [fluid]="true">
+            <dg-menu-item value="save-as" label="Save as..." />
+          </dg-split-button>
+        </div>
+        <div code>
+          &lt;dg-split-button label="Save"
+          [fluid]="true"&gt;...&lt;/dg-split-button&gt;
         </div>
       </docs-example>
 

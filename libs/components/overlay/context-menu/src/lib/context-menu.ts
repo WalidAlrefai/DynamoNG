@@ -16,8 +16,14 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoBadge } from '@dynamong/badge';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import {
   DynamoOverlayService,
   buildConnectedCornerPositions,
@@ -28,9 +34,12 @@ import { DynamoMenuItem, type DynamoMenuItemSelectEvent } from '@dynamong/menu';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   contextMenuItemIconClasses,
+  contextMenuItemLeadingClasses,
   contextMenuItemStyles,
+  contextMenuItemTrailingClasses,
   contextMenuPanelStyles,
   contextMenuSeparatorStyles,
+  contextMenuShortcutClasses,
   contextMenuTriggerStyles,
 } from './context-menu.styles';
 import type { DynamoContextMenuPart } from './context-menu.types';
@@ -66,11 +75,19 @@ interface Point {
   selector: 'dg-context-menu',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    DynamoPassThroughDirective,
+    DynamoBadge,
+    NgTemplateOutlet,
+    RouterLink,
+  ],
   templateUrl: './context-menu.html',
 })
 export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart> {
   readonly disabled = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the trigger wrapper. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   /** When true, right-clicking anywhere in the document opens the menu at
    *  the cursor — not just the projected trigger content. Use for a
    *  page-wide context menu with no single bounded trigger region. */
@@ -103,11 +120,20 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
 
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(contextMenuTriggerStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          contextMenuTriggerStyles,
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
-  protected readonly panelClasses = contextMenuPanelStyles;
+  protected readonly panelClasses = computed(() =>
+    cn(contextMenuPanelStyles, this.ptFor('panel').class),
+  );
   protected readonly itemIconClasses = contextMenuItemIconClasses;
+  protected readonly itemLeadingClasses = contextMenuItemLeadingClasses;
+  protected readonly itemTrailingClasses = contextMenuItemTrailingClasses;
+  protected readonly shortcutClasses = contextMenuShortcutClasses;
   protected readonly separatorClasses = contextMenuSeparatorStyles;
 
   constructor() {
@@ -188,7 +214,10 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
   };
 
   protected itemClasses(item: DynamoMenuItem) {
-    return contextMenuItemStyles({ disabled: item.disabled() });
+    return cn(
+      contextMenuItemStyles({ disabled: item.disabled() }),
+      this.ptFor('item').class,
+    );
   }
 
   // The trigger div's own binding — a no-op while `global()` is on, since
@@ -332,7 +361,13 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
     this.portal = null;
   }
 
-  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled, non-separator item index. Returns `null` if every item is disabled/a separator. */
+  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled, non-separator, visible item index. Returns `null` if every item is disabled/a separator/invisible.
+   *
+   * `items()` and the `itemButtons()` viewChildren array are positionally
+   * aligned one-to-one (same `@for` loop populates both) — an invisible
+   * item must stay in the DOM via `[hidden]`, never `@if`-omitted, or this
+   * index would no longer correspond to the right entry in `itemButtons()`.
+   * Same reasoning as `@dynamong/menu`'s own `visible` handling. */
   private findEnabledIndex(from: number, delta: number): number | null {
     const itemsArr = this.items();
     if (itemsArr.length === 0) {
@@ -341,7 +376,8 @@ export class DynamoContextMenu extends DynamoBaseComponent<DynamoContextMenuPart
     let index = from;
     for (let step = 0; step < itemsArr.length; step++) {
       index = (index + delta + itemsArr.length) % itemsArr.length;
-      if (!itemsArr[index]?.disabled() && !itemsArr[index]?.separator()) {
+      const item = itemsArr[index];
+      if (!item?.disabled() && !item?.separator() && item?.visible()) {
         return index;
       }
     }

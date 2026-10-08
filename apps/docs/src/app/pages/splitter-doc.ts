@@ -25,6 +25,12 @@ const API: ApiTableRow[] = [
   { name: 'disabled', type: 'boolean', default: 'false' },
   { name: 'stateKey', type: 'string | undefined', default: 'undefined' },
   { name: 'stateStorage', type: "'local' | 'session'", default: "'session'" },
+  {
+    name: 'ariaDescribedby',
+    type: 'string | undefined',
+    default: 'undefined',
+  },
+  { name: 'fluid', type: 'boolean', default: 'true' },
   { name: 'panel.initialSize', type: 'number (%)', default: 'even split' },
   { name: 'panel.minSize', type: 'number (%)', default: '0' },
   { name: 'resizeEnd (output)', type: 'number[]', default: '—' },

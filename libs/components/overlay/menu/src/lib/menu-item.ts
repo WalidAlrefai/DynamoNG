@@ -28,4 +28,25 @@ export class DynamoMenuItem {
    *  a separate component so a single `contentChildren(DynamoMenuItem)`
    *  query stays the sole source of author order. */
   readonly separator = input(false);
+  /** When explicitly `false`, this item is omitted from render AND
+   *  keyboard navigation entirely (not just dimmed, unlike `disabled`).
+   *  Defaults to visible when omitted. */
+  readonly visible = input(true);
+  /** Display-only keyboard-shortcut hint text (e.g. `"⌘K"`), rendered as
+   *  trailing, `aria-hidden` content. Purely cosmetic — registers no
+   *  actual key binding. */
+  readonly shortcut = input<string | undefined>(undefined);
+  /** A small trailing badge/count, rendered via `@dynamong/badge`. Purely
+   *  cosmetic — no keyboard/command semantics. */
+  readonly badge = input<string | number | undefined>(undefined);
+  /** Navigates via Angular Router instead of (or alongside) `itemSelect`'s
+   *  own `(click)` handler when set. Same shape as RouterLink's own
+   *  `routerLink` input. Every `DynamoMenuItem` is already a leaf (no
+   *  branches/children exist in this component), so there's no leaf-only
+   *  caveat the way Menubar's/TieredMenu's own `routerLink` field has. */
+  readonly routerLink = input<string | string[] | undefined>(undefined);
+  /** Forwarded to RouterLink's own `queryParams` input when `routerLink` is set. */
+  readonly queryParams = input<Record<string, unknown> | undefined>(undefined);
+  /** Forwarded to RouterLink's own `fragment` input when `routerLink` is set. */
+  readonly fragment = input<string | undefined>(undefined);
 }

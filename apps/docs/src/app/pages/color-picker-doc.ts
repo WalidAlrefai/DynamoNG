@@ -11,6 +11,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'no-presets', title: 'No presets' },
   { id: 'custom-picker', title: 'Custom picker' },
   { id: 'alpha', title: 'Alpha' },
+  { id: 'format', title: 'Format' },
   { id: 'disabled', title: 'Disabled' },
   { id: 'inline', title: 'Inline' },
 ];
@@ -99,6 +100,25 @@ const EXAMPLES: DocExampleRef[] = [
       </docs-example>
 
       <docs-example
+        exampleId="format"
+        title="Format"
+        description="format shapes value itself as 'hex' (default), 'rgb' (rgb(r, g, b)), or 'hsb' (hsb(h, s, b)) — the panel/swatches/sliders behave identically either way."
+      >
+        <div preview class="max-w-xs">
+          <dg-color-picker
+            [(value)]="formatColor"
+            format="rgb"
+            ariaLabel="Brand color"
+          />
+          <p class="mt-2 text-sm text-text-muted">
+            Value:
+            <span class="font-mono">{{ formatColor() || '(none)' }}</span>
+          </p>
+        </div>
+        <div code>&lt;dg-color-picker [(value)]="color" format="rgb" /&gt;</div>
+      </docs-example>
+
+      <docs-example
         exampleId="disabled"
         title="Disabled"
         description="disabled blocks the hex field, swatches, and native picker."
@@ -171,10 +191,25 @@ const EXAMPLES: DocExampleRef[] = [
             <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
           </tr>
-          <tr>
+          <tr class="border-b border-border">
             <td class="py-2 pr-4 font-mono">customPicker</td>
             <td class="py-2 pr-4 font-mono">boolean</td>
             <td class="py-2 font-mono">false</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">format</td>
+            <td class="py-2 pr-4 font-mono">'hex' | 'rgb' | 'hsb'</td>
+            <td class="py-2 font-mono">'hex'</td>
+          </tr>
+          <tr class="border-b border-border">
+            <td class="py-2 pr-4 font-mono">ariaDescribedby</td>
+            <td class="py-2 pr-4 font-mono">string | undefined</td>
+            <td class="py-2 font-mono">undefined</td>
+          </tr>
+          <tr>
+            <td class="py-2 pr-4 font-mono">fluid</td>
+            <td class="py-2 pr-4 font-mono">boolean</td>
+            <td class="py-2 font-mono">true</td>
           </tr>
         </tbody>
       </table>
@@ -187,5 +222,6 @@ export class ColorPickerDocPage {
   protected readonly noPresetsColor = signal('#3b82f6');
   protected readonly customPickerColor = signal('#3b82f6');
   protected readonly alphaColor = signal('#3b82f6cc');
+  protected readonly formatColor = signal('rgb(59, 130, 246)');
   protected readonly inlineColor = signal('#22c55e');
 }

@@ -4,8 +4,30 @@ import { focusRingClass, overlayPanelClass } from '@dynamong/utils/styles';
 // The only place Tailwind utility classes are allowed to live for this
 // component — split-button.html only ever binds `[class]="...Classes()"` /
 // `[styleClass]`.
-export const splitButtonRootStyles = 'inline-flex';
-export const splitButtonPrimaryStyles = 'rounded-e-none';
+// Mirrors @dynamong/menu's own `fluid` variant shape. Defaults `false` —
+// unlike most reviewed triggers, this one never had a pre-existing
+// full-width default to preserve (a split button pairs two buttons side by
+// side and is shrink-to-fit by design today).
+export const splitButtonRootStyles = cva('', {
+  variants: {
+    fluid: {
+      true: 'flex w-full',
+      false: 'inline-flex',
+    },
+  },
+  defaultVariants: { fluid: false },
+});
+// Grows to fill the available width under `fluid` — the chevron trigger
+// stays a fixed aspect-square either way (via splitButtonTriggerStyles).
+export const splitButtonPrimaryStyles = cva('rounded-e-none', {
+  variants: {
+    fluid: {
+      true: 'flex-1',
+      false: '',
+    },
+  },
+  defaultVariants: { fluid: false },
+});
 
 // Mirrors button.styles.ts's severity x variant color matrix so the chevron
 // reads as part of the same control — it can't reuse <dg-button> itself
@@ -180,8 +202,12 @@ export const splitButtonTriggerStyles = cva(
 export const splitButtonPanelStyles =
   'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;
 
+// justify-between still works correctly with exactly two children (the
+// leading and trailing groups below) even when the trailing group is
+// empty — flexbox simply leaves the leading group where it already was.
+// Mirrors @dynamong/menu's own identical item-styles shape.
 export const splitButtonItemStyles = cva(
-  'block w-full cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
+  'flex w-full items-center justify-between gap-2 cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
     'focus-visible:outline-none focus-visible:bg-surface-100',
   {
     variants: {
@@ -193,3 +219,14 @@ export const splitButtonItemStyles = cva(
     defaultVariants: { disabled: false },
   },
 );
+
+export const splitButtonItemLeadingClasses =
+  'flex min-w-0 items-center gap-1.5';
+export const splitButtonItemTrailingClasses =
+  'flex shrink-0 items-center gap-1.5';
+export const splitButtonShortcutClasses = 'text-xs text-text-muted';
+
+// role="separator" is an ARIA-spec-permitted child of role="menu" — see
+// @dynamong/menu's own separatorStyles comment for the contrast with
+// role="presentation", which isn't.
+export const splitButtonSeparatorStyles = 'my-1 h-px bg-border';

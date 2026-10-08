@@ -1,7 +1,8 @@
-import { Component, model } from '@angular/core';
+import { Component, model, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import type { DynamoPassThrough } from '@dynamong/core/api';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -11,6 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DynamoColorPicker } from './color-picker';
 import { DynamoColorPickerHarness } from './color-picker.harness';
+import type { DynamoColorPickerPart } from './color-picker.types';
 
 // The CDK overlay portals the panel content into a `.cdk-overlay-container`
 // appended near document.body — outside the fixture's own `container`
@@ -83,10 +85,15 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   selector: 'dg-color-picker-test-host',
   standalone: true,
   imports: [DynamoColorPicker],
-  template: `<dg-color-picker [(value)]="value" ariaLabel="Color" />`,
+  template: `<dg-color-picker
+    [(value)]="value"
+    [disabled]="disabled()"
+    ariaLabel="Color"
+  />`,
 })
 class ColorPickerTestHostComponent {
   readonly value = model('');
+  readonly disabled = signal(false);
 }
 
 @Component({
@@ -294,6 +301,36 @@ describe('DynamoColorPicker', () => {
       expect(document.activeElement).toBe(trigger);
     });
 
+    it('closes and refocuses the trigger when the backdrop is clicked', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        ColorPickerTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: /Choose color/,
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+      expect(getPanel()).not.toBeNull();
+
+      const backdrop = document.body.querySelector(
+        '.cdk-overlay-backdrop',
+      ) as HTMLElement;
+      await userEvent.click(backdrop);
+      await settle(fixture);
+
+      expect(getPanel()).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('does not throw pressing Escape while inline (no trigger to refocus)', () => {
+      const { container } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true },
+      });
+      const panel = container.querySelector('[tabindex="-1"]') as HTMLElement;
+
+      expect(() => fireEvent.keyDown(panel, { key: 'Escape' })).not.toThrow();
+    });
+
     it('supports interaction through the DynamoColorPickerHarness', async () => {
       const { fixture, componentInstance } = renderDynamoComponent(
         ColorPickerTestHostComponent,
@@ -390,6 +427,106 @@ describe('DynamoColorPicker', () => {
 
       expect(getPanel()).toBeNull();
     });
+
+    // inline mode has no trigger button to gate access at all — the panel
+    // controls are the *only* surface disabled can act on there, so this is
+    // the most direct way to exercise the fix.
+    it('disables every inline panel control (swatches, native input, alpha slider)', () => {
+      renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true, disabled: true, showAlpha: true },
+      });
+
+      for (const swatch of getSwatches()) {
+        expect((swatch as HTMLButtonElement).disabled).toBe(true);
+      }
+      expect(getNativeColorInput().disabled).toBe(true);
+      expect(getAlphaSlider()?.disabled).toBe(true);
+    });
+
+    it('disables the custom picker (hue slider, SV square) when customPicker is on', () => {
+      renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true, disabled: true, customPicker: true },
+      });
+
+      expect(getHueSlider()?.disabled).toBe(true);
+      const svSquare = getSvSquare();
+      expect(svSquare?.getAttribute('tabindex')).toBe('-1');
+      expect(svSquare?.getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('ignores a swatch click while inline and disabled', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true, disabled: true, swatches: ['#ef4444'] },
+      });
+      const swatch = getSwatches()[0] as HTMLButtonElement;
+
+      swatch.click();
+
+      expect(componentInstance.value()).toBe('');
+    });
+
+    it('ignores native color input and alpha slider changes while inline and disabled', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true, disabled: true, showAlpha: true },
+      });
+
+      const nativeInput = getNativeColorInput();
+      nativeInput.value = '#123456';
+      fireEvent.input(nativeInput);
+      expect(componentInstance.value()).toBe('');
+
+      const alphaSlider = getAlphaSlider() as HTMLInputElement;
+      alphaSlider.value = '0.5';
+      fireEvent.input(alphaSlider);
+      expect(componentInstance.value()).toBe('');
+    });
+
+    it('ignores hue slider changes while inline, disabled, and customPicker is on', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { inline: true, disabled: true, customPicker: true },
+      });
+
+      const hueSlider = getHueSlider() as HTMLInputElement;
+      hueSlider.value = '180';
+      fireEvent.input(hueSlider);
+
+      expect(componentInstance.value()).toBe('');
+    });
+
+    it('ignores SV-square keyboard nudges while inline and disabled', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: {
+          inline: true,
+          disabled: true,
+          customPicker: true,
+          value: '#ff0000',
+        },
+      });
+      const svSquare = getSvSquare() as HTMLElement;
+
+      fireEvent.keyDown(svSquare, { key: 'ArrowRight' });
+
+      expect(componentInstance.value()).toBe('#ff0000');
+    });
+
+    it('stops committing swatch/slider interactions if disabled flips true while the panel is already open', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        ColorPickerTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: /Choose color/,
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      fixture.componentInstance.disabled.set(true);
+      fixture.detectChanges();
+
+      const swatch = getSwatches()[0] as HTMLButtonElement;
+      swatch.click();
+
+      expect(componentInstance.value()).toBe('');
+    });
   });
 
   describe('Angular forms integration', () => {
@@ -452,6 +589,82 @@ describe('DynamoColorPicker', () => {
       await expect(
         expectNoA11yViolations(getOverlayContainer()),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('pt / ariaDescribedby / fluid', () => {
+    it('merges pt class onto root/trigger/panel/swatch', async () => {
+      const pt: DynamoPassThrough<DynamoColorPickerPart> = {
+        root: { class: 'pt-root' },
+        trigger: { class: 'pt-trigger' },
+        panel: { class: 'pt-panel' },
+        swatch: { class: 'pt-swatch' },
+      };
+      const { container, fixture } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { pt },
+      });
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(container.querySelector('.pt-trigger')).not.toBeNull();
+
+      const trigger = within(container).getByRole('button', {
+        name: /Choose color/,
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(document.body.querySelector('.pt-panel')).not.toBeNull();
+      expect(
+        document.body.querySelectorAll('.pt-swatch').length,
+      ).toBeGreaterThan(1);
+    });
+
+    it('merges a non-class pt attribute onto root/trigger', () => {
+      const pt: DynamoPassThrough<DynamoColorPickerPart> = {
+        root: { 'data-testid': 'root-el' },
+        trigger: { 'data-testid': 'trigger-el' },
+      };
+      const { container } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { pt },
+      });
+
+      expect(container.querySelector('[data-testid="root-el"]')).not.toBeNull();
+      expect(
+        container.querySelector('[data-testid="trigger-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('omits aria-describedby by default, forwards it to the hex input when set', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoColorPicker);
+      const field = container.querySelector(
+        'input[type="text"]',
+      ) as HTMLInputElement;
+      expect(field.getAttribute('aria-describedby')).toBeNull();
+
+      fixture.componentRef.setInput('ariaDescribedby', 'hint-id');
+      fixture.detectChanges();
+      expect(field.getAttribute('aria-describedby')).toBe('hint-id');
+    });
+
+    it('defaults fluid to true (w-full), removes it when false', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoColorPicker);
+      const wrapper = container.querySelector('div') as HTMLElement;
+      expect(wrapper.className).toContain('w-full');
+
+      fixture.componentRef.setInput('fluid', false);
+      fixture.detectChanges();
+      expect(wrapper.className).not.toContain('w-full');
+    });
+
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const pt: DynamoPassThrough<DynamoColorPickerPart> = {
+        trigger: { class: 'pt-trigger' },
+      };
+      const { container } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { ariaDescribedby: 'hint-id', fluid: false, pt },
+      });
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });
 
@@ -1050,6 +1263,121 @@ describe('DynamoColorPicker', () => {
       await expect(
         expectNoA11yViolations(getOverlayContainer()),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('format', () => {
+    it('defaults to hex — every pre-existing behavior in this file already confirms this', () => {
+      const { componentInstance } = renderDynamoComponent(DynamoColorPicker);
+      expect(componentInstance.format()).toBe('hex');
+    });
+
+    it('reads and writes rgb(...) when format is "rgb"', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoColorPicker,
+        // #ef4444 (DEFAULT_SWATCHES[0]) as decimal rgb.
+        { inputs: { format: 'rgb', value: 'rgb(239, 68, 68)' } },
+      );
+      const trigger = within(container).getByRole('button', {
+        name: /Choose color/,
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      // The swatch matching the current rgb(...) value is still correctly
+      // marked pressed — isSameColor() decodes through currentHex().
+      const pressed = getSwatches().filter(
+        (s) => s.getAttribute('aria-pressed') === 'true',
+      );
+      expect(pressed[0]?.getAttribute('aria-label')).toBe('Color #ef4444');
+
+      await userEvent.click(getSwatches()[1] as HTMLElement); // #f97316
+      await settle(fixture);
+      expect(componentInstance.value()).toBe('rgb(249, 115, 22)');
+    });
+
+    it('reads and writes hsb(...) when format is "hsb"', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoColorPicker,
+        { inputs: { format: 'hsb', swatches: ['#ff0000'] } },
+      );
+      const trigger = within(container).getByRole('button', {
+        name: /Choose color/,
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const swatch = getSwatches()[0] as HTMLButtonElement;
+      swatch.click();
+
+      expect(componentInstance.value()).toBe('hsb(0, 100, 100)');
+    });
+
+    it('composes alpha into rgba(...) when showAlpha is also on and format is "rgb"', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoColorPicker,
+        { inputs: { format: 'rgb', showAlpha: true, swatches: ['#ff0000'] } },
+      );
+      const trigger = within(container).getByRole('button', {
+        name: /Choose color/,
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+      (getSwatches()[0] as HTMLButtonElement).click();
+      const alphaSlider = getAlphaSlider() as HTMLInputElement;
+      alphaSlider.value = '0.5';
+      fireEvent.input(alphaSlider);
+
+      expect(componentInstance.value()).toMatch(/^rgba\(/);
+    });
+
+    it('composes alpha into hsba(...) when showAlpha is also on and format is "hsb"', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoColorPicker,
+        { inputs: { format: 'hsb', showAlpha: true, swatches: ['#ff0000'] } },
+      );
+      const trigger = within(container).getByRole('button', {
+        name: /Choose color/,
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+      (getSwatches()[0] as HTMLButtonElement).click();
+      const alphaSlider = getAlphaSlider() as HTMLInputElement;
+      alphaSlider.value = '0.5';
+      fireEvent.input(alphaSlider);
+
+      expect(componentInstance.value()).toMatch(/^hsba\(/);
+    });
+
+    it('renders the trigger preview and SV square correctly under format "hsb"', async () => {
+      const { container, fixture } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: {
+          format: 'hsb',
+          customPicker: true,
+          value: 'hsb(0, 100, 100)',
+        },
+      });
+      const trigger = within(container).getByRole('button', {
+        name: /Choose color/,
+      });
+
+      // The trigger's own background-color style must be a real hex value,
+      // not the raw "hsb(...)" string (which isn't valid CSS) — this is
+      // exactly the triggerPreviewBackground/[style.background-color] fix.
+      expect(trigger.style.backgroundColor).not.toBe('');
+      expect(trigger.style.backgroundColor.toLowerCase()).not.toContain('hsb');
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+      const svSquare = getSvSquare();
+      expect(svSquare?.getAttribute('aria-valuenow')).toBe('100');
+    });
+
+    it('has no axe violations with a non-hex format set', async () => {
+      const { container } = renderDynamoComponent(DynamoColorPicker, {
+        inputs: { format: 'rgb', ariaLabel: 'Color' },
+      });
+      await expectNoA11yViolations(container);
     });
   });
 

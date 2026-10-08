@@ -17,9 +17,15 @@ import {
   viewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoBadge } from '@dynamong/badge';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import {
   DynamoOverlayService,
   type DynamoOverlayHandle,
@@ -33,10 +39,14 @@ import type {
 import { DynamoMenuItem, type DynamoMenuItemSelectEvent } from '@dynamong/menu';
 import { cn } from '@dynamong/utils/class-merge';
 import {
+  splitButtonItemLeadingClasses,
   splitButtonItemStyles,
+  splitButtonItemTrailingClasses,
   splitButtonPanelStyles,
   splitButtonPrimaryStyles,
   splitButtonRootStyles,
+  splitButtonSeparatorStyles,
+  splitButtonShortcutClasses,
   splitButtonTriggerStyles,
 } from './split-button.styles';
 import type {
@@ -106,7 +116,13 @@ function buildPositions(
   selector: 'dg-split-button',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoButton],
+  imports: [
+    DynamoButton,
+    DynamoPassThroughDirective,
+    DynamoBadge,
+    NgTemplateOutlet,
+    RouterLink,
+  ],
   templateUrl: './split-button.html',
 })
 export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart> {
@@ -121,6 +137,14 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
   readonly menuButtonDisabled = input(false);
   readonly position = input<DynamoSplitButtonPosition>('bottom-start');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the dropdown-toggle button. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `false` — like
+   *  `@dynamong/menu`'s own trigger, this one never had a pre-existing
+   *  full-width default to preserve (it's genuinely intrinsically sized
+   *  today). The primary action button grows to fill the extra space;
+   *  the chevron trigger stays a fixed aspect-square either way. */
+  readonly fluid = input(false);
   /** Two-way bindable: `<dg-split-button [(open)]="isOpen">`. */
   readonly open = model(false);
   readonly action = output<void>();
@@ -148,8 +172,12 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(splitButtonRootStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          splitButtonRootStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
   protected readonly isPrimaryDisabled = computed(
     () => this.disabled() || this.buttonDisabled(),
@@ -157,15 +185,29 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
   protected readonly isMenuDisabled = computed(
     () => this.disabled() || this.menuButtonDisabled(),
   );
-  protected readonly primaryClasses = splitButtonPrimaryStyles;
-  protected readonly triggerClasses = computed(() =>
-    splitButtonTriggerStyles({
-      size: this.size(),
-      severity: this.severity(),
-      variant: this.variant(),
-    }),
+  protected readonly primaryClasses = computed(() =>
+    cn(
+      splitButtonPrimaryStyles({ fluid: this.fluid() }),
+      this.ptFor('primary').class,
+    ),
   );
-  protected readonly panelClasses = splitButtonPanelStyles;
+  protected readonly triggerClasses = computed(() =>
+    cn(
+      splitButtonTriggerStyles({
+        size: this.size(),
+        severity: this.severity(),
+        variant: this.variant(),
+      }),
+      this.ptFor('trigger').class,
+    ),
+  );
+  protected readonly panelClasses = computed(() =>
+    cn(splitButtonPanelStyles, this.ptFor('panel').class),
+  );
+  protected readonly itemLeadingClasses = splitButtonItemLeadingClasses;
+  protected readonly itemTrailingClasses = splitButtonItemTrailingClasses;
+  protected readonly shortcutClasses = splitButtonShortcutClasses;
+  protected readonly separatorClasses = splitButtonSeparatorStyles;
 
   constructor() {
     super();
@@ -204,7 +246,10 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
   }
 
   protected itemClasses(item: DynamoMenuItem) {
-    return splitButtonItemStyles({ disabled: item.disabled() });
+    return cn(
+      splitButtonItemStyles({ disabled: item.disabled() }),
+      this.ptFor('item').class,
+    );
   }
 
   protected onPrimaryClick(): void {
@@ -228,6 +273,7 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
 
   protected close(): void {
     this.open.set(false);
+    this.triggerEl().nativeElement.focus();
   }
 
   protected onTriggerKeydown(event: KeyboardEvent): void {
@@ -254,7 +300,6 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
     if (event.key === 'Escape') {
       event.preventDefault();
       this.close();
-      this.triggerEl().nativeElement.focus();
       return;
     }
 
@@ -292,16 +337,21 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
   }
 
   protected onItemClick(item: DynamoMenuItem): void {
-    if (item.disabled()) {
+    // Separators are never wired to (click) in the template, but guard
+    // anyway — defense in depth, matches the existing disabled() guard.
+    if (item.disabled() || item.separator()) {
       return;
     }
+    // `exactOptionalPropertyTypes` forbids assigning `icon: undefined`
+    // outright — the key is only included when actually set.
+    const icon = item.icon();
     this.itemSelect.emit({
       value: item.value(),
       label: item.label(),
       disabled: item.disabled(),
+      ...(icon !== undefined && { icon }),
     });
     this.close();
-    this.triggerEl().nativeElement.focus();
   }
 
   private attachOverlay(): void {
@@ -345,7 +395,13 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
     this.portal = null;
   }
 
-  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled item index. Returns `null` if every item is disabled. */
+  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled, non-separator, visible item index. Returns `null` if every item is disabled/a separator/invisible.
+   *
+   * `items()` and the `itemButtons()` viewChildren array are positionally
+   * aligned one-to-one (same `@for` loop populates both) — an invisible
+   * item must stay in the DOM via `[hidden]`, never `@if`-omitted, or this
+   * index would no longer correspond to the right entry in `itemButtons()`.
+   * Same reasoning as `@dynamong/menu`'s own `visible` handling. */
   private findEnabledIndex(from: number, delta: number): number | null {
     const itemsArr = this.items();
     if (itemsArr.length === 0) {
@@ -354,7 +410,8 @@ export class DynamoSplitButton extends DynamoBaseComponent<DynamoSplitButtonPart
     let index = from;
     for (let step = 0; step < itemsArr.length; step++) {
       index = (index + delta + itemsArr.length) % itemsArr.length;
-      if (!itemsArr[index]?.disabled()) {
+      const item = itemsArr[index];
+      if (!item?.disabled() && !item?.separator() && item?.visible()) {
         return index;
       }
     }

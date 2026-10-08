@@ -1,6 +1,8 @@
 import { Component, model, signal } from '@angular/core';
+import type { DynamoPassThrough } from '@dynamong/core/api';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { provideRouter, type Routes } from '@angular/router';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -11,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { DynamoMenu } from './menu';
 import { DynamoMenuItem } from './menu-item';
 import { DynamoMenuHarness } from './menu.harness';
-import type { DynamoMenuItemSelectEvent } from './menu.types';
+import type { DynamoMenuItemSelectEvent, DynamoMenuPart } from './menu.types';
 
 // The CDK overlay portals `role="menu"` content into a `.cdk-overlay-container`
 // appended near document.body — outside the fixture's own `container` element —
@@ -42,7 +44,14 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   standalone: true,
   imports: [DynamoMenu, DynamoMenuItem],
   template: `
-    <dg-menu label="Actions" [(open)]="isOpen" (itemSelect)="onSelect($event)">
+    <dg-menu
+      label="Actions"
+      [(open)]="isOpen"
+      [ariaDescribedby]="ariaDescribedby()"
+      [fluid]="fluid()"
+      [pt]="pt()"
+      (itemSelect)="onSelect($event)"
+    >
       <dg-menu-item value="edit" label="Edit" />
       <dg-menu-item
         value="delete"
@@ -58,6 +67,11 @@ class MenuTestHostComponent {
   readonly deleteDisabled = signal(false);
   readonly selected = signal<string | null>(null);
   readonly lastEvent = signal<DynamoMenuItemSelectEvent | null>(null);
+  readonly ariaDescribedby = signal<string | undefined>(undefined);
+  readonly fluid = signal(false);
+  readonly pt = signal<DynamoPassThrough<DynamoMenuPart> | undefined>(
+    undefined,
+  );
 
   onSelect(event: DynamoMenuItemSelectEvent): void {
     this.selected.set(event.value);
@@ -128,6 +142,62 @@ class MenuDynamicHostComponent {
     { value: 'a', label: 'A' },
     { value: 'b', label: 'B' },
   ]);
+}
+
+@Component({
+  selector: 'dg-menu-visible-shortcut-badge-host',
+  standalone: true,
+  imports: [DynamoMenu, DynamoMenuItem],
+  template: `
+    <dg-menu label="Actions">
+      <dg-menu-item value="file" label="File" />
+      <dg-menu-item value="hidden" label="Hidden" [visible]="false" />
+      <dg-menu-item value="save" label="Save" shortcut="⌘S" />
+      <dg-menu-item value="inbox" label="Inbox" [badge]="3" />
+      <dg-menu-item value="drafts" label="Drafts" badge="New" />
+    </dg-menu>
+  `,
+})
+class MenuVisibleShortcutBadgeHostComponent {}
+
+@Component({
+  selector: 'dg-menu-item-template-host',
+  standalone: true,
+  imports: [DynamoMenu, DynamoMenuItem],
+  template: `
+    <dg-menu label="Actions">
+      <ng-template #itemTemplate let-item>
+        <span data-testid="custom-item">{{ item.label() }} (custom)</span>
+      </ng-template>
+      <dg-menu-item value="edit" label="Edit" />
+      <dg-menu-item value="duplicate" label="Duplicate" />
+    </dg-menu>
+  `,
+})
+class MenuItemTemplateHostComponent {}
+
+@Component({
+  selector: 'dg-menu-router-link-host',
+  standalone: true,
+  imports: [DynamoMenu, DynamoMenuItem],
+  template: `
+    <dg-menu label="Actions" (itemSelect)="onSelect($event)">
+      <dg-menu-item
+        value="docs"
+        label="Docs"
+        routerLink="/components/badge"
+        [disabled]="disabled()"
+      />
+    </dg-menu>
+  `,
+})
+class MenuRouterLinkHostComponent {
+  readonly disabled = signal(false);
+  readonly lastEvent = signal<DynamoMenuItemSelectEvent | null>(null);
+
+  onSelect(event: DynamoMenuItemSelectEvent): void {
+    this.lastEvent.set(event);
+  }
 }
 
 describe('DynamoMenu', () => {
@@ -234,7 +304,7 @@ describe('DynamoMenu', () => {
       expect(document.activeElement).toBe(trigger);
     });
 
-    it('closes when the backdrop is clicked', async () => {
+    it('closes and refocuses the trigger when the backdrop is clicked', async () => {
       const { container, fixture } = renderDynamoComponent(
         MenuTestHostComponent,
       );
@@ -252,6 +322,7 @@ describe('DynamoMenu', () => {
       await settle(fixture);
 
       expect(getPanel()).toBeNull();
+      expect(document.activeElement).toBe(trigger);
     });
 
     it('opens and focuses the first enabled item when ArrowDown is pressed on the trigger', async () => {
@@ -465,6 +536,98 @@ describe('DynamoMenu', () => {
     });
   });
 
+  describe('pt / ariaDescribedby / fluid', () => {
+    it('merges pt class onto root/trigger', () => {
+      const { fixture, container } = renderDynamoComponent(
+        MenuTestHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { class: 'pt-root' },
+        trigger: { class: 'pt-trigger' },
+      });
+      fixture.detectChanges();
+
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      expect(trigger.classList.contains('pt-root')).toBe(true);
+      expect(trigger.classList.contains('pt-trigger')).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto the trigger', () => {
+      const { fixture, container } = renderDynamoComponent(
+        MenuTestHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        trigger: { 'data-testid': 'trigger-el' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container.querySelector('[data-testid="trigger-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('merges pt class onto panel/item once open', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        MenuTestHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        panel: { class: 'pt-panel' },
+        item: { class: 'pt-item' },
+      });
+      fixture.detectChanges();
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getPanel()?.classList.contains('pt-panel')).toBe(true);
+      expect(getOverlayContainer().querySelectorAll('.pt-item').length).toBe(3);
+    });
+
+    it('omits aria-describedby by default, forwards it to the trigger when set', () => {
+      const { fixture, container } = renderDynamoComponent(
+        MenuTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      expect(trigger.getAttribute('aria-describedby')).toBeNull();
+
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.detectChanges();
+      expect(trigger.getAttribute('aria-describedby')).toBe('hint-id');
+    });
+
+    it('defaults fluid to false (no w-full), opts in when true', () => {
+      const { fixture, container } = renderDynamoComponent(
+        MenuTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      expect(trigger.className).not.toContain('w-full');
+
+      fixture.componentInstance.fluid.set(true);
+      fixture.detectChanges();
+      expect(trigger.className).toContain('w-full');
+    });
+
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        MenuTestHostComponent,
+      );
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.componentInstance.fluid.set(true);
+      fixture.componentInstance.pt.set({ trigger: { class: 'pt-trigger' } });
+      fixture.detectChanges();
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
   describe('state changes', () => {
     it('opens when the open model is set programmatically', async () => {
       const { fixture, componentInstance } = renderDynamoComponent(
@@ -654,6 +817,207 @@ describe('DynamoMenu', () => {
       await expect(
         expectNoA11yViolations(getOverlayContainer()),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('visible / shortcut / badge', () => {
+    it('hides a visible:false item (not just dimmed) and excludes it from keyboard nav', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuVisibleShortcutBadgeHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      // [hidden] (not full DOM omission) keeps items()/itemButtons()
+      // positionally aligned — see findEnabledIndex's own doc comment —
+      // so the element is still queryable, just hidden/unfocusable/
+      // announced-as-absent, not gone from the DOM entirely.
+      const hidden = getItems().find(
+        (el) => el.textContent?.trim() === 'Hidden',
+      ) as HTMLElement;
+      expect(hidden.hidden).toBe(true);
+      expect(hidden.getAttribute('aria-hidden')).toBe('true');
+
+      // ArrowDown from the first item ("File") should skip "Hidden" and
+      // land on "Save".
+      getItems()[0]?.focus();
+      await userEvent.keyboard('{ArrowDown}');
+      expect(document.activeElement?.textContent).toContain('Save');
+    });
+
+    it('renders a shortcut as aria-hidden trailing text', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuVisibleShortcutBadgeHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const shortcutEl = Array.from(
+        getOverlayContainer().querySelectorAll('span'),
+      ).find(
+        (el) => el.textContent?.trim() === '⌘S' && el.children.length === 0,
+      );
+      expect(shortcutEl).toBeTruthy();
+      expect(shortcutEl?.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('renders a badge via dg-badge for both string and number values', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuVisibleShortcutBadgeHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const badges = Array.from(
+        getOverlayContainer().querySelectorAll('dg-badge'),
+      ).map((el) => el.textContent?.trim());
+      expect(badges).toEqual(['3', 'New']);
+    });
+
+    it('has no axe violations with visible/shortcut/badge set', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuVisibleShortcutBadgeHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('custom item template', () => {
+    it('renders the custom template in place of the plain label', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuItemTemplateHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const customItems = within(getOverlayContainer()).getAllByTestId(
+        'custom-item',
+      );
+      expect(customItems.map((el) => el.textContent?.trim())).toEqual([
+        'Edit (custom)',
+        'Duplicate (custom)',
+      ]);
+    });
+
+    it('falls back to the plain label when no template is projected', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(
+        within(getOverlayContainer()).queryAllByTestId('custom-item'),
+      ).toHaveLength(0);
+      expect(getItems().map((el) => el.textContent?.trim())).toEqual([
+        'Edit',
+        'Delete',
+        'Archive',
+      ]);
+    });
+  });
+
+  describe('routerLink', () => {
+    // A wildcard catch-all route so Router.navigateByUrl() (triggered by
+    // RouterLink's own click handling) resolves instead of rejecting with
+    // "Cannot match any routes" — same established fix as Menubar's own
+    // routerLink tests.
+    @Component({ selector: 'dg-blank-test', template: '', standalone: true })
+    class BlankRouteComponent {}
+    const TEST_ROUTES: Routes = [
+      { path: '**', component: BlankRouteComponent },
+    ];
+
+    it('renders a leaf with routerLink as a real <a> with the router-generated href', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuRouterLinkHostComponent,
+        { providers: [provideRouter(TEST_ROUTES)] },
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const link = getOverlayContainer().querySelector('a[role="menuitem"]');
+      expect(link).toBeTruthy();
+      expect(link?.getAttribute('href')).toBe('/components/badge');
+    });
+
+    it('fires itemSelect and closes/refocuses on click, alongside navigation', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuRouterLinkHostComponent,
+        { providers: [provideRouter(TEST_ROUTES)] },
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+      const link = getOverlayContainer().querySelector(
+        'a[role="menuitem"]',
+      ) as HTMLElement;
+
+      await userEvent.click(link);
+      await settle(fixture);
+
+      expect(fixture.componentInstance.lastEvent()?.value).toBe('docs');
+      expect(getPanel()).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('renders a disabled routerLink item with no href (inert)', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuRouterLinkHostComponent,
+        { providers: [provideRouter(TEST_ROUTES)] },
+      );
+      fixture.componentInstance.disabled.set(true);
+      fixture.detectChanges();
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      const link = getOverlayContainer().querySelector('a[role="menuitem"]');
+      expect(link).toBeTruthy();
+      expect(link?.getAttribute('href')).toBeNull();
+    });
+
+    it('an item with no routerLink is unaffected, still a plain button', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        MenuTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Actions',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getItems()[0]?.tagName).toBe('BUTTON');
     });
   });
 });

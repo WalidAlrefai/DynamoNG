@@ -23,36 +23,52 @@ protected onItemSelect(event: DynamoMenuItemSelectEvent): void { ... }
 
 ## Inputs
 
-| Input                | Type                        | Default          | Description                                                                           |
-| -------------------- | --------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
-| `label`              | `string` (required)         | —                | Text of the primary button.                                                           |
-| `severity`           | `DynamoButtonSeverity`      | `'primary'`      | Applied to the primary button and, as a color cue, the chevron trigger.               |
-| `variant`            | `DynamoButtonVariant`       | `'solid'`        |                                                                                       |
-| `size`               | `DynamoButtonSize`          | `'md'`           |                                                                                       |
-| `disabled`           | `boolean`                   | `false`          | Disables the primary button and the chevron trigger.                                  |
-| `buttonDisabled`     | `boolean`                   | `false`          | Disables only the primary action button, leaving the dropdown toggle usable.          |
-| `menuButtonDisabled` | `boolean`                   | `false`          | Disables only the dropdown-toggle button, leaving the primary action usable.          |
-| `position`           | `DynamoSplitButtonPosition` | `'bottom-start'` | Preferred panel corner; the other three corners are tried as CDK collision fallbacks. |
-| `ariaLabel`          | `string \| undefined`       | `undefined`      | Accessible name for the chevron trigger; defaults to `'More actions'`.                |
-| `open`               | `boolean` (model)           | `false`          | Two-way bindable panel open state.                                                    |
+| Input                | Type                        | Default          | Description                                                                                                                                             |
+| -------------------- | --------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`              | `string` (required)         | —                | Text of the primary button.                                                                                                                             |
+| `severity`           | `DynamoButtonSeverity`      | `'primary'`      | Applied to the primary button and, as a color cue, the chevron trigger.                                                                                 |
+| `variant`            | `DynamoButtonVariant`       | `'solid'`        |                                                                                                                                                         |
+| `size`               | `DynamoButtonSize`          | `'md'`           |                                                                                                                                                         |
+| `disabled`           | `boolean`                   | `false`          | Disables the primary button and the chevron trigger.                                                                                                    |
+| `buttonDisabled`     | `boolean`                   | `false`          | Disables only the primary action button, leaving the dropdown toggle usable.                                                                            |
+| `menuButtonDisabled` | `boolean`                   | `false`          | Disables only the dropdown-toggle button, leaving the primary action usable.                                                                            |
+| `position`           | `DynamoSplitButtonPosition` | `'bottom-start'` | Preferred panel corner; the other three corners are tried as CDK collision fallbacks.                                                                   |
+| `ariaLabel`          | `string \| undefined`       | `undefined`      | Accessible name for the chevron trigger; defaults to `'More actions'`.                                                                                  |
+| `ariaDescribedby`    | `string \| undefined`       | `undefined`      | Forwarded as `aria-describedby` on the chevron trigger button.                                                                                          |
+| `fluid`              | `boolean`                   | `false`          | Fills the width of its container — the primary action button grows to fill the extra space; the chevron trigger stays a fixed aspect-square either way. |
+| `open`               | `boolean` (model)           | `false`          | Two-way bindable panel open state.                                                                                                                      |
+
+Items are `<dg-menu-item>` from `@dynamong/menu` (`value`/`label`/`disabled`/`icon`/`separator`/`visible`/
+`shortcut`/`badge`/`routerLink`/`queryParams`/`fragment` inputs). `visible: false` omits an item from
+render AND keyboard nav entirely (not just dimmed); `separator` renders a non-interactive divider row;
+`shortcut` renders a display-only trailing hint; `badge` renders a small trailing `dg-badge`; `routerLink`
+(on an item) renders a real `<a>` instead of a `<button>`. See `@dynamong/menu`'s own README for each
+field's exact shape and design rationale.
 
 ## Outputs
 
-| Output       | Payload                                                    | Fires when                                                                                          |
-| ------------ | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `openChange` | `boolean`                                                  | `open` changes (auto-generated by `model()`).                                                       |
-| `action`     | `void`                                                     | The primary button is clicked.                                                                      |
-| `itemSelect` | `DynamoMenuItemSelectEvent` (`{ value, label, disabled }`) | A menu item is clicked — a plain snapshot of the item, not the `DynamoMenuItem` component instance. |
+| Output       | Payload                                                           | Fires when                                                                                          |
+| ------------ | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `openChange` | `boolean`                                                         | `open` changes (auto-generated by `model()`).                                                       |
+| `action`     | `void`                                                            | The primary button is clicked.                                                                      |
+| `itemSelect` | `DynamoMenuItemSelectEvent` (`{ value, label, disabled, icon? }`) | A menu item is clicked — a plain snapshot of the item, not the `DynamoMenuItem` component instance. |
 
 ## Accessibility
 
-- The chevron trigger is a native `<button>` with `aria-haspopup="menu"` and `aria-expanded`; the panel is `role="menu"` with `role="menuitem"` rows.
-- Keyboard on the trigger: `ArrowDown` opens the panel focused on the first enabled item, `ArrowUp` opens it focused on the last. Within the open panel: `ArrowDown`/`ArrowUp` move between enabled items, `Home`/`End` jump, `Escape` closes and returns focus to the trigger.
+- The chevron trigger is a native `<button>` with `aria-haspopup="menu"` and `aria-expanded`; the panel is `role="menu"` with `role="menuitem"` rows/links and `role="separator"` divider rows.
+- Keyboard on the trigger: `ArrowDown` opens the panel focused on the first enabled item, `ArrowUp` opens it focused on the last. Within the open panel: `ArrowDown`/`ArrowUp` move between enabled items (skipping disabled, invisible, and separator items), `Home`/`End` jump, `Escape` closes and returns focus to the trigger. Clicking the CDK backdrop also closes and returns focus to the trigger, matching every other dismissal path.
 - Menu items are projected `<dg-menu-item>` content children from `@dynamong/menu`, so their own accessible markup is reused as-is.
+
+## Design notes
+
+**`pt` parts**: `root` (the outer wrapper `<div>`), `primary` (merged onto `<dg-button>`'s own
+`styleClass`), `trigger` (the chevron button), `panel`, and `item` (shared by both command rows and
+separators).
 
 ## Tier / dependencies
 
-- `tier:2`. Peer dependencies: `@dynamong/button`, `@dynamong/menu`.
+- `tier:2`. Peer dependencies: `@dynamong/button`, `@dynamong/menu`, `@dynamong/badge`, `@angular/common`,
+  `@angular/router`.
 
 ## Running unit tests
 

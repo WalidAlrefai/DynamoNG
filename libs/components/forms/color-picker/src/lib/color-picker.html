@@ -1,4 +1,4 @@
-<div [class]="wrapperClasses()">
+<div [class]="wrapperClasses()" [dgPt]="ptFor('root')">
   <input
     type="text"
     [class]="hexInputClasses"
@@ -6,6 +6,7 @@
     [value]="value()"
     placeholder="#000000"
     [attr.aria-label]="ariaLabel() ?? 'Color'"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
     [attr.aria-invalid]="invalid() ? 'true' : null"
     (input)="onHexInput($event)"
   />
@@ -14,9 +15,10 @@
     #triggerEl
     type="button"
     [class]="swatchButtonClasses()"
-    [style.background-color]="value() || 'transparent'"
+    [style.background-color]="value() ? currentHex() : 'transparent'"
     [style.background-image]="triggerPreviewBackground()"
     [disabled]="disabled()"
+    [dgPt]="ptFor('trigger')"
     aria-haspopup="dialog"
     [attr.aria-expanded]="isOpen()"
     [attr.aria-label]="'Choose color' + (value() ? ', current ' + value() : '')"
@@ -32,7 +34,8 @@
 
 <ng-template #panelTemplate>
   <div
-    [class]="panelWrapperClasses"
+    [class]="panelWrapperClasses()"
+    [dgPt]="ptFor('panel')"
     tabindex="-1"
     (keydown)="onPanelKeydown($event)"
   >
@@ -43,6 +46,8 @@
         type="button"
         [class]="swatchOptionClasses(isSameColor(swatch))"
         [style.background-color]="swatch"
+        [disabled]="disabled()"
+        [dgPt]="ptFor('swatch')"
         [attr.aria-label]="'Color ' + swatch"
         [attr.aria-pressed]="isSameColor(swatch)"
         (click)="selectSwatch(swatch)"
@@ -53,6 +58,7 @@
           type="color"
           [class]="nativeInputClasses"
           [value]="normalizedNativeColorValue()"
+          [disabled]="disabled()"
           aria-label="Custom color"
           (input)="onNativeColorInput($event)"
         />
@@ -62,14 +68,15 @@
     } @if (customPicker()) {
     <div
       #svSquare
-      [class]="svSquareClasses"
+      [class]="svSquareClasses()"
       [style.background]="svSquareBackground()"
-      tabindex="0"
+      [attr.tabindex]="disabled() ? -1 : 0"
       role="slider"
       aria-label="Saturation and brightness"
       aria-valuemin="0"
       aria-valuemax="100"
       [attr.aria-valuenow]="(hsv().s * 100).toFixed(0)"
+      [attr.aria-disabled]="disabled() ? 'true' : null"
       [attr.aria-valuetext]="
         (hsv().s * 100).toFixed(0) +
         '% saturation, ' +
@@ -97,6 +104,7 @@
         [class]="rangeSliderClasses()"
         [style.background]="hueTrackGradient"
         [value]="hsv().h"
+        [disabled]="disabled()"
         aria-label="Hue"
         (input)="onHueInput($event)"
       />
@@ -111,6 +119,7 @@
         [class]="rangeSliderClasses()"
         [style.background]="alphaTrackBackground()"
         [value]="alpha()"
+        [disabled]="disabled()"
         [attr.aria-valuetext]="alphaPercentLabel()"
         aria-label="Alpha"
         (input)="onAlphaInput($event)"

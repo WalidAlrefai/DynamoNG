@@ -7,6 +7,15 @@ export const menuTriggerStyles = cva(
   'flex items-center justify-between gap-2 rounded-md border border-border bg-surface-0 ' +
     'px-4 py-2 text-start text-sm text-text-primary transition-colors hover:bg-surface-50 ' +
     focusRingClass,
+  {
+    variants: {
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
+    },
+    defaultVariants: { fluid: false },
+  },
 );
 
 export const menuChevronStyles = cva(
@@ -25,10 +34,11 @@ export const menuChevronStyles = cva(
 export const menuPanelStyles =
   'z-dropdown min-w-[10rem] py-1 ' + overlayPanelClass;
 
-// flex (not block) so an optional leading icon sits beside the label
-// instead of just flowing inline before it.
+// justify-between still works correctly with exactly two children (the
+// leading and trailing groups below) even when the trailing group is
+// empty — flexbox simply leaves the leading group where it already was.
 export const menuItemStyles = cva(
-  'flex w-full items-center gap-2 cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
+  'flex w-full items-center justify-between gap-2 cursor-pointer px-4 py-2 text-start text-sm text-text-primary ' +
     'focus-visible:outline-none focus-visible:bg-surface-100',
   {
     variants: {
@@ -40,6 +50,10 @@ export const menuItemStyles = cva(
     defaultVariants: { disabled: false },
   },
 );
+
+export const menuItemLeadingClasses = 'flex min-w-0 items-center gap-1.5';
+export const menuItemTrailingClasses = 'flex shrink-0 items-center gap-1.5';
+export const menuShortcutClasses = 'text-xs text-text-muted';
 
 export const menuItemIconClasses = 'shrink-0';
 

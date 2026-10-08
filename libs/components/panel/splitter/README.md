@@ -25,14 +25,16 @@ them.
 
 ### `dg-splitter`
 
-| Input          | Type                         | Default        | Description                                                                                                                            |
-| -------------- | ---------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `orientation`  | `'horizontal' \| 'vertical'` | `'horizontal'` | Layout axis of the panels and their dividers.                                                                                          |
-| `disabled`     | `boolean`                    | `false`        | Dividers become non-interactive (no drag, no keyboard resize) and are removed from the tab order.                                      |
-| `gutterSize`   | `number`                     | `8`            | Divider thickness in pixels.                                                                                                           |
-| `step`         | `number`                     | `5`            | Percentage points a single keyboard press (arrow key) resizes by.                                                                      |
-| `stateKey`     | `string \| undefined`        | `undefined`    | Opt-in — when set, panel sizes are saved under this key whenever a resize completes, and restored on mount. See Persisted sizes below. |
-| `stateStorage` | `'local' \| 'session'`       | `'session'`    | Which storage `stateKey` persists to. Only consulted while `stateKey` is set.                                                          |
+| Input             | Type                         | Default        | Description                                                                                                                            |
+| ----------------- | ---------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `orientation`     | `'horizontal' \| 'vertical'` | `'horizontal'` | Layout axis of the panels and their dividers.                                                                                          |
+| `disabled`        | `boolean`                    | `false`        | Dividers become non-interactive (no drag, no keyboard resize) and are removed from the tab order.                                      |
+| `gutterSize`      | `number`                     | `8`            | Divider thickness in pixels.                                                                                                           |
+| `step`            | `number`                     | `5`            | Percentage points a single keyboard press (arrow key) resizes by.                                                                      |
+| `stateKey`        | `string \| undefined`        | `undefined`    | Opt-in — when set, panel sizes are saved under this key whenever a resize completes, and restored on mount. See Persisted sizes below. |
+| `stateStorage`    | `'local' \| 'session'`       | `'session'`    | Which storage `stateKey` persists to. Only consulted while `stateKey` is set.                                                          |
+| `ariaDescribedby` | `string \| undefined`        | `undefined`    | Forwarded as `aria-describedby` on every divider.                                                                                      |
+| `fluid`           | `boolean`                    | `true`         | Fills the width of its container.                                                                                                      |
 
 ### `dg-splitter-panel`
 
@@ -71,11 +73,31 @@ back to the normal distribution rather than misapplying stale sizes to the wrong
 
 ## Accessibility
 
-- Each divider is `role="separator"` with `aria-orientation`, `aria-valuenow`/`aria-valuemin`/`aria-valuemax` (reflecting the true resizable range against its neighboring panel's `minSize`), and `aria-disabled` when `disabled`.
-- Dividers are focusable (`tabindex="0"`, or `-1` when `disabled`) and resizable via `ArrowLeft`/`ArrowRight` (horizontal) or `ArrowUp`/`ArrowDown` (vertical) in 5% steps, plus `Home`/`End` to jump to the minimum/maximum. Resizing only ever redistributes size between the two adjacent panels; other panels' sizes are untouched.
+- Each divider is `role="separator"` with `aria-orientation`, `aria-valuenow`/`aria-valuemin`/`aria-valuemax` (reflecting the true resizable range against its neighboring panel's `minSize`), `aria-disabled` when `disabled`, and `aria-describedby` when `ariaDescribedby` is set.
+- Dividers are focusable (`tabindex="0"`, or `-1` when `disabled`) and resizable via `ArrowLeft`/`ArrowRight` (horizontal) or `ArrowUp`/`ArrowDown` (vertical) in 5% steps, plus `Home`/`End` to jump to the minimum/maximum. These keys move the splitter in a physical/visual direction (matching the ARIA APG Window Splitter pattern), so they auto-mirror under `dir="rtl"` — see Design notes below. Resizing only ever redistributes size between the two adjacent panels; other panels' sizes are untouched.
 - Also supports pointer drag on the divider.
 
 ## Design notes
+
+**Dividers are RTL-aware; horizontal orientation only.** The layout itself is a plain `flex-row`/
+`flex-col` — under `dir="rtl"`, the browser already visually mirrors a horizontal layout's panel order
+for free, with zero CSS changes needed here. The drag/keyboard _math_, however, has no such free
+mirroring: dragging or pressing "right" always means "toward the screen's physical right edge," which
+grows a different panel once the visual order is mirrored. Both pointer-drag and `ArrowLeft`/
+`ArrowRight`/`Home`/`End` account for this via an injected `Directionality` (read once, synchronously,
+inside each handler — this repo's installed CDK version never actually emits `Directionality.change`,
+so there's nothing to react to beyond that). Vertical orientation needs no equivalent handling — text
+direction never mirrors a vertical axis.
+
+**A disabled flip mid-drag now stops the drag cleanly.** Because `setPointerCapture` is held for the
+duration of a drag, a captured pointer keeps delivering `pointermove`/`pointerup` even after the
+divider's own CSS `pointer-events: none` (the `disabled` style variant) would otherwise block it —
+captured-pointer event delivery bypasses hit-testing entirely. `onDividerPointerMove`/
+`onDividerPointerUp` now check `disabled()` too (previously only `onDividerPointerDown`/
+`onDividerKeydown` did): the resize already applied up to that moment is kept as-is (no rollback), but
+`resizeEnd` doesn't fire and nothing persists to `stateKey`. The divider now also handles `pointercancel`
+(a stylus/browser-gesture interruption) the same way as `pointerup`, matching Carousel's/Slider's own
+pointer-drag handling.
 
 **`stateKey` reverses an earlier design decision**, worth calling out explicitly rather than silently
 dropping: this component originally left auto-persistence out on the grounds that "no component in this

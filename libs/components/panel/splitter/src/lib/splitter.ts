@@ -5,6 +5,7 @@ import {
   computed,
   contentChildren,
   effect,
+  inject,
   input,
   output,
   signal,
@@ -12,7 +13,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import { Directionality } from '@angular/cdk/bidi';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoSplitterPanel } from './splitter-panel';
 import {
@@ -40,7 +45,7 @@ interface DragState {
   selector: 'dg-splitter',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, DynamoPassThroughDirective],
   templateUrl: './splitter.html',
 })
 export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
@@ -49,6 +54,11 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
   readonly gutterSize = input(8);
   /** Percentage points a single keyboard press (arrow key) resizes by. */
   readonly step = input(5);
+  /** Forwarded as `aria-describedby` on every divider. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true` (today's existing,
+   *  always-full-width behavior). */
+  readonly fluid = input(true);
   /** Fires with the full sizes array once a drag or keyboard resize completes. */
   readonly resizeEnd = output<number[]>();
   /** Opt-in — when set, panel sizes are saved to browser storage under this
@@ -63,6 +73,7 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
   protected readonly panels = contentChildren(DynamoSplitterPanel);
   private readonly containerRef =
     viewChild.required<ElementRef<HTMLElement>>('container');
+  private readonly directionality = inject(Directionality);
 
   // Percentages, one per panel, always summing to 100 (barring floating-point
   // noise) — recomputed whenever the panel count changes.
@@ -71,18 +82,27 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
-          splitterRootStyles({ orientation: this.orientation() }),
+          splitterRootStyles({
+            orientation: this.orientation(),
+            fluid: this.fluid(),
+          }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
-  protected readonly panelClasses = splitterPanelStyles;
+  protected readonly panelClasses = computed(() =>
+    cn(splitterPanelStyles, this.ptFor('panel').class),
+  );
   protected readonly dividerClasses = computed(() =>
-    splitterDividerStyles({
-      orientation: this.orientation(),
-      disabled: this.disabled(),
-    }),
+    cn(
+      splitterDividerStyles({
+        orientation: this.orientation(),
+        disabled: this.disabled(),
+      }),
+      this.ptFor('divider').class,
+    ),
   );
 
   constructor() {
@@ -177,6 +197,16 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
     if (!dragStart) {
       return;
     }
+    // A disabled flip mid-drag isn't guaranteed a clean pointerup afterward
+    // (captured-pointer event delivery bypasses the disabled divider's own
+    // pointer-events:none), so clear drag state proactively here too, not
+    // just inside pointerup — same defensiveness as Slider's own
+    // onTrackPointerMove. The partial resize already applied stays as-is
+    // (no rollback); only the still-in-progress drag is stopped.
+    if (this.disabled()) {
+      this.dragStart = null;
+      return;
+    }
     const rect = this.containerRef().nativeElement.getBoundingClientRect();
     const totalPx =
       this.orientation() === 'horizontal' ? rect.width : rect.height;
@@ -186,15 +216,36 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
       totalPx > 0
         ? ((clientPos - dragStart.startClientPos) / totalPx) * 100
         : 0;
-    this.applyDelta(dragStart.index, deltaPct, dragStart.startSizes);
+    this.applyDelta(
+      dragStart.index,
+      this.physicalDelta(deltaPct),
+      dragStart.startSizes,
+    );
   }
 
   protected onDividerPointerUp(): void {
-    if (this.dragStart) {
+    if (this.dragStart && !this.disabled()) {
       this.dragStart = null;
       this.resizeEnd.emit(this.sizes());
       this.persistSizes();
+    } else {
+      this.dragStart = null;
     }
+  }
+
+  // Splitter's divider follows the ARIA APG Window Splitter pattern —
+  // physical/visual semantics (dragging/pressing "right" always means
+  // "toward the right edge of the screen"), unlike a Slider's role="slider"
+  // thumb, where "right" always means "increase value" regardless of
+  // direction. flex-direction: row visually mirrors panel order under
+  // dir="rtl" with zero CSS/layout changes needed here, but the drag/
+  // keyboard math has no such free mirroring — it must be negated here.
+  // Vertical orientation is never mirrored by text direction.
+  private physicalDelta(deltaPct: number): number {
+    const isRtl =
+      this.orientation() === 'horizontal' &&
+      this.directionality.value === 'rtl';
+    return isRtl ? -deltaPct : deltaPct;
   }
 
   protected onDividerKeydown(index: number, event: KeyboardEvent): void {
@@ -231,7 +282,10 @@ export class DynamoSplitter extends DynamoBaseComponent<DynamoSplitterPart> {
     }
     event.preventDefault();
     const sizes = this.sizes();
-    this.applyDelta(index, delta, [sizes[index] ?? 0, sizes[index + 1] ?? 0]);
+    this.applyDelta(index, this.physicalDelta(delta), [
+      sizes[index] ?? 0,
+      sizes[index + 1] ?? 0,
+    ]);
     this.resizeEnd.emit(this.sizes());
     this.persistSizes();
   }

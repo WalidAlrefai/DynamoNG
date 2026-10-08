@@ -22,14 +22,15 @@ protected onItemSelect(event: DynamoMenuItemSelectEvent): void { ... }
 
 ## Inputs
 
-| Input       | Type                  | Default     | Description                                                                                                                                                                        |
-| ----------- | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled`  | `boolean`             | `false`     | Suppresses the `contextmenu` handler entirely — right-clicking does nothing.                                                                                                       |
-| `ariaLabel` | `string \| undefined` | `undefined` | Labels the `role="menu"` panel; falls back to `'Context menu'` when omitted.                                                                                                       |
-| `global`    | `boolean`             | `false`     | Right-clicking anywhere in the document opens the menu at the cursor, not just the projected trigger content — for a page-wide context menu with no single bounded trigger region. |
-| `open`      | `boolean` (model)     | `false`     | Two-way bindable panel open state.                                                                                                                                                 |
+| Input             | Type                  | Default     | Description                                                                                                                                                                        |
+| ----------------- | --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled`        | `boolean`             | `false`     | Suppresses the `contextmenu` handler entirely — right-clicking does nothing.                                                                                                       |
+| `ariaLabel`       | `string \| undefined` | `undefined` | Labels the `role="menu"` panel; falls back to `'Context menu'` when omitted.                                                                                                       |
+| `ariaDescribedby` | `string \| undefined` | `undefined` | Forwarded as `aria-describedby` on the trigger wrapper.                                                                                                                            |
+| `global`          | `boolean`             | `false`     | Right-clicking anywhere in the document opens the menu at the cursor, not just the projected trigger content — for a page-wide context menu with no single bounded trigger region. |
+| `open`            | `boolean` (model)     | `false`     | Two-way bindable panel open state.                                                                                                                                                 |
 
-Items are `<dg-menu-item>` — the same component `@dynamong/menu` exports (`value`/`label`/`disabled`/`icon`/`separator` inputs), projected as siblings of the trigger content and read via `contentChildren()`. See `@dynamong/menu`'s own README for `icon`/`separator`'s exact shape and design rationale.
+Items are `<dg-menu-item>` — the same component `@dynamong/menu` exports (`value`/`label`/`disabled`/`icon`/`separator`/`visible`/`shortcut`/`badge`/`routerLink`/`queryParams`/`fragment` inputs), projected as siblings of the trigger content and read via `contentChildren()`. `visible: false` omits an item from render AND keyboard nav entirely (not just dimmed); `shortcut` renders a display-only trailing hint; `badge` renders a small trailing `dg-badge`; `routerLink` (on an item) renders a real `<a>` instead of a `<button>`. See `@dynamong/menu`'s own README for each field's exact shape and design rationale.
 
 ## Outputs
 
@@ -40,14 +41,25 @@ Items are `<dg-menu-item>` — the same component `@dynamong/menu` exports (`val
 
 ## Accessibility
 
-- The panel is `role="menu"` with `role="menuitem"` buttons (`aria-disabled` on disabled ones) and `role="separator"` divider rows; no CDK backdrop is used (a backdrop would swallow the repeated right-clicks a context-menu trigger region expects), so dismissal is instead a `document`-level click/contextmenu listener that closes whenever the event lands outside both trigger and panel.
+- The panel is `role="menu"` with `role="menuitem"` buttons/links (`aria-disabled` on disabled ones) and `role="separator"` divider rows; no CDK backdrop is used (a backdrop would swallow the repeated right-clicks a context-menu trigger region expects), so dismissal is instead a `document`-level click/contextmenu listener that closes whenever the event lands outside both trigger and panel.
 - A right-click while already open re-anchors the panel to the new cursor position instead of reopening it.
 - Focus is captured on open and restored on close only if something was previously focused (the trigger region itself is often not focusable).
-- Keyboard: `ArrowDown`/`ArrowUp` move within the panel (wrapping, skipping disabled items and separators), `Home`/`End` jump, `Enter`/`Space` selects, `Escape` closes, `Tab` closes without trapping focus.
+- Keyboard: `ArrowDown`/`ArrowUp` move within the panel (wrapping, skipping disabled, invisible, and separator items), `Home`/`End` jump, `Enter`/`Space` selects, `Escape` closes, `Tab` closes without trapping focus.
+
+## Design notes
+
+**`pt` parts**: `root` (the trigger wrapper `<div>`), `panel`, and `item` (shared by both command rows and
+separators). No dedicated `trigger` part — the root wrapper div IS the trigger, since there's no separate
+element to split it from (the wrapped content is arbitrary projected content, not a component-owned
+control). `fluid` was deliberately **not** added — the root wraps arbitrary projected content with no
+intrinsic width semantics of its own (it's already a plain block-level `<div>` filling its container via
+normal CSS flow), unlike every other reviewed trigger/panel/input root that has a real, component-owned
+visual surface to toggle.
 
 ## Tier / dependencies
 
-- `tier:1`. Peer dependencies: `@dynamong/core`, `@dynamong/utils`, `@dynamong/menu`, `@angular/cdk`.
+- `tier:2`. Peer dependencies: `@dynamong/core`, `@dynamong/utils`, `@dynamong/menu`, `@dynamong/badge`,
+  `@angular/cdk`, `@angular/common`, `@angular/router`.
 
 ## Running unit tests
 

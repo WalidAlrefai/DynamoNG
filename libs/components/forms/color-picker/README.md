@@ -21,17 +21,20 @@ protected brandColor = signal('#3b82f6');
 
 ## Inputs
 
-| Input          | Type                  | Default              | Description                                                                                                                                                                                                            |
-| -------------- | --------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`        | `string` (model)      | `''`                 | Two-way bindable hex color string (`#rrggbb`, or `#rrggbbaa` when `showAlpha` is on); also driven by Angular forms via `writeValue`. Empty until set.                                                                  |
-| `size`         | `DynamoSize`          | `'md'`               |                                                                                                                                                                                                                        |
-| `ariaLabel`    | `string \| undefined` | `undefined`          |                                                                                                                                                                                                                        |
-| `invalid`      | `boolean`             | `false`              |                                                                                                                                                                                                                        |
-| `swatches`     | `string[]`            | 10 preset hex colors | Options rendered in the swatch grid. Pass `[]` to drop presets entirely — just the hex field and the native OS color picker remain.                                                                                    |
-| `inline`       | `boolean`             | `false`              | Renders the swatch grid + native color input directly in the page, with no trigger button or overlay — for embedding the picker permanently rather than behind a popup. The hex text input still renders alongside it. |
-| `disabled`     | `boolean` (model)     | `false`              | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                                                 |
-| `showAlpha`    | `boolean`             | `false`              | Renders an alpha (opacity) slider in the panel and lets `value` carry an 8-digit `#rrggbbaa` hex string. Off by default — existing consumers see no behavior change.                                                   |
-| `customPicker` | `boolean`             | `false`              | Replaces the native `<input type="color">` in the panel with a self-contained saturation/brightness square + hue slider — no OS color-picker dialog. Independent of `swatches`.                                        |
+| Input             | Type                      | Default              | Description                                                                                                                                                                                                            |
+| ----------------- | ------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`           | `string` (model)          | `''`                 | Two-way bindable hex color string (`#rrggbb`, or `#rrggbbaa` when `showAlpha` is on); also driven by Angular forms via `writeValue`. Empty until set.                                                                  |
+| `size`            | `DynamoSize`              | `'md'`               |                                                                                                                                                                                                                        |
+| `ariaLabel`       | `string \| undefined`     | `undefined`          |                                                                                                                                                                                                                        |
+| `ariaDescribedby` | `string \| undefined`     | `undefined`          | Forwarded as `aria-describedby` on the hex text input.                                                                                                                                                                 |
+| `fluid`           | `boolean`                 | `true`               | Fills the width of its container.                                                                                                                                                                                      |
+| `invalid`         | `boolean`                 | `false`              |                                                                                                                                                                                                                        |
+| `swatches`        | `string[]`                | 10 preset hex colors | Options rendered in the swatch grid. Pass `[]` to drop presets entirely — just the hex field and the native OS color picker remain.                                                                                    |
+| `inline`          | `boolean`                 | `false`              | Renders the swatch grid + native color input directly in the page, with no trigger button or overlay — for embedding the picker permanently rather than behind a popup. The hex text input still renders alongside it. |
+| `disabled`        | `boolean` (model)         | `false`              | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                                                 |
+| `showAlpha`       | `boolean`                 | `false`              | Renders an alpha (opacity) slider in the panel and lets `value` carry an 8-digit `#rrggbbaa` hex string. Off by default — existing consumers see no behavior change.                                                   |
+| `customPicker`    | `boolean`                 | `false`              | Replaces the native `<input type="color">` in the panel with a self-contained saturation/brightness square + hue slider — no OS color-picker dialog. Independent of `swatches`.                                        |
+| `format`          | `'hex' \| 'rgb' \| 'hsb'` | `'hex'`              | Shapes `value` itself. See Format below.                                                                                                                                                                               |
 
 ## Outputs
 
@@ -75,10 +78,42 @@ Two known, deliberate limitations (not oversights):
   primary value; `aria-valuetext` overrides the announced text with both
   saturation and brightness for screen readers that support it.
 
+## Format
+
+Set `format` to shape `value` itself as something other than hex:
+
+- `'hex'` (default) — `#rrggbb`, or `#rrggbbaa` when `showAlpha` is on.
+- `'rgb'` — `rgb(r, g, b)` (0-255 integers per channel), or `rgba(r, g, b, a)` when `showAlpha` is on.
+- `'hsb'` — `hsb(h, s, b)` (hue 0-360, saturation/brightness as 0-100 integers), or `hsba(h, s, b, a)`
+  when `showAlpha` is on. `hsb()`/`hsba()` aren't real CSS notations (CSS has no native HSB) — they're
+  this library's own string shape for the value, consistent with every other format here.
+
+`'hex'` is a no-op internally — every piece of color math decodes `value` to hex once (identity when
+`format` is `'hex'`) and encodes back to `format`'s own shape on every commit, so switching formats never
+changes how swatches, the native color input, the saturation/brightness square, or the hue/alpha sliders
+behave, only what shape `value` itself ends up in.
+
+`swatches` stay hex-only regardless of `format` — they're rendered via a raw CSS
+`[style.background-color]`, which must be CSS-valid, and hex is the only one of the three notations that
+always is.
+
+`format` is not two-way bindable (same category as `customPicker`/`showAlpha`) and switching it at
+runtime while a value is already set is a known limitation: the old value was shaped for the old format
+and fails to parse under the new one, falling back to `#000000` — the same tradeoff class as the
+hue-loss-on-gray limitation below. Converting through `hsb()` is also lossy by ±1 per RGB channel in
+either direction, since hue/saturation/brightness round to whole-number percentages rather than
+preserving full floating-point precision.
+
 ## Accessibility
 
 - The swatch-grid trigger is a `<button aria-haspopup="dialog">` with `aria-expanded` synced to the open state and an `aria-label` describing the current color. Each swatch button carries `aria-pressed` for whether it matches the current value; the embedded native `<input type="color">` has its own `aria-label`.
-- Keyboard: `Escape` closes the panel (reachable both from the trigger and from inside the panel) and returns focus to the trigger. The alpha and hue sliders are native `<input type="range">`s, so they get `role="slider"` plus keyboard (Arrow keys/Home/End/PageUp/PageDown) support for free.
+- Keyboard: `Escape` closes the panel (reachable both from the trigger and from inside the panel) and returns focus to the trigger; clicking outside the panel to dismiss it also returns focus to the trigger, matching every other dismissal path. Every panel control (swatches, the native color input, the saturation/brightness square, the hue/alpha sliders) is disabled, not just visually dimmed, while `disabled` is set — including in `inline` mode, which has no trigger button to gate access otherwise. The alpha and hue sliders are native `<input type="range">`s, so they get `role="slider"` plus keyboard (Arrow keys/Home/End/PageUp/PageDown) support for free.
+
+## Design notes
+
+**`pt` parts**: `root` (the wrapper div), `trigger` (the swatch-preview button), `panel`, and `swatch`
+(each preset-color button). No dedicated part for the hex input, the native `<input type="color">`, or
+the alpha/hue sliders/SV square — `root` is the only part reachable regardless of `inline`/overlay mode.
 
 ## Tier / dependencies
 

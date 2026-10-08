@@ -18,6 +18,7 @@ const API: ApiTableRow[] = [
   { name: 'global', type: 'boolean', default: 'false' },
   { name: 'open', type: 'boolean (model)', default: 'false' },
   { name: 'ariaLabel', type: 'string | undefined', default: "'Context menu'" },
+  { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined' },
 ];
 
 @Component({
@@ -40,7 +41,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Project the target element then <dg-menu-item> children; right-clicking the target opens the menu at the cursor."
+        description="Project the target element then <dg-menu-item> children; right-clicking the target opens the menu at the cursor. shortcut renders a display-only trailing hint; badge renders a small trailing dg-badge; visible: false omits an item from render AND keyboard nav entirely; routerLink (on an item) renders a real <a> instead of a <button>, so middle-click/ctrl-click 'open in new tab' work natively."
       >
         <div preview>
           <dg-context-menu (itemSelect)="lastSelected.set($event)">
@@ -49,9 +50,20 @@ const API: ApiTableRow[] = [
             >
               Right-click me
             </div>
-            <dg-menu-item value="edit" label="Edit" icon="✎" />
+            <dg-menu-item value="edit" label="Edit" icon="✎" shortcut="⌘E" />
             <dg-menu-item value="duplicate" label="Duplicate" icon="⧉" />
+            <dg-menu-item value="comments" label="Comments" [badge]="3" />
+            <dg-menu-item
+              value="hidden"
+              label="Hidden for now"
+              [visible]="false"
+            />
             <dg-menu-item [separator]="true" value="" label="" />
+            <dg-menu-item
+              value="docs"
+              label="Open Badge docs"
+              routerLink="/components/badge"
+            />
             <dg-menu-item value="archive" label="Archive" [disabled]="true" />
             <dg-menu-item value="delete" label="Delete" icon="🗑" />
           </dg-context-menu>
@@ -64,7 +76,10 @@ const API: ApiTableRow[] = [
         <div code>
           &lt;dg-context-menu (itemSelect)="onSelect($event)"&gt;
           &lt;div&gt;Right-click me&lt;/div&gt; &lt;dg-menu-item value="edit"
-          label="Edit" /&gt; &lt;/dg-context-menu&gt;
+          label="Edit" shortcut="⌘E" /&gt; &lt;dg-menu-item value="comments"
+          label="Comments" [badge]="3" /&gt; &lt;dg-menu-item value="docs"
+          label="Open Badge docs" routerLink="/components/badge" /&gt;
+          &lt;/dg-context-menu&gt;
         </div>
       </docs-example>
 
