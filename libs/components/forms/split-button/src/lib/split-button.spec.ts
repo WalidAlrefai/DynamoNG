@@ -1,6 +1,8 @@
 import { Component, model, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { provideRouter, type Routes } from '@angular/router';
+import type { DynamoPassThrough } from '@dynamong/core/api';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -12,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { DynamoSplitButton } from './split-button';
 import { DynamoSplitButtonHarness } from './split-button.harness';
 import type { DynamoMenuItemSelectEvent } from '@dynamong/menu';
+import type { DynamoSplitButtonPart } from './split-button.types';
 
 // The CDK overlay portals `role="menu"` content into a `.cdk-overlay-container`
 // appended near document.body — outside the fixture's own `container` element —
@@ -102,6 +105,90 @@ function trigger(container: HTMLElement): HTMLElement {
 }
 function primary(container: HTMLElement): HTMLElement {
   return within(container).getByRole('button', { name: 'Save' });
+}
+
+@Component({
+  selector: 'dg-split-button-pt-host',
+  standalone: true,
+  imports: [DynamoSplitButton, DynamoMenuItem],
+  template: `
+    <dg-split-button
+      label="Save"
+      [ariaDescribedby]="ariaDescribedby()"
+      [fluid]="fluid()"
+      [pt]="pt()"
+    >
+      <dg-menu-item value="edit" label="Edit" />
+    </dg-split-button>
+  `,
+})
+class SplitButtonPtHostComponent {
+  readonly ariaDescribedby = signal<string | undefined>(undefined);
+  readonly fluid = signal(false);
+  readonly pt = signal<DynamoPassThrough<DynamoSplitButtonPart> | undefined>(
+    undefined,
+  );
+}
+
+@Component({
+  selector: 'dg-split-button-visible-shortcut-badge-host',
+  standalone: true,
+  imports: [DynamoSplitButton, DynamoMenuItem],
+  template: `
+    <dg-split-button label="Save">
+      <dg-menu-item value="file" label="File" />
+      <dg-menu-item value="hidden" label="Hidden" [visible]="false" />
+      <dg-menu-item value="save-copy" label="Save a copy" shortcut="⌘S" />
+      <dg-menu-item value="inbox" label="Inbox" [badge]="3" />
+      <dg-menu-item value="drafts" label="Drafts" badge="New" />
+    </dg-split-button>
+  `,
+})
+class SplitButtonVisibleShortcutBadgeHostComponent {}
+
+@Component({
+  selector: 'dg-split-button-separator-host',
+  standalone: true,
+  imports: [DynamoSplitButton, DynamoMenuItem],
+  template: `
+    <dg-split-button label="Save" (itemSelect)="onSelect($event)">
+      <dg-menu-item value="edit" label="Edit" />
+      <dg-menu-item value="duplicate" label="Duplicate" />
+      <dg-menu-item [separator]="true" value="" label="" />
+      <dg-menu-item value="delete" label="Delete" />
+    </dg-split-button>
+  `,
+})
+class SplitButtonSeparatorHostComponent {
+  readonly lastEvent = signal<DynamoMenuItemSelectEvent | null>(null);
+
+  onSelect(event: DynamoMenuItemSelectEvent): void {
+    this.lastEvent.set(event);
+  }
+}
+
+@Component({
+  selector: 'dg-split-button-router-link-host',
+  standalone: true,
+  imports: [DynamoSplitButton, DynamoMenuItem],
+  template: `
+    <dg-split-button label="Save" (itemSelect)="onSelect($event)">
+      <dg-menu-item
+        value="docs"
+        label="Docs"
+        routerLink="/components/badge"
+        [disabled]="disabled()"
+      />
+    </dg-split-button>
+  `,
+})
+class SplitButtonRouterLinkHostComponent {
+  readonly disabled = signal(false);
+  readonly lastEvent = signal<DynamoMenuItemSelectEvent | null>(null);
+
+  onSelect(event: DynamoMenuItemSelectEvent): void {
+    this.lastEvent.set(event);
+  }
 }
 
 describe('DynamoSplitButton', () => {
@@ -234,7 +321,7 @@ describe('DynamoSplitButton', () => {
       expect(getPanel()).toBeNull();
     });
 
-    it('closes when the backdrop is clicked', async () => {
+    it('closes and refocuses the trigger when the backdrop is clicked', async () => {
       const { container, fixture } = renderDynamoComponent(
         SplitButtonTestHostComponent,
       );
@@ -249,6 +336,7 @@ describe('DynamoSplitButton', () => {
       await settle(fixture);
 
       expect(getPanel()).toBeNull();
+      expect(document.activeElement).toBe(trigger(container));
     });
   });
 
@@ -453,6 +541,255 @@ describe('DynamoSplitButton', () => {
       await settle(fixture);
 
       expect(getPanel()).not.toBeNull();
+    });
+  });
+
+  describe('pt / ariaDescribedby / fluid', () => {
+    it('merges pt class onto root/primary/trigger/panel/item', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitButtonPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { class: 'pt-root' },
+        primary: { class: 'pt-primary' },
+        trigger: { class: 'pt-trigger' },
+        panel: { class: 'pt-panel' },
+        item: { class: 'pt-item' },
+      });
+      fixture.detectChanges();
+
+      expect(container.querySelector('.pt-root')).not.toBeNull();
+      expect(primary(container).classList.contains('pt-primary')).toBe(true);
+      expect(trigger(container).classList.contains('pt-trigger')).toBe(true);
+
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+
+      expect(getPanel()?.classList.contains('pt-panel')).toBe(true);
+      expect(getOverlayContainer().querySelectorAll('.pt-item').length).toBe(1);
+    });
+
+    it('merges a non-class pt attribute onto the trigger', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitButtonPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        trigger: { 'data-testid': 'trigger-el' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container.querySelector('[data-testid="trigger-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('omits aria-describedby by default, forwards it to the trigger when set', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitButtonPtHostComponent,
+      );
+      expect(trigger(container).getAttribute('aria-describedby')).toBeNull();
+
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.detectChanges();
+      expect(trigger(container).getAttribute('aria-describedby')).toBe(
+        'hint-id',
+      );
+    });
+
+    it('defaults fluid to false (inline-flex), opts in when true (flex w-full, primary grows)', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitButtonPtHostComponent,
+      );
+      const root = container.querySelector('div') as HTMLElement;
+      expect(root.className).toContain('inline-flex');
+      expect(root.className).not.toContain('w-full');
+
+      fixture.componentInstance.fluid.set(true);
+      fixture.detectChanges();
+      expect(root.className).toContain('w-full');
+      expect(primary(container).className).toContain('flex-1');
+    });
+
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitButtonPtHostComponent,
+      );
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.componentInstance.fluid.set(true);
+      fixture.componentInstance.pt.set({ trigger: { class: 'pt-trigger' } });
+      fixture.detectChanges();
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('visible / shortcut / badge', () => {
+    it('hides a visible:false item (not just dimmed) and excludes it from keyboard nav', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SplitButtonVisibleShortcutBadgeHostComponent,
+      );
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+
+      // [hidden] (not full DOM omission) keeps items()/itemButtons()
+      // positionally aligned — see findEnabledIndex's own doc comment —
+      // so the element is still queryable, just hidden/unfocusable/
+      // announced-as-absent, not gone from the DOM entirely.
+      const hidden = getItems().find(
+        (el) => el.textContent?.trim() === 'Hidden',
+      ) as HTMLElement;
+      expect(hidden.hidden).toBe(true);
+      expect(hidden.getAttribute('aria-hidden')).toBe('true');
+
+      getItems()[0]?.focus();
+      await userEvent.keyboard('{ArrowDown}');
+      expect(document.activeElement?.textContent).toContain('Save a copy');
+    });
+
+    it('renders a shortcut as aria-hidden trailing text', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SplitButtonVisibleShortcutBadgeHostComponent,
+      );
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+
+      const shortcutEl = Array.from(
+        getOverlayContainer().querySelectorAll('span'),
+      ).find(
+        (el) => el.textContent?.trim() === '⌘S' && el.children.length === 0,
+      );
+      expect(shortcutEl).toBeTruthy();
+      expect(shortcutEl?.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('renders a badge via dg-badge for both string and number values', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SplitButtonVisibleShortcutBadgeHostComponent,
+      );
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+
+      const badges = Array.from(
+        getOverlayContainer().querySelectorAll('dg-badge'),
+      ).map((el) => el.textContent?.trim());
+      expect(badges).toEqual(['3', 'New']);
+    });
+
+    it('has no axe violations with visible/shortcut/badge set', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SplitButtonVisibleShortcutBadgeHostComponent,
+      );
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+
+      await expect(
+        expectNoA11yViolations(getOverlayContainer()),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('separator', () => {
+    it('renders with role="separator", not role="menuitem"', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SplitButtonSeparatorHostComponent,
+      );
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+
+      expect(getPanel()?.querySelectorAll('[role="separator"]')).toHaveLength(
+        1,
+      );
+      // 3 real commands (Edit, Duplicate, Delete) — the separator is not
+      // counted among role="menuitem" rows.
+      expect(getItems()).toHaveLength(3);
+    });
+
+    it('keyboard navigation skips the separator', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SplitButtonSeparatorHostComponent,
+      );
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+      expect(document.activeElement?.textContent).toContain('Edit');
+
+      await userEvent.keyboard('{ArrowDown}'); // -> Duplicate
+      await userEvent.keyboard('{ArrowDown}'); // skips the separator -> Delete
+
+      expect(document.activeElement?.textContent).toContain('Delete');
+    });
+
+    it('clicking the separator does not emit itemSelect', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        SplitButtonSeparatorHostComponent,
+      );
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+
+      const separator = getPanel()?.querySelector(
+        '[role="separator"]',
+      ) as HTMLElement;
+      separator.click();
+      fixture.detectChanges();
+
+      expect(componentInstance.lastEvent()).toBeNull();
+    });
+  });
+
+  describe('routerLink', () => {
+    // A wildcard catch-all route so Router.navigateByUrl() (triggered by
+    // RouterLink's own click handling) resolves instead of rejecting with
+    // "Cannot match any routes" — same established fix as Menu's own
+    // routerLink tests.
+    @Component({ selector: 'dg-blank-test', template: '', standalone: true })
+    class BlankRouteComponent {}
+    const TEST_ROUTES: Routes = [
+      { path: '**', component: BlankRouteComponent },
+    ];
+
+    it('renders a leaf with routerLink as a real <a> with the router-generated href', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SplitButtonRouterLinkHostComponent,
+        { providers: [provideRouter(TEST_ROUTES)] },
+      );
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+
+      const link = getOverlayContainer().querySelector('a[role="menuitem"]');
+      expect(link).toBeTruthy();
+      expect(link?.getAttribute('href')).toBe('/components/badge');
+    });
+
+    it('fires itemSelect and closes/refocuses on click, alongside navigation', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SplitButtonRouterLinkHostComponent,
+        { providers: [provideRouter(TEST_ROUTES)] },
+      );
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+      const link = getOverlayContainer().querySelector(
+        'a[role="menuitem"]',
+      ) as HTMLElement;
+
+      await userEvent.click(link);
+      await settle(fixture);
+
+      expect(fixture.componentInstance.lastEvent()?.value).toBe('docs');
+      expect(getPanel()).toBeNull();
+      expect(document.activeElement).toBe(trigger(container));
+    });
+
+    it('does not navigate (routerLink is null) when the item is disabled', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        SplitButtonRouterLinkHostComponent,
+        { providers: [provideRouter(TEST_ROUTES)] },
+      );
+      fixture.componentInstance.disabled.set(true);
+      fixture.detectChanges();
+      await userEvent.click(trigger(container));
+      await settle(fixture);
+
+      const link = getOverlayContainer().querySelector('a[role="menuitem"]');
+      expect(link?.getAttribute('href')).toBeNull();
     });
   });
 });

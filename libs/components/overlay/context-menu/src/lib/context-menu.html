@@ -1,6 +1,8 @@
 <div
   #triggerEl
   [class]="triggerClasses()"
+  [attr.aria-describedby]="ariaDescribedby() ?? null"
+  [dgPt]="ptFor('root')"
   (contextmenu)="onContextMenu($event)"
 >
   <ng-content select=":not(dg-menu-item)" />
@@ -11,27 +13,75 @@
     role="menu"
     tabindex="-1"
     [attr.aria-label]="ariaLabel() ?? 'Context menu'"
-    [class]="panelClasses"
+    [class]="panelClasses()"
+    [dgPt]="ptFor('panel')"
     (keydown)="onPanelKeydown($event)"
   >
     @for (item of items(); track item) { @if (item.separator()) {
-    <li role="separator" #itemButton [class]="separatorClasses"></li>
+    <li
+      role="separator"
+      #itemButton
+      [hidden]="!item.visible()"
+      [attr.aria-hidden]="!item.visible() ? 'true' : null"
+      [class]="separatorClasses"
+      [dgPt]="ptFor('item')"
+    ></li>
+    } @else if (item.routerLink()) {
+    <a
+      #itemButton
+      role="menuitem"
+      tabindex="-1"
+      [hidden]="!item.visible()"
+      [attr.aria-hidden]="!item.visible() ? 'true' : null"
+      [attr.aria-disabled]="item.disabled() ? 'true' : null"
+      [class]="itemClasses(item)"
+      [dgPt]="ptFor('item')"
+      [routerLink]="item.disabled() ? null : (item.routerLink() ?? null)"
+      [queryParams]="item.queryParams()"
+      [fragment]="item.fragment()"
+      (click)="onItemClick(item)"
+    >
+      <ng-container
+        [ngTemplateOutlet]="itemContent"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
+    </a>
     } @else {
     <button
       #itemButton
       type="button"
       role="menuitem"
       tabindex="-1"
+      [hidden]="!item.visible()"
+      [attr.aria-hidden]="!item.visible() ? 'true' : null"
       [attr.aria-disabled]="item.disabled() ? 'true' : null"
       [class]="itemClasses(item)"
+      [dgPt]="ptFor('item')"
       (click)="onItemClick(item)"
     >
-      @if (item.icon()) {
-      <span [class]="itemIconClasses" aria-hidden="true"
-        >{{ item.icon() }}</span
-      >
-      } {{ item.label() }}
+      <ng-container
+        [ngTemplateOutlet]="itemContent"
+        [ngTemplateOutletContext]="{ $implicit: item }"
+      />
     </button>
     } }
   </div>
+</ng-template>
+
+<ng-template #itemContent let-item>
+  <span [class]="itemLeadingClasses">
+    @if (item.icon()) {
+    <span [class]="itemIconClasses" aria-hidden="true">{{ item.icon() }}</span>
+    }
+    <span>{{ item.label() }}</span>
+  </span>
+  <span [class]="itemTrailingClasses">
+    @if (item.shortcut()) {
+    <span [class]="shortcutClasses" aria-hidden="true"
+      >{{ item.shortcut() }}</span
+    >
+    } @if (item.badge() !== undefined) {
+    <dg-badge size="sm">{{ item.badge() }}</dg-badge>
+    }
+  </span>
 </ng-template>
