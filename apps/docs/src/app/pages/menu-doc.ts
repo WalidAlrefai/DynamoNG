@@ -83,11 +83,10 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
         <div code>
           &lt;dg-menu label="Account"&gt; &lt;ng-template #itemTemplate
-          let-item&gt; &lt;span class="font-semibold text-primary"&gt;{{ '{{ item.label()
-
-
-          }}' }} &lt;/span&gt; &lt;/ng-template&gt; &lt;dg-menu-item
-          value="profile" label="Profile" /&gt; &lt;/dg-menu&gt;
+          let-item&gt; &lt;span class="font-semibold text-primary"&gt;{{
+            labelInterpolation
+          }}&lt;/span&gt; &lt;/ng-template&gt; &lt;dg-menu-item value="profile"
+          label="Profile" /&gt; &lt;/dg-menu&gt;
         </div>
       </docs-example>
 
@@ -195,4 +194,10 @@ export class MenuDocPage {
   protected readonly lastSelected = signal<DynamoMenuItemSelectEvent | null>(
     null,
   );
+  // Interpolated (not static template text) so the literal `{{ }}` braces
+  // in the code sample below never reach Angular's own ICU message-expansion
+  // parser — a static-text brace pair is parsed as ICU syntax (NG5002) even
+  // when HTML-entity-escaped, since decoded entities are literal braces
+  // again by the time that parser runs.
+  protected readonly labelInterpolation = '{{ item.label() }}';
 }
