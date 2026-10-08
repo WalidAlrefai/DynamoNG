@@ -6,6 +6,7 @@ import {
   TemplateRef,
   ViewContainerRef,
   computed,
+  contentChild,
   contentChildren,
   effect,
   inject,
@@ -17,21 +18,31 @@ import {
   viewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NgTemplateOutlet } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import { DynamoBadge } from '@dynamong/badge';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import {
   DynamoOverlayService,
   type DynamoOverlayHandle,
 } from '@dynamong/core/overlay';
+import type { DynamoPassThroughAttrs } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoMenuItem } from './menu-item';
 import {
   menuChevronStyles,
   menuItemIconClasses,
+  menuItemLeadingClasses,
   menuItemStyles,
+  menuItemTrailingClasses,
   menuPanelStyles,
   menuSeparatorStyles,
+  menuShortcutClasses,
   menuTriggerStyles,
 } from './menu.styles';
 import type {
@@ -92,6 +103,12 @@ function buildPositions(preferred: DynamoMenuPosition): ConnectedPosition[] {
   selector: 'dg-menu',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    DynamoPassThroughDirective,
+    DynamoBadge,
+    NgTemplateOutlet,
+    RouterLink,
+  ],
   templateUrl: './menu.html',
 })
 export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
@@ -99,12 +116,25 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
   readonly label = input.required<string>();
   readonly position = input<DynamoMenuPosition>('bottom-start');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the trigger button. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `false` — unlike every
+   *  other reviewed trigger, this one never had a pre-existing full-width
+   *  default to preserve (it's genuinely intrinsically sized today). */
+  readonly fluid = input(false);
   /** Two-way bindable: `<dg-menu [(open)]="isOpen">`. */
   readonly open = model(false);
   /** Fires with a plain snapshot of the clicked item — not the `DynamoMenuItem` component instance. */
   readonly itemSelect = output<DynamoMenuItemSelectEvent>();
 
   protected readonly items = contentChildren(DynamoMenuItem);
+  /** Optional projected template, falling back to plain text when
+   *  omitted — mirrors `@dynamong/select`'s own `contentChild(TemplateRef)`
+   *  idiom, same as Menubar's/TieredMenu's own `itemTemplate`. Replaces
+   *  only a row's plain label text; icon/shortcut/badge still render
+   *  around it unconditionally. */
+  protected readonly itemTemplate =
+    contentChild<TemplateRef<{ $implicit: DynamoMenuItem }>>('itemTemplate');
   private readonly itemButtons =
     viewChildren<ElementRef<HTMLElement>>('menuItemButton');
   private readonly triggerEl =
@@ -125,16 +155,40 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
   // requests 'last'), consumed once by the effect below.
   private readonly pendingFocus = signal<'first' | 'last' | null>(null);
 
+  // No separate root wrapper element exists — the single top-level element
+  // IS the trigger button, so `root` and `trigger` both merge onto it. Both
+  // parts' non-class attrs are combined here (trigger's own win on a key
+  // collision); each part's own `class` is merged separately below into
+  // `triggerClasses`, matching this codebase's standing "pt directive never
+  // handles class" convention. Same shape as TieredMenu's own trigger.
+  protected readonly triggerPt = computed<DynamoPassThroughAttrs>(() => ({
+    ...this.ptFor('root'),
+    ...this.ptFor('trigger'),
+  }));
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(menuTriggerStyles(), this.styleClass()),
+      ? cn(
+          this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('trigger').class,
+        )
+      : cn(
+          menuTriggerStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('trigger').class,
+        ),
   );
   protected readonly chevronClasses = computed(() =>
     menuChevronStyles({ open: this.open() }),
   );
-  protected readonly panelClasses = menuPanelStyles;
+  protected readonly panelClasses = computed(() =>
+    cn(menuPanelStyles, this.ptFor('panel').class),
+  );
   protected readonly itemIconClasses = menuItemIconClasses;
+  protected readonly itemLeadingClasses = menuItemLeadingClasses;
+  protected readonly itemTrailingClasses = menuItemTrailingClasses;
+  protected readonly shortcutClasses = menuShortcutClasses;
   protected readonly separatorClasses = menuSeparatorStyles;
 
   constructor() {
@@ -174,7 +228,10 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
   }
 
   protected itemClasses(item: DynamoMenuItem) {
-    return menuItemStyles({ disabled: item.disabled() });
+    return cn(
+      menuItemStyles({ disabled: item.disabled() }),
+      this.ptFor('item').class,
+    );
   }
 
   protected toggle(): void {
@@ -285,7 +342,10 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
       handle.overlayRef
         .backdropClick()
         .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => this.close());
+        .subscribe(() => {
+          this.close();
+          this.triggerEl().nativeElement.focus();
+        });
       this.overlayHandle = handle;
     }
 
@@ -313,7 +373,13 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
     this.portal = null;
   }
 
-  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled, non-separator item index. Returns `null` if every item is disabled/a separator. */
+  /** Scans from `from`, stepping by `delta` (wrapping), for the next non-disabled, non-separator, visible item index. Returns `null` if every item is disabled/a separator/invisible.
+   *
+   * `items()` and the `itemButtons()` viewChildren array are positionally
+   * aligned one-to-one (same `@for` loop populates both) — an invisible
+   * item must stay in the DOM via `[hidden]`, never `@if`-omitted, or this
+   * index would no longer correspond to the right entry in `itemButtons()`.
+   * Same reasoning as Menubar's own bar-level `visible` handling. */
   private findEnabledIndex(from: number, delta: number): number | null {
     const itemsArr = this.items();
     if (itemsArr.length === 0) {
@@ -322,7 +388,8 @@ export class DynamoMenu extends DynamoBaseComponent<DynamoMenuPart> {
     let index = from;
     for (let step = 0; step < itemsArr.length; step++) {
       index = (index + delta + itemsArr.length) % itemsArr.length;
-      if (!itemsArr[index]?.disabled() && !itemsArr[index]?.separator()) {
+      const item = itemsArr[index];
+      if (!item?.disabled() && !item?.separator() && item?.visible()) {
         return index;
       }
     }
