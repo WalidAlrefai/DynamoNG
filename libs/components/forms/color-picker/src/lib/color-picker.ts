@@ -15,6 +15,7 @@ import {
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import type { DynamoSize } from '@dynamong/core/api';
+import { DynamoPassThroughDirective } from '@dynamong/core/base';
 import { DynamoListboxBase, selectPanelWrapperStyles } from '@dynamong/select';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -25,6 +26,11 @@ import {
   rgbHexOf,
   withAlpha,
 } from './color-picker.color';
+import {
+  decodeToHex,
+  encodeFromHex,
+  type DynamoColorPickerFormat,
+} from './color-picker.format';
 import {
   CHECKERBOARD_GRADIENT,
   HUE_TRACK_GRADIENT,
@@ -94,7 +100,7 @@ const POSITIONS: ConnectedPosition[] = [
   selector: 'dg-color-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, DynamoPassThroughDirective],
   templateUrl: './color-picker.html',
   providers: [
     {
@@ -110,6 +116,11 @@ export class DynamoColorPicker
 {
   readonly size = input<DynamoSize>('md');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the hex text input. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `true` (today's existing,
+   *  always-full-width behavior). */
+  readonly fluid = input(true);
   readonly invalid = input(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
@@ -122,6 +133,18 @@ export class DynamoColorPicker
   readonly showAlpha = input(false);
   /** Replaces the native `<input type="color">` in the panel with a self-contained saturation/brightness square + hue slider — no OS color-picker dialog. Off by default. Independent of `swatches` — presets and the custom picker are complementary, not exclusive. */
   readonly customPicker = input(false);
+  /** Shapes `value` itself — `'hex'` (default, `#rrggbb`/`#rrggbbaa`),
+   *  `'rgb'` (`rgb(r, g, b)`/`rgba(r, g, b, a)`), or `'hsb'`
+   *  (`hsb(h, s, b)`/`hsba(h, s, b, a)`, 0-360/0-100/0-100). Identity when
+   *  `'hex'`, so every existing consumer sees zero behavior change.
+   *  `swatches` stay hex-only regardless (rendered via raw
+   *  `[style.background-color]`, which must be CSS-valid — hex is the
+   *  only one of the three notations that always is). Not two-way —
+   *  switching it at runtime while a value is already set is a documented
+   *  limitation: the old value was shaped for the old format and fails to
+   *  parse under the new one, falling back to `#000000`, same tradeoff
+   *  class as the hue-loss-on-gray limitation below. */
+  readonly format = input<DynamoColorPickerFormat>('hex');
 
   private readonly triggerEl =
     viewChild.required<ElementRef<HTMLButtonElement>>('triggerEl');
@@ -139,34 +162,49 @@ export class DynamoColorPicker
     /* replaced by registerOnTouched once bound to a FormControl/ngModel */
   };
 
-  /** Feeds the embedded native `<input type="color">`, which requires a strict `#rrggbb` string and silently resets to `#000000` for anything else — this doesn't affect the component's own bound `value`. Also strips any alpha suffix, since the native input is alpha-blind. */
-  protected readonly normalizedNativeColorValue = computed(() =>
-    rgbHexOf(this.value()),
+  /** `value()` decoded to hex through `format()` — the single internal
+   *  representation every piece of color math below reads, instead of
+   *  `value()` directly. Identity when `format()` is `'hex'`. */
+  protected readonly currentHex = computed(() =>
+    decodeToHex(this.value(), this.format()),
   );
 
-  protected readonly alpha = computed(() => alphaFromHexColor(this.value()));
+  /** Feeds the embedded native `<input type="color">`, which requires a strict `#rrggbb` string and silently resets to `#000000` for anything else — this doesn't affect the component's own bound `value`. Also strips any alpha suffix, since the native input is alpha-blind. */
+  protected readonly normalizedNativeColorValue = computed(() =>
+    rgbHexOf(this.currentHex()),
+  );
+
+  protected readonly alpha = computed(() =>
+    alphaFromHexColor(this.currentHex()),
+  );
   protected readonly alphaPercentLabel = computed(
     () => `${Math.round(this.alpha() * 100)}%`,
   );
   /** Two-layer gradient (flat color-as-gradient over a checkerboard) so the
    *  trigger preview shows transparency correctly. `null` when `showAlpha`
    *  is off or `value` is empty, so the existing `[style.background-color]`
-   *  binding alone renders — pixel-identical to before alpha existed. */
+   *  binding alone renders — pixel-identical to before alpha existed.
+   *  Reads `currentHex()`, not `value()` — under `format: 'hsb'`, `value()`
+   *  itself (e.g. `"hsb(0, 100, 100)"`) isn't valid CSS, so this would
+   *  silently break the trigger preview under that format specifically if
+   *  it read the raw bound value instead. */
   protected readonly triggerPreviewBackground = computed(() => {
     if (!this.showAlpha() || !this.value()) return null;
-    const v = this.value();
+    const v = this.currentHex();
     return `linear-gradient(${v}, ${v}), ${CHECKERBOARD_GRADIENT}`;
   });
   /** Left-to-right gradient from transparent to the current opaque RGB,
    *  layered over the checkerboard, so the alpha slider's own track
    *  visualizes what each position on it means. */
   protected readonly alphaTrackBackground = computed(() => {
-    const rgb = rgbHexOf(this.value());
+    const rgb = rgbHexOf(this.currentHex());
     return `linear-gradient(to right, transparent, ${rgb}), ${CHECKERBOARD_GRADIENT}`;
   });
 
-  protected readonly hsv = computed(() => hsvOf(this.value()));
-  protected readonly rgbHexOfCurrent = computed(() => rgbHexOf(this.value()));
+  protected readonly hsv = computed(() => hsvOf(this.currentHex()));
+  protected readonly rgbHexOfCurrent = computed(() =>
+    rgbHexOf(this.currentHex()),
+  );
   protected readonly svThumbLeftPercent = computed(() => this.hsv().s * 100);
   protected readonly svThumbTopPercent = computed(
     () => (1 - this.hsv().v) * 100,
@@ -180,21 +218,28 @@ export class DynamoColorPicker
 
   protected readonly wrapperClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
           colorPickerWrapperStyles({
             size: this.size(),
             invalid: this.invalid(),
             disabled: this.disabled(),
+            fluid: this.fluid(),
           }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
   protected readonly hexInputClasses = colorPickerHexInputStyles;
   protected readonly swatchButtonClasses = computed(() =>
-    colorPickerSwatchButtonStyles({ size: this.size() }),
+    cn(
+      colorPickerSwatchButtonStyles({ size: this.size() }),
+      this.ptFor('trigger').class,
+    ),
   );
-  protected readonly panelWrapperClasses = selectPanelWrapperStyles;
+  protected readonly panelWrapperClasses = computed(() =>
+    cn(selectPanelWrapperStyles, this.ptFor('panel').class),
+  );
   protected readonly swatchGridClasses = colorPickerSwatchGridStyles;
   protected readonly nativeInputWrapperClasses =
     colorPickerNativeInputWrapperStyles;
@@ -204,7 +249,9 @@ export class DynamoColorPicker
     colorPickerRangeSliderStyles({ size: this.size() }),
   );
   protected readonly alphaReadoutClasses = colorPickerAlphaReadoutStyles;
-  protected readonly svSquareClasses = colorPickerSvSquareStyles;
+  protected readonly svSquareClasses = computed(() =>
+    colorPickerSvSquareStyles({ disabled: this.disabled() }),
+  );
   protected readonly svThumbClasses = colorPickerSvThumbStyles;
   protected readonly hueWrapperClasses = colorPickerHueWrapperStyles;
 
@@ -223,11 +270,14 @@ export class DynamoColorPicker
   }
 
   protected swatchOptionClasses(selected: boolean): string {
-    return colorPickerSwatchOptionStyles({ selected });
+    return cn(
+      colorPickerSwatchOptionStyles({ selected, disabled: this.disabled() }),
+      this.ptFor('swatch').class,
+    );
   }
 
   protected isSameColor(swatch: string): boolean {
-    return rgbHexOf(this.value()) === rgbHexOf(swatch);
+    return rgbHexOf(this.currentHex()) === rgbHexOf(swatch);
   }
 
   protected toggle(): void {
@@ -246,6 +296,13 @@ export class DynamoColorPicker
   protected close(): void {
     this.isOpen.set(false);
     this.onTouchedFn();
+    // Guarded like every other refocus call site — the trigger button
+    // doesn't exist in the DOM while inline() (no overlay to dismiss, so
+    // this path is effectively unreachable there anyway, but triggerEl()
+    // is a required viewChild that would throw if ever called regardless).
+    if (!this.inline()) {
+      this.triggerEl().nativeElement.focus();
+    }
   }
 
   protected onHexInput(event: Event): void {
@@ -255,34 +312,28 @@ export class DynamoColorPicker
   }
 
   protected selectSwatch(swatch: string): void {
+    if (this.disabled()) return;
     const next = this.showAlpha() ? withAlpha(swatch, this.alpha()) : swatch;
-    this.value.set(next);
-    this.onChangeFn(next);
+    this.commit(next);
     this.close();
-    if (!this.inline()) {
-      this.triggerEl().nativeElement.focus();
-    }
   }
 
   protected onNativeColorInput(event: Event): void {
+    if (this.disabled()) return;
     const color = (event.target as HTMLInputElement).value;
     const next = this.showAlpha() ? withAlpha(color, this.alpha()) : color;
-    this.value.set(next);
-    this.onChangeFn(next);
+    this.commit(next);
     this.close();
-    if (!this.inline()) {
-      this.triggerEl().nativeElement.focus();
-    }
   }
 
   /** Continuous drag/keyboard control — deliberately does NOT close()/
    *  refocus the trigger, same reasoning as the hex field never closing
    *  on input. */
   protected onAlphaInput(event: Event): void {
+    if (this.disabled()) return;
     const raw = Number((event.target as HTMLInputElement).value);
-    const next = withAlpha(this.value(), raw);
-    this.value.set(next);
-    this.onChangeFn(next);
+    const next = withAlpha(this.currentHex(), raw);
+    this.commit(next);
   }
 
   protected onSvPointerDown(event: PointerEvent): void {
@@ -314,6 +365,7 @@ export class DynamoColorPicker
   // this is two) — aria-label plus real keyboard operability, short of a
   // fully screen-reader-narrated numeric readout on this one control.
   protected onSvKeydown(event: KeyboardEvent): void {
+    if (this.disabled()) return;
     const { h, s, v } = this.hsv();
     const step = event.shiftKey ? 0.2 : 0.02;
     switch (event.key) {
@@ -338,6 +390,7 @@ export class DynamoColorPicker
   /** Continuous drag/keyboard control — deliberately does NOT close()/
    *  refocus the trigger, same reasoning as the alpha slider. */
   protected onHueInput(event: Event): void {
+    if (this.disabled()) return;
     const h = Number((event.target as HTMLInputElement).value);
     const { s, v } = this.hsv();
     this.commitHsv(h, s, v);
@@ -360,8 +413,17 @@ export class DynamoColorPicker
   private commitHsv(h: number, s: number, v: number): void {
     const rgbHex = hexFromHsv(h, s, v);
     const next = this.showAlpha() ? withAlpha(rgbHex, this.alpha()) : rgbHex;
-    this.value.set(next);
-    this.onChangeFn(next);
+    this.commit(next);
+  }
+
+  /** Encodes a hex-with-optional-alpha result through `format()` and
+   *  writes it to both `value` and the CVA's `onChangeFn` — the one place
+   *  every commit path funnels through, so `format` only needs handling
+   *  here rather than at each of the four call sites above. */
+  private commit(hex: string): void {
+    const encoded = encodeFromHex(hex, this.format());
+    this.value.set(encoded);
+    this.onChangeFn(encoded);
   }
 
   // Focus never moves into the panel on open (unlike DatePicker's day grid) —
@@ -381,7 +443,6 @@ export class DynamoColorPicker
     if (event.key === 'Escape') {
       event.preventDefault();
       this.close();
-      this.triggerEl().nativeElement.focus();
     }
   }
 

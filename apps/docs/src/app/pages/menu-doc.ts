@@ -84,6 +84,7 @@ const EXAMPLES: DocExampleRef[] = [
         <div code>
           &lt;dg-menu label="Account"&gt; &lt;ng-template #itemTemplate
           let-item&gt; &lt;span class="font-semibold text-primary"&gt;{{ '{{ item.label()
+
           }}' }} &lt;/span&gt; &lt;/ng-template&gt; &lt;dg-menu-item
           value="profile" label="Profile" /&gt; &lt;/dg-menu&gt;
         </div>

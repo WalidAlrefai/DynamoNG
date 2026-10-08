@@ -22,7 +22,7 @@ import {
 // another interactive element, so the visible chrome lives on this wrapper,
 // not on either child).
 export const colorPickerWrapperStyles = cva(
-  'flex w-full items-center gap-2 rounded-md border bg-surface-0 text-text-primary ' +
+  'flex items-center gap-2 rounded-md border bg-surface-0 text-text-primary ' +
     'transition-colors ' +
     focusRingWithinClass,
   {
@@ -36,8 +36,17 @@ export const colorPickerWrapperStyles = cva(
         true: 'pointer-events-none opacity-60',
         false: '',
       },
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
     },
-    defaultVariants: { size: 'md', invalid: false, disabled: false },
+    defaultVariants: {
+      size: 'md',
+      invalid: false,
+      disabled: false,
+      fluid: true,
+    },
   },
 );
 
@@ -62,7 +71,8 @@ export const colorPickerSwatchButtonStyles = cva(
 export const colorPickerSwatchGridStyles = 'grid grid-cols-5 gap-2 p-3';
 
 export const colorPickerSwatchOptionStyles = cva(
-  'h-8 w-8 rounded-md border border-border transition-shadow cursor-pointer ' +
+  'h-8 w-8 rounded-md border border-border transition-shadow ' +
+    'disabled:cursor-not-allowed disabled:opacity-60 ' +
     focusRingClass,
   {
     variants: {
@@ -70,8 +80,12 @@ export const colorPickerSwatchOptionStyles = cva(
         true: 'ring-2 ring-primary ring-offset-2',
         false: '',
       },
+      disabled: {
+        true: '',
+        false: 'cursor-pointer',
+      },
     },
-    defaultVariants: { selected: false },
+    defaultVariants: { selected: false, disabled: false },
   },
 );
 
@@ -126,8 +140,18 @@ export const HUE_TRACK_GRADIENT =
   'hsl(120,100%,50%), hsl(180,100%,50%), hsl(240,100%,50%), ' +
   'hsl(300,100%,50%), hsl(360,100%,50%))';
 
-export const colorPickerSvSquareStyles =
-  'relative h-32 w-full cursor-crosshair rounded-md border border-border';
+export const colorPickerSvSquareStyles = cva(
+  'relative h-32 w-full rounded-md border border-border',
+  {
+    variants: {
+      disabled: {
+        true: 'cursor-not-allowed opacity-60',
+        false: 'cursor-crosshair',
+      },
+    },
+    defaultVariants: { disabled: false },
+  },
+);
 export const colorPickerSvThumbStyles =
   'absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full ' +
   'border-2 border-white shadow ring-1 ring-black/30 pointer-events-none';
