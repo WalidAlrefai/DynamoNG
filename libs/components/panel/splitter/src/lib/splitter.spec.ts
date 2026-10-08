@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component, EventEmitter, signal } from '@angular/core';
+import { Directionality } from '@angular/cdk/bidi';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { TestKey } from '@angular/cdk/testing';
 import {
@@ -12,8 +13,18 @@ import { DynamoSplitterPanel } from './splitter-panel';
 import { DynamoSplitterHarness } from './splitter.harness';
 import type {
   DynamoSplitterOrientation,
+  DynamoSplitterPart,
   DynamoSplitterStateStorage,
 } from './splitter.types';
+import type { DynamoPassThrough } from '@dynamong/core/api';
+
+// getComputedStyle(...).direction does NOT resolve an inherited dir="rtl"
+// here (confirmed during the Slider round), which is exactly why the
+// component reads an injected Directionality instead.
+const rtlProvider = {
+  provide: Directionality,
+  useValue: { value: 'rtl', change: new EventEmitter<string>() },
+};
 
 function separator(container: HTMLElement, index = 0): HTMLElement {
   const el = within(container).getAllByRole('separator')[index];
@@ -54,6 +65,9 @@ function mockContainerRect(
       [orientation]="orientation()"
       [disabled]="disabled()"
       [step]="step()"
+      [ariaDescribedby]="ariaDescribedby()"
+      [fluid]="fluid()"
+      [pt]="pt()"
       (resizeEnd)="resizeEndSizes.set($event)"
     >
       <dg-splitter-panel [minSize]="minSizeA()">
@@ -71,6 +85,11 @@ function mockContainerRect(
 class SplitterTestHostComponent {
   readonly orientation = signal<DynamoSplitterOrientation>('horizontal');
   readonly disabled = signal(false);
+  readonly ariaDescribedby = signal<string | undefined>(undefined);
+  readonly fluid = signal(true);
+  readonly pt = signal<DynamoPassThrough<DynamoSplitterPart> | undefined>(
+    undefined,
+  );
   readonly minSizeA = signal(0);
   readonly minSizeB = signal(0);
   readonly step = signal(5);
@@ -113,7 +132,11 @@ class SplitterInitialSizeHostComponent {}
   standalone: true,
   imports: [DynamoSplitter, DynamoSplitterPanel],
   template: `
-    <dg-splitter [stateKey]="stateKey()" [stateStorage]="stateStorage()">
+    <dg-splitter
+      [stateKey]="stateKey()"
+      [stateStorage]="stateStorage()"
+      [disabled]="disabled()"
+    >
       <dg-splitter-panel>
         <p>A</p>
       </dg-splitter-panel>
@@ -126,6 +149,7 @@ class SplitterInitialSizeHostComponent {}
 class SplitterStateKeyHostComponent {
   readonly stateKey = signal<string | undefined>('test-splitter');
   readonly stateStorage = signal<DynamoSplitterStateStorage>('session');
+  readonly disabled = signal(false);
 }
 
 describe('DynamoSplitter', () => {
@@ -263,6 +287,179 @@ describe('DynamoSplitter', () => {
       expect(
         Number(separator(container, 0).getAttribute('aria-valuenow')),
       ).toBeCloseTo(33.33, 1);
+    });
+
+    it('stops resizing from further pointermove once disabled flips true mid-drag, keeping the partial size already applied', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      mockContainerRect(container, 300, 0);
+      const divider = separator(container, 0);
+
+      fireEvent.pointerDown(divider, { clientX: 100 });
+      fireEvent.pointerMove(divider, { clientX: 130 });
+      fixture.detectChanges();
+      expect(
+        Number(separator(container, 0).getAttribute('aria-valuenow')),
+      ).toBeCloseTo(43.33, 1);
+
+      fixture.componentInstance.disabled.set(true);
+      fixture.detectChanges();
+      // A captured pointer keeps delivering pointermove even though the
+      // divider's own pointer-events:none now applies — this is exactly the
+      // scenario the disabled() guard inside onDividerPointerMove covers.
+      fireEvent.pointerMove(divider, { clientX: 250 });
+      fixture.detectChanges();
+
+      // Unchanged from the mid-drag value, not rolled back to the original
+      // 33.33 and not advanced to reflect the post-disable move.
+      expect(
+        Number(separator(container, 0).getAttribute('aria-valuenow')),
+      ).toBeCloseTo(43.33, 1);
+    });
+
+    it('ends the drag on pointercancel exactly like pointerup, and ignores any further pointermove', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      mockContainerRect(container, 300, 0);
+      const divider = separator(container, 0);
+
+      fireEvent.pointerDown(divider, { clientX: 100 });
+      fireEvent.pointerMove(divider, { clientX: 130 });
+      fireEvent.pointerCancel(divider);
+      fixture.detectChanges();
+      // pointercancel commits whatever was dragged so far, same as pointerup.
+      expect(fixture.componentInstance.resizeEndSizes()?.[0]).toBeCloseTo(
+        43.33,
+        1,
+      );
+
+      fireEvent.pointerMove(divider, { clientX: 200 });
+      fixture.detectChanges();
+
+      // The move after pointercancel has no effect — drag state was cleared.
+      expect(
+        Number(separator(container, 0).getAttribute('aria-valuenow')),
+      ).toBeCloseTo(43.33, 1);
+    });
+  });
+
+  describe('RTL', () => {
+    it('dragging toward the physical right shrinks (not grows) the first panel under RTL', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+        { providers: [rtlProvider] },
+      );
+      mockContainerRect(container, 300, 0);
+      const divider = separator(container, 0);
+
+      fireEvent.pointerDown(divider, { clientX: 100 });
+      fireEvent.pointerMove(divider, { clientX: 130 });
+      fixture.detectChanges();
+
+      // Mirror image of the LTR case (which grows to 43.33): physically
+      // dragging right now grows the panel to the physical left of the
+      // divider (the second panel), shrinking the first.
+      expect(
+        Number(separator(container, 0).getAttribute('aria-valuenow')),
+      ).toBeCloseTo(23.33, 1);
+    });
+
+    it('leaves vertical dragging unaffected by RTL', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+        { providers: [rtlProvider] },
+      );
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.detectChanges();
+      mockContainerRect(container, 0, 300);
+      const divider = separator(container, 0);
+
+      fireEvent.pointerDown(divider, { clientY: 100 });
+      fireEvent.pointerMove(divider, { clientY: 130 });
+      fixture.detectChanges();
+
+      expect(
+        Number(separator(container, 0).getAttribute('aria-valuenow')),
+      ).toBeCloseTo(43.33, 1);
+    });
+
+    it('ArrowRight shrinks (not grows) the first panel under RTL', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+        { providers: [rtlProvider] },
+      );
+      const divider = separator(container, 0);
+      divider.focus();
+
+      fireEvent.keyDown(divider, { key: 'ArrowRight' });
+      fixture.detectChanges();
+
+      // Mirror image of the LTR case (which grows to 38.33).
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        28.33,
+        1,
+      );
+    });
+
+    it('ArrowLeft grows (not shrinks) the first panel under RTL', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+        { providers: [rtlProvider] },
+      );
+      const divider = separator(container, 0);
+      divider.focus();
+
+      fireEvent.keyDown(divider, { key: 'ArrowLeft' });
+      fixture.detectChanges();
+
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        38.33,
+        1,
+      );
+    });
+
+    it('leaves vertical ArrowUp/ArrowDown unaffected by RTL', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+        { providers: [rtlProvider] },
+      );
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.detectChanges();
+      const divider = separator(container, 0);
+      divider.focus();
+
+      fireEvent.keyDown(divider, { key: 'ArrowDown' });
+      fixture.detectChanges();
+
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        38.33,
+        1,
+      );
+    });
+
+    it('Home/End snap to the physically-mirrored extremes under RTL', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+        { providers: [rtlProvider] },
+      );
+      const divider = separator(container, 0);
+      divider.focus();
+
+      // Mirror image of the LTR case: End now drives the first panel to its
+      // own minimum (0) instead of its maximum.
+      fireEvent.keyDown(divider, { key: 'End' });
+      fixture.detectChanges();
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBe(0);
+
+      // ...and Home now drives it to its maximum (66.67) instead.
+      fireEvent.keyDown(divider, { key: 'Home' });
+      fixture.detectChanges();
+      expect(Number(divider.getAttribute('aria-valuenow'))).toBeCloseTo(
+        66.67,
+        1,
+      );
     });
   });
 
@@ -500,6 +697,96 @@ describe('DynamoSplitter', () => {
       const { container } = renderDynamoComponent(SplitterTestHostComponent);
       await expectNoA11yViolations(container);
     });
+
+    it('forwards ariaDescribedby to every divider', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      fixture.componentInstance.ariaDescribedby.set('help-text');
+      fixture.detectChanges();
+
+      const dividers = within(container).getAllByRole('separator');
+      expect(dividers).toHaveLength(2);
+      for (const divider of dividers) {
+        expect(divider.getAttribute('aria-describedby')).toBe('help-text');
+      }
+    });
+
+    it('omits aria-describedby when unset', () => {
+      const { container } = renderDynamoComponent(SplitterTestHostComponent);
+
+      expect(separator(container, 0).hasAttribute('aria-describedby')).toBe(
+        false,
+      );
+    });
+  });
+
+  describe('pt passthrough', () => {
+    it('merges pt class onto root/panel/divider', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { class: 'pt-root' },
+        panel: { class: 'pt-panel' },
+        divider: { class: 'pt-divider' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container
+          .querySelector('[data-testid="DynamoSplitter"]')
+          ?.classList.contains('pt-root'),
+      ).toBe(true);
+      expect(container.querySelector('.pt-panel')).not.toBeNull();
+      expect(container.querySelector('.pt-divider')).not.toBeNull();
+    });
+
+    it('merges a non-class pt attribute onto root/panel/divider', () => {
+      // A custom marker attribute, not `data-testid` — the root already
+      // carries its own static `data-testid="DynamoSplitter"`, so reusing
+      // that key here would just test write-order against the template's
+      // own binding rather than the pt-merge mechanism itself.
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { 'data-pt-marker': 'root-el' },
+        panel: { 'data-pt-marker': 'panel-el' },
+        divider: { 'data-pt-marker': 'divider-el' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container.querySelectorAll('[data-pt-marker="root-el"]'),
+      ).toHaveLength(1);
+      expect(
+        container.querySelectorAll('[data-pt-marker="panel-el"]'),
+      ).toHaveLength(3);
+      expect(
+        container.querySelectorAll('[data-pt-marker="divider-el"]'),
+      ).toHaveLength(2);
+    });
+  });
+
+  describe('fluid', () => {
+    it('defaults to full width', () => {
+      const { container } = renderDynamoComponent(SplitterTestHostComponent);
+
+      const root = container.querySelector('[data-testid="DynamoSplitter"]');
+      expect(root?.classList.contains('w-full')).toBe(true);
+    });
+
+    it('removes w-full when fluid is false', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterTestHostComponent,
+      );
+      fixture.componentInstance.fluid.set(false);
+      fixture.detectChanges();
+
+      const root = container.querySelector('[data-testid="DynamoSplitter"]');
+      expect(root?.classList.contains('w-full')).toBe(false);
+    });
   });
 
   describe('edge cases', () => {
@@ -538,6 +825,24 @@ describe('DynamoSplitter', () => {
 
       expect(localStorage.length).toBe(0);
       expect(sessionStorage.length).toBe(0);
+    });
+
+    it('does not emit resizeEnd or persist sizes when disabled flips true mid-drag, even on a later pointerup', () => {
+      const { fixture, container } = renderDynamoComponent(
+        SplitterStateKeyHostComponent,
+      );
+      mockContainerRect(container, 300, 0);
+      const divider = within(container).getByRole('separator');
+
+      fireEvent.pointerDown(divider, { clientX: 100 });
+      fireEvent.pointerMove(divider, { clientX: 130 });
+      fixture.detectChanges();
+      fixture.componentInstance.disabled.set(true);
+      fixture.detectChanges();
+      fireEvent.pointerUp(divider);
+      fixture.detectChanges();
+
+      expect(sessionStorage.getItem('test-splitter')).toBeNull();
     });
 
     it('restores sizes from storage on mount instead of the default even split', () => {

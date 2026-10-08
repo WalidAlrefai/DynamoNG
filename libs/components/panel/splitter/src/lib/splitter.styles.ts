@@ -7,14 +7,18 @@ import { focusRingInsetClass } from '@dynamong/utils/styles';
 // splitter.ts), continuous computed values with no discrete class variant
 // that could express them — same "deliberate inline-style exception"
 // pattern as Progress/Tree/Skeleton/Carousel/Slider/ColorPicker.
-export const splitterRootStyles = cva('flex w-full', {
+export const splitterRootStyles = cva('flex', {
   variants: {
     orientation: {
       horizontal: 'flex-row',
       vertical: 'flex-col',
     },
+    fluid: {
+      true: 'w-full',
+      false: '',
+    },
   },
-  defaultVariants: { orientation: 'horizontal' },
+  defaultVariants: { orientation: 'horizontal', fluid: true },
 });
 
 export const splitterPanelStyles = 'min-w-0 min-h-0 overflow-auto';
