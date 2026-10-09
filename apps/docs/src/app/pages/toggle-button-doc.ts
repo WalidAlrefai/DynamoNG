@@ -11,6 +11,7 @@ import {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'severity', title: 'Severity' },
+  { id: 'read-only', title: 'Read-Only' },
   { id: 'reactive-forms', title: 'Reactive Forms' },
 ];
 
@@ -19,7 +20,10 @@ const API: ApiTableRow[] = [
   { name: 'severity', type: 'DynamoSeverity', default: "'primary'" },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  { name: 'readOnly', type: 'boolean', default: 'false' },
   { name: 'ariaLabel', type: 'string', default: '—' },
+  { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined' },
+  { name: 'fluid', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -72,6 +76,22 @@ const API: ApiTableRow[] = [
       </docs-example>
 
       <docs-example
+        exampleId="read-only"
+        title="Read-Only"
+        description="readOnly keeps the button visible/focusable, but blocks toggling — unlike disabled, it doesn't dim it or remove it from the tab order."
+      >
+        <div preview>
+          <dg-toggle-button [(pressed)]="readOnlyPressed" [readOnly]="true">
+            Pinned
+          </dg-toggle-button>
+        </div>
+        <div code>
+          &lt;dg-toggle-button [(pressed)]="pressed"
+          [readOnly]="true"&gt;Pinned&lt;/dg-toggle-button&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="reactive-forms"
         title="Reactive Forms"
         description="Implements ControlValueAccessor, so it plugs directly into formControl/ngModel."
@@ -94,6 +114,7 @@ export class ToggleButtonDocPage {
   protected readonly bold = signal(false);
   protected readonly italic = signal(false);
   protected readonly muted = signal(false);
+  protected readonly readOnlyPressed = signal(true);
   protected readonly subscribed = new FormControl(false, {
     nonNullable: true,
   });

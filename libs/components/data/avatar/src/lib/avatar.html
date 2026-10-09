@@ -1,22 +1,33 @@
 <span
   [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
   role="img"
   [attr.aria-label]="altText()"
   [attr.aria-labelledby]="ariaLabelledBy() ?? null"
+  [attr.aria-describedby]="ariaDescribedby() ?? null"
 >
   @if (showImage()) {
-  <!-- Static, variant-free — this is the only element in the component that
-    never varies, so it doesn't need a cva() entry in avatar.styles.ts. -->
   <img
     [src]="src()"
     [alt]="altText()"
     (error)="onImageError($event)"
-    class="h-full w-full object-cover"
+    [class]="imageClasses()"
+    [dgPt]="ptFor('image')"
   />
   } @else if (displayLabel()) {
-  <span [attr.aria-hidden]="true">{{ displayLabel() }}</span>
+  <span
+    [class]="labelOrInitialsPt().class"
+    [dgPt]="labelOrInitialsPt()"
+    [attr.aria-hidden]="true"
+  >
+    {{ displayLabel() }}
+  </span>
   } @else {
-  <span [attr.aria-hidden]="true">
+  <span
+    [class]="iconClasses()"
+    [dgPt]="ptFor('icon')"
+    [attr.aria-hidden]="true"
+  >
     <ng-content select="[icon]">
       <svg viewBox="0 0 24 24" class="h-3/5 w-3/5 fill-current">
         <path

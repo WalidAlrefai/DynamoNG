@@ -52,6 +52,8 @@ export class DynamoButton extends DynamoBaseComponent<DynamoButtonPart> {
    * inside it, so it must be forwarded explicitly.
    */
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded to the native `<button>` as `aria-describedby`. Same forwarding rationale as `ariaLabel` — needed by a consumer (e.g. Toggle Button) that wraps a single `dg-button` with no native element of its own to bind an attribute onto directly. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   /** Forwarded to the native `<button>` as `aria-current` — e.g. `'page'` for a pagination control's active page button. Same forwarding rationale as `ariaLabel`. */
   readonly ariaCurrent = input<
     | 'page'

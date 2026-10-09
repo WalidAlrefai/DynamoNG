@@ -33,6 +33,7 @@ protected onSave(): void { ... }
 | `disabled`         | `boolean`                                                                              | `false`     |                                                                                                                                                                                                                                                                                      |
 | `loading`          | `boolean`                                                                              | `false`     | Renders an inline `<dg-spinner size="sm">` before the projected content and forces the button disabled (`isDisabled = disabled() \|\| loading()`).                                                                                                                                   |
 | `ariaLabel`        | `string \| undefined`                                                                  | `undefined` | Forwarded to the native `<button>` as `aria-label`. Needed for icon-only usage.                                                                                                                                                                                                      |
+| `ariaDescribedby`  | `string \| undefined`                                                                  | `undefined` | Forwarded as `aria-describedby` — needed by a consumer that wraps a single `dg-button` with no native element of its own (e.g. Toggle Button).                                                                                                                                       |
 | `ariaCurrent`      | `'page' \| 'step' \| 'location' \| 'date' \| 'time' \| 'true' \| 'false' \| undefined` | `undefined` | Forwarded as `aria-current` — e.g. `'page'` for a pagination control's active page button.                                                                                                                                                                                           |
 | `role`             | `string \| undefined`                                                                  | `undefined` | Forwarded as `role`, overriding the implicit button role — e.g. `'radio'` for a button acting as one segment of a single-select group.                                                                                                                                               |
 | `ariaChecked`      | `boolean \| undefined`                                                                 | `undefined` | Forwarded as `aria-checked` — for a button acting as a radio-group segment.                                                                                                                                                                                                          |
@@ -57,7 +58,7 @@ None beyond the native `(click)` event — Button doesn't wrap it in a custom ou
 
 - Renders a native `<button>`, inheriting its keyboard and click semantics for free (Space/Enter activation, correct focus behavior).
 - `aria-busy` is set while `loading` is true.
-- `ariaCurrent`/`role`/`ariaChecked`/`ariaPressed`/`tabIndexOverride` are opt-in forwards used by other DynamoNG components (e.g. Select Button) to compose Button into ARIA radio-group/toggle-group patterns.
+- `ariaDescribedby`/`ariaCurrent`/`role`/`ariaChecked`/`ariaPressed`/`tabIndexOverride` are opt-in forwards used by other DynamoNG components (e.g. Select Button, Toggle Button) to compose Button into ARIA radio-group/toggle-group patterns.
 
 ## Badge
 
@@ -112,7 +113,7 @@ DOM the way `<dg-button>`'s `[icon]`/`iconPos` slot system does:
 Not supported (arrange these yourself — you already own the element):
 
 - `icon`/`iconPos` — just write your own markup directly inside the button, in whatever order you want.
-- `ariaLabel`/`ariaCurrent`/`role`/`ariaChecked`/`ariaPressed`/`tabIndexOverride`/`pt` — set these attributes on the button directly; there's no wrapper for them to be forwarded through.
+- `ariaLabel`/`ariaDescribedby`/`ariaCurrent`/`role`/`ariaChecked`/`ariaPressed`/`tabIndexOverride`/`pt` — set these attributes on the button directly; there's no wrapper for them to be forwarded through.
 
 ## Passthrough (`pt`)
 

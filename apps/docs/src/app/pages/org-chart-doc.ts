@@ -15,6 +15,7 @@ interface Person {
 const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'disabled', title: 'Disabled Node' },
+  { id: 'non-collapsible', title: 'Non-collapsible' },
 ];
 
 const API: ApiTableRow[] = [
@@ -34,6 +35,8 @@ const API: ApiTableRow[] = [
   { name: 'selection', type: 'string[] (model)', default: '[]' },
   { name: 'nodeSelect', type: 'output<DynamoOrgChartNode>', default: '—' },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
+  { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined' },
+  { name: 'fluid', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -110,6 +113,35 @@ const API: ApiTableRow[] = [
           [selectable]="true"&gt; ... &lt;/dg-org-chart&gt;
           <br />
           // node: &#123; id: 'cto', ..., disabled: true &#125;
+        </div>
+      </docs-example>
+
+      <docs-example
+        exampleId="non-collapsible"
+        title="Non-collapsible"
+        description="collapsible: false hides the toggler on every node — nodes stay fully expanded, but remain selectable and keyboard-focusable; Arrow-key expand/collapse is correctly disabled right along with the (hidden) mouse toggler, not left as a keyboard-only bypass."
+      >
+        <div preview class="overflow-x-auto py-4">
+          <dg-org-chart
+            [value]="value()"
+            [collapsible]="false"
+            [selectable]="true"
+            [(selection)]="nonCollapsibleSelection"
+            ariaLabel="Acme org chart, non-collapsible"
+          >
+            <ng-template let-node>
+              <span class="font-medium text-text-primary">
+                {{ node.value.name }}
+              </span>
+              <span class="text-xs text-text-muted">
+                {{ node.value.title }}
+              </span>
+            </ng-template>
+          </dg-org-chart>
+        </div>
+        <div code>
+          &lt;dg-org-chart [value]="nodes" [collapsible]="false"
+          [selectable]="true"&gt; ... &lt;/dg-org-chart&gt;
         </div>
       </docs-example>
 
@@ -198,6 +230,7 @@ export class OrgChartDocPage {
     },
   ];
   readonly disabledSelection = signal<string[]>([]);
+  readonly nonCollapsibleSelection = signal<string[]>([]);
 
   selected(): Person | null {
     const id = this.selection()[0];

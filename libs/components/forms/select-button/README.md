@@ -21,15 +21,18 @@ protected onItemSelect(option: DynamoSelectOption<string>): void { ... }
 
 ## Inputs
 
-| Input        | Type                                      | Default     | Description                                                                                                                                                     |
-| ------------ | ----------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `options`    | `DynamoSelectOption<TValue>[]` (required) | —           | The segment list.                                                                                                                                               |
-| `value`      | `DynamoSelectButtonValue<TValue>` (model) | `null`      | Two-way bindable; also driven by Angular forms via `writeValue`. Scalar (`TValue \| null`) in single-select mode, `TValue[]` once `multiple` is true.           |
-| `multiple`   | `boolean`                                 | `false`     | Switches from radio-group semantics (exactly one selected, clicking the active segment is a no-op) to a multi-toggle group.                                     |
-| `size`       | `DynamoSelectButtonSize`                  | `'md'`      |                                                                                                                                                                 |
-| `disabled`   | `boolean` (model)                         | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`. Disables every segment.                                                                  |
-| `ariaLabel`  | `string \| undefined`                     | `undefined` |                                                                                                                                                                 |
-| `allowEmpty` | `boolean`                                 | `false`     | In single-select mode, allows clicking the already-active segment to deselect it back to `null`. Has no effect in `multiple` mode, where toggling always works. |
+| Input             | Type                                      | Default     | Description                                                                                                                                                                                      |
+| ----------------- | ----------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `options`         | `DynamoSelectOption<TValue>[]` (required) | —           | The segment list.                                                                                                                                                                                |
+| `value`           | `DynamoSelectButtonValue<TValue>` (model) | `null`      | Two-way bindable; also driven by Angular forms via `writeValue`. Scalar (`TValue \| null`) in single-select mode, `TValue[]` once `multiple` is true.                                            |
+| `multiple`        | `boolean`                                 | `false`     | Switches from radio-group semantics (exactly one selected, clicking the active segment is a no-op) to a multi-toggle group.                                                                      |
+| `size`            | `DynamoSelectButtonSize`                  | `'md'`      |                                                                                                                                                                                                  |
+| `disabled`        | `boolean` (model)                         | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`. Disables every segment.                                                                                                   |
+| `readOnly`        | `boolean`                                 | `false`     | Segments stay visible/focusable, but activating one (click, Enter/Space, or single-select arrow-key movement) is blocked. Unlike `disabled`, doesn't dim them or remove them from the tab order. |
+| `ariaLabel`       | `string \| undefined`                     | `undefined` |                                                                                                                                                                                                  |
+| `allowEmpty`      | `boolean`                                 | `false`     | In single-select mode, allows clicking the already-active segment to deselect it back to `null`. Has no effect in `multiple` mode, where toggling always works.                                  |
+| `ariaDescribedby` | `string \| undefined`                     | `undefined` | Forwarded as `aria-describedby` on the root.                                                                                                                                                     |
+| `fluid`           | `boolean`                                 | `false`     | Stretches the root to the full available width, sharing it evenly across segments.                                                                                                               |
 
 ## Outputs
 
@@ -44,6 +47,7 @@ protected onItemSelect(option: DynamoSelectOption<string>): void { ... }
 - Root is `role="radiogroup"` in single-select mode or `role="group"` when `multiple` is true; segments are `role="radio"` with `aria-checked`, or plain buttons with `aria-pressed`, respectively.
 - Roving tabindex: one segment is tabbable at a time, seeded once to the selected segment (or the first, if none) and then owned by the user's own navigation.
 - Keyboard: `ArrowRight`/`ArrowDown` and `ArrowLeft`/`ArrowUp` move focus (wrapping past enabled segments), `Home`/`End` jump to the first/last enabled segment, `Enter`/`Space` activates. In single-select mode, arrow-key movement also selects the newly focused segment (matching native radio-group behavior); in `multiple` mode it only moves focus.
+- `readOnly` blocks every activation path (click, Enter/Space, and single-select arrow-key auto-select) without touching focus movement — arrow keys still move the roving tabindex. `aria-readonly` is rendered on the root only in single-select mode: `radiogroup` is one of the ARIA roles that supports `aria-readonly`, but `group` (the `multiple` mode root) isn't, so it's intentionally omitted there rather than stamped on a non-conforming role.
 
 ## Tier / dependencies
 
