@@ -110,6 +110,51 @@ describe('DynamoAvatar', () => {
       expect(container.querySelector('img')).toBeNull();
       expect(container.querySelector('svg')).not.toBeNull();
     });
+
+    it('recovers and shows the image again once src changes to a new URL after a failure', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAvatar, {
+        inputs: { src: 'https://example.com/broken.png', name: 'Ada Lovelace' },
+      });
+
+      (container.querySelector('img') as HTMLImageElement).dispatchEvent(
+        new Event('error'),
+      );
+      fixture.detectChanges();
+      expect(container.querySelector('img')).toBeNull();
+
+      fixture.componentRef.setInput('src', 'https://example.com/working.png');
+      fixture.detectChanges();
+
+      expect(container.querySelector('img')).not.toBeNull();
+      expect(container.querySelector('span[role="img"] > span')).toBeNull(); // the initials fallback span is gone
+    });
+
+    it('can fail again independently on the new URL after recovering', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoAvatar, {
+        inputs: {
+          src: 'https://example.com/broken-1.png',
+          name: 'Ada Lovelace',
+        },
+      });
+      (container.querySelector('img') as HTMLImageElement).dispatchEvent(
+        new Event('error'),
+      );
+      fixture.detectChanges();
+
+      fixture.componentRef.setInput('src', 'https://example.com/broken-2.png');
+      fixture.detectChanges();
+      expect(container.querySelector('img')).not.toBeNull();
+
+      (container.querySelector('img') as HTMLImageElement).dispatchEvent(
+        new Event('error'),
+      );
+      fixture.detectChanges();
+
+      expect(container.querySelector('img')).toBeNull();
+      expect(
+        container.querySelector('span[role="img"]')?.textContent?.trim(),
+      ).toBe('AL');
+    });
   });
 
   describe('template behavior', () => {
@@ -277,6 +322,99 @@ describe('DynamoAvatar', () => {
       });
 
       expect(container.querySelector('svg')).not.toBeNull();
+    });
+  });
+
+  describe('pt / ariaDescribedby', () => {
+    it('merges pt class onto root', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: { pt: { root: { class: 'pt-root' } } },
+      });
+
+      expect(
+        container.querySelector('[role="img"]')?.classList.contains('pt-root'),
+      ).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto root', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: { pt: { root: { 'data-testid': 'root-el' } } },
+      });
+
+      expect(container.querySelector('[data-testid="root-el"]')).not.toBeNull();
+    });
+
+    it('merges pt class onto image', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: {
+          src: 'https://example.com/avatar.png',
+          pt: { image: { class: 'pt-image' } },
+        },
+      });
+
+      expect(
+        container.querySelector('img')?.classList.contains('pt-image'),
+      ).toBe(true);
+    });
+
+    it('merges pt class onto icon', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: { pt: { icon: { class: 'pt-icon' } } },
+      });
+
+      expect(
+        container
+          .querySelector('svg')
+          ?.parentElement?.classList.contains('pt-icon'),
+      ).toBe(true);
+    });
+
+    it('applies the label part when label is set', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: { label: '+3', pt: { label: { class: 'pt-label' } } },
+      });
+      expect(
+        container
+          .querySelector('[role="img"] > span')
+          ?.classList.contains('pt-label'),
+      ).toBe(true);
+    });
+
+    it('applies the initials part when the label is derived from name instead', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: {
+          name: 'Ada Lovelace',
+          pt: { initials: { class: 'pt-initials' } },
+        },
+      });
+      expect(
+        container
+          .querySelector('[role="img"] > span')
+          ?.classList.contains('pt-initials'),
+      ).toBe(true);
+    });
+
+    it('omits aria-describedby by default, forwards it to the root when set', () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: { ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        container
+          .querySelector('[role="img"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('has no axe violations with pt/ariaDescribedby set', async () => {
+      const { container } = renderDynamoComponent(DynamoAvatar, {
+        inputs: {
+          name: 'Ada Lovelace',
+          ariaDescribedby: 'hint-id',
+          pt: { root: { class: 'pt-root' } },
+        },
+      });
+      await expectNoA11yViolations(container);
     });
   });
 });
