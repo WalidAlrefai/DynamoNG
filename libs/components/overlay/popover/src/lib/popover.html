@@ -2,6 +2,7 @@
   #triggerEl
   tabindex="-1"
   [class]="triggerClasses()"
+  [dgPt]="triggerPt()"
   (click)="toggle()"
   (keydown)="onTriggerKeydown($event)"
 >
@@ -11,10 +12,14 @@
 <ng-template #panelTemplate>
   <div
     #panel
+    role="dialog"
+    [attr.aria-modal]="true"
+    [id]="panelId"
     tabindex="-1"
     data-testid="popover-panel"
-    [attr.aria-label]="ariaLabel() ?? null"
-    [class]="panelClasses"
+    [attr.aria-label]="ariaLabel() ?? 'Popover'"
+    [class]="panelClasses()"
+    [dgPt]="ptFor('panel')"
     (keydown.escape)="onEscape()"
   >
     <ng-container [ngTemplateOutlet]="content().contentTemplate()" />

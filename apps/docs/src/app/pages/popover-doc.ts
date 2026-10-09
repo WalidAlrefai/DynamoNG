@@ -26,6 +26,7 @@ const API: ApiTableRow[] = [
   { name: 'closeOnEscape', type: 'boolean', default: 'true' },
   { name: 'focusOnShow', type: 'boolean', default: 'true' },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
+  { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined' },
 ];
 
 @Component({

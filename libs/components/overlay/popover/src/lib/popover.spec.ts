@@ -1,6 +1,7 @@
 import { Component, model, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import type { DynamoPassThrough } from '@dynamong/core/api';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -11,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { DynamoPopoverContent } from './popover-content';
 import { DynamoPopover } from './popover';
 import { DynamoPopoverHarness } from './popover.harness';
+import type { DynamoPopoverPart } from './popover.types';
 
 // The CDK overlay portals the panel into a `.cdk-overlay-container` appended
 // near document.body — outside the fixture's own `container` element — same
@@ -59,6 +61,42 @@ class PopoverTestHostComponent {
   readonly closeOnBackdropClick = signal(true);
   readonly closeOnEscape = signal(true);
   readonly focusOnShow = signal(true);
+}
+
+@Component({
+  selector: 'dg-popover-aria-describedby-host',
+  standalone: true,
+  imports: [DynamoPopover, DynamoPopoverContent],
+  template: `
+    <dg-popover [ariaDescribedby]="ariaDescribedby()">
+      <button type="button">Open filters</button>
+      <dg-popover-content>
+        <p>Body</p>
+      </dg-popover-content>
+    </dg-popover>
+  `,
+})
+class PopoverAriaDescribedbyHostComponent {
+  readonly ariaDescribedby = signal<string | undefined>(undefined);
+}
+
+@Component({
+  selector: 'dg-popover-pt-host',
+  standalone: true,
+  imports: [DynamoPopover, DynamoPopoverContent],
+  template: `
+    <dg-popover [pt]="pt()">
+      <button type="button">Open filters</button>
+      <dg-popover-content>
+        <p>Body</p>
+      </dg-popover-content>
+    </dg-popover>
+  `,
+})
+class PopoverPtHostComponent {
+  readonly pt = signal<DynamoPassThrough<DynamoPopoverPart> | undefined>(
+    undefined,
+  );
 }
 
 describe('DynamoPopover', () => {
@@ -271,7 +309,7 @@ describe('DynamoPopover', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('does not set a role on the panel', async () => {
+    it('sets role="dialog" and aria-modal="true" on the panel', async () => {
       const { container, fixture } = renderDynamoComponent(
         PopoverTestHostComponent,
       );
@@ -281,8 +319,64 @@ describe('DynamoPopover', () => {
       await userEvent.click(trigger);
       await settle(fixture);
 
-      expect(getPanel()?.hasAttribute('role')).toBe(false);
-      expect(getPanel()?.hasAttribute('aria-modal')).toBe(false);
+      expect(getPanel()?.getAttribute('role')).toBe('dialog');
+      expect(getPanel()?.getAttribute('aria-modal')).toBe('true');
+    });
+
+    it('defaults the panel aria-label to "Popover" when ariaLabel is unset', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        PopoverTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Open filters',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getPanel()?.getAttribute('aria-label')).toBe('Popover');
+    });
+
+    it('sets aria-haspopup/aria-expanded/aria-controls on the projected trigger button, not the wrapper span', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        PopoverTestHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Open filters',
+      });
+      const wrapper = trigger.parentElement as HTMLElement;
+
+      expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(trigger.getAttribute('aria-controls')).toBeNull();
+      expect(wrapper.hasAttribute('aria-haspopup')).toBe(false);
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      const panelId = getPanel()?.id;
+      expect(panelId).toBeTruthy();
+      expect(trigger.getAttribute('aria-controls')).toBe(panelId);
+
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(trigger.getAttribute('aria-controls')).toBeNull();
+    });
+
+    it('forwards ariaDescribedby onto the same resolved trigger target, unconditionally', () => {
+      const { container, fixture } = renderDynamoComponent(
+        PopoverAriaDescribedbyHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Open filters',
+      });
+      expect(trigger.getAttribute('aria-describedby')).toBeNull();
+
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.detectChanges();
+      expect(trigger.getAttribute('aria-describedby')).toBe('hint-id');
     });
   });
 
@@ -374,6 +468,55 @@ describe('DynamoPopover', () => {
       fixture.destroy();
 
       expect(getPanel()).toBeNull();
+    });
+  });
+
+  describe('pt', () => {
+    it('merges pt class onto root/trigger (merged onto the wrapper)', () => {
+      const { fixture, container } = renderDynamoComponent(
+        PopoverPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { class: 'pt-root' },
+        trigger: { class: 'pt-trigger' },
+      });
+      fixture.detectChanges();
+
+      const trigger = within(container).getByRole('button', {
+        name: 'Open filters',
+      });
+      const wrapper = trigger.parentElement as HTMLElement;
+      expect(wrapper.classList.contains('pt-root')).toBe(true);
+      expect(wrapper.classList.contains('pt-trigger')).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto the wrapper', () => {
+      const { fixture, container } = renderDynamoComponent(
+        PopoverPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        trigger: { 'data-testid': 'trigger-el' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container.querySelector('[data-testid="trigger-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('merges pt class onto the panel once open', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        PopoverPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({ panel: { class: 'pt-panel' } });
+      fixture.detectChanges();
+      const trigger = within(container).getByRole('button', {
+        name: 'Open filters',
+      });
+      await userEvent.click(trigger);
+      await settle(fixture);
+
+      expect(getPanel()?.classList.contains('pt-panel')).toBe(true);
     });
   });
 });

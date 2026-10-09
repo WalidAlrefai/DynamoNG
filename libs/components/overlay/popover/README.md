@@ -24,7 +24,8 @@ protected readonly isOpen = signal(false);
 | Input                  | Type                    | Default          | Description                                                                                                                                                                               |
 | ---------------------- | ----------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `position`             | `DynamoPopoverPosition` | `'bottom-start'` | Preferred corner; the other three are tried as CDK collision fallbacks.                                                                                                                   |
-| `ariaLabel`            | `string \| undefined`   | `undefined`      | Labels the panel.                                                                                                                                                                         |
+| `ariaLabel`            | `string \| undefined`   | `undefined`      | Labels the panel; falls back to `'Popover'` when omitted.                                                                                                                                 |
+| `ariaDescribedby`      | `string \| undefined`   | `undefined`      | Forwarded as `aria-describedby` onto the same resolved trigger target as the disclosure attributes below — see Accessibility.                                                             |
 | `open`                 | `boolean` (model)       | `false`          | Two-way bindable panel open state.                                                                                                                                                        |
 | `closeOnBackdropClick` | `boolean`               | `true`           | Whether clicking outside the panel closes it.                                                                                                                                             |
 | `closeOnEscape`        | `boolean`               | `true`           | Whether `Escape` closes the panel.                                                                                                                                                        |
@@ -40,9 +41,23 @@ The projected `<dg-popover-content>` renders no DOM of its own — it only captu
 
 ## Accessibility
 
+- The panel is `role="dialog"` with `aria-modal="true"` (the backdrop is always present) and a stable
+  `id`; it's labeled by `ariaLabel`, falling back to `'Popover'` when unset.
+- `aria-haspopup="dialog"`, `aria-expanded`, and `aria-controls` (pointing at the panel's `id`, only while
+  open) are applied to the **first focusable descendant** of the trigger wrapper — a button, a link — not
+  the wrapper itself, so a screen-reader user who Tabs to that element actually hears the disclosure
+  state. Falls back to the wrapper when the projected content has no focusable descendant at all.
+  `ariaDescribedby` (if set) applies to the same resolved target, unconditionally.
 - The panel is focus-trapped (`ConfigurableFocusTrap`) while open, receives initial focus, and returns focus to whatever was previously focused on close.
 - `Escape` closes the panel and refocuses the trigger when `closeOnEscape` is `true` (default); when `closeOnBackdropClick` is `true`, clicking outside does the same without refocusing.
 - The trigger wrapper responds to `Enter`/`Space` when it itself is the focused/clicked target — keyboard operability is otherwise expected to come from the projected trigger content (e.g. a `<dg-button>`).
+
+## Design notes
+
+**`pt` parts**: `root` and `trigger` both merge onto the single wrapper `<span>` (no separate element
+exists to split them — same shape as `@dynamong/menu`'s own trigger), plus `panel`. No `fluid` input —
+the wrapper wraps arbitrary projected content (a button, a card, plain text) with no intrinsic width
+semantics of its own, the same considered omission as `@dynamong/context-menu`'s identical root shape.
 
 ## Tier / dependencies
 
