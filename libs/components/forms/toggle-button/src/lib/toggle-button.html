@@ -2,11 +2,14 @@
   type="button"
   [ariaPressed]="pressed()"
   [ariaLabel]="ariaLabel() ?? undefined"
+  [ariaDescribedby]="ariaDescribedby()"
   [variant]="pressed() ? 'solid' : 'outline'"
   [severity]="pressed() ? severity() : 'secondary'"
   [size]="size()"
   [disabled]="disabled()"
+  [fullWidth]="fluid()"
   [styleClass]="innerStyleClass()"
+  [dgPt]="ptFor('root')"
   (click)="togglePressed()"
 >
   <ng-content />

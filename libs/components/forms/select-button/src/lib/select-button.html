@@ -1,25 +1,29 @@
 <div
   [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
   [attr.role]="multiple() ? 'group' : 'radiogroup'"
   [attr.aria-label]="ariaLabel() ?? null"
+  [attr.aria-describedby]="ariaDescribedby() ?? null"
+  [attr.aria-readonly]="!multiple() && readOnly() ? 'true' : null"
 >
   @for (option of options(); track option.value; let i = $index) {
-    <dg-button
-      #segment
-      type="button"
-      [role]="multiple() ? undefined : 'radio'"
-      [ariaChecked]="multiple() ? undefined : isSelected(option.value)"
-      [ariaPressed]="multiple() ? isSelected(option.value) : undefined"
-      [tabIndexOverride]="tabIndexFor(i)"
-      [variant]="isSelected(option.value) ? 'solid' : 'outline'"
-      [severity]="isSelected(option.value) ? 'primary' : 'secondary'"
-      [size]="size()"
-      [disabled]="isDisabled(option)"
-      [styleClass]="segmentClasses(i)"
-      (click)="activate(option)"
-      (keydown)="onSegmentKeydown($event, i)"
-    >
-      {{ option.label }}
-    </dg-button>
+  <dg-button
+    #segment
+    type="button"
+    [role]="multiple() ? undefined : 'radio'"
+    [ariaChecked]="multiple() ? undefined : isSelected(option.value)"
+    [ariaPressed]="multiple() ? isSelected(option.value) : undefined"
+    [tabIndexOverride]="tabIndexFor(i)"
+    [variant]="isSelected(option.value) ? 'solid' : 'outline'"
+    [severity]="isSelected(option.value) ? 'primary' : 'secondary'"
+    [size]="size()"
+    [disabled]="isDisabled(option)"
+    [styleClass]="segmentClasses(i)"
+    [dgPt]="ptFor('segment')"
+    (click)="activate(option)"
+    (keydown)="onSegmentKeydown($event, i)"
+  >
+    {{ option.label }}
+  </dg-button>
   }
 </div>

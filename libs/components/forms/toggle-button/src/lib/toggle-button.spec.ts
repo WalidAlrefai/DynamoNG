@@ -97,6 +97,20 @@ describe('DynamoToggleButton', () => {
       expect(componentInstance.pressed()).toBe(false);
     });
 
+    it('does not toggle when readOnly, without disabling the native button', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoToggleButton,
+        { inputs: { readOnly: true } },
+      );
+      const button = within(container).getByRole('button') as HTMLButtonElement;
+
+      button.click();
+      fixture.detectChanges();
+
+      expect(componentInstance.pressed()).toBe(false);
+      expect(button.disabled).toBe(false);
+    });
+
     it('supports interaction through the DynamoToggleButtonHarness', async () => {
       const { fixture } = renderDynamoComponent(DynamoToggleButton);
       const harness = await TestbedHarnessEnvironment.harnessForFixture(
@@ -234,6 +248,54 @@ describe('DynamoToggleButton', () => {
       expect(
         (within(container).getByRole('button') as HTMLButtonElement).disabled,
       ).toBe(true);
+    });
+  });
+
+  describe('pt / ariaDescribedby / fluid', () => {
+    it('merges pt class onto root', () => {
+      const { container } = renderDynamoComponent(DynamoToggleButton, {
+        inputs: { pt: { root: { class: 'pt-root' } } },
+      });
+
+      expect(
+        within(container).getByRole('button').classList.contains('pt-root'),
+      ).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto root', () => {
+      const { container } = renderDynamoComponent(DynamoToggleButton, {
+        inputs: { pt: { root: { 'data-testid': 'root-el' } } },
+      });
+
+      expect(container.querySelector('[data-testid="root-el"]')).not.toBeNull();
+    });
+
+    it('omits aria-describedby by default, forwards it to the native button when set', () => {
+      const { container } = renderDynamoComponent(DynamoToggleButton, {
+        inputs: { ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        within(container).getByRole('button').getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('stretches the button to full width when fluid is set', () => {
+      const { container } = renderDynamoComponent(DynamoToggleButton, {
+        inputs: { fluid: true },
+      });
+
+      expect(
+        within(container).getByRole('button').classList.contains('w-full'),
+      ).toBe(true);
+    });
+
+    it('does not stretch by default', () => {
+      const { container } = renderDynamoComponent(DynamoToggleButton);
+
+      expect(
+        within(container).getByRole('button').classList.contains('w-full'),
+      ).toBe(false);
     });
   });
 

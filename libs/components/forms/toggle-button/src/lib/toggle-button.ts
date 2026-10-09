@@ -9,7 +9,10 @@ import {
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoButton } from '@dynamong/button';
 import type { DynamoSeverity } from '@dynamong/core/api';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { toggleButtonBorderStyles } from './toggle-button.styles';
 import type {
@@ -21,7 +24,7 @@ import type {
   selector: 'dg-toggle-button',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoButton],
+  imports: [DynamoButton, DynamoPassThroughDirective],
   templateUrl: './toggle-button.html',
   providers: [
     {
@@ -39,11 +42,19 @@ export class DynamoToggleButton
   readonly pressed = model(false);
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: stays visible/focusable, but toggling is
+   *  blocked. Unlike `disabled`, doesn't dim it or remove it from the tab
+   *  order. */
+  readonly readOnly = input(false);
   readonly size = input<DynamoToggleButtonSize>('md');
   /** Severity applied while pressed (solid fill). Unpressed always renders neutral, regardless of this input. */
   readonly severity = input<DynamoSeverity>('primary');
   /** Accessible name — required when there's no visible text content (e.g. an icon-only toggle). */
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the underlying native button. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Forwarded to the underlying `dg-button`'s own `fullWidth`. */
+  readonly fluid = input(false);
 
   private onChangeFn: (value: boolean) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
@@ -54,12 +65,16 @@ export class DynamoToggleButton
 
   protected readonly innerStyleClass = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(toggleButtonBorderStyles(this.pressed()), this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          toggleButtonBorderStyles(this.pressed()),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
 
   protected togglePressed(): void {
-    if (this.disabled()) return;
+    if (this.disabled() || this.readOnly()) return;
     this.pressed.update((p) => !p);
     this.onChangeFn(this.pressed());
     this.onTouchedFn();

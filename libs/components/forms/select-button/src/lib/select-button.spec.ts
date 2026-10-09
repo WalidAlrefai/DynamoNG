@@ -315,6 +315,118 @@ describe('DynamoSelectButton', () => {
     });
   });
 
+  describe('readOnly', () => {
+    it('blocks click-activation without disabling the native button', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoSelectButton,
+        { inputs: { options: OPTIONS, value: 'list', readOnly: true } },
+      );
+      const grid = within(container).getByRole('radio', {
+        name: 'Grid',
+      }) as HTMLButtonElement;
+
+      grid.click();
+      fixture.detectChanges();
+
+      expect(componentInstance.value()).toBe('list');
+      expect(grid.disabled).toBe(false);
+    });
+
+    it('does not emit itemSelect while readOnly', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent<
+        DynamoSelectButton<string>
+      >(DynamoSelectButton, {
+        inputs: { options: OPTIONS, readOnly: true },
+      });
+      const emitted: (typeof OPTIONS)[number][] = [];
+      componentInstance.itemSelect.subscribe((option) => emitted.push(option));
+
+      within(container).getByRole('radio', { name: 'Grid' }).click();
+      fixture.detectChanges();
+
+      expect(emitted).toHaveLength(0);
+    });
+
+    it('blocks Enter/Space activation in multi-select mode while readOnly', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoSelectButton,
+        {
+          inputs: {
+            options: OPTIONS,
+            multiple: true,
+            value: ['list'],
+            readOnly: true,
+          },
+        },
+      );
+      const grid = within(container).getByRole('button', { name: 'Grid' });
+
+      grid.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      expect(componentInstance.value()).toEqual(['list']);
+    });
+
+    it('still moves the roving tabindex via arrow keys, but blocks the value change that would otherwise follow in single-select mode', () => {
+      const { fixture, container, componentInstance } = renderDynamoComponent(
+        DynamoSelectButton,
+        { inputs: { options: OPTIONS, value: 'list', readOnly: true } },
+      );
+      const first = within(container).getByRole('radio', { name: 'List' });
+
+      first.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      expect(componentInstance.value()).toBe('list');
+      expect(
+        within(container)
+          .getByRole('radio', { name: 'Grid' })
+          .getAttribute('tabindex'),
+      ).toBe('0');
+      expect(first.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('renders aria-readonly on the root in single-select mode', () => {
+      const { container } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: { options: OPTIONS, readOnly: true },
+      });
+
+      expect(
+        container
+          .querySelector('[role="radiogroup"]')
+          ?.getAttribute('aria-readonly'),
+      ).toBe('true');
+    });
+
+    it('omits aria-readonly in multi-select mode even when readOnly is set', () => {
+      const { container } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: { options: OPTIONS, multiple: true, readOnly: true },
+      });
+
+      expect(
+        container
+          .querySelector('[role="group"]')
+          ?.hasAttribute('aria-readonly'),
+      ).toBe(false);
+    });
+
+    it('omits aria-readonly by default', () => {
+      const { container } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: { options: OPTIONS },
+      });
+
+      expect(
+        container
+          .querySelector('[role="radiogroup"]')
+          ?.hasAttribute('aria-readonly'),
+      ).toBe(false);
+    });
+  });
+
   describe('itemSelect', () => {
     it('emits the full option object on click', () => {
       const { fixture, container, componentInstance } = renderDynamoComponent<
@@ -508,6 +620,80 @@ describe('DynamoSelectButton', () => {
       fixture.detectChanges();
 
       expect(componentInstance.control.touched).toBe(true);
+    });
+  });
+
+  describe('pt / ariaDescribedby / fluid', () => {
+    it('merges pt class onto root', () => {
+      const { container } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: { options: OPTIONS, pt: { root: { class: 'pt-root' } } },
+      });
+
+      expect(
+        container
+          .querySelector('[role="radiogroup"]')
+          ?.classList.contains('pt-root'),
+      ).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto root', () => {
+      const { container } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: {
+          options: OPTIONS,
+          pt: { root: { 'data-testid': 'root-el' } },
+        },
+      });
+
+      expect(container.querySelector('[data-testid="root-el"]')).not.toBeNull();
+    });
+
+    it('merges pt class onto every segment', () => {
+      const { container } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: { options: OPTIONS, pt: { segment: { class: 'pt-segment' } } },
+      });
+
+      for (const radio of within(container).getAllByRole('radio')) {
+        expect(radio.classList.contains('pt-segment')).toBe(true);
+      }
+    });
+
+    it('omits aria-describedby by default, forwards it to the root when set', () => {
+      const { container } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: { options: OPTIONS, ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        container
+          .querySelector('[role="radiogroup"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('stretches the root and shares the width evenly across segments when fluid is set', () => {
+      const { container } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: { options: OPTIONS, fluid: true },
+      });
+
+      expect(
+        container
+          .querySelector('[role="radiogroup"]')
+          ?.classList.contains('w-full'),
+      ).toBe(true);
+      for (const radio of within(container).getAllByRole('radio')) {
+        expect(radio.classList.contains('flex-1')).toBe(true);
+      }
+    });
+
+    it('does not stretch by default', () => {
+      const { container } = renderDynamoComponent(DynamoSelectButton, {
+        inputs: { options: OPTIONS },
+      });
+
+      expect(
+        container
+          .querySelector('[role="radiogroup"]')
+          ?.classList.contains('w-full'),
+      ).toBe(false);
     });
   });
 
