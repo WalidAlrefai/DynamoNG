@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import type { DynamoPassThrough } from '@dynamong/core/api';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -9,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { DynamoOrgChart } from './org-chart';
 import { DynamoOrgChartHarness } from './org-chart.harness';
 import { DynamoOrgChartState } from './org-chart-state';
-import type { DynamoOrgChartNode } from './org-chart.types';
+import type { DynamoOrgChartNode, DynamoOrgChartPart } from './org-chart.types';
 
 // ceo
 //  ├─ cto
@@ -82,6 +83,28 @@ class OrgChartTestHostComponent {
 })
 class OrgChartPlainHostComponent {
   readonly value = TREE;
+}
+
+@Component({
+  selector: 'dg-org-chart-pt-host',
+  standalone: true,
+  imports: [DynamoOrgChart],
+  template: `
+    <dg-org-chart
+      [value]="value"
+      [ariaDescribedby]="ariaDescribedby()"
+      [fluid]="fluid()"
+      [pt]="pt()"
+    />
+  `,
+})
+class OrgChartPtHostComponent {
+  readonly value = TREE;
+  readonly ariaDescribedby = signal<string | undefined>(undefined);
+  readonly fluid = signal(false);
+  readonly pt = signal<DynamoPassThrough<DynamoOrgChartPart> | undefined>(
+    undefined,
+  );
 }
 
 function boxes(container: HTMLElement): HTMLElement[] {
@@ -249,6 +272,25 @@ describe('DynamoOrgChart', () => {
       expect(box(container, 'cto').getAttribute('aria-expanded')).toBe('true');
       expect(box(container, 'eng1')).toBeTruthy();
     });
+
+    it('does not expand/collapse via Arrow keys when collapsible is false, even on a selectable (focusable) branch', async () => {
+      const user = userEvent.setup();
+      const { container, componentInstance, fixture } = renderDynamoComponent(
+        OrgChartTestHostComponent,
+      );
+      componentInstance.collapsible.set(false);
+      componentInstance.selectable.set(true);
+      fixture.detectChanges();
+
+      // Still focusable (selectable), but the mouse toggler is hidden —
+      // Arrow keys must respect that, not bypass it.
+      expect(box(container, 'cto').getAttribute('tabindex')).toBe('0');
+      box(container, 'cto').focus();
+
+      await user.keyboard('{ArrowLeft}');
+      expect(box(container, 'cto').getAttribute('aria-expanded')).toBe('true');
+      expect(box(container, 'eng1')).toBeTruthy();
+    });
   });
 
   describe('selection', () => {
@@ -381,9 +423,9 @@ describe('DynamoOrgChart', () => {
       expect(container.querySelector('[data-node-id="eng1"]')).toBeFalsy();
     });
 
-    it('leaves aria-disabled off enabled nodes', () => {
+    it('sets aria-disabled="false" (not absent) on enabled nodes', () => {
       const { container } = renderDynamoComponent(OrgChartTestHostComponent);
-      expect(box(container, 'ceo').hasAttribute('aria-disabled')).toBe(false);
+      expect(box(container, 'ceo').getAttribute('aria-disabled')).toBe('false');
     });
   });
 
@@ -482,6 +524,120 @@ describe('DynamoOrgChart', () => {
       for (let i = 0; i < 6; i++) await user.click(toggler(container, 'cto'));
       expect(componentInstance.collapsedIds()).toEqual([]);
       expect(box(container, 'eng1')).toBeTruthy();
+    });
+  });
+
+  describe('pt / ariaDescribedby / fluid', () => {
+    it('merges pt class onto root/tree', () => {
+      const { fixture, container } = renderDynamoComponent(
+        OrgChartPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { class: 'pt-root' },
+        tree: { class: 'pt-tree' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container
+          .querySelector('[data-testid="DynamoOrgChart"]')
+          ?.classList.contains('pt-root'),
+      ).toBe(true);
+      expect(
+        container.querySelector('[role="tree"]')?.classList.contains('pt-tree'),
+      ).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto the tree container', () => {
+      const { fixture, container } = renderDynamoComponent(
+        OrgChartPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        tree: { 'data-testid': 'tree-el' },
+      });
+      fixture.detectChanges();
+
+      expect(container.querySelector('[data-testid="tree-el"]')).not.toBeNull();
+    });
+
+    it('merges pt class onto every node/toggler/group, including through recursion', () => {
+      const { fixture, container } = renderDynamoComponent(
+        OrgChartPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        node: { class: 'pt-node' },
+        toggler: { class: 'pt-toggler' },
+        group: { class: 'pt-group' },
+        connector: { class: 'pt-connector' },
+      });
+      fixture.detectChanges();
+
+      // eng1 is two recursion levels deep (ceo -> cto -> eng1) — confirms
+      // pt forwards correctly through DynamoOrgChartItem's own recursive
+      // [pt]="pt()" binding, not just at the root level.
+      expect(box(container, 'eng1').classList.contains('pt-node')).toBe(true);
+      expect(
+        container
+          .querySelectorAll('[data-testid="DynamoOrgChart-toggler"]')[0]
+          ?.classList.contains('pt-toggler'),
+      ).toBe(true);
+      expect(
+        container
+          .querySelector('[role="group"]')
+          ?.classList.contains('pt-group'),
+      ).toBe(true);
+      expect(
+        container
+          .querySelector('dg-org-chart-item')
+          ?.classList.contains('pt-connector'),
+      ).toBe(true);
+    });
+
+    it('omits aria-describedby by default, forwards it to the tree container when set', () => {
+      const { fixture, container } = renderDynamoComponent(
+        OrgChartPtHostComponent,
+      );
+      expect(
+        container
+          .querySelector('[role="tree"]')
+          ?.hasAttribute('aria-describedby'),
+      ).toBe(false);
+
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.detectChanges();
+      expect(
+        container
+          .querySelector('[role="tree"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('defaults fluid to false (no w-full), opts in when true', () => {
+      const { fixture, container } = renderDynamoComponent(
+        OrgChartPtHostComponent,
+      );
+      const root = container.querySelector(
+        '[data-testid="DynamoOrgChart"]',
+      ) as HTMLElement;
+      // `.toContain('w-full')` would false-match the always-present
+      // `max-w-full` token — check classList membership instead.
+      expect(root.classList.contains('w-full')).toBe(false);
+
+      fixture.componentInstance.fluid.set(true);
+      fixture.detectChanges();
+      expect(root.classList.contains('w-full')).toBe(true);
+    });
+
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        OrgChartPtHostComponent,
+      );
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.componentInstance.fluid.set(true);
+      fixture.componentInstance.pt.set({ tree: { class: 'pt-tree' } });
+      fixture.detectChanges();
+
+      await expectNoA11yViolations(container);
     });
   });
 });
