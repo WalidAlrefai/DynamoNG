@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import type { DynamoPassThrough } from '@dynamong/core/api';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -10,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { DynamoTooltip } from './tooltip';
 import { DynamoTooltipHarness } from './tooltip.harness';
+import type { DynamoTooltipPart } from './tooltip.types';
 
 // The CDK overlay portals `role="tooltip"` content into a `.cdk-overlay-container`
 // appended near document.body — outside the fixture's own `container` element — so
@@ -69,6 +71,48 @@ async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   `,
 })
 class TooltipTriggerHostComponent {}
+
+@Component({
+  selector: 'dg-tooltip-aria-describedby-host',
+  standalone: true,
+  imports: [DynamoTooltip],
+  template: `
+    <dg-tooltip
+      content="Saves your changes"
+      [showDelay]="0"
+      [hideDelay]="0"
+      [ariaDescribedby]="ariaDescribedby()"
+    >
+      <button type="button">Trigger</button>
+    </dg-tooltip>
+  `,
+})
+class TooltipAriaDescribedbyHostComponent {
+  readonly ariaDescribedby = signal<string | undefined>(undefined);
+}
+
+@Component({
+  selector: 'dg-tooltip-pt-host',
+  standalone: true,
+  imports: [DynamoTooltip],
+  template: `
+    <dg-tooltip
+      content="Saves your changes"
+      [showDelay]="0"
+      [hideDelay]="0"
+      [fluid]="fluid()"
+      [pt]="pt()"
+    >
+      <button type="button">Trigger</button>
+    </dg-tooltip>
+  `,
+})
+class TooltipPtHostComponent {
+  readonly fluid = signal(false);
+  readonly pt = signal<DynamoPassThrough<DynamoTooltipPart> | undefined>(
+    undefined,
+  );
+}
 
 describe('DynamoTooltip', () => {
   describe('creation', () => {
@@ -418,6 +462,50 @@ describe('DynamoTooltip', () => {
       expect(trigger.getAttribute('aria-describedby')).toBeNull();
     });
 
+    it('sets aria-describedby on the projected focusable element, not the wrapper span, once visible', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        TooltipTriggerHostComponent,
+      );
+      const wrapper = getTrigger(container);
+      const button = within(container).getByRole('button', {
+        name: 'Trigger',
+      });
+
+      wrapper.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await settle(fixture);
+
+      expect(button.getAttribute('aria-describedby')).toBe(getPanel()?.id);
+      expect(wrapper.getAttribute('aria-describedby')).toBeNull();
+
+      wrapper.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+      await settle(fixture);
+      expect(button.getAttribute('aria-describedby')).toBeNull();
+    });
+
+    it('forwards ariaDescribedby onto the same resolved target, unconditionally, combined with the content id while visible', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        TooltipAriaDescribedbyHostComponent,
+      );
+      const button = within(container).getByRole('button', {
+        name: 'Trigger',
+      });
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.detectChanges();
+
+      expect(button.getAttribute('aria-describedby')).toBe('hint-id');
+
+      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await settle(fixture);
+
+      expect(button.getAttribute('aria-describedby')).toBe(
+        `hint-id ${getPanel()?.id}`,
+      );
+
+      button.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+      await settle(fixture);
+      expect(button.getAttribute('aria-describedby')).toBe('hint-id');
+    });
+
     it('has no axe violations on the tooltip panel while visible', async () => {
       const { container, fixture } = renderDynamoComponent(
         TooltipTriggerHostComponent,
@@ -445,6 +533,83 @@ describe('DynamoTooltip', () => {
       );
       await settle(fixture);
       expect(getPanel()).not.toBeNull();
+    });
+  });
+
+  describe('pt / fluid', () => {
+    it('merges pt class onto root/trigger (merged onto the wrapper)', () => {
+      const { fixture, container } = renderDynamoComponent(
+        TooltipPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { class: 'pt-root' },
+        trigger: { class: 'pt-trigger' },
+      });
+      fixture.detectChanges();
+
+      const wrapper = getTrigger(container);
+      expect(wrapper.classList.contains('pt-root')).toBe(true);
+      expect(wrapper.classList.contains('pt-trigger')).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto the wrapper', () => {
+      const { fixture, container } = renderDynamoComponent(
+        TooltipPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        trigger: { 'data-testid': 'trigger-el' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container.querySelector('[data-testid="trigger-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('merges pt class onto panel/arrow once visible', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        TooltipPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        panel: { class: 'pt-panel' },
+        arrow: { class: 'pt-arrow' },
+      });
+      fixture.detectChanges();
+
+      getTrigger(container).dispatchEvent(
+        new MouseEvent('mouseenter', { bubbles: true }),
+      );
+      await settle(fixture);
+
+      expect(getPanel()?.classList.contains('pt-panel')).toBe(true);
+      expect(getOverlayContainer().querySelectorAll('.pt-arrow').length).toBe(
+        1,
+      );
+    });
+
+    it('defaults fluid to false (inline-block), opts in when true (block w-full)', () => {
+      const { fixture, container } = renderDynamoComponent(
+        TooltipPtHostComponent,
+      );
+      const wrapper = getTrigger(container);
+      expect(wrapper.className).toContain('inline-block');
+      expect(wrapper.className).not.toContain('w-full');
+
+      fixture.componentInstance.fluid.set(true);
+      fixture.detectChanges();
+      expect(wrapper.className).toContain('w-full');
+      expect(wrapper.className).toContain('block');
+    });
+
+    it('has no axe violations with pt/fluid set', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        TooltipPtHostComponent,
+      );
+      fixture.componentInstance.fluid.set(true);
+      fixture.componentInstance.pt.set({ trigger: { class: 'pt-trigger' } });
+      fixture.detectChanges();
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });
 

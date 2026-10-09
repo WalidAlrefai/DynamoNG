@@ -2,7 +2,7 @@
   #triggerEl
   tabindex="-1"
   [class]="triggerClasses()"
-  [attr.aria-describedby]="isVisible() ? contentId : null"
+  [dgPt]="triggerPt()"
   (mouseenter)="onMouseEnter($event)"
   (mousemove)="onMouseMove($event)"
   (mouseleave)="onMouseLeave()"
@@ -14,9 +14,18 @@
 </span>
 
 <ng-template #tooltipTemplate>
-  <div role="tooltip" [id]="contentId" [class]="panelClasses()">
+  <div
+    role="tooltip"
+    [id]="contentId"
+    [class]="panelClasses()"
+    [dgPt]="ptFor('panel')"
+  >
     {{ content() }} @if (!mouseTrack()) {
-    <div [class]="arrowClasses()" [attr.aria-hidden]="true"></div>
+    <div
+      [class]="arrowClasses()"
+      [dgPt]="ptFor('arrow')"
+      [attr.aria-hidden]="true"
+    ></div>
     }
   </div>
 </ng-template>
