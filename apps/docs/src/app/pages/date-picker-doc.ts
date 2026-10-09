@@ -472,7 +472,7 @@ const EMPTY_RANGE: DynamoDateRange = { start: null, end: null };
       <docs-example
         exampleId="range"
         title="Range Selection"
-        description="dg-date-range-picker (@dynamong/date-range-picker) shares this exact input surface with dg-date-picker above — min/max, disabledDates/disabledDays, clearable, and inline all work identically. Only value differs: a DynamoDateRange ({{
+        description="dg-date-range-picker (@dynamong/date-range-picker) shares this exact input surface with dg-date-picker above — min/max, disabledDates/disabledDays, clearable, inline, ariaDescribedby, and fluid all work identically. Only value differs: a DynamoDateRange ({{
           '{'
         }} start: Date | null; end: Date | null {{
           '}'

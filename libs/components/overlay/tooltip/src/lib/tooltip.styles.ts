@@ -7,7 +7,15 @@ import { cva } from 'class-variance-authority';
 // because they must track the panel side that tooltip.ts's (not yet
 // RTL-aware) placement logic actually resolves to — this file is exempted
 // from the logical-utilities lint rule until that JS work lands.
-export const tooltipTriggerStyles = cva('inline-block');
+export const tooltipTriggerStyles = cva('', {
+  variants: {
+    fluid: {
+      true: 'block w-full',
+      false: 'inline-block',
+    },
+  },
+  defaultVariants: { fluid: false },
+});
 
 export const tooltipPanelStyles = cva(
   'relative pointer-events-none z-tooltip max-w-xs rounded-md bg-surface-900 px-2.5 py-1.5 text-sm text-surface-0 shadow-md',

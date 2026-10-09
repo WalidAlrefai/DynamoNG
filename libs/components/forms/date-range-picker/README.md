@@ -25,23 +25,25 @@ protected readonly selectedRange = signal<DynamoDateRange>({
 
 ## Inputs
 
-| Input           | Type                              | Default                      | Description                                                                                                |
-| --------------- | --------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `placeholder`   | `string`                          | `'Select a date range'`      | Shown in the trigger when no date is selected.                                                             |
-| `size`          | `DynamoSize`                      | `'md'`                       |                                                                                                            |
-| `ariaLabel`     | `string \| undefined`             | `undefined`                  |                                                                                                            |
-| `min`           | `Date \| undefined`               | `undefined`                  |                                                                                                            |
-| `max`           | `Date \| undefined`               | `undefined`                  |                                                                                                            |
-| `weekStartsOn`  | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | `0`                          | First weekday column of the calendar grid (`0` = Sunday).                                                  |
-| `invalid`       | `boolean`                         | `false`                      |                                                                                                            |
-| `readOnly`      | `boolean`                         | `false`                      | The trigger and calendar stay fully browsable, but selecting a day is blocked.                             |
-| `disabledDates` | `Date[]`                          | `[]`                         | Individual dates disabled beyond the `min`/`max` range.                                                    |
-| `disabledDays`  | `number[]`                        | `[]`                         | Weekdays disabled beyond the `min`/`max` range — e.g. `[0, 6]` for weekends.                               |
-| `clearable`     | `boolean`                         | `false`                      | Shows a clear (×) button next to the trigger once a start date is selected. Clears both `start` and `end`. |
-| `inline`        | `boolean`                         | `false`                      | Renders the calendar directly in the page, with no trigger button or overlay.                              |
-| `value`         | `DynamoDateRange` (model)         | `{ start: null, end: null }` | Two-way bindable; also driven by Angular forms via `writeValue`.                                           |
-| `disabled`      | `boolean` (model)                 | `false`                      | Also driven by Angular forms via `setDisabledState`.                                                       |
-| `open`          | `boolean` (model)                 | `false`                      | Two-way bindable: `<dg-date-range-picker [(open)]="isOpen">`.                                              |
+| Input             | Type                              | Default                      | Description                                                                                                |
+| ----------------- | --------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `placeholder`     | `string`                          | `'Select a date range'`      | Shown in the trigger when no date is selected.                                                             |
+| `size`            | `DynamoSize`                      | `'md'`                       |                                                                                                            |
+| `ariaLabel`       | `string \| undefined`             | `undefined`                  |                                                                                                            |
+| `ariaDescribedby` | `string \| undefined`             | `undefined`                  | Forwarded as `aria-describedby` on the trigger button.                                                     |
+| `fluid`           | `boolean`                         | `true`                       | Fills the width of its container.                                                                          |
+| `min`             | `Date \| undefined`               | `undefined`                  |                                                                                                            |
+| `max`             | `Date \| undefined`               | `undefined`                  |                                                                                                            |
+| `weekStartsOn`    | `0 \| 1 \| 2 \| 3 \| 4 \| 5 \| 6` | `0`                          | First weekday column of the calendar grid (`0` = Sunday).                                                  |
+| `invalid`         | `boolean`                         | `false`                      |                                                                                                            |
+| `readOnly`        | `boolean`                         | `false`                      | The trigger and calendar stay fully browsable, but selecting a day is blocked.                             |
+| `disabledDates`   | `Date[]`                          | `[]`                         | Individual dates disabled beyond the `min`/`max` range.                                                    |
+| `disabledDays`    | `number[]`                        | `[]`                         | Weekdays disabled beyond the `min`/`max` range — e.g. `[0, 6]` for weekends.                               |
+| `clearable`       | `boolean`                         | `false`                      | Shows a clear (×) button next to the trigger once a start date is selected. Clears both `start` and `end`. |
+| `inline`          | `boolean`                         | `false`                      | Renders the calendar directly in the page, with no trigger button or overlay.                              |
+| `value`           | `DynamoDateRange` (model)         | `{ start: null, end: null }` | Two-way bindable; also driven by Angular forms via `writeValue`.                                           |
+| `disabled`        | `boolean` (model)                 | `false`                      | Also driven by Angular forms via `setDisabledState`.                                                       |
+| `open`            | `boolean` (model)                 | `false`                      | Two-way bindable: `<dg-date-range-picker [(open)]="isOpen">`.                                              |
 
 ## Outputs
 
@@ -75,7 +77,10 @@ press.
 ## Accessibility
 
 - Trigger is a native `<button>` with `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`, `aria-invalid`, `aria-readonly`.
-- Panel is `role="dialog"` (`aria-modal="false"`) containing a `role="grid"` calendar, with each range endpoint cell marked `aria-selected`.
+- Panel is `role="dialog"` (`aria-modal="false"`) containing a `role="grid"` calendar. Every day cell
+  carries an explicit `aria-selected` — `"true"` on the two range endpoints, `"false"` (never omitted) on
+  every other cell, so assistive tech can distinguish "selectable, not selected" from "not a selectable
+  item at all."
 - Each day button carries a full formatted-date `aria-label`, with a
   "start of range"/"end of range" suffix on the two endpoint days (e.g.
   "August 19, 2026, start of range").
@@ -85,8 +90,17 @@ press.
   `PageUp`/`PageDown`, `Shift+PageUp`/`Shift+PageDown`, `Escape`) — selecting
   a day is native `<button>` Enter/Space behavior, so both range endpoints
   can be set entirely from the keyboard.
+- Every calendar control (day grid, month/year navigation, the quick-jump toggle, the month grid) is
+  natively `disabled`, not just visually dimmed, while the whole picker's own `disabled` is set — including
+  in `inline` mode, which has no trigger button to gate access otherwise.
 
 ## Design notes
+
+**`pt` parts**: `root` (a `display: contents` wrapper around the trigger + clear-button pair), `trigger`
+(the trigger button itself), `panel`, and `day` (each calendar-grid day button). `root`/`trigger` are
+reachable only while `!inline()` — ported directly from `@dynamong/date-picker`'s own identical scope
+boundary (no trigger/clear button exists to attach them to in `inline` mode there either). `panel`/`day`
+are reachable in both modes.
 
 **Single calendar grid, not a dual-month view.** This v1 deliberately
 reuses `@dynamong/date-picker`'s single 42-cell month grid rather than a

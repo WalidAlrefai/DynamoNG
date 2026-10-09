@@ -32,6 +32,8 @@ const API: ApiTableRow[] = [
   { name: 'mouseTrack', type: 'boolean', default: 'false' },
   { name: 'mouseTrackOffsetX', type: 'number', default: '12' },
   { name: 'mouseTrackOffsetY', type: 'number', default: '12' },
+  { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined' },
+  { name: 'fluid', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -54,7 +56,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="positions"
         title="Positions"
-        description="position sets the preferred side; it flips automatically on a viewport collision."
+        description="position sets the preferred side; it flips automatically on a viewport collision. aria-describedby lands on the wrapped button itself (not an ancestor wrapper), so a screen-reader user Tabbing to it hears the tooltip's content described."
       >
         <div preview class="flex flex-wrap gap-8 p-8">
           <dg-tooltip content="Saves your changes" position="top">

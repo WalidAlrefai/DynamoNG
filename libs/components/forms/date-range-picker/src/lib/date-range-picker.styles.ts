@@ -10,7 +10,7 @@ import {
 // component — date-range-picker.html only ever binds `[class]="...Classes()"`
 // or a plain exported string constant.
 export const dateRangePickerTriggerStyles = cva(
-  'flex w-full items-center justify-between gap-2 rounded-md border bg-surface-0 ' +
+  'flex items-center justify-between gap-2 rounded-md border bg-surface-0 ' +
     'text-start text-text-primary transition-colors disabled:pointer-events-none disabled:opacity-60 ' +
     focusRingClass,
   {
@@ -20,8 +20,12 @@ export const dateRangePickerTriggerStyles = cva(
         true: 'border-danger ' + focusRingInvalidClass,
         false: 'border-border',
       },
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
     },
-    defaultVariants: { size: 'md', invalid: false },
+    defaultVariants: { size: 'md', invalid: false, fluid: true },
   },
 );
 
@@ -30,10 +34,12 @@ export const dateRangePickerPanelStyles =
 
 export const dateRangePickerHeaderButtonStyles =
   'flex h-8 w-8 items-center justify-center rounded-md text-text-primary hover:bg-surface-100 ' +
+  'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent ' +
   focusRingClass;
 
 export const dateRangePickerQuickJumpButtonStyles =
   'rounded-md px-2 py-1 text-sm font-semibold text-text-primary hover:bg-surface-100 ' +
+  'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent ' +
   focusRingClass;
 
 export const dateRangePickerMonthGridButtonStyles = cva(

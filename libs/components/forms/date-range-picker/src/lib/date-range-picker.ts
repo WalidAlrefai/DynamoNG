@@ -15,6 +15,7 @@ import {
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { NgTemplateOutlet } from '@angular/common';
+import { DynamoPassThroughDirective } from '@dynamong/core/base';
 import { DynamoListboxBase, selectClearButtonStyles } from '@dynamong/select';
 import {
   buildCalendarGrid,
@@ -102,7 +103,7 @@ const EMPTY_RANGE: DynamoDateRange = { start: null, end: null };
   selector: 'dg-date-range-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, DynamoPassThroughDirective],
   templateUrl: './date-range-picker.html',
   providers: [
     {
@@ -119,6 +120,8 @@ export class DynamoDateRangePicker
   readonly placeholder = input('Select a date range');
   readonly size = input<DynamoDateRangePickerSize>('md');
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the trigger button. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   readonly min = input<Date | undefined>(undefined);
   readonly max = input<Date | undefined>(undefined);
   readonly weekStartsOn = input<DynamoDatePickerWeekday>(0);
@@ -128,6 +131,11 @@ export class DynamoDateRangePicker
   readonly disabledDays = input<number[]>([]);
   readonly clearable = input(false);
   readonly inline = input(false);
+  /** Fills the width of its container. Defaults `true` — the trigger already
+   *  had an unconditional `w-full` before this input existed, so this is a
+   *  pure escape-hatch addition, zero behavior change by default, mirroring
+   *  `@dynamong/date-picker`'s own identical precedent. */
+  readonly fluid = input(true);
 
   /** Two-way bindable; also driven by Angular forms via `writeValue`/`setDisabledState`. */
   readonly value = model<DynamoDateRange>(EMPTY_RANGE);
@@ -211,18 +219,29 @@ export class DynamoDateRangePicker
       .map((day) => formatter.format(day));
   });
 
+  // `root` is a separate `display: contents` wrapper around the trigger +
+  // clear button pair (zero layout impact) — mirrors `@dynamong/date-picker`'s
+  // own identical wrapper, existing only `!inline()` (no trigger/clear button
+  // to wrap otherwise, same documented scope boundary as DatePicker's).
+  protected readonly rootClasses = computed(() =>
+    cn('contents', this.ptFor('root').class),
+  );
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('trigger').class)
       : cn(
           dateRangePickerTriggerStyles({
             size: this.size(),
             invalid: this.invalid(),
+            fluid: this.fluid(),
           }),
           this.styleClass(),
+          this.ptFor('trigger').class,
         ),
   );
-  protected readonly panelClasses = dateRangePickerPanelStyles;
+  protected readonly panelClasses = computed(() =>
+    cn(dateRangePickerPanelStyles, this.ptFor('panel').class),
+  );
   protected readonly headerButtonClasses = dateRangePickerHeaderButtonStyles;
   protected readonly weekdayClasses = dateRangePickerWeekdayStyles;
   protected readonly clearButtonClasses = selectClearButtonStyles;
@@ -284,11 +303,14 @@ export class DynamoDateRangePicker
 
   protected dayClasses(day: Date): string {
     const state = this.dayRangeState(day);
-    return dateRangePickerDayStyles({
-      endpoint: state.isStart || state.isEnd,
-      outsideMonth: !isSameMonth(day, this.visibleMonth()),
-      today: this.isToday(day),
-    });
+    return cn(
+      dateRangePickerDayStyles({
+        endpoint: state.isStart || state.isEnd,
+        outsideMonth: !isSameMonth(day, this.visibleMonth()),
+        today: this.isToday(day),
+      }),
+      this.ptFor('day').class,
+    );
   }
 
   protected cellClasses(day: Date): string {
@@ -377,7 +399,7 @@ export class DynamoDateRangePicker
   }
 
   protected selectDay(day: Date): void {
-    if (this.readOnly() || this.isDisabled(day)) return;
+    if (this.disabled() || this.readOnly() || this.isDisabled(day)) return;
     this.focusedDate.set(day);
 
     if (this.selectionPhase() === 'start') {

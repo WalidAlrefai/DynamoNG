@@ -4,6 +4,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Renderer2,
   TemplateRef,
   ViewContainerRef,
   computed,
@@ -18,14 +19,18 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { ConfigurableFocusTrap } from '@angular/cdk/a11y';
 import type { ConnectedPosition } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { DynamoFocusTrapService } from '@dynamong/core/a11y';
 import {
   DynamoOverlayService,
   type DynamoOverlayHandle,
 } from '@dynamong/core/overlay';
+import type { DynamoPassThroughAttrs } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
-import { isBrowser } from '@dynamong/utils/dom';
+import { getFocusableElements, isBrowser } from '@dynamong/utils/dom';
 import { DynamoPopoverContent } from './popover-content';
 import { popoverPanelStyles, popoverTriggerStyles } from './popover.styles';
 import type { DynamoPopoverPart, DynamoPopoverPosition } from './popover.types';
@@ -82,7 +87,7 @@ function buildPositions(preferred: DynamoPopoverPosition): ConnectedPosition[] {
   selector: 'dg-popover',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, DynamoPassThroughDirective],
   templateUrl: './popover.html',
 })
 export class DynamoPopover extends DynamoBaseComponent<DynamoPopoverPart> {
@@ -94,8 +99,12 @@ export class DynamoPopover extends DynamoBaseComponent<DynamoPopoverPart> {
   readonly closeOnEscape = input(true);
   /** Moves focus into the panel (and traps it there) once shown. Set `false` to leave focus on the trigger — e.g. for a purely informational popover the user isn't expected to interact with. */
   readonly focusOnShow = input(true);
+  /** Forwarded as `aria-describedby` onto the same resolved trigger target as
+   *  `aria-haspopup`/`aria-expanded`/`aria-controls` (see `resolveTriggerTarget()`). */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
 
   protected readonly content = contentChild.required(DynamoPopoverContent);
+  protected readonly panelId = this.idGenerator.next('dg-popover');
   private readonly triggerEl =
     viewChild.required<ElementRef<HTMLElement>>('triggerEl');
   private readonly panelTemplate =
@@ -106,18 +115,41 @@ export class DynamoPopover extends DynamoBaseComponent<DynamoPopoverPart> {
   private readonly focusTrapService = inject(DynamoFocusTrapService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly renderer = inject(Renderer2);
 
   private overlayHandle: DynamoOverlayHandle | null = null;
   private portal: TemplatePortal | null = null;
   private focusTrap: ConfigurableFocusTrap | null = null;
   private previouslyFocusedElement: HTMLElement | null = null;
+  // Tracks which element (the wrapper, or a resolved focusable descendant —
+  // see resolveTriggerTarget()) currently carries the disclosure ARIA
+  // attributes, so a target change cleans up the old one correctly.
+  private triggerA11yTarget: HTMLElement | null = null;
 
+  // No separate wrapper exists — the single top-level `<span>` IS the
+  // trigger, so `root` and `trigger` both merge onto it, the same shape
+  // Menu's/Tooltip's own `triggerPt` computed already established.
+  protected readonly triggerPt = computed<DynamoPassThroughAttrs>(() => ({
+    ...this.ptFor('root'),
+    ...this.ptFor('trigger'),
+  }));
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(popoverTriggerStyles, this.styleClass()),
+      ? cn(
+          this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('trigger').class,
+        )
+      : cn(
+          popoverTriggerStyles,
+          this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('trigger').class,
+        ),
   );
-  protected readonly panelClasses = popoverPanelStyles;
+  protected readonly panelClasses = computed(() =>
+    cn(popoverPanelStyles, this.ptFor('panel').class),
+  );
 
   constructor() {
     super();
@@ -140,6 +172,13 @@ export class DynamoPopover extends DynamoBaseComponent<DynamoPopoverPart> {
       } else if (!this.open()) {
         this.releaseFocusTrap();
       }
+    });
+
+    // Applies the disclosure ARIA attributes imperatively (never via a
+    // static template binding) because the right target isn't always the
+    // wrapper `<span>` itself — see resolveTriggerTarget()'s own doc comment.
+    effect(() => {
+      this.syncTriggerA11y();
     });
 
     this.destroyRef.onDestroy(() => {
@@ -185,6 +224,51 @@ export class DynamoPopover extends DynamoBaseComponent<DynamoPopoverPart> {
     if (this.closeOnBackdropClick()) {
       this.close();
     }
+  }
+
+  /** The element a screen reader actually announces disclosure state for
+   *  isn't necessarily the wrapper `<span>` — if the projected content is
+   *  itself a separately focusable element (the documented common case: a
+   *  button), a Tab-focused user hears only *that* element's own ARIA
+   *  state, never an ancestor's. Resolves to the first focusable descendant
+   *  when one exists, falling back to the wrapper itself for plain
+   *  non-interactive projected content. */
+  private resolveTriggerTarget(): HTMLElement {
+    const wrapper = this.triggerEl().nativeElement;
+    return getFocusableElements(wrapper)[0] ?? wrapper;
+  }
+
+  private syncTriggerA11y(): void {
+    const isOpen = this.open();
+    const describedby = this.ariaDescribedby();
+    const target = this.resolveTriggerTarget();
+
+    if (this.triggerA11yTarget && this.triggerA11yTarget !== target) {
+      const previous = this.triggerA11yTarget;
+      this.renderer.removeAttribute(previous, 'aria-haspopup');
+      this.renderer.removeAttribute(previous, 'aria-expanded');
+      this.renderer.removeAttribute(previous, 'aria-controls');
+      this.renderer.removeAttribute(previous, 'aria-describedby');
+    }
+
+    this.renderer.setAttribute(target, 'aria-haspopup', 'dialog');
+    this.renderer.setAttribute(
+      target,
+      'aria-expanded',
+      isOpen ? 'true' : 'false',
+    );
+    if (isOpen) {
+      this.renderer.setAttribute(target, 'aria-controls', this.panelId);
+    } else {
+      this.renderer.removeAttribute(target, 'aria-controls');
+    }
+    if (describedby) {
+      this.renderer.setAttribute(target, 'aria-describedby', describedby);
+    } else {
+      this.renderer.removeAttribute(target, 'aria-describedby');
+    }
+
+    this.triggerA11yTarget = target;
   }
 
   private activateFocusTrap(panel: HTMLElement): void {

@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Renderer2,
   TemplateRef,
   ViewContainerRef,
   computed,
@@ -20,12 +21,17 @@ import type {
   OverlayRef,
 } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import {
   DynamoOverlayService,
   type DynamoOverlayHandle,
 } from '@dynamong/core/overlay';
+import type { DynamoPassThroughAttrs } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
+import { getFocusableElements } from '@dynamong/utils/dom';
 import {
   tooltipArrowStyles,
   tooltipPanelStyles,
@@ -109,6 +115,7 @@ function resolvePositionName(
   selector: 'dg-tooltip',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoPassThroughDirective],
   templateUrl: './tooltip.html',
 })
 export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
@@ -118,6 +125,10 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
   readonly showDelay = input(300);
   readonly hideDelay = input(0);
   readonly disabled = input(false);
+  /** Forwarded as `aria-describedby`, combined with the tooltip's own content
+   *  id while visible, onto the same resolved target `content` itself uses
+   *  (see `resolveDescribedbyTarget()`). */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   /** Which interaction(s) show the tooltip. Defaults to `'both'` so keyboard-only users can reach it too (WCAG 1.4.13). */
   readonly trigger = input<DynamoTooltipTrigger>('both');
   /** Auto-hides the tooltip this many ms after it appears, regardless of continued hover/focus. Left unset (the default), it only hides on mouse-leave/blur/Escape as usual. */
@@ -136,6 +147,12 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
   /** Px offset from the cursor to the panel's top-left corner — only consulted while `mouseTrack` is true. */
   readonly mouseTrackOffsetX = input(12);
   readonly mouseTrackOffsetY = input(12);
+  /** Fills the width of its container. Defaults `false` — the wrapper is
+   *  genuinely intrinsically sized today, no pre-existing full-width default
+   *  to preserve. Useful with `showOnEllipsis`: the truncation check measures
+   *  the wrapper's own box, so a `fluid` wrapper spanning its full container
+   *  (e.g. a table cell) reflects the actual available width. */
+  readonly fluid = input(false);
 
   protected readonly contentId = this.idGenerator.next('dg-tooltip');
   protected readonly isVisible = signal(false);
@@ -148,12 +165,18 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
   private readonly overlayService = inject(DynamoOverlayService);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly renderer = inject(Renderer2);
 
   private overlayHandle: DynamoOverlayHandle | null = null;
   private portal: TemplatePortal | null = null;
   private showTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private hideTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private lifeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  // Tracks which element (the wrapper, or a resolved focusable descendant —
+  // see resolveDescribedbyTarget()) currently carries aria-describedby, and
+  // what value, so a target/value change can clean up the old one correctly.
+  private describedbyTarget: HTMLElement | null = null;
+  private appliedDescribedby: string | null = null;
 
   // A separate, parallel overlay path for `mouseTrack` — kept fully
   // independent of `overlayHandle` above (a `FlexibleConnectedPositionStrategy`,
@@ -165,16 +188,39 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
   private lastMouseX = 0;
   private lastMouseY = 0;
 
+  // No separate wrapper exists — the single top-level `<span>` IS the
+  // trigger, so `root` and `trigger` both merge onto it, the same shape
+  // Menu's own `triggerPt` computed already established. Each part's own
+  // `class` is merged separately below into `triggerClasses`.
+  protected readonly triggerPt = computed<DynamoPassThroughAttrs>(() => ({
+    ...this.ptFor('root'),
+    ...this.ptFor('trigger'),
+  }));
   protected readonly triggerClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(tooltipTriggerStyles(), this.styleClass()),
+      ? cn(
+          this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('trigger').class,
+        )
+      : cn(
+          tooltipTriggerStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+          this.ptFor('trigger').class,
+        ),
   );
   protected readonly panelClasses = computed(() =>
-    tooltipPanelStyles({ position: this.resolvedPosition() }),
+    cn(
+      tooltipPanelStyles({ position: this.resolvedPosition() }),
+      this.ptFor('panel').class,
+    ),
   );
   protected readonly arrowClasses = computed(() =>
-    tooltipArrowStyles({ position: this.resolvedPosition() }),
+    cn(
+      tooltipArrowStyles({ position: this.resolvedPosition() }),
+      this.ptFor('arrow').class,
+    ),
   );
 
   constructor() {
@@ -200,6 +246,17 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
       if (this.disabled() && this.isVisible()) {
         this.hide(true);
       }
+    });
+
+    // Applies aria-describedby imperatively (never via a static template
+    // binding) because the right target isn't always the wrapper `<span>`
+    // itself — see resolveDescribedbyTarget()'s own doc comment.
+    effect(() => {
+      const ids = [
+        this.ariaDescribedby(),
+        this.isVisible() ? this.contentId : undefined,
+      ].filter((id): id is string => !!id);
+      this.syncDescribedby(ids.length > 0 ? ids.join(' ') : null);
     });
 
     this.destroyRef.onDestroy(() => this.destroyOverlay());
@@ -264,6 +321,39 @@ export class DynamoTooltip extends DynamoBaseComponent<DynamoTooltipPart> {
       () => this.attachOverlay(),
       this.showDelay(),
     );
+  }
+
+  /** The element a screen reader actually announces a description for isn't
+   *  necessarily the wrapper `<span>` — if the projected content is itself a
+   *  separately focusable element (the common case: a button, a link), a
+   *  Tab-focused user hears only *that* element's own aria-describedby, never
+   *  an ancestor's. Resolves to the first focusable descendant when one
+   *  exists, falling back to the wrapper itself for plain non-interactive
+   *  projected content (e.g. a showOnEllipsis-truncated text cell), which
+   *  correctly has no competing focusable element to lose the description to. */
+  private resolveDescribedbyTarget(): HTMLElement {
+    const wrapper = this.triggerEl().nativeElement;
+    return getFocusableElements(wrapper)[0] ?? wrapper;
+  }
+
+  private syncDescribedby(next: string | null): void {
+    const target = this.resolveDescribedbyTarget();
+    if (
+      this.describedbyTarget &&
+      this.describedbyTarget !== target &&
+      this.appliedDescribedby !== null
+    ) {
+      this.renderer.removeAttribute(this.describedbyTarget, 'aria-describedby');
+    }
+    if (next === null) {
+      if (this.appliedDescribedby !== null) {
+        this.renderer.removeAttribute(target, 'aria-describedby');
+      }
+    } else {
+      this.renderer.setAttribute(target, 'aria-describedby', next);
+    }
+    this.describedbyTarget = target;
+    this.appliedDescribedby = next;
   }
 
   private isTriggerTruncated(): boolean {
