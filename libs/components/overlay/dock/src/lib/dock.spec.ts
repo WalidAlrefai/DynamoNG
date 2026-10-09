@@ -118,6 +118,57 @@ describe('DynamoDock', () => {
     });
   });
 
+  describe('roving-tabindex seed', () => {
+    it('seeds the first enabled tile, not index 0, when items()[0] is disabled', () => {
+      const { container } = renderDynamoComponent(DynamoDock, {
+        inputs: {
+          items: [
+            { label: 'Trash', icon: '🗑', disabled: true },
+            { label: 'Mail', icon: '✉' },
+            { label: 'Settings', icon: '⚙' },
+          ],
+        },
+      });
+      const els = tiles(container);
+
+      expect(els[0]?.getAttribute('tabindex')).toBe('-1');
+      expect(els[1]?.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('reactively reseeds if items() changes such that the focused tile becomes disabled', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDock, {
+        inputs: { items: items() },
+      });
+      let els = tiles(container);
+      expect(els[0]?.getAttribute('tabindex')).toBe('0'); // Finder, enabled
+
+      fixture.componentRef.setInput('items', [
+        { label: 'Finder', icon: '🔍', disabled: true },
+        { label: 'Mail', icon: '✉' },
+        { label: 'Trash', icon: '🗑', disabled: true },
+        { label: 'Settings', icon: '⚙' },
+      ]);
+      fixture.detectChanges();
+
+      els = tiles(container);
+      expect(els[0]?.getAttribute('tabindex')).toBe('-1');
+      expect(els[1]?.getAttribute('tabindex')).toBe('0'); // Mail, now the first enabled tile
+    });
+
+    it('does not throw when every item is disabled, and leaves the seed in place', () => {
+      expect(() =>
+        renderDynamoComponent(DynamoDock, {
+          inputs: {
+            items: [
+              { label: 'A', disabled: true },
+              { label: 'B', disabled: true },
+            ],
+          },
+        }),
+      ).not.toThrow();
+    });
+  });
+
   describe('magnification', () => {
     it('scales a tile toward the pointer and resets on mouse-leave', () => {
       const { container, fixture } = renderDynamoComponent(DynamoDock, {
@@ -216,6 +267,86 @@ describe('DynamoDock', () => {
     it('has no axe violations (left/vertical)', async () => {
       const { container } = renderDynamoComponent(DynamoDock, {
         inputs: { items: items(), ariaLabel: 'Apps', position: 'left' },
+      });
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('pt / ariaDescribedby / fluid', () => {
+    it('merges pt class onto root/list/item/icon/label/badge', () => {
+      const { container } = renderDynamoComponent(DynamoDock, {
+        inputs: {
+          items: [{ label: 'Finder', icon: '🔍', badge: 3 }],
+          pt: {
+            root: { class: 'pt-root' },
+            list: { class: 'pt-list' },
+            item: { class: 'pt-item' },
+            icon: { class: 'pt-icon' },
+            label: { class: 'pt-label' },
+            badge: { class: 'pt-badge' },
+          },
+        },
+      });
+
+      expect(
+        container
+          .querySelector('[data-testid="DynamoDock"]')
+          ?.classList.contains('pt-root'),
+      ).toBe(true);
+      expect(
+        within(container).getByRole('menu').classList.contains('pt-list'),
+      ).toBe(true);
+      const tile = tiles(container)[0] as HTMLElement;
+      expect(tile.classList.contains('pt-item')).toBe(true);
+      expect(tile.querySelector('.pt-icon')).not.toBeNull();
+      expect(tile.querySelector('.pt-label')).not.toBeNull();
+      expect(tile.querySelector('.pt-badge')).not.toBeNull();
+    });
+
+    it('merges a non-class pt attribute onto the list', () => {
+      const { container } = renderDynamoComponent(DynamoDock, {
+        inputs: {
+          items: items(),
+          pt: { list: { 'data-testid': 'list-el' } },
+        },
+      });
+
+      expect(container.querySelector('[data-testid="list-el"]')).not.toBeNull();
+    });
+
+    it('omits aria-describedby by default, forwards it to the list when set', () => {
+      const { container } = renderDynamoComponent(DynamoDock, {
+        inputs: { items: items(), ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        within(container).getByRole('menu').getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('defaults fluid to false (no w-full), opts in when true', () => {
+      const { container, fixture } = renderDynamoComponent(DynamoDock, {
+        inputs: { items: items() },
+      });
+      const root = container.querySelector(
+        '[data-testid="DynamoDock"]',
+      ) as HTMLElement;
+      expect(root.classList.contains('w-full')).toBe(false);
+
+      fixture.componentRef.setInput('fluid', true);
+      fixture.detectChanges();
+      expect(root.classList.contains('w-full')).toBe(true);
+    });
+
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { container } = renderDynamoComponent(DynamoDock, {
+        inputs: {
+          items: items(),
+          ariaLabel: 'Apps',
+          ariaDescribedby: 'hint-id',
+          fluid: true,
+          pt: { list: { class: 'pt-list' } },
+        },
       });
       await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });

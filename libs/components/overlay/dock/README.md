@@ -28,6 +28,8 @@ protected readonly dockItems: DynamoDockItem[] = [
 | `magnificationScale` | `number`                      | `1.6`       | Peak scale factor for the tile directly under the pointer.                                                                                                                                                                                           |
 | `magnificationRange` | `number`                      | `140`       | Pixel distance from the pointer at which magnification falls to zero.                                                                                                                                                                                |
 | `ariaLabel`          | `string \| undefined`         | `undefined` | Labels the `role="menu"` list.                                                                                                                                                                                                                       |
+| `ariaDescribedby`    | `string \| undefined`         | `undefined` | Forwarded as `aria-describedby` on the `role="menu"` list.                                                                                                                                                                                           |
+| `fluid`              | `boolean`                     | `false`     | Fills the width of its container.                                                                                                                                                                                                                    |
 
 ## Outputs
 
@@ -35,8 +37,13 @@ None — Dock has no `model()` or `output()`; wire behavior through each item's 
 
 ## Accessibility
 
-- The list is `role="menu"` (`aria-orientation` reflects `position`) with `role="menuitem"` tile buttons; a roving `tabindex` keeps exactly one tile in the Tab order at a time.
+- The list is `role="menu"` (`aria-orientation` reflects `position`) with `role="menuitem"` tile buttons; a roving `tabindex` keeps exactly one tile in the Tab order at a time — always the first _enabled_ tile, even if a disabled item happens to be first in `items()`, and re-validated if `items()` changes such that the currently-focused tile becomes disabled.
 - Keyboard: the axis-appropriate arrow keys (`ArrowRight`/`ArrowLeft` for a row, `ArrowDown`/`ArrowUp` for a column) move focus, wrapping and skipping disabled tiles; `Home`/`End` jump; `Enter`/`Space` runs the focused tile's `command`.
+
+## Design notes
+
+**`pt` parts**: `root`, `list`, `item`, `icon`, `label`, and `badge` — all six fully wired (class + non-class
+attribute forwarding), no partial/unwired tiers this round.
 
 ## Tier / dependencies
 
