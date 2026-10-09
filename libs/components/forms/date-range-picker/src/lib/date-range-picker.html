@@ -1,67 +1,72 @@
 @if (!inline()) {
-<button
-  #triggerEl
-  type="button"
-  [id]="triggerId"
-  aria-haspopup="dialog"
-  [attr.aria-expanded]="open()"
-  [attr.aria-controls]="open() ? dialogId : null"
-  [attr.aria-label]="ariaLabel() ?? null"
-  [attr.aria-invalid]="invalid() ? true : null"
-  [attr.aria-readonly]="readOnly() ? true : null"
-  [class]="triggerClasses()"
-  [disabled]="disabled()"
-  (click)="toggle()"
-  (keydown)="onTriggerKeydown($event)"
->
-  <span>{{ triggerLabel() }}</span>
-  <svg
-    [attr.aria-hidden]="true"
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    fill="none"
+<div [class]="rootClasses()" [dgPt]="ptFor('root')">
+  <button
+    #triggerEl
+    type="button"
+    [id]="triggerId"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="open() ? dialogId : null"
+    [attr.aria-label]="ariaLabel() ?? null"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
+    [attr.aria-invalid]="invalid() ? true : null"
+    [attr.aria-readonly]="readOnly() ? true : null"
+    [class]="triggerClasses()"
+    [dgPt]="ptFor('trigger')"
+    [disabled]="disabled()"
+    (click)="toggle()"
+    (keydown)="onTriggerKeydown($event)"
   >
-    <rect
-      x="2"
-      y="3"
+    <span>{{ triggerLabel() }}</span>
+    <svg
+      [attr.aria-hidden]="true"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+    >
+      <rect
+        x="2"
+        y="3"
+        width="12"
+        height="11"
+        rx="1.5"
+        stroke="currentColor"
+        stroke-width="1.5"
+      />
+      <path
+        d="M2 6.5h12M5 1.5v3M11 1.5v3"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+      />
+    </svg>
+  </button>
+  @if (clearable() && value().start) {
+  <button
+    type="button"
+    [class]="clearButtonClasses"
+    [disabled]="disabled()"
+    aria-label="Clear selection"
+    (click)="clearValue($event)"
+  >
+    <svg
       width="12"
-      height="11"
-      rx="1.5"
-      stroke="currentColor"
-      stroke-width="1.5"
-    />
-    <path
-      d="M2 6.5h12M5 1.5v3M11 1.5v3"
-      stroke="currentColor"
-      stroke-width="1.5"
-      stroke-linecap="round"
-    />
-  </svg>
-</button>
-@if (clearable() && value().start) {
-<button
-  type="button"
-  [class]="clearButtonClasses"
-  [disabled]="disabled()"
-  aria-label="Clear selection"
-  (click)="clearValue($event)"
->
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 20 20"
-    fill="currentColor"
-    [attr.aria-hidden]="true"
-  >
-    <path
-      fill-rule="evenodd"
-      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-      clip-rule="evenodd"
-    />
-  </svg>
-</button>
-} } @if (inline()) {
+      height="12"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      [attr.aria-hidden]="true"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+        clip-rule="evenodd"
+      />
+    </svg>
+  </button>
+  }
+</div>
+} @if (inline()) {
 <ng-container [ngTemplateOutlet]="panelTemplate" />
 }
 
@@ -75,7 +80,8 @@
     "
     [attr.aria-modal]="inline() ? null : false"
     tabindex="-1"
-    [class]="panelClasses"
+    [class]="panelClasses()"
+    [dgPt]="ptFor('panel')"
     (keydown)="onPanelKeydown($event)"
   >
     <div class="mb-2 flex items-center justify-between">
@@ -83,7 +89,7 @@
         type="button"
         aria-label="Previous month"
         [class]="headerButtonClasses"
-        [disabled]="quickJumpOpen()"
+        [disabled]="disabled() || quickJumpOpen()"
         (click)="navigateMonth(-1)"
       >
         <svg
@@ -107,6 +113,7 @@
         [id]="monthLabelId"
         [class]="quickJumpButtonClasses"
         [attr.aria-expanded]="quickJumpOpen()"
+        [disabled]="disabled()"
         (click)="toggleQuickJump()"
       >
         {{ monthLabel() }}
@@ -115,7 +122,7 @@
         type="button"
         aria-label="Next month"
         [class]="headerButtonClasses"
-        [disabled]="quickJumpOpen()"
+        [disabled]="disabled() || quickJumpOpen()"
         (click)="navigateMonth(1)"
       >
         <svg
@@ -144,6 +151,7 @@
         type="button"
         aria-label="Previous year"
         [class]="headerButtonClasses"
+        [disabled]="disabled()"
         (click)="quickJumpYearStep(-1)"
       >
         ‹
@@ -155,6 +163,7 @@
         type="button"
         aria-label="Next year"
         [class]="headerButtonClasses"
+        [disabled]="disabled()"
         (click)="quickJumpYearStep(1)"
       >
         ›
@@ -164,7 +173,7 @@
       @for (month of monthIndices; track month) {
       <button
         type="button"
-        [disabled]="isQuickJumpMonthDisabled(month)"
+        [disabled]="disabled() || isQuickJumpMonthDisabled(month)"
         [class]="quickJumpMonthClasses(month)"
         (click)="selectQuickJumpMonth(month)"
       >
@@ -193,7 +202,7 @@
             [attr.aria-selected]="
               dayRangeState(day).isStart || dayRangeState(day).isEnd
                 ? 'true'
-                : null
+                : 'false'
             "
           >
             <button
@@ -202,8 +211,9 @@
               [attr.tabindex]="inline() && isFocused(day) ? 0 : -1"
               [attr.aria-current]="isToday(day) ? 'date' : null"
               [attr.aria-label]="dayAriaLabel(day)"
-              [disabled]="isDisabled(day)"
+              [disabled]="disabled() || isDisabled(day)"
               [class]="dayClasses(day)"
+              [dgPt]="ptFor('day')"
               (click)="selectDay(day)"
               (mouseenter)="onDayHover(day)"
             >

@@ -1,6 +1,7 @@
 import { Component, model, signal } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import type { DynamoPassThrough } from '@dynamong/core/api';
 import {
   expectNoA11yViolations,
   renderDynamoComponent,
@@ -10,7 +11,10 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DynamoDateRangePicker } from './date-range-picker';
 import { DynamoDateRangePickerHarness } from './date-range-picker.harness';
-import type { DynamoDateRange } from './date-range-picker.types';
+import type {
+  DynamoDateRange,
+  DynamoDateRangePickerPart,
+} from './date-range-picker.types';
 
 // Fixed "today" for every test — a plain midweek Wednesday, matching
 // DynamoDatePicker's own spec's fixture date.
@@ -44,6 +48,21 @@ function getDayButtonByText(text: string): HTMLButtonElement {
   return button;
 }
 
+// `inline` mode renders no `role="dialog"` at all (confirmed via the
+// template's own `[attr.role]="inline() ? null : 'dialog'"`) — getDialog()
+// returns null there, so inline-mode tests query the fixture's own
+// `container` directly instead.
+function getInlineDayButtonByText(
+  container: HTMLElement,
+  text: string,
+): HTMLButtonElement {
+  const button = Array.from(
+    container.querySelectorAll<HTMLButtonElement>('table[role="grid"] button'),
+  ).find((candidate) => candidate.textContent?.trim() === text);
+  if (!button) throw new Error(`No day button with text "${text}" found`);
+  return button;
+}
+
 async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
   fixture.detectChanges();
@@ -69,6 +88,27 @@ class DateRangePickerTestHostComponent {
   readonly isOpen = model(false);
   readonly min = signal<Date | undefined>(undefined);
   readonly max = signal<Date | undefined>(undefined);
+}
+
+@Component({
+  selector: 'dg-date-range-picker-pt-host',
+  standalone: true,
+  imports: [DynamoDateRangePicker],
+  template: `
+    <dg-date-range-picker
+      ariaLabel="Choose a date range"
+      [ariaDescribedby]="ariaDescribedby()"
+      [fluid]="fluid()"
+      [pt]="pt()"
+    />
+  `,
+})
+class DateRangePickerPtHostComponent {
+  readonly ariaDescribedby = signal<string | undefined>(undefined);
+  readonly fluid = signal(true);
+  readonly pt = signal<
+    DynamoPassThrough<DynamoDateRangePickerPart> | undefined
+  >(undefined);
 }
 
 @Component({
@@ -614,6 +654,214 @@ describe('DynamoDateRangePicker', () => {
         start: new Date(2026, 7, 10),
         end: new Date(2026, 7, 15),
       });
+    });
+  });
+
+  describe('disabled', () => {
+    it('disables the day grid, nav buttons, and quick-jump toggle in inline mode (no trigger to otherwise gate access)', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDateRangePicker,
+        {
+          inputs: {
+            ariaLabel: 'Choose a date range',
+            inline: true,
+            disabled: true,
+          },
+        },
+      );
+      fixture.detectChanges();
+
+      expect(getInlineDayButtonByText(container, '19').disabled).toBe(true);
+      expect(
+        (
+          within(container).getByRole('button', {
+            name: 'Previous month',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      expect(
+        (
+          within(container).getByRole('button', {
+            name: 'Next month',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      expect(
+        (
+          within(container).getByRole('button', {
+            name: 'August 2026',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+
+      getInlineDayButtonByText(container, '20').click();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual({ start: null, end: null });
+    });
+
+    it('disables the year-stepper and month-grid buttons once the quick-jump grid is open', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDateRangePicker,
+        { inputs: { ariaLabel: 'Choose a date range', inline: true } },
+      );
+      fixture.detectChanges();
+      // Open the quick-jump grid while still enabled, then disable the
+      // picker — mirrors Splitter's/Color Picker's own mid-interaction-
+      // disable precedent, and avoids needing the already-confirmed-disabled
+      // toggle button to open it in the first place.
+      await userEvent.click(
+        within(container).getByRole('button', { name: 'August 2026' }),
+      );
+      fixture.detectChanges();
+
+      componentInstance.disabled.set(true);
+      fixture.detectChanges();
+
+      expect(
+        (
+          within(container).getByRole('button', {
+            name: 'Previous year',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      expect(
+        (
+          within(container).getByRole('button', {
+            name: 'Dec',
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+    });
+
+    it('stops committing a day click if disabled flips true mid-interaction (panel already open)', async () => {
+      const { container, fixture, componentInstance } = renderDynamoComponent(
+        DynamoDateRangePicker,
+        { inputs: { ariaLabel: 'Choose a date range' } },
+      );
+      await openPanel(container, fixture);
+
+      componentInstance.disabled.set(true);
+      fixture.detectChanges();
+
+      expect(getDayButtonByText('20').disabled).toBe(true);
+      getDayButtonByText('20').click();
+      await settle(fixture);
+
+      expect(componentInstance.value()).toEqual({ start: null, end: null });
+    });
+  });
+
+  describe('aria-selected', () => {
+    it('is explicitly "false" (not absent) on non-endpoint cells, "true" on endpoints', async () => {
+      const { container, fixture } = renderDynamoComponent(
+        DateRangePickerTestHostComponent,
+      );
+      await openPanel(container, fixture);
+      await userEvent.click(getDayButtonByText('10'));
+      await settle(fixture);
+      await userEvent.click(getDayButtonByText('15'));
+      await settle(fixture);
+      await openPanel(container, fixture);
+
+      const endpointCell =
+        getDayButtonByText('10').closest('[role="gridcell"]');
+      const nonEndpointCell =
+        getDayButtonByText('12').closest('[role="gridcell"]');
+      expect(endpointCell?.getAttribute('aria-selected')).toBe('true');
+      expect(nonEndpointCell?.getAttribute('aria-selected')).toBe('false');
+    });
+  });
+
+  describe('pt / ariaDescribedby / fluid', () => {
+    it('merges pt class onto root/trigger', () => {
+      const { fixture, container } = renderDynamoComponent(
+        DateRangePickerPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { class: 'pt-root' },
+        trigger: { class: 'pt-trigger' },
+      });
+      fixture.detectChanges();
+
+      const trigger = within(container).getByRole('button', {
+        name: 'Choose a date range',
+      });
+      // `root` is a separate `display: contents` wrapper around the
+      // trigger/clear-button pair, not merged onto the trigger itself.
+      expect(trigger.parentElement?.classList.contains('pt-root')).toBe(true);
+      expect(trigger.classList.contains('pt-trigger')).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto the trigger', () => {
+      const { fixture, container } = renderDynamoComponent(
+        DateRangePickerPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        trigger: { 'data-testid': 'trigger-el' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container.querySelector('[data-testid="trigger-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('merges pt class onto panel/day once open', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        DateRangePickerPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        panel: { class: 'pt-panel' },
+        day: { class: 'pt-day' },
+      });
+      fixture.detectChanges();
+      await openPanel(container, fixture);
+
+      expect(getDialog()?.classList.contains('pt-panel')).toBe(true);
+      expect(getDayButtons().length).toBeGreaterThan(0);
+      expect(
+        getDayButtons().every((button) => button.classList.contains('pt-day')),
+      ).toBe(true);
+    });
+
+    it('omits aria-describedby by default, forwards it to the trigger when set', () => {
+      const { fixture, container } = renderDynamoComponent(
+        DateRangePickerPtHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Choose a date range',
+      });
+      expect(trigger.getAttribute('aria-describedby')).toBeNull();
+
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.detectChanges();
+      expect(trigger.getAttribute('aria-describedby')).toBe('hint-id');
+    });
+
+    it('defaults fluid to true (w-full), opts out when false', () => {
+      const { fixture, container } = renderDynamoComponent(
+        DateRangePickerPtHostComponent,
+      );
+      const trigger = within(container).getByRole('button', {
+        name: 'Choose a date range',
+      });
+      expect(trigger.className).toContain('w-full');
+
+      fixture.componentInstance.fluid.set(false);
+      fixture.detectChanges();
+      expect(trigger.className).not.toContain('w-full');
+    });
+
+    it('has no axe violations with pt/ariaDescribedby/fluid set', async () => {
+      const { fixture, container } = renderDynamoComponent(
+        DateRangePickerPtHostComponent,
+      );
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.componentInstance.pt.set({ trigger: { class: 'pt-trigger' } });
+      fixture.detectChanges();
+
+      await expect(expectNoA11yViolations(container)).resolves.toBeUndefined();
     });
   });
 });
