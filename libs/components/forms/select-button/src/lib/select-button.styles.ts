@@ -3,8 +3,19 @@ import { cva } from 'class-variance-authority';
 // Root is a plain flex row; the "joined segmented control" look comes
 // entirely from each segment's own rounding/overlap below, mirroring
 // Pagination's division of labor (color is Button's job via severity/variant,
-// this file only ever contributes shape/position via styleClass).
-export const selectButtonRootStyles = 'inline-flex';
+// this file only ever contributes shape/position via styleClass). Mirrors
+// @dynamong/split-button's own `fluid` variant shape — no pre-existing
+// full-width default to preserve, since a select button is shrink-to-fit by
+// design today.
+export const selectButtonRootStyles = cva('inline-flex', {
+  variants: {
+    fluid: {
+      true: 'flex w-full',
+      false: '',
+    },
+  },
+  defaultVariants: { fluid: false },
+});
 
 // A bare `border` lives in the base classes so every segment reserves the
 // same 1px regardless of selection state — DynamoButton's own `outline`
@@ -32,8 +43,19 @@ export const selectButtonSegmentStyles = cva(
         true: 'border-transparent',
         false: '',
       },
+      // Shares the stretched root width evenly across segments under
+      // `fluid` — pairs with `selectButtonRootStyles`'s own `fluid` variant.
+      fluid: {
+        true: 'flex-1',
+        false: '',
+      },
     },
-    defaultVariants: { position: 'middle', isNotFirst: true, selected: false },
+    defaultVariants: {
+      position: 'middle',
+      isNotFirst: true,
+      selected: false,
+      fluid: false,
+    },
   },
 );
 

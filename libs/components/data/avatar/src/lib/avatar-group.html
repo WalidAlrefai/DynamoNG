@@ -1,3 +1,8 @@
-<div [class]="rootClasses()" role="group">
+<div
+  [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
+  role="group"
+  [attr.aria-describedby]="ariaDescribedby() ?? null"
+>
   <ng-content></ng-content>
 </div>

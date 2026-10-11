@@ -8,7 +8,10 @@ import {
   type DocExampleRef,
 } from '../components/examples-layout';
 
-const EXAMPLES: DocExampleRef[] = [{ id: 'basic', title: 'Basic' }];
+const EXAMPLES: DocExampleRef[] = [
+  { id: 'basic', title: 'Basic' },
+  { id: 'disabled-first', title: 'Disabled First Item' },
+];
 
 const API: ApiTableRow[] = [
   { name: 'items', type: 'DynamoDockItem[] (required)', default: '—' },
@@ -21,6 +24,8 @@ const API: ApiTableRow[] = [
   { name: 'magnificationScale', type: 'number', default: '1.6' },
   { name: 'magnificationRange', type: 'number (px)', default: '140' },
   { name: 'ariaLabel', type: 'string | undefined', default: 'undefined' },
+  { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined' },
+  { name: 'fluid', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -50,6 +55,21 @@ const API: ApiTableRow[] = [
         <div code>&lt;dg-dock [items]="items" ariaLabel="Apps" /&gt;</div>
       </docs-example>
 
+      <docs-example
+        exampleId="disabled-first"
+        title="Disabled First Item"
+        description="Tab into this dock — focus lands on the first enabled tile (Mail), skipping the disabled Trash tile even though it's first in items()."
+      >
+        <div preview class="flex flex-col items-center gap-8 py-6">
+          <dg-dock [items]="disabledFirstItems" ariaLabel="Apps" />
+        </div>
+        <div code>
+          &lt;dg-dock [items]="items" ariaLabel="Apps" /&gt;
+          <br />
+          // items[0].disabled === true
+        </div>
+      </docs-example>
+
       <docs-api-table api [rows]="apiRows" />
     </docs-examples-layout>
   `,
@@ -70,5 +90,10 @@ export class DockDocPage {
     { label: 'Photos', icon: '🖼', command: () => this.last.set('Photos') },
     { label: 'Music', icon: '♫', command: () => this.last.set('Music') },
     { label: 'Trash', icon: '🗑', disabled: true },
+  ];
+  protected readonly disabledFirstItems: DynamoDockItem[] = [
+    { label: 'Trash', icon: '🗑', disabled: true },
+    { label: 'Mail', icon: '✉' },
+    { label: 'Calendar', icon: '📅' },
   ];
 }

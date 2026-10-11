@@ -13,7 +13,10 @@ import {
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import { DynamoButton } from '@dynamong/button';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   selectButtonRootStyles,
@@ -31,7 +34,7 @@ import type {
   selector: 'dg-select-button',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoButton],
+  imports: [DynamoButton, DynamoPassThroughDirective],
   templateUrl: './select-button.html',
   providers: [
     {
@@ -54,9 +57,18 @@ export class DynamoSelectButton<TValue = string>
   readonly size = input<DynamoSelectButtonSize>('md');
   /** Two-way bindable; also driven by Angular forms via `setDisabledState`. */
   readonly disabled = model(false);
+  /** HTML `readonly` semantics: segments stay visible/focusable, but
+   *  activating one (click, Enter/Space, or single-select arrow-key
+   *  movement) is blocked. Unlike `disabled`, doesn't dim them or remove
+   *  them from the tab order. */
+  readonly readOnly = input(false);
   readonly ariaLabel = input<string | undefined>(undefined);
   /** In single-select mode, allows clicking the already-active segment to deselect it back to `null`. Off by default — a select button conventionally always has exactly one thing selected. */
   readonly allowEmpty = input(false);
+  /** Forwarded as `aria-describedby` on the root. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Stretches the root to the full available width, sharing it evenly across segments. */
+  readonly fluid = input(false);
 
   private onChangeFn: (value: DynamoSelectButtonValue<TValue>) => void = () => {
     /* replaced by registerOnChange once bound to a FormControl/ngModel */
@@ -74,8 +86,12 @@ export class DynamoSelectButton<TValue = string>
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(selectButtonRootStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          selectButtonRootStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
 
   constructor() {
@@ -107,10 +123,14 @@ export class DynamoSelectButton<TValue = string>
 
   protected segmentClasses(index: number): string {
     const option = this.options()[index];
-    return selectButtonSegmentStyles({
-      position: selectButtonSegmentPosition(index, this.options().length),
-      selected: option !== undefined && this.isSelected(option.value),
-    });
+    return cn(
+      selectButtonSegmentStyles({
+        position: selectButtonSegmentPosition(index, this.options().length),
+        selected: option !== undefined && this.isSelected(option.value),
+        fluid: this.fluid(),
+      }),
+      this.ptFor('segment').class,
+    );
   }
 
   protected tabIndexFor(index: number): number {
@@ -118,7 +138,7 @@ export class DynamoSelectButton<TValue = string>
   }
 
   protected activate(option: DynamoSelectOption<TValue>): void {
-    if (this.isDisabled(option)) return;
+    if (this.isDisabled(option) || this.readOnly()) return;
 
     if (this.multiple()) {
       const current = this.toArray(this.value());

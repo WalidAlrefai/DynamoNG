@@ -14,8 +14,12 @@ export const dockRootStyles = cva('inline-flex', {
       left: 'justify-start',
       right: 'justify-end',
     },
+    fluid: {
+      true: 'w-full',
+      false: '',
+    },
   },
-  defaultVariants: { position: 'bottom' },
+  defaultVariants: { position: 'bottom', fluid: false },
 });
 
 export const dockListStyles = cva(

@@ -3,11 +3,15 @@ import {
   Component,
   ElementRef,
   computed,
+  effect,
   input,
   signal,
   viewChildren,
 } from '@angular/core';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import {
   dockBadgeStyles,
@@ -32,6 +36,7 @@ import type {
   selector: 'dg-dock',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoPassThroughDirective],
   templateUrl: './dock.html',
 })
 export class DynamoDock extends DynamoBaseComponent<DynamoDockPart> {
@@ -42,6 +47,11 @@ export class DynamoDock extends DynamoBaseComponent<DynamoDockPart> {
   /** Pixel distance from the pointer at which magnification falls to zero. */
   readonly magnificationRange = input(140);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the `role="menu"` list. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `false` — no pre-existing
+   *  full-width behavior to preserve. */
+  readonly fluid = input(false);
 
   private readonly tileEls =
     viewChildren<ElementRef<HTMLButtonElement>>('tileEl');
@@ -60,19 +70,52 @@ export class DynamoDock extends DynamoBaseComponent<DynamoDockPart> {
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(dockRootStyles({ position: this.position() }), this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          dockRootStyles({ position: this.position(), fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
   protected readonly listClasses = computed(() =>
-    dockListStyles({ position: this.position() }),
+    cn(dockListStyles({ position: this.position() }), this.ptFor('list').class),
   );
   protected readonly itemClasses = computed(() =>
-    dockItemStyles({ position: this.position() }),
+    cn(dockItemStyles({ position: this.position() }), this.ptFor('item').class),
   );
+  protected readonly iconClasses = computed(() => this.ptFor('icon').class);
   protected readonly labelClasses = computed(() =>
-    dockLabelStyles({ position: this.position() }),
+    cn(
+      dockLabelStyles({ position: this.position() }),
+      this.ptFor('label').class,
+    ),
   );
-  protected readonly badgeClasses = dockBadgeStyles;
+  protected readonly badgeClasses = computed(() =>
+    cn(dockBadgeStyles, this.ptFor('badge').class),
+  );
+
+  constructor() {
+    super();
+
+    // Keeps the roving-tabindex seed valid: runs once at construction (when
+    // `focusedIndex()` is still its default `0`, correcting it if
+    // `items()[0]` happens to be disabled) and again whenever `items()`
+    // changes such that the currently-focused tile becomes disabled or is
+    // removed — the same "re-validate on change" shape Select's own round
+    // used for its analogous `activeIndex` bug. Leaves `focusedIndex`
+    // untouched if every item is disabled (nothing better to move to),
+    // matching `focusIndex()`'s own existing null-guard.
+    effect(() => {
+      const list = this.items();
+      const current = this.focusedIndex();
+      if (list[current]?.disabled === true || !list[current]) {
+        const next = this.findEnabledIndex(-1, 1);
+        if (next !== null) {
+          this.focusedIndex.set(next);
+        }
+      }
+    });
+  }
 
   protected onPointerMove(event: MouseEvent): void {
     if (!this.magnification()) return;

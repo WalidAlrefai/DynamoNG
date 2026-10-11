@@ -5,9 +5,23 @@ import { focusRingClass } from '@dynamong/utils/styles';
 // component — never inline in org-chart.html / org-chart-item.html.
 
 // The outer wrapper: a horizontally-scrollable viewport so a wide chart
-// never forces the page itself to scroll sideways.
-export const orgChartRootStyles =
-  'inline-block max-w-full overflow-x-auto text-text-primary';
+// never forces the page itself to scroll sideways. No pre-existing `w-full`
+// — a chart's natural footprint is its content's width — so `fluid`
+// (added later) is a pure opt-in, appending `w-full` to the existing
+// `inline-block` rather than swapping the display mode (both together are
+// valid CSS — an explicit width still applies to an inline-level box).
+export const orgChartRootStyles = cva(
+  'inline-block max-w-full overflow-x-auto text-text-primary',
+  {
+    variants: {
+      fluid: {
+        true: 'w-full',
+        false: '',
+      },
+    },
+    defaultVariants: { fluid: false },
+  },
+);
 
 // The top row of root nodes. No connector above it — `justify-center`
 // keeps a single root centred, a forest evenly spread.

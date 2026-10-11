@@ -133,6 +133,24 @@ describe('DynamoButton', () => {
       ).toBe(false);
     });
 
+    it('forwards ariaDescribedby to the native button as aria-describedby', () => {
+      const { container } = renderDynamoComponent(DynamoButton, {
+        inputs: { ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        within(container).getByRole('button').getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('omits aria-describedby entirely when ariaDescribedby is unset', () => {
+      const { container } = renderDynamoComponent(DynamoButton);
+
+      expect(
+        within(container).getByRole('button').hasAttribute('aria-describedby'),
+      ).toBe(false);
+    });
+
     it('forwards ariaCurrent to the native button as aria-current', () => {
       const { container } = renderDynamoComponent(DynamoButton, {
         inputs: { ariaCurrent: 'page' },

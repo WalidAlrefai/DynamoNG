@@ -6,6 +6,12 @@ import {
   inject,
   input,
 } from '@angular/core';
+import { DynamoPassThroughDirective } from '@dynamong/core/base';
+import type {
+  DynamoPassThrough,
+  DynamoPassThroughAttrs,
+} from '@dynamong/core/api';
+import { cn } from '@dynamong/utils/class-merge';
 import { DynamoOrgChartState } from './org-chart-state';
 import {
   orgChartBoxStyles,
@@ -13,7 +19,7 @@ import {
   orgChartItemStyles,
   orgChartTogglerStyles,
 } from './org-chart.styles';
-import type { DynamoOrgChartNode } from './org-chart.types';
+import type { DynamoOrgChartNode, DynamoOrgChartPart } from './org-chart.types';
 
 // Recursive: renders `<dg-org-chart-item>` again, one level deeper, for each
 // child of an expanded node. Mirrors `DynamoTreeItem` — a genuinely
@@ -24,17 +30,31 @@ import type { DynamoOrgChartNode } from './org-chart.types';
   selector: 'dg-org-chart-item',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, DynamoOrgChartItem],
+  imports: [NgTemplateOutlet, DynamoOrgChartItem, DynamoPassThroughDirective],
   templateUrl: './org-chart-item.html',
   host: {
-    '[class]': 'itemClasses',
+    '[class]': 'itemClasses()',
     '[attr.data-node-id]': 'node().id',
   },
 })
 export class DynamoOrgChartItem {
   readonly node = input.required<DynamoOrgChartNode>();
+  /** Forwarded down from `DynamoOrgChart`'s own `pt()` — this component
+   *  doesn't extend `DynamoBaseComponent` (it's an internal recursive
+   *  rendering primitive, not itself a `pt`-targetable whole), so it
+   *  re-declares the same `pt` input shape purely to pass it along to its
+   *  own template bindings and to its recursive child
+   *  `<dg-org-chart-item>`. Mirrors `DynamoTreeItem`'s own identical
+   *  pattern. */
+  readonly pt = input<DynamoPassThrough<DynamoOrgChartPart> | undefined>(
+    undefined,
+  );
 
   protected readonly state = inject(DynamoOrgChartState);
+
+  protected ptFor(part: DynamoOrgChartPart): DynamoPassThroughAttrs {
+    return this.pt()?.[part] ?? {};
+  }
 
   protected readonly hasChildren = computed(
     () => (this.node().children?.length ?? 0) > 0,
@@ -61,17 +81,33 @@ export class DynamoOrgChartItem {
   );
 
   protected readonly boxClasses = computed(() =>
-    orgChartBoxStyles({
-      selectable: this.state.selectable(),
-      selected: this.selected(),
-      disabled: this.node().disabled ?? false,
-    }),
+    cn(
+      orgChartBoxStyles({
+        selectable: this.state.selectable(),
+        selected: this.selected(),
+        disabled: this.node().disabled ?? false,
+      }),
+      this.ptFor('node').class,
+    ),
   );
   protected readonly togglerClasses = computed(() =>
-    orgChartTogglerStyles({ collapsed: this.collapsed() }),
+    cn(
+      orgChartTogglerStyles({ collapsed: this.collapsed() }),
+      this.ptFor('toggler').class,
+    ),
   );
-  protected readonly itemClasses = orgChartItemStyles;
-  protected readonly groupClasses = orgChartGroupStyles;
+  // `connector` has no dedicated child element — the before:/after:
+  // pseudo-elements that draw the connector lines are applied via this
+  // component's own host binding, so only class-merging is practical here
+  // (no `[dgPt]` directive instance can attach to a component's own host
+  // without the heavier `hostDirectives` API, not warranted for a purely
+  // decorative pseudo-element host).
+  protected readonly itemClasses = computed(() =>
+    cn(orgChartItemStyles, this.ptFor('connector').class),
+  );
+  protected readonly groupClasses = computed(() =>
+    cn(orgChartGroupStyles, this.ptFor('group').class),
+  );
 
   protected onBoxClick(): void {
     if (this.node().disabled) {
@@ -93,13 +129,13 @@ export class DynamoOrgChartItem {
         }
         return;
       case 'ArrowRight':
-        if (this.hasChildren() && this.collapsed()) {
+        if (this.showToggler() && this.collapsed()) {
           event.preventDefault();
           this.state.toggle(this.node().id);
         }
         return;
       case 'ArrowLeft':
-        if (this.hasChildren() && !this.collapsed()) {
+        if (this.showToggler() && !this.collapsed()) {
           event.preventDefault();
           this.state.toggle(this.node().id);
         }

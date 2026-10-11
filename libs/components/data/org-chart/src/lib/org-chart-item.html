@@ -1,12 +1,13 @@
 <div
   role="treeitem"
   [class]="boxClasses()"
+  [dgPt]="ptFor('node')"
   [attr.data-node-id]="node().id"
   data-testid="DynamoOrgChart-node"
   [tabindex]="focusable() ? 0 : -1"
   [attr.aria-expanded]="hasChildren() ? !collapsed() : null"
   [attr.aria-selected]="state.selectable() ? selected() : null"
-  [attr.aria-disabled]="node().disabled ? 'true' : null"
+  [attr.aria-disabled]="node().disabled ? 'true' : 'false'"
   (click)="onBoxClick()"
   (keydown)="onBoxKeydown($event)"
 >
@@ -21,6 +22,7 @@
 @if (showToggler()) {
 <span
   [class]="togglerClasses()"
+  [dgPt]="ptFor('toggler')"
   data-testid="DynamoOrgChart-toggler"
   [attr.aria-hidden]="true"
   (click)="onToggle($event)"
@@ -42,9 +44,9 @@
   </svg>
 </span>
 } @if (childrenVisible()) {
-<div role="group" [class]="groupClasses">
+<div role="group" [class]="groupClasses()" [dgPt]="ptFor('group')">
   @for (child of node().children; track child.id) {
-  <dg-org-chart-item [node]="child" />
+  <dg-org-chart-item [node]="child" [pt]="pt()" />
   }
 </div>
 }

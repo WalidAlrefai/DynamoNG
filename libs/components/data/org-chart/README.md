@@ -27,15 +27,17 @@ protected onNodeSelect(node: DynamoOrgChartNode): void { ... }
 
 ## Inputs
 
-| Input           | Type                              | Default     | Description                                                                                                                                                                                                              |
-| --------------- | --------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`         | `DynamoOrgChartNode[]` (required) | —           | Root nodes — usually one, but a forest is allowed. Each node's `id` must be unique across the whole chart. Set a node's `disabled` to exclude it from selection and click activation — its subtree can still be toggled. |
-| `collapsible`   | `boolean`                         | `true`      | Shows a collapse/expand toggle on every node that has children.                                                                                                                                                          |
-| `collapsedIds`  | `string[]` (model)                | `[]`        | Ids of currently-collapsed subtrees. Empty means the whole chart is expanded.                                                                                                                                            |
-| `selectable`    | `boolean`                         | `false`     |                                                                                                                                                                                                                          |
-| `selectionMode` | `DynamoOrgChartSelectionMode`     | `'single'`  | `'single' \| 'multiple'`.                                                                                                                                                                                                |
-| `selection`     | `string[]` (model)                | `[]`        | Ids of selected nodes.                                                                                                                                                                                                   |
-| `ariaLabel`     | `string \| undefined`             | `undefined` |                                                                                                                                                                                                                          |
+| Input             | Type                              | Default     | Description                                                                                                                                                                                                              |
+| ----------------- | --------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`           | `DynamoOrgChartNode[]` (required) | —           | Root nodes — usually one, but a forest is allowed. Each node's `id` must be unique across the whole chart. Set a node's `disabled` to exclude it from selection and click activation — its subtree can still be toggled. |
+| `collapsible`     | `boolean`                         | `true`      | Shows a collapse/expand toggle on every node that has children.                                                                                                                                                          |
+| `collapsedIds`    | `string[]` (model)                | `[]`        | Ids of currently-collapsed subtrees. Empty means the whole chart is expanded.                                                                                                                                            |
+| `selectable`      | `boolean`                         | `false`     |                                                                                                                                                                                                                          |
+| `selectionMode`   | `DynamoOrgChartSelectionMode`     | `'single'`  | `'single' \| 'multiple'`.                                                                                                                                                                                                |
+| `selection`       | `string[]` (model)                | `[]`        | Ids of selected nodes.                                                                                                                                                                                                   |
+| `ariaLabel`       | `string \| undefined`             | `undefined` |                                                                                                                                                                                                                          |
+| `ariaDescribedby` | `string \| undefined`             | `undefined` | Forwarded as `aria-describedby` on the `role="tree"` container.                                                                                                                                                          |
+| `fluid`           | `boolean`                         | `false`     | Fills the width of its container.                                                                                                                                                                                        |
 
 An optional projected `<ng-template let-node>` (`contentChild`, not required)
 supplies each node's contents; with none projected, `node.label` renders as
@@ -51,8 +53,29 @@ plain text.
 
 ## Accessibility
 
-- `role="tree"` root with `aria-label`; each node box is `role="treeitem"` with `aria-expanded` (when it has children) and `aria-selected` (when `selectable`); child groups are `role="group"`.
-- Keyboard: nodes are focusable (`tabindex="0"`) when selectable or expandable. `Enter`/`Space` selects; `ArrowRight` expands a collapsed node; `ArrowLeft` collapses an expanded one. A `disabled` node is never focusable and carries `aria-disabled="true"`.
+- `role="tree"` root with `aria-label`; each node box is `role="treeitem"` with `aria-expanded` (when it has children) and `aria-selected` (when `selectable`); child groups are `role="group"`. Every node box
+  carries an explicit `aria-disabled` — `"true"` when disabled, `"false"` (never omitted) otherwise, so
+  assistive tech can distinguish "selectable, not disabled" from "not a disableable item at all."
+- Keyboard: nodes are focusable (`tabindex="0"`) when selectable or expandable (expandable only when
+  `collapsible` is also `true` — when it's `false`, Arrow-key expand/collapse is disabled right along
+  with the hidden mouse toggler, not left as a keyboard-only bypass). `Enter`/`Space` selects;
+  `ArrowRight` expands a collapsed node; `ArrowLeft` collapses an expanded one. A `disabled` node is never
+  focusable.
+
+## Design notes
+
+**`pt` parts, across three tiers**: `root`/`tree` (the outer wrapper and the `role="tree"` container),
+`node`/`toggler`/`group` (each node's box, its collapse toggler, and its children wrapper) all get full
+`pt` support (class + non-class attribute forwarding). `connector` gets **class-only** support — the
+`before:`/`after:` pseudo-elements that draw the connector lines are applied via `DynamoOrgChartItem`'s
+own host binding, not a child element, so there's nowhere to attach a `[dgPt]` directive instance without
+the heavier `hostDirectives` API, not warranted for a purely decorative pseudo-element host. `nodeContent`
+has **no backing element at all** — a node's content is either the projected template's output or plain
+text, with no wrapping element in between — and is left genuinely unwired.
+
+`DynamoOrgChartItem` (the recursive rendering primitive) doesn't extend `DynamoBaseComponent`, so it
+re-declares its own `pt` input purely to forward it through its own template bindings and to its
+recursive child `<dg-org-chart-item>` — mirrors `@dynamong/tree`'s own identical `DynamoTreeItem` pattern.
 
 ## Tier / dependencies
 

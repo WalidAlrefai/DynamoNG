@@ -25,6 +25,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'single', title: 'Single Select' },
   { id: 'multiple', title: 'Multiple Select' },
   { id: 'allow-empty', title: 'Allow Empty' },
+  { id: 'read-only', title: 'Read-Only' },
   { id: 'reactive-forms', title: 'Reactive Forms' },
 ];
 
@@ -34,7 +35,10 @@ const API: ApiTableRow[] = [
   { name: 'multiple', type: 'boolean', default: 'false' },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  { name: 'readOnly', type: 'boolean', default: 'false' },
   { name: 'allowEmpty', type: 'boolean', default: 'false' },
+  { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined' },
+  { name: 'fluid', type: 'boolean', default: 'false' },
 ];
 
 @Component({
@@ -114,6 +118,25 @@ const API: ApiTableRow[] = [
       </docs-example>
 
       <docs-example
+        exampleId="read-only"
+        title="Read-Only"
+        description="readOnly keeps every segment visible/focusable, but blocks activating a new one — unlike disabled, it doesn't dim the control or remove it from the tab order."
+      >
+        <div preview>
+          <dg-select-button
+            [options]="viewOptions"
+            [(value)]="readOnlyView"
+            [readOnly]="true"
+            ariaLabel="View (read-only)"
+          />
+        </div>
+        <div code>
+          &lt;dg-select-button [options]="viewOptions" [(value)]="view"
+          [readOnly]="true" /&gt;
+        </div>
+      </docs-example>
+
+      <docs-example
         exampleId="reactive-forms"
         title="Reactive Forms"
         description="Implements ControlValueAccessor, so it plugs directly into formControl/ngModel."
@@ -143,5 +166,6 @@ export class SelectButtonDocPage {
   protected readonly view = signal<string | null>('list');
   protected readonly tags = signal<string[]>(['bug']);
   protected readonly allowEmptyView = signal<string | null>('list');
+  protected readonly readOnlyView = signal<string | null>('grid');
   protected readonly reactiveView = new FormControl<string | null>('grid');
 }

@@ -2,12 +2,16 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   input,
   output,
   signal,
 } from '@angular/core';
-import { DynamoBaseComponent } from '@dynamong/core/base';
-import type { DynamoSize } from '@dynamong/core/api';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
+import type { DynamoPassThroughAttrs, DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
 import { avatarRootStyles } from './avatar.styles';
 import type { DynamoAvatarPart, DynamoAvatarShape } from './avatar.types';
@@ -37,6 +41,7 @@ function deriveInitials(name: string): string | null {
   selector: 'dg-avatar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoPassThroughDirective],
   templateUrl: './avatar.html',
 })
 export class DynamoAvatar extends DynamoBaseComponent<DynamoAvatarPart> {
@@ -53,6 +58,8 @@ export class DynamoAvatar extends DynamoBaseComponent<DynamoAvatarPart> {
   /** Overrides the derived alt text (`name`, or `'Avatar'` if neither is set). */
   readonly alt = input<string | undefined>(undefined);
   readonly ariaLabelledBy = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the `role="img"` root. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   readonly size = input<DynamoSize>('md');
   /** `'circle'` (default, today's only look) or `'square'`. */
   readonly shape = input<DynamoAvatarShape>('circle');
@@ -78,12 +85,38 @@ export class DynamoAvatar extends DynamoBaseComponent<DynamoAvatarPart> {
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
           avatarRootStyles({ size: this.size(), shape: this.shape() }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
+  protected readonly imageClasses = computed(() =>
+    cn('h-full w-full object-cover', this.ptFor('image').class),
+  );
+  // `label`/`initials` share one physical element — see avatar.html's own
+  // `displayLabel` branch, which renders either a literal `label()`
+  // override or `name()`-derived `initials()`, never both. Picks whichever
+  // part is actually active, mirroring `displayLabel`'s own `label() ??
+  // initials()` precedence, rather than merging both unconditionally.
+  protected readonly labelOrInitialsPt = computed<DynamoPassThroughAttrs>(() =>
+    this.label() !== undefined ? this.ptFor('label') : this.ptFor('initials'),
+  );
+  protected readonly iconClasses = computed(() => this.ptFor('icon').class);
+
+  constructor() {
+    super();
+
+    // Gives every new `src` a fresh attempt — without this, a single failed
+    // load left `imageFailed` permanently `true`, so a consumer rebinding
+    // `src` to a later-valid URL would stay stuck on the fallback forever.
+    // `onImageError` re-sets it to `true` again if the new URL also fails.
+    effect(() => {
+      this.src();
+      this.imageFailed.set(false);
+    });
+  }
 
   protected onImageError(event: Event): void {
     this.imageFailed.set(true);

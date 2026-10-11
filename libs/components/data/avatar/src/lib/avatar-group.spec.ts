@@ -34,4 +34,38 @@ describe('DynamoAvatarGroup', () => {
     const { container } = renderDynamoComponent(AvatarGroupTestHostComponent);
     await expectNoA11yViolations(container);
   });
+
+  describe('pt / ariaDescribedby', () => {
+    it('merges pt class onto root', () => {
+      const { container } = renderDynamoComponent(DynamoAvatarGroup, {
+        inputs: { pt: { root: { class: 'pt-root' } } },
+      });
+
+      expect(
+        container
+          .querySelector('[role="group"]')
+          ?.classList.contains('pt-root'),
+      ).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto root', () => {
+      const { container } = renderDynamoComponent(DynamoAvatarGroup, {
+        inputs: { pt: { root: { 'data-testid': 'root-el' } } },
+      });
+
+      expect(container.querySelector('[data-testid="root-el"]')).not.toBeNull();
+    });
+
+    it('omits aria-describedby by default, forwards it to the root when set', () => {
+      const { container } = renderDynamoComponent(DynamoAvatarGroup, {
+        inputs: { ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        container
+          .querySelector('[role="group"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+  });
 });

@@ -17,13 +17,16 @@ to `[(pressed)]`.
 
 ## Inputs
 
-| Input       | Type                     | Default     | Description                                                                                                    |
-| ----------- | ------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------- |
-| `pressed`   | `boolean` (model)        | `false`     | Two-way bindable pressed state; also driven by Angular forms via `writeValue`.                                 |
-| `disabled`  | `boolean` (model)        | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                         |
-| `size`      | `DynamoToggleButtonSize` | `'md'`      |                                                                                                                |
-| `severity`  | `DynamoSeverity`         | `'primary'` | Applied only while pressed (solid fill). Unpressed always renders a neutral outline, regardless of this input. |
-| `ariaLabel` | `string \| undefined`    | `undefined` | Required when there's no visible text content (e.g. an icon-only toggle).                                      |
+| Input             | Type                     | Default     | Description                                                                                                                                                                                                                                   |
+| ----------------- | ------------------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pressed`         | `boolean` (model)        | `false`     | Two-way bindable pressed state; also driven by Angular forms via `writeValue`.                                                                                                                                                                |
+| `disabled`        | `boolean` (model)        | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                                                                        |
+| `readOnly`        | `boolean`                | `false`     | Stays visible/focusable, but toggling is blocked. Unlike `disabled`, doesn't dim it or remove it from the tab order.                                                                                                                          |
+| `size`            | `DynamoToggleButtonSize` | `'md'`      |                                                                                                                                                                                                                                               |
+| `severity`        | `DynamoSeverity`         | `'primary'` | Applied only while pressed (solid fill). Unpressed always renders a neutral outline, regardless of this input.                                                                                                                                |
+| `ariaLabel`       | `string \| undefined`    | `undefined` | Required when there's no visible text content (e.g. an icon-only toggle).                                                                                                                                                                     |
+| `ariaDescribedby` | `string \| undefined`    | `undefined` | Forwarded as `aria-describedby` on the underlying native button (via `DynamoButton`'s own `ariaDescribedby` — the wrapped `dg-button` is this component's only real element, so there's no separate host to bind an attribute onto directly). |
+| `fluid`           | `boolean`                | `false`     | Forwarded to the underlying `dg-button`'s own `fullWidth`.                                                                                                                                                                                    |
 
 ## Outputs
 
@@ -35,6 +38,7 @@ to `[(pressed)]`.
 ## Accessibility
 
 - Delegates to `dg-button`, which renders `aria-pressed` reflecting `pressed()` — the standard native toggle-button pattern, no extra role needed.
+- No `aria-readonly` is rendered for `readOnly`: the plain (implicit) `button` role isn't one of the ARIA roles that supports `aria-readonly`, so `readOnly` here is a behavior-only gate (toggling is blocked) with no corresponding ARIA attribute, rather than one stamped on a non-conforming role.
 
 ## Tier / dependencies
 

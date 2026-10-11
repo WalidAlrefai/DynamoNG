@@ -9,7 +9,10 @@ import {
   model,
   output,
 } from '@angular/core';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { cn } from '@dynamong/utils/class-merge';
 import { DynamoOrgChartItem } from './org-chart-item';
 import { DynamoOrgChartState } from './org-chart-state';
@@ -37,7 +40,7 @@ import type {
   selector: 'dg-org-chart',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoOrgChartItem],
+  imports: [DynamoOrgChartItem, DynamoPassThroughDirective],
   providers: [DynamoOrgChartState],
   templateUrl: './org-chart.html',
 })
@@ -56,21 +59,32 @@ export class DynamoOrgChart extends DynamoBaseComponent<DynamoOrgChartPart> {
   /** Two-way bindable: the ids of selected nodes. */
   readonly selection = model<string[]>([]);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the `role="tree"` container. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
+  /** Fills the width of its container. Defaults `false` — a chart's natural
+   *  footprint is its content's width, no pre-existing full-width default
+   *  to preserve. */
+  readonly fluid = input(false);
   /** Fires on every node-box click, whether or not `selectable` is set. */
   readonly nodeSelect = output<DynamoOrgChartNode>();
 
-  protected readonly nodeTemplate = contentChild<
-    TemplateRef<DynamoOrgChartNodeContext>
-  >(TemplateRef);
+  protected readonly nodeTemplate =
+    contentChild<TemplateRef<DynamoOrgChartNodeContext>>(TemplateRef);
 
   private readonly state = inject(DynamoOrgChartState);
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(orgChartRootStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(
+          orgChartRootStyles({ fluid: this.fluid() }),
+          this.styleClass(),
+          this.ptFor('root').class,
+        ),
   );
-  protected readonly treeClasses = orgChartTreeStyles;
+  protected readonly treeClasses = computed(() =>
+    cn(orgChartTreeStyles, this.ptFor('tree').class),
+  );
 
   private readonly collapsedSet = computed(() => new Set(this.collapsedIds()));
   private readonly selectedSet = computed(() => new Set(this.selection()));
