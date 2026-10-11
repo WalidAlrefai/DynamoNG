@@ -20,6 +20,11 @@ const API: ApiTableRow[] = [
     type: 'string | undefined',
     default: 'undefined',
   },
+  {
+    name: 'ariaDescribedby',
+    type: 'string | undefined',
+    default: 'undefined',
+  },
 ];
 
 @Component({
@@ -42,7 +47,7 @@ const API: ApiTableRow[] = [
       <docs-example
         exampleId="basic"
         title="Basic"
-        description="Project [start], [center], and [end] content; the three slots space out across the bar."
+        description="Project [start], [center], and [end] content; the three slots space out across the bar. Tab into the bar and use ArrowLeft/ArrowRight to move between Share and Save — Toolbar manages a single shared tab stop across everything projected into it."
       >
         <div preview class="w-full rounded-md border border-border p-2">
           <dg-toolbar ariaLabel="Document actions">
