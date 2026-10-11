@@ -62,6 +62,60 @@ class TimelineRightAlignedHostComponent {}
 class TimelineAlternateHostComponent {}
 
 @Component({
+  selector: 'dg-timeline-horizontal-host',
+  standalone: true,
+  imports: [DynamoTimeline, DynamoTimelineItem],
+  template: `
+    <dg-timeline orientation="horizontal">
+      <dg-timeline-item><p data-testid="item-0">Placed</p></dg-timeline-item>
+      <dg-timeline-item><p data-testid="item-1">Shipped</p></dg-timeline-item>
+    </dg-timeline>
+  `,
+})
+class TimelineHorizontalHostComponent {}
+
+@Component({
+  selector: 'dg-timeline-horizontal-bottom-host',
+  standalone: true,
+  imports: [DynamoTimeline, DynamoTimelineItem],
+  template: `
+    <dg-timeline orientation="horizontal" align="bottom">
+      <dg-timeline-item><p data-testid="item-0">Placed</p></dg-timeline-item>
+    </dg-timeline>
+  `,
+})
+class TimelineHorizontalBottomHostComponent {}
+
+@Component({
+  selector: 'dg-timeline-horizontal-left-host',
+  standalone: true,
+  imports: [DynamoTimeline, DynamoTimelineItem],
+  template: `
+    <dg-timeline orientation="horizontal" align="left">
+      <dg-timeline-item><p data-testid="item-0">Placed</p></dg-timeline-item>
+    </dg-timeline>
+  `,
+})
+class TimelineHorizontalLeftHostComponent {}
+
+@Component({
+  selector: 'dg-timeline-horizontal-alternate-host',
+  standalone: true,
+  imports: [DynamoTimeline, DynamoTimelineItem],
+  template: `
+    <dg-timeline orientation="horizontal" align="alternate">
+      <dg-timeline-item><p data-testid="item-0">Placed</p></dg-timeline-item>
+      <dg-timeline-item><p data-testid="item-1">Shipped</p></dg-timeline-item>
+      <dg-timeline-item
+        ><p data-testid="item-2">Out for delivery</p></dg-timeline-item
+      >
+      <dg-timeline-item><p data-testid="item-3">Delivered</p></dg-timeline-item>
+    </dg-timeline>
+  `,
+})
+class TimelineHorizontalAlternateHostComponent {}
+
+@Component({
   selector: 'dg-timeline-item-standalone-host',
   standalone: true,
   imports: [DynamoTimelineItem],
@@ -311,6 +365,150 @@ describe('DynamoTimeline', () => {
     });
   });
 
+  describe('orientation="horizontal"', () => {
+    it('lays the root out as a row instead of a column', () => {
+      const { container } = renderDynamoComponent(
+        TimelineHorizontalHostComponent,
+      );
+
+      expect(within(container).getByRole('list').className).toContain(
+        'flex-row',
+      );
+      expect(within(container).getByRole('list').className).not.toContain(
+        'flex-col',
+      );
+    });
+
+    it('lays each item host out as a column instead of a row, not reversed by default', () => {
+      const { container } = renderDynamoComponent(
+        TimelineHorizontalHostComponent,
+      );
+      const item = container.querySelector('dg-timeline-item');
+
+      expect(item?.className).toContain('flex-col');
+      expect(item?.className).not.toContain('flex-col-reverse');
+    });
+
+    it('reverses the item host with align="bottom"', () => {
+      const { container } = renderDynamoComponent(
+        TimelineHorizontalBottomHostComponent,
+      );
+      const item = container.querySelector('dg-timeline-item');
+
+      expect(item?.className).toContain('flex-col-reverse');
+    });
+
+    it('treats align="left" identically to the (unset) default under horizontal orientation — same underlying state, different spelling', () => {
+      const { container } = renderDynamoComponent(
+        TimelineHorizontalLeftHostComponent,
+      );
+      const item = container.querySelector('dg-timeline-item');
+
+      expect(item?.className).toContain('flex-col');
+      expect(item?.className).not.toContain('flex-col-reverse');
+    });
+
+    it('lays the marker column out as a row instead of a column', () => {
+      const { container } = renderDynamoComponent(
+        TimelineHorizontalHostComponent,
+      );
+      const marker = container.querySelector(
+        '[data-testid="DynamoTimelineItem-marker"]',
+      );
+
+      expect(marker?.className).toContain('flex-row');
+      expect(marker?.className).not.toContain('flex-col');
+    });
+
+    it('renders the connector as a horizontal line (h-px) instead of a vertical one (w-px)', () => {
+      const { container } = renderDynamoComponent(
+        TimelineHorizontalHostComponent,
+      );
+      const connector = container.querySelector(
+        '[data-testid="DynamoTimelineItem-connector"]',
+      );
+
+      expect(connector?.className).toContain('h-px');
+      expect(connector?.className).not.toContain('w-px');
+    });
+
+    it('spaces content after (pe-6) instead of below (pb-6)', () => {
+      const { container } = renderDynamoComponent(
+        TimelineHorizontalHostComponent,
+      );
+      const content = container.querySelector(
+        '[data-testid="DynamoTimelineItem-content"]',
+      );
+
+      expect(content?.className).toContain('pe-6');
+      expect(content?.className).not.toContain('pb-6');
+    });
+
+    describe('align="alternate"', () => {
+      function getContentEls(container: HTMLElement): HTMLElement[] {
+        return Array.from(
+          container.querySelectorAll(
+            '[data-testid="DynamoTimelineItem-content"]',
+          ),
+        );
+      }
+
+      function getMarkerEls(container: HTMLElement): HTMLElement[] {
+        return Array.from(
+          container.querySelectorAll(
+            '[data-testid="DynamoTimelineItem-marker"]',
+          ),
+        );
+      }
+
+      it('places even-index content in grid-row 1, odd-index in grid-row 3, and leaves grid-column unset', () => {
+        const { container } = renderDynamoComponent(
+          TimelineHorizontalAlternateHostComponent,
+        );
+        const contents = getContentEls(container);
+
+        expect(contents).toHaveLength(4);
+        expect(contents[0]?.style.gridRow).toBe('1');
+        expect(contents[1]?.style.gridRow).toBe('3');
+        expect(contents[2]?.style.gridRow).toBe('1');
+        expect(contents[3]?.style.gridRow).toBe('3');
+        for (const content of contents) {
+          expect(content.style.gridColumn).toBe('');
+        }
+      });
+
+      it('places every marker in grid-row 2 and leaves grid-column unset', () => {
+        const { container } = renderDynamoComponent(
+          TimelineHorizontalAlternateHostComponent,
+        );
+        const markers = getMarkerEls(container);
+
+        expect(markers).toHaveLength(4);
+        for (const marker of markers) {
+          expect(marker.style.gridRow).toBe('2');
+          expect(marker.style.gridColumn).toBe('');
+        }
+      });
+
+      it('switches the item host to rows instead of columns in the alternate grid', () => {
+        const { container } = renderDynamoComponent(
+          TimelineHorizontalAlternateHostComponent,
+        );
+        const item = container.querySelector('dg-timeline-item');
+
+        expect(item?.className).toContain('grid-rows-[1fr_auto_1fr]');
+        expect(item?.className).not.toContain('grid-cols-[1fr_auto_1fr]');
+      });
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = renderDynamoComponent(
+        TimelineHorizontalAlternateHostComponent,
+      );
+      await expectNoA11yViolations(container);
+    });
+  });
+
   describe('template behavior', () => {
     it('gives every connector the static group-last:hidden class (browser CSS decides visibility)', () => {
       const { container } = renderDynamoComponent(TimelineTestHostComponent);
@@ -332,6 +530,90 @@ describe('DynamoTimeline', () => {
       for (const item of Array.from(items)) {
         expect(item.className).toContain('group');
       }
+    });
+  });
+
+  describe('pt / ariaDescribedby / fluid', () => {
+    it('merges pt class onto root (class-only — the host element has no [dgPt] instance)', () => {
+      const { container } = renderDynamoComponent(DynamoTimeline, {
+        inputs: { pt: { root: { class: 'pt-root' } } },
+      });
+
+      expect(
+        within(container).getByRole('list').classList.contains('pt-root'),
+      ).toBe(true);
+    });
+
+    it('merges pt class onto marker/connector/content', () => {
+      const { container } = renderDynamoComponent(DynamoTimelineItem, {
+        inputs: {
+          pt: {
+            marker: { class: 'pt-marker' },
+            connector: { class: 'pt-connector' },
+            content: { class: 'pt-content' },
+          },
+        },
+      });
+
+      expect(
+        container
+          .querySelector('[data-testid="DynamoTimelineItem-marker"]')
+          ?.classList.contains('pt-marker'),
+      ).toBe(true);
+      expect(
+        container
+          .querySelector('[data-testid="DynamoTimelineItem-connector"]')
+          ?.classList.contains('pt-connector'),
+      ).toBe(true);
+      expect(
+        container
+          .querySelector('[data-testid="DynamoTimelineItem-content"]')
+          ?.classList.contains('pt-content'),
+      ).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto marker/connector/content', () => {
+      const { container } = renderDynamoComponent(DynamoTimelineItem, {
+        inputs: {
+          pt: {
+            marker: { 'data-testid-marker': 'x' },
+            connector: { 'data-testid-connector': 'x' },
+            content: { 'data-testid-content': 'x' },
+          },
+        },
+      });
+
+      expect(container.querySelector('[data-testid-marker]')).not.toBeNull();
+      expect(container.querySelector('[data-testid-connector]')).not.toBeNull();
+      expect(container.querySelector('[data-testid-content]')).not.toBeNull();
+    });
+
+    it('omits aria-describedby by default, forwards it to the root when set', () => {
+      const { container } = renderDynamoComponent(DynamoTimeline, {
+        inputs: { ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        within(container).getByRole('list').getAttribute('aria-describedby'),
+      ).toBe('hint-id');
+    });
+
+    it('does not stretch by default', () => {
+      const { container } = renderDynamoComponent(DynamoTimeline);
+
+      expect(
+        within(container).getByRole('list').classList.contains('w-full'),
+      ).toBe(false);
+    });
+
+    it('stretches the root to full width when fluid is set', () => {
+      const { container } = renderDynamoComponent(DynamoTimeline, {
+        inputs: { fluid: true },
+      });
+
+      expect(
+        within(container).getByRole('list').classList.contains('w-full'),
+      ).toBe(true);
     });
   });
 

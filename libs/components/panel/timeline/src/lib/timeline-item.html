@@ -1,6 +1,8 @@
 <div
-  [class]="markerColumnClasses"
+  [class]="markerColumnClasses()"
+  [dgPt]="ptFor('marker')"
   [style.grid-column]="markerGridColumn()"
+  [style.grid-row]="markerGridRow()"
   [attr.data-testid]="'DynamoTimelineItem-marker'"
 >
   <span
@@ -8,13 +10,16 @@
     [attr.data-testid]="'DynamoTimelineItem-dot'"
   ></span>
   <span
-    [class]="connectorClasses"
+    [class]="connectorClasses()"
+    [dgPt]="ptFor('connector')"
     [attr.data-testid]="'DynamoTimelineItem-connector'"
   ></span>
 </div>
 <div
   [class]="contentClasses()"
+  [dgPt]="ptFor('content')"
   [style.grid-column]="contentGridColumn()"
+  [style.grid-row]="contentGridRow()"
   [attr.data-testid]="'DynamoTimelineItem-content'"
 >
   <ng-content />
