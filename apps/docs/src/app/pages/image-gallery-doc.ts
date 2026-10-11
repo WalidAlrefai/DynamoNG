@@ -53,6 +53,11 @@ const API: ApiTableRow[] = [
   { name: 'autoPlayInterval', type: 'number', default: '5000' },
   { name: 'lightboxOpen', type: 'boolean (model)', default: 'false' },
   { name: 'ariaLabel', type: 'string | undefined', default: "'Image gallery'" },
+  {
+    name: 'ariaDescribedby',
+    type: 'string | undefined',
+    default: 'undefined',
+  },
 ];
 
 @Component({

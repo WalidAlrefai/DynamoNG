@@ -1,8 +1,10 @@
 export type DynamoImageGalleryPart =
   | 'root'
   | 'viewport'
+  | 'mainButton'
   | 'mainImage'
   | 'arrow'
+  | 'playToggle'
   | 'thumbnails'
   | 'thumbnail'
   | 'lightbox'

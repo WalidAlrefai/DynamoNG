@@ -14,7 +14,10 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { DynamoButton } from '@dynamong/button';
 import { cn } from '@dynamong/utils/class-merge';
 import { isBrowser } from '@dynamong/utils/dom';
@@ -43,7 +46,7 @@ import type {
   selector: 'dg-carousel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, DynamoButton],
+  imports: [NgTemplateOutlet, DynamoButton, DynamoPassThroughDirective],
   templateUrl: './carousel.html',
 })
 export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
@@ -65,6 +68,8 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
   /** Viewport height in px — only consulted while `orientation` is `'vertical'`; there's no natural intrinsic height for a percentage-based flex-column of slides (same reasoning as Slider's own `verticalHeight`). */
   readonly verticalHeight = input(300);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the root. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
 
   protected readonly slides = contentChildren(DynamoCarouselSlide);
   private readonly viewportRef =
@@ -162,26 +167,42 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(carouselRootStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(carouselRootStyles, this.styleClass(), this.ptFor('root').class),
   );
   protected readonly viewportClasses = computed(() =>
-    carouselViewportStyles({ orientation: this.orientation() }),
+    cn(
+      carouselViewportStyles({ orientation: this.orientation() }),
+      this.ptFor('viewport').class,
+    ),
   );
   protected readonly slideClasses = computed(() =>
-    carouselSlideStyles({ orientation: this.orientation() }),
+    cn(
+      carouselSlideStyles({ orientation: this.orientation() }),
+      this.ptFor('slide').class,
+    ),
   );
   protected readonly prevArrowClasses = computed(() =>
-    carouselPrevArrowStyles({ orientation: this.orientation() }),
+    cn(
+      carouselPrevArrowStyles({ orientation: this.orientation() }),
+      this.ptFor('arrow').class,
+    ),
   );
   protected readonly nextArrowClasses = computed(() =>
-    carouselNextArrowStyles({ orientation: this.orientation() }),
+    cn(
+      carouselNextArrowStyles({ orientation: this.orientation() }),
+      this.ptFor('arrow').class,
+    ),
   );
   protected readonly arrowIconClasses = computed(() =>
     carouselArrowIconStyles({ orientation: this.orientation() }),
   );
-  protected readonly indicatorsClasses = carouselIndicatorsStyles;
-  protected readonly playToggleClasses = carouselPlayToggleStyles;
+  protected readonly indicatorsClasses = computed(() =>
+    cn(carouselIndicatorsStyles, this.ptFor('indicators').class),
+  );
+  protected readonly playToggleClasses = computed(() =>
+    cn(carouselPlayToggleStyles, this.ptFor('playToggle').class),
+  );
 
   protected readonly trackClasses = computed(() =>
     cn(
@@ -189,6 +210,7 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
       this.dragging()
         ? carouselTrackNoTransitionStyles
         : carouselTrackTransitionStyles,
+      this.ptFor('track').class,
     ),
   );
 
@@ -287,7 +309,7 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
   }
 
   protected dotClasses(active: boolean) {
-    return carouselDotStyles({ active });
+    return cn(carouselDotStyles({ active }), this.ptFor('dot').class);
   }
 
   protected slideAriaLabel(index: number): string {
@@ -344,9 +366,12 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
 
   // A simplified roving-tabindex scan compared to Tabs'/Stepper's
   // findEnabledIndex: indicator dots have no per-page "disabled" concept, so
-  // it's plain wrapping arithmetic rather than a skip-disabled loop. Arrow
-  // navigation activates immediately (matching Tabs' automatic-activation
-  // mode), since there's no linear gate here the way Stepper has.
+  // it's plain wrapping-or-clamping arithmetic rather than a skip-disabled
+  // loop — mirroring goToPageRelative's own loop()-aware clamping, so Arrow
+  // navigation here can't wrap when the viewport's own Arrow handling
+  // wouldn't. Arrow navigation activates immediately (matching Tabs'
+  // automatic-activation mode), since there's no linear gate here the way
+  // Stepper has.
   protected onIndicatorKeydown(event: KeyboardEvent): void {
     const buttons = this.dotButtons();
     const count = buttons.length;
@@ -360,10 +385,14 @@ export class DynamoCarousel extends DynamoBaseComponent<DynamoCarouselPart> {
     let nextIndex: number;
     switch (event.key) {
       case 'ArrowRight':
-        nextIndex = (currentIndex + 1) % count;
+        nextIndex = this.loop()
+          ? (currentIndex + 1) % count
+          : Math.min(currentIndex + 1, count - 1);
         break;
       case 'ArrowLeft':
-        nextIndex = (currentIndex - 1 + count) % count;
+        nextIndex = this.loop()
+          ? (currentIndex - 1 + count) % count
+          : Math.max(currentIndex - 1, 0);
         break;
       case 'Home':
         nextIndex = 0;

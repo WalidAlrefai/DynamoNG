@@ -29,6 +29,11 @@ const API: ApiTableRow[] = [
   },
   { name: 'ariaLabel', type: 'string | undefined', default: "'Carousel'" },
   {
+    name: 'ariaDescribedby',
+    type: 'string | undefined',
+    default: 'undefined',
+  },
+  {
     name: 'orientation',
     type: "'horizontal' | 'vertical'",
     default: "'horizontal'",

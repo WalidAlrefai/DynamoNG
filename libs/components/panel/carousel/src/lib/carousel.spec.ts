@@ -7,11 +7,15 @@ import {
 } from '@dynamong/testing';
 import { fireEvent, within } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
+import type { DynamoPassThrough } from '@dynamong/core/api';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DynamoCarousel } from './carousel';
 import { DynamoCarouselSlide } from './carousel-slide';
 import { DynamoCarouselHarness } from './carousel.harness';
-import type { DynamoCarouselResponsiveOption } from './carousel.types';
+import type {
+  DynamoCarouselPart,
+  DynamoCarouselResponsiveOption,
+} from './carousel.types';
 
 @Component({
   selector: 'dg-carousel-test-host',
@@ -119,6 +123,26 @@ class CarouselOrientationHostComponent {
   readonly index = model(0);
   readonly orientation = signal<'horizontal' | 'vertical'>('vertical');
   readonly verticalHeight = signal(300);
+}
+
+@Component({
+  selector: 'dg-carousel-pt-host',
+  standalone: true,
+  imports: [DynamoCarousel, DynamoCarouselSlide],
+  template: `
+    <dg-carousel
+      [pt]="pt()"
+      [ariaDescribedby]="ariaDescribedby()"
+      [autoPlay]="true"
+    >
+      <dg-carousel-slide><p>Slide 0</p></dg-carousel-slide>
+      <dg-carousel-slide><p>Slide 1</p></dg-carousel-slide>
+    </dg-carousel>
+  `,
+})
+class CarouselPtHostComponent {
+  readonly pt = signal<DynamoPassThrough<DynamoCarouselPart>>({});
+  readonly ariaDescribedby = signal<string | undefined>(undefined);
 }
 
 function viewport(container: HTMLElement): HTMLElement {
@@ -310,6 +334,32 @@ describe('DynamoCarousel', () => {
 
       expect(document.activeElement).toBe(dots(container)[2]);
       expect(componentInstance.index()).toBe(2);
+    });
+
+    it('does not wrap past the last/first dot when loop is false, unlike the default', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        CarouselTestHostComponent,
+        { inputs: { loop: false, index: 2 } },
+      );
+      dots(container)[2]?.focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+
+      expect(document.activeElement).toBe(dots(container)[2]);
+      expect(componentInstance.index()).toBe(2);
+    });
+
+    it('does not wrap past the first dot on ArrowLeft when loop is false', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        CarouselTestHostComponent,
+        { inputs: { loop: false } },
+      );
+      dots(container)[0]?.focus();
+
+      await userEvent.keyboard('{ArrowLeft}');
+
+      expect(document.activeElement).toBe(dots(container)[0]);
+      expect(componentInstance.index()).toBe(0);
     });
 
     it('supports interaction through the DynamoCarouselHarness', async () => {
@@ -595,6 +645,64 @@ describe('DynamoCarousel', () => {
       fixture.detectChanges();
 
       expect(componentInstance.index()).toBe(0);
+    });
+  });
+
+  describe('pt / ariaDescribedby', () => {
+    it('merges pt class onto root/viewport/dot/arrow/playToggle', () => {
+      const { container, fixture } = renderDynamoComponent(
+        CarouselPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { class: 'pt-root' },
+        viewport: { class: 'pt-viewport' },
+        dot: { class: 'pt-dot' },
+        arrow: { class: 'pt-arrow' },
+        playToggle: { class: 'pt-playtoggle' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container.querySelector('section')?.classList.contains('pt-root'),
+      ).toBe(true);
+      expect(viewport(container).classList.contains('pt-viewport')).toBe(true);
+      expect(dots(container)[0]?.classList.contains('pt-dot')).toBe(true);
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Previous slide' })
+          .classList.contains('pt-arrow'),
+      ).toBe(true);
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Pause' })
+          .classList.contains('pt-playtoggle'),
+      ).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto root', () => {
+      const { container, fixture } = renderDynamoComponent(
+        CarouselPtHostComponent,
+      );
+      fixture.componentInstance.pt.set({
+        root: { 'data-testid-extra': 'root-el' },
+      });
+      fixture.detectChanges();
+
+      expect(
+        container.querySelector('[data-testid-extra="root-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('omits aria-describedby by default, forwards it to the root when set', () => {
+      const { container, fixture } = renderDynamoComponent(
+        CarouselPtHostComponent,
+      );
+      fixture.componentInstance.ariaDescribedby.set('hint-id');
+      fixture.detectChanges();
+
+      expect(
+        container.querySelector('section')?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
     });
   });
 

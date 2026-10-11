@@ -40,6 +40,7 @@ protected readonly index = signal(0);
 | `numScroll`         | `number`                           | `1`            | How many slides `next()`/`prev()` (and a committed drag) advance by.                                              |
 | `responsiveOptions` | `DynamoCarouselResponsiveOption[]` | `[]`           | Overrides `numVisible`/`numScroll` at or below a given viewport width — see below.                                |
 | `ariaLabel`         | `string \| undefined`              | `undefined`    | Falls back to `'Carousel'` on the root `aria-label`.                                                              |
+| `ariaDescribedby`   | `string \| undefined`              | `undefined`    | Forwarded as `aria-describedby` on the root.                                                                      |
 | `orientation`       | `'horizontal' \| 'vertical'`       | `'horizontal'` | `'vertical'` stacks slides top-to-bottom and drags/keys along that axis instead — see Vertical orientation below. |
 | `verticalHeight`    | `number`                           | `300`          | Viewport height in px — only consulted while `orientation` is `'vertical'`.                                       |
 
@@ -118,9 +119,18 @@ bottom), not a gap.
 
 - Root has `aria-roledescription="carousel"`. Each slide is `role="group"` with `aria-roledescription="slide"` and a `"N of M"` `aria-label`; slides outside the current visible window get `inert` so their content is unreachable by tab/screen-reader until scrolled into view.
 - The viewport is focusable (`tabindex="0"`) and handles `ArrowLeft`/`ArrowRight`/`Home`/`End` directly.
-- The indicator dots form a `role="tablist"`/`role="tab"` group with roving tabindex and `ArrowLeft`/`ArrowRight`/`Home`/`End` navigation (automatic activation — moving focus also navigates).
+- The indicator dots form a `role="tablist"`/`role="tab"` group with roving tabindex and `ArrowLeft`/`ArrowRight`/`Home`/`End` navigation (automatic activation — moving focus also navigates). `ArrowLeft`/`ArrowRight` respect `loop` the same way the viewport's own arrow keys do — they stop at the first/last dot instead of wrapping when `loop` is `false`.
 - Autoplay pauses automatically on pointer hover or focus-within, in addition to the explicit play/pause toggle.
 - Supports pointer drag/swipe on the viewport; a drag past 25% of the viewport width commits a slide change.
+
+## Design notes
+
+**`pt` parts**: `root`, `viewport`, `track`, `slide`, `arrow` (shared by both prev/next), `playToggle`,
+`indicators`, `dot`. Deliberately bounded, not exhaustive: the arrow icon `<svg>`s have no part of their
+own (purely decorative, `aria-hidden`).
+
+**`fluid` deliberately NOT added**: `carouselRootStyles` is already unconditionally `w-full`, so there's
+no narrower default state for a toggle to opt out of.
 
 ## Tier / dependencies
 
