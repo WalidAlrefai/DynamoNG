@@ -10,7 +10,10 @@ import {
   viewChild,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import type { DynamoSize } from '@dynamong/core/api';
 import { cn } from '@dynamong/utils/class-merge';
 import {
@@ -25,6 +28,7 @@ import type { DynamoChipsInputPart } from './chips-input.types';
   selector: 'dg-chips-input',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DynamoPassThroughDirective],
   templateUrl: './chips-input.html',
   providers: [
     {
@@ -53,6 +57,8 @@ export class DynamoChipsInput
   readonly ariaLabel = input<string | undefined>(undefined);
   /** Accessible name via reference to an external label element, mirroring `ariaLabel`'s forwarding. */
   readonly ariaLabelledBy = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the root. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
   /** The character that commits the draft text as a chip — on keypress and when splitting a multi-value paste. Defaults to a comma. */
   readonly separator = input(',');
 
@@ -76,7 +82,7 @@ export class DynamoChipsInput
 
   protected readonly wrapperClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
+      ? cn(this.styleClass(), this.ptFor('root').class)
       : cn(
           chipsInputWrapperStyles({
             size: this.size(),
@@ -84,13 +90,18 @@ export class DynamoChipsInput
             disabled: this.disabled(),
           }),
           this.styleClass(),
+          this.ptFor('root').class,
         ),
   );
   protected readonly chipClasses = computed(() =>
-    chipsInputChipStyles({ size: this.size() }),
+    cn(chipsInputChipStyles({ size: this.size() }), this.ptFor('chip').class),
   );
-  protected readonly removeButtonClasses = chipsInputRemoveButtonStyles;
-  protected readonly fieldClasses = chipsInputFieldStyles;
+  protected readonly removeButtonClasses = computed(() =>
+    cn(chipsInputRemoveButtonStyles, this.ptFor('removeButton').class),
+  );
+  protected readonly fieldClasses = computed(() =>
+    cn(chipsInputFieldStyles, this.ptFor('input').class),
+  );
 
   writeValue(value: string[] | null): void {
     this.value.set(value ?? []);

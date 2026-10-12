@@ -1,15 +1,22 @@
 <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- click-through-to-focus convenience only; the real interactive element (the input below) is already natively focusable via Tab -->
 <div
   [class]="wrapperClasses()"
+  [dgPt]="ptFor('root')"
   [attr.data-testid]="'DynamoChipsInput'"
+  [attr.aria-describedby]="ariaDescribedby() ?? null"
   (click)="onWrapperClick()"
 >
-  @for (chip of value(); track chip; let i = $index) {
-  <span [class]="chipClasses()" [attr.data-testid]="'DynamoChipsInput-chip'">
+  @for (chip of value(); track $index; let i = $index) {
+  <span
+    [class]="chipClasses()"
+    [dgPt]="ptFor('chip')"
+    [attr.data-testid]="'DynamoChipsInput-chip'"
+  >
     {{ chip }}
     <button
       type="button"
-      [class]="removeButtonClasses"
+      [class]="removeButtonClasses()"
+      [dgPt]="ptFor('removeButton')"
       [attr.aria-label]="'Remove ' + chip"
       [disabled]="disabled() || readOnly()"
       (click)="removeChip(i); $event.stopPropagation()"
@@ -33,7 +40,8 @@
   <input
     #input
     type="text"
-    [class]="fieldClasses"
+    [class]="fieldClasses()"
+    [dgPt]="ptFor('input')"
     [value]="draftText()"
     [placeholder]="value().length === 0 ? placeholder() : ''"
     [disabled]="disabled()"
