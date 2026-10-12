@@ -157,6 +157,45 @@ describe('DynamoChipsInput', () => {
       expect(chips(container)).toEqual(['one', 'one']);
     });
 
+    // Regression coverage for the `track $index` hardening — `@for` tracks
+    // chips by position rather than by their own (possibly duplicate) text,
+    // so a list with `allowDuplicates` on stays correct even if a future
+    // Angular version tightens duplicate-track-key enforcement for a
+    // scenario like this one (two identical chips introduced in a single
+    // update, not two separate sequential adds).
+    it('renders two identical chips introduced in a single update (a multi-value paste) without error', () => {
+      const { fixture, container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { ariaLabel: 'Tags', allowDuplicates: true },
+      });
+      const input = within(container).getByRole('textbox') as HTMLInputElement;
+      const event = new Event('paste', {
+        bubbles: true,
+        cancelable: true,
+      }) as ClipboardEvent;
+      Object.defineProperty(event, 'clipboardData', {
+        value: { getData: () => 'one,one' },
+      });
+
+      expect(() => {
+        input.dispatchEvent(event);
+        fixture.detectChanges();
+      }).not.toThrow();
+      expect(chips(container)).toEqual(['one', 'one']);
+    });
+
+    it('removing the first of several adjacent duplicate chips removes the correct one', async () => {
+      const { fixture, container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { ariaLabel: 'Tags', allowDuplicates: true },
+      });
+      const input = within(container).getByRole('textbox');
+      await userEvent.type(input, 'dup{Enter}dup{Enter}z{Enter}');
+
+      within(container).getAllByRole('button')[0]?.click();
+      fixture.detectChanges();
+
+      expect(chips(container)).toEqual(['dup', 'z']);
+    });
+
     it('caps additions at max', async () => {
       const { container } = renderDynamoComponent(DynamoChipsInput, {
         inputs: { ariaLabel: 'Tags', max: 2 },
@@ -434,6 +473,63 @@ describe('DynamoChipsInput', () => {
       expect(
         within(container).getByRole('textbox').hasAttribute('aria-labelledby'),
       ).toBe(false);
+    });
+  });
+
+  describe('pt / ariaDescribedby', () => {
+    it('merges pt class onto root/chip/removeButton/input', async () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: {
+          ariaLabel: 'Tags',
+          pt: {
+            root: { class: 'pt-root' },
+            chip: { class: 'pt-chip' },
+            removeButton: { class: 'pt-removebutton' },
+            input: { class: 'pt-input' },
+          },
+        },
+      });
+      const input = within(container).getByRole('textbox');
+      await userEvent.type(input, 'angular{Enter}');
+
+      expect(
+        container
+          .querySelector('[data-testid="DynamoChipsInput"]')
+          ?.classList.contains('pt-root'),
+      ).toBe(true);
+      expect(
+        container
+          .querySelector('[data-testid="DynamoChipsInput-chip"]')
+          ?.classList.contains('pt-chip'),
+      ).toBe(true);
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Remove angular' })
+          .classList.contains('pt-removebutton'),
+      ).toBe(true);
+      expect(input.classList.contains('pt-input')).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto root', () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { pt: { root: { 'data-testid-extra': 'root-el' } } },
+      });
+
+      expect(
+        container.querySelector('[data-testid-extra="root-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('omits aria-describedby by default, forwards it to the root when set', () => {
+      const { container } = renderDynamoComponent(DynamoChipsInput, {
+        inputs: { ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        container
+          .querySelector('[data-testid="DynamoChipsInput"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
     });
   });
 

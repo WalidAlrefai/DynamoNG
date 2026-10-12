@@ -1,6 +1,8 @@
 <section
   [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
   [attr.aria-label]="ariaLabel() ?? 'Carousel'"
+  [attr.aria-describedby]="ariaDescribedby() ?? null"
   aria-roledescription="carousel"
   (pointerenter)="onPointerEnterRoot()"
   (pointerleave)="onPointerLeaveRoot()"
@@ -11,6 +13,7 @@
     #viewport
     data-testid="carousel-viewport"
     [class]="viewportClasses()"
+    [dgPt]="ptFor('viewport')"
     [style.height.px]="orientation() === 'vertical' ? verticalHeight() : null"
     tabindex="0"
     (keydown)="onViewportKeydown($event)"
@@ -19,10 +22,15 @@
     (pointerup)="onPointerUp()"
     (pointercancel)="onPointerUp()"
   >
-    <div [class]="trackClasses()" [style.transform]="trackTransform()">
+    <div
+      [class]="trackClasses()"
+      [dgPt]="ptFor('track')"
+      [style.transform]="trackTransform()"
+    >
       @for (slide of slides(); track slide; let i = $index) {
       <div
         [class]="slideClasses()"
+        [dgPt]="ptFor('slide')"
         [style.flex]="'0 0 ' + slideBasisPercent() + '%'"
         role="group"
         aria-roledescription="slide"
@@ -42,6 +50,7 @@
       size="sm"
       ariaLabel="Previous slide"
       [styleClass]="prevArrowClasses()"
+      [dgPt]="ptFor('arrow')"
       [disabled]="!canPrev()"
       (click)="prev()"
     >
@@ -70,6 +79,7 @@
       size="sm"
       ariaLabel="Next slide"
       [styleClass]="nextArrowClasses()"
+      [dgPt]="ptFor('arrow')"
       [disabled]="!canNext()"
       (click)="next()"
     >
@@ -97,7 +107,8 @@
       severity="secondary"
       size="sm"
       [ariaLabel]="userPaused() ? 'Play' : 'Pause'"
-      [styleClass]="playToggleClasses"
+      [styleClass]="playToggleClasses()"
+      [dgPt]="ptFor('playToggle')"
       (click)="toggleAutoPlay()"
     >
       {{ userPaused() ? 'Play' : 'Pause' }}
@@ -107,7 +118,8 @@
 
   @if (showIndicators() && pageStarts().length > 1) {
   <div
-    [class]="indicatorsClasses"
+    [class]="indicatorsClasses()"
+    [dgPt]="ptFor('indicators')"
     role="tablist"
     aria-label="Slides"
     tabindex="-1"
@@ -119,6 +131,7 @@
       type="button"
       role="tab"
       [class]="dotClasses(i === currentPageIndex())"
+      [dgPt]="ptFor('dot')"
       [attr.aria-label]="'Go to page ' + (i + 1)"
       [attr.aria-selected]="i === currentPageIndex()"
       [tabindex]="i === currentPageIndex() ? 0 : -1"

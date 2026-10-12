@@ -1,7 +1,9 @@
 <div
   [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
   role="list"
   [attr.aria-label]="ariaLabel() ?? null"
+  [attr.aria-describedby]="ariaDescribedby() ?? null"
   [attr.data-testid]="'DynamoTimeline'"
 >
   <ng-content />

@@ -1,5 +1,6 @@
 <div
   [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
   (pointerenter)="onPointerEnterRoot()"
   (pointerleave)="onPointerLeaveRoot()"
   (focusin)="onFocusIn()"
@@ -7,12 +8,15 @@
 >
   <div
     [class]="viewportClasses()"
+    [dgPt]="ptFor('viewport')"
     [attr.aria-label]="ariaLabel() ?? 'Image gallery'"
+    [attr.aria-describedby]="ariaDescribedby() ?? null"
   >
     @if (activeImage(); as image) {
     <button
       type="button"
-      [class]="mainButtonClasses"
+      [class]="mainButtonClasses()"
+      [dgPt]="ptFor('mainButton')"
       (click)="openLightbox()"
       (keydown)="onViewportKeydown($event)"
       [attr.aria-label]="'View fullscreen: ' + image.alt + ', ' + imageAriaLabel(activeIndex())"
@@ -33,7 +37,8 @@
       <img
         [src]="image.src"
         [alt]="image.alt"
-        [class]="mainImageClasses"
+        [class]="mainImageClasses()"
+        [dgPt]="ptFor('mainImage')"
         (error)="onImageError(activeIndex())"
       />
       }
@@ -46,7 +51,8 @@
       severity="secondary"
       size="sm"
       ariaLabel="Previous image"
-      [styleClass]="prevArrowClasses"
+      [styleClass]="prevArrowClasses()"
+      [dgPt]="ptFor('arrow')"
       [disabled]="!canPrev()"
       (click)="prev()"
     >
@@ -73,7 +79,8 @@
       severity="secondary"
       size="sm"
       ariaLabel="Next image"
-      [styleClass]="nextArrowClasses"
+      [styleClass]="nextArrowClasses()"
+      [dgPt]="ptFor('arrow')"
       [disabled]="!canNext()"
       (click)="next()"
     >
@@ -100,7 +107,8 @@
       severity="secondary"
       size="sm"
       [ariaLabel]="userPaused() ? 'Play' : 'Pause'"
-      [styleClass]="playToggleClasses"
+      [styleClass]="playToggleClasses()"
+      [dgPt]="ptFor('playToggle')"
       (click)="toggleAutoPlay()"
     >
       {{ userPaused() ? 'Play' : 'Pause' }}
@@ -110,7 +118,8 @@
 
   @if (showThumbnails() && images().length > 1) {
   <div
-    [class]="thumbnailsClasses"
+    [class]="thumbnailsClasses()"
+    [dgPt]="ptFor('thumbnails')"
     role="tablist"
     aria-label="Images"
     tabindex="-1"
@@ -122,6 +131,7 @@
       type="button"
       role="tab"
       [class]="thumbnailClasses(i === activeIndex())"
+      [dgPt]="ptFor('thumbnail')"
       [attr.aria-label]="'Go to image ' + (i + 1)"
       [attr.aria-selected]="i === activeIndex()"
       [tabindex]="i === activeIndex() ? 0 : -1"
@@ -163,14 +173,16 @@
     role="dialog"
     aria-modal="true"
     tabindex="-1"
-    [class]="lightboxPanelClasses"
+    [class]="lightboxPanelClasses()"
+    [dgPt]="ptFor('lightbox')"
     [attr.aria-label]="lightImage.alt"
     (keydown.escape)="closeLightbox()"
     (keydown)="onViewportKeydown($event)"
   >
     <button
       type="button"
-      [class]="lightboxCloseButtonClasses"
+      [class]="lightboxCloseButtonClasses()"
+      [dgPt]="ptFor('lightboxCloseButton')"
       (click)="closeLightbox()"
       aria-label="Close"
     >
@@ -191,7 +203,8 @@
       variant="solid"
       severity="secondary"
       ariaLabel="Previous image"
-      [styleClass]="lightboxPrevArrowClasses"
+      [styleClass]="lightboxPrevArrowClasses()"
+      [dgPt]="ptFor('arrow')"
       [disabled]="!canPrev()"
       (click)="prev()"
     >
@@ -217,7 +230,8 @@
       variant="solid"
       severity="secondary"
       ariaLabel="Next image"
-      [styleClass]="lightboxNextArrowClasses"
+      [styleClass]="lightboxNextArrowClasses()"
+      [dgPt]="ptFor('arrow')"
       [disabled]="!canNext()"
       (click)="next()"
     >
@@ -253,7 +267,8 @@
     <img
       [src]="lightImage.src"
       [alt]="lightImage.alt"
-      [class]="lightboxImageClasses"
+      [class]="lightboxImageClasses()"
+      [dgPt]="ptFor('lightboxImage')"
       (error)="onImageError(activeIndex())"
     />
     } @if (lightImage.caption) {

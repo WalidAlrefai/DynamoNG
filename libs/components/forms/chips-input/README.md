@@ -26,6 +26,7 @@ protected tags = signal<string[]>([]);
 | `allowDuplicates` | `boolean`             | `false`     |                                                                                                                                                                                                                            |
 | `ariaLabel`       | `string \| undefined` | `undefined` |                                                                                                                                                                                                                            |
 | `ariaLabelledBy`  | `string \| undefined` | `undefined` | Accessible name via reference to an external label element.                                                                                                                                                                |
+| `ariaDescribedby` | `string \| undefined` | `undefined` | Forwarded as `aria-describedby` on the root.                                                                                                                                                                               |
 | `separator`       | `string`              | `','`       | The character that commits the draft text as a chip — on keypress and when splitting a multi-value paste.                                                                                                                  |
 | `disabled`        | `boolean` (model)     | `false`     | Two-way bindable; also driven by Angular forms via `setDisabledState`.                                                                                                                                                     |
 | `readOnly`        | `boolean`             | `false`     | HTML `readonly` semantics: the current chips stay visible and the field stays focusable/tabbable, but adding or removing chips is blocked. Unlike `disabled`, does not remove it from the tab order or dim its appearance. |
@@ -41,6 +42,22 @@ protected tags = signal<string[]>([]);
 
 - Each committed chip renders a `"Remove {chip}"`-labelled `<button>`. The draft text field carries `aria-invalid`/`aria-readonly` synced with `invalid`/`readOnly`, and `aria-label`/`aria-labelledby` when provided.
 - Keyboard: `Enter` or `separator` commits the current draft as a chip; `Backspace` on an empty draft removes the last chip. Pasting text containing `separator` splits it and commits each token as its own chip.
+
+## Design notes
+
+**Chips are tracked by position (`@for (chip of value(); track $index)`), not by their own text** —
+`allowDuplicates` means the rendered list can legitimately contain the same string twice, and tracking
+by value instead would hand Angular's `@for` two rows resolving to the identical key. Directly verified
+this doesn't currently throw or misbehave in this codebase's exact Angular version/setup (a duplicate
+introduced in a single update — a multi-value paste — rendered correctly, and removing one of several
+adjacent duplicates removed the right one), so this isn't a fix for an active bug; it's the correct,
+documented Angular practice for a list that can contain duplicates, applied defensively so a future
+Angular version tightening duplicate-track-key enforcement can't regress this.
+
+**`pt` parts**: `root`, `chip`, `removeButton`, `input` — all four real template elements, fully wired.
+
+**`fluid` deliberately NOT added**: `chipsInputWrapperStyles`' base class already includes `w-full`
+unconditionally, so there's no narrower default state for a toggle to opt out of.
 
 ## Tier / dependencies
 

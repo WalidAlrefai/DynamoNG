@@ -36,6 +36,7 @@ protected readonly productImages: DynamoGalleryImage[] = [
 | `autoPlayInterval` | `number`                          | `5000`      | Milliseconds between auto-advances.                                                                                           |
 | `lightboxOpen`     | `boolean` (model)                 | `false`     | Two-way bindable; open the fullscreen lightbox programmatically, or read whether it's open.                                   |
 | `ariaLabel`        | `string \| undefined`             | `undefined` | Falls back to `'Image gallery'` on the viewport's `aria-label`.                                                               |
+| `ariaDescribedby`  | `string \| undefined`             | `undefined` | Forwarded as `aria-describedby` on the viewport.                                                                              |
 
 ## Outputs
 
@@ -47,7 +48,7 @@ protected readonly productImages: DynamoGalleryImage[] = [
 ## Accessibility
 
 - The main image is a `<button>` that opens the lightbox, labeled `"View fullscreen: {alt}, N of M"`.
-- Thumbnails form a `role="tablist"`/`role="tab"` group with roving tabindex and `ArrowLeft`/`ArrowRight`/`Home`/`End` navigation (automatic activation).
+- Thumbnails form a `role="tablist"`/`role="tab"` group with roving tabindex and `ArrowLeft`/`ArrowRight`/`Home`/`End` navigation (automatic activation). `ArrowLeft`/`ArrowRight` respect `loop` the same way the main viewport's own arrow keys do — they stop at the first/last thumbnail instead of wrapping when `loop` is `false`.
 - The lightbox is `role="dialog"` with `aria-modal="true"`, a focus trap (via `DynamoFocusTrapService`, the same mechanism Dialog uses), focus moved into the panel on open and restored to the previously-focused element on close, and `Escape` to close.
 - A broken image (fires the native `error` event) is replaced with an inline fallback icon rather than left as a broken-image glyph, tracked per index so the main image, its thumbnail, and its lightbox view all fall back independently.
 
@@ -57,7 +58,18 @@ protected readonly productImages: DynamoGalleryImage[] = [
 autoplay: pauses on pointer hover or focus-within, plus an explicit
 play/pause toggle — also pauses while the lightbox is open here.
 `lightboxOpen` is externally bindable, so a consumer can open the fullscreen
-view programmatically. A few things were considered and left out: a
+view programmatically.
+
+**`pt` parts**: `root`, `viewport`, `mainButton`, `mainImage`, `arrow` (shared by every prev/next pair,
+main and lightbox alike), `playToggle`, `thumbnails`, `thumbnail`, `lightbox` (the panel),
+`lightboxImage`, `lightboxCloseButton`. Deliberately bounded, not exhaustive: the lightbox backdrop, the
+lightbox caption, the thumbnail strip's own `<img>`, and the three broken-image fallback placeholders
+stay unwired — decorative/secondary elements, not worth a dedicated part each.
+
+**`fluid` deliberately NOT added**: `imageGalleryRootStyles` is already unconditionally `w-full`, so
+there's no narrower default state for a toggle to opt out of.
+
+A few things were considered and left out: a
 paginated N-visible-with-nav-arrows mode for the thumbnail strip (it already
 handles overflow via horizontal scroll — adding a second navigation model
 would be a disproportionate redesign for little gain); separate dot

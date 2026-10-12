@@ -21,6 +21,11 @@ const API: ApiTableRow[] = [
   { name: 'separator', type: 'string', default: "','" },
   { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'" },
   { name: 'disabled', type: 'boolean (model)', default: 'false' },
+  {
+    name: 'ariaDescribedby',
+    type: 'string | undefined',
+    default: 'undefined',
+  },
 ];
 
 @Component({

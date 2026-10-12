@@ -1,17 +1,35 @@
 <div
+  #rootEl
   [class]="rootClasses()"
+  [dgPt]="ptFor('root')"
   role="toolbar"
+  tabindex="-1"
   [attr.aria-label]="ariaLabel() ?? null"
   [attr.aria-labelledby]="ariaLabelledBy() ?? null"
+  [attr.aria-describedby]="ariaDescribedby() ?? null"
   [attr.data-testid]="'DynamoToolbar'"
+  (keydown)="onKeydown($event)"
+  (focusin)="onFocusIn($event)"
 >
-  <div [class]="startClasses" data-testid="DynamoToolbar-start">
+  <div
+    [class]="startClasses()"
+    [dgPt]="ptFor('start')"
+    data-testid="DynamoToolbar-start"
+  >
     <ng-content select="[start]" />
   </div>
-  <div [class]="centerClasses" data-testid="DynamoToolbar-center">
+  <div
+    [class]="centerClasses()"
+    [dgPt]="ptFor('center')"
+    data-testid="DynamoToolbar-center"
+  >
     <ng-content select="[center]" />
   </div>
-  <div [class]="endClasses" data-testid="DynamoToolbar-end">
+  <div
+    [class]="endClasses()"
+    [dgPt]="ptFor('end')"
+    data-testid="DynamoToolbar-end"
+  >
     <ng-content select="[end]" />
   </div>
 </div>

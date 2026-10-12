@@ -13,7 +13,10 @@ import {
   viewChildren,
 } from '@angular/core';
 import type { ConfigurableFocusTrap } from '@angular/cdk/a11y';
-import { DynamoBaseComponent } from '@dynamong/core/base';
+import {
+  DynamoBaseComponent,
+  DynamoPassThroughDirective,
+} from '@dynamong/core/base';
 import { DynamoFocusTrapService } from '@dynamong/core/a11y';
 import { DynamoButton } from '@dynamong/button';
 import { cn } from '@dynamong/utils/class-merge';
@@ -60,7 +63,7 @@ import type {
   selector: 'dg-image-gallery',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamoButton],
+  imports: [DynamoButton, DynamoPassThroughDirective],
   templateUrl: './image-gallery.html',
 })
 export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPart> {
@@ -74,6 +77,8 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
   readonly autoPlay = input(false);
   readonly autoPlayInterval = input(5000);
   readonly ariaLabel = input<string | undefined>(undefined);
+  /** Forwarded as `aria-describedby` on the viewport. */
+  readonly ariaDescribedby = input<string | undefined>(undefined);
 
   private readonly thumbnailButtons =
     viewChildren<ElementRef<HTMLButtonElement>>('thumbnailButton');
@@ -109,31 +114,56 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
 
   protected readonly rootClasses = computed(() =>
     this.unstyled()
-      ? this.styleClass()
-      : cn(imageGalleryRootStyles, this.styleClass()),
+      ? cn(this.styleClass(), this.ptFor('root').class)
+      : cn(imageGalleryRootStyles, this.styleClass(), this.ptFor('root').class),
   );
   protected readonly viewportClasses = computed(() =>
-    imageGalleryViewportStyles({ aspectRatio: this.aspectRatio() }),
+    cn(
+      imageGalleryViewportStyles({ aspectRatio: this.aspectRatio() }),
+      this.ptFor('viewport').class,
+    ),
   );
-  protected readonly mainButtonClasses = imageGalleryMainButtonStyles;
-  protected readonly mainImageClasses = imageGalleryMainImageStyles;
-  protected readonly prevArrowClasses = imageGalleryPrevArrowStyles;
-  protected readonly nextArrowClasses = imageGalleryNextArrowStyles;
-  protected readonly thumbnailsClasses = imageGalleryThumbnailsStyles;
+  protected readonly mainButtonClasses = computed(() =>
+    cn(imageGalleryMainButtonStyles, this.ptFor('mainButton').class),
+  );
+  protected readonly mainImageClasses = computed(() =>
+    cn(imageGalleryMainImageStyles, this.ptFor('mainImage').class),
+  );
+  protected readonly prevArrowClasses = computed(() =>
+    cn(imageGalleryPrevArrowStyles, this.ptFor('arrow').class),
+  );
+  protected readonly nextArrowClasses = computed(() =>
+    cn(imageGalleryNextArrowStyles, this.ptFor('arrow').class),
+  );
+  protected readonly thumbnailsClasses = computed(() =>
+    cn(imageGalleryThumbnailsStyles, this.ptFor('thumbnails').class),
+  );
   protected readonly thumbnailImageClasses = imageGalleryThumbnailImageStyles;
   protected readonly fallbackClasses = imageGalleryFallbackStyles;
   protected readonly lightboxBackdropClasses =
     imageGalleryLightboxBackdropStyles;
-  protected readonly lightboxPanelClasses = imageGalleryLightboxPanelStyles;
-  protected readonly lightboxImageClasses = imageGalleryLightboxImageStyles;
+  protected readonly lightboxPanelClasses = computed(() =>
+    cn(imageGalleryLightboxPanelStyles, this.ptFor('lightbox').class),
+  );
+  protected readonly lightboxImageClasses = computed(() =>
+    cn(imageGalleryLightboxImageStyles, this.ptFor('lightboxImage').class),
+  );
   protected readonly lightboxCaptionClasses = imageGalleryLightboxCaptionStyles;
-  protected readonly lightboxCloseButtonClasses =
-    imageGalleryLightboxCloseButtonStyles;
-  protected readonly lightboxPrevArrowClasses =
-    imageGalleryLightboxPrevArrowStyles;
-  protected readonly lightboxNextArrowClasses =
-    imageGalleryLightboxNextArrowStyles;
-  protected readonly playToggleClasses = imageGalleryPlayToggleStyles;
+  protected readonly lightboxCloseButtonClasses = computed(() =>
+    cn(
+      imageGalleryLightboxCloseButtonStyles,
+      this.ptFor('lightboxCloseButton').class,
+    ),
+  );
+  protected readonly lightboxPrevArrowClasses = computed(() =>
+    cn(imageGalleryLightboxPrevArrowStyles, this.ptFor('arrow').class),
+  );
+  protected readonly lightboxNextArrowClasses = computed(() =>
+    cn(imageGalleryLightboxNextArrowStyles, this.ptFor('arrow').class),
+  );
+  protected readonly playToggleClasses = computed(() =>
+    cn(imageGalleryPlayToggleStyles, this.ptFor('playToggle').class),
+  );
 
   private readonly destroyRef = inject(DestroyRef);
 
@@ -190,7 +220,10 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
   }
 
   protected thumbnailClasses(active: boolean) {
-    return imageGalleryThumbnailStyles({ active });
+    return cn(
+      imageGalleryThumbnailStyles({ active }),
+      this.ptFor('thumbnail').class,
+    );
   }
 
   protected thumbnailSrc(image: DynamoGalleryImage): string {
@@ -275,9 +308,12 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
   }
 
   // Same simplified roving-tabindex scan as Carousel's onIndicatorKeydown —
-  // thumbnails have no per-image "disabled" concept, so it's plain wrapping
-  // arithmetic rather than a skip-disabled loop. Arrow navigation activates
-  // immediately (automatic activation), matching the indicator-dot precedent.
+  // thumbnails have no per-image "disabled" concept, so it's plain
+  // wrapping-or-clamping arithmetic rather than a skip-disabled loop,
+  // mirroring goToRelative's own loop()-aware clamping so Arrow navigation
+  // here can't wrap when the viewport's own Arrow handling wouldn't. Arrow
+  // navigation activates immediately (automatic activation), matching the
+  // indicator-dot precedent.
   protected onThumbnailKeydown(event: KeyboardEvent): void {
     const buttons = this.thumbnailButtons();
     const count = buttons.length;
@@ -291,10 +327,14 @@ export class DynamoImageGallery extends DynamoBaseComponent<DynamoImageGalleryPa
     let nextIndex: number;
     switch (event.key) {
       case 'ArrowRight':
-        nextIndex = (currentIndex + 1) % count;
+        nextIndex = this.loop()
+          ? (currentIndex + 1) % count
+          : Math.min(currentIndex + 1, count - 1);
         break;
       case 'ArrowLeft':
-        nextIndex = (currentIndex - 1 + count) % count;
+        nextIndex = this.loop()
+          ? (currentIndex - 1 + count) % count
+          : Math.max(currentIndex - 1, 0);
         break;
       case 'Home':
         nextIndex = 0;

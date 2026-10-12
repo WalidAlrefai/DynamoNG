@@ -10,6 +10,7 @@ const EXAMPLES: DocExampleRef[] = [
   { id: 'basic', title: 'Basic' },
   { id: 'align', title: 'Align' },
   { id: 'alternate', title: 'Alternate' },
+  { id: 'horizontal', title: 'Horizontal' },
 ];
 
 @Component({
@@ -20,7 +21,7 @@ const EXAMPLES: DocExampleRef[] = [
   template: `
     <docs-examples-layout
       name="Timeline"
-      description="A vertical event/activity list with markers, connecting lines, and per-item content projection."
+      description="A chronological event/activity list with markers, connecting lines, and per-item content projection — vertical by default, or horizontal via orientation."
       [examples]="examples"
     >
       <docs-example
@@ -108,6 +109,41 @@ const EXAMPLES: DocExampleRef[] = [
         </div>
       </docs-example>
 
+      <docs-example
+        exampleId="horizontal"
+        title="Horizontal"
+        description='orientation="horizontal" lays items out left-to-right instead of top-to-bottom; align="top"/"bottom" (or "alternate") position each item&apos;s content above/below the line instead of left/right.'
+      >
+        <div preview class="max-w-2xl overflow-x-auto">
+          <dg-timeline
+            orientation="horizontal"
+            align="alternate"
+            ariaLabel="Order status, horizontal"
+          >
+            <dg-timeline-item severity="success">
+              <p class="font-medium text-text-primary">Order placed</p>
+              <p class="text-sm text-text-muted">Jan 1</p>
+            </dg-timeline-item>
+            <dg-timeline-item severity="info">
+              <p class="font-medium text-text-primary">Shipped</p>
+              <p class="text-sm text-text-muted">Jan 2</p>
+            </dg-timeline-item>
+            <dg-timeline-item severity="warning">
+              <p class="font-medium text-text-primary">Out for delivery</p>
+              <p class="text-sm text-text-muted">Jan 3</p>
+            </dg-timeline-item>
+            <dg-timeline-item severity="primary">
+              <p class="font-medium text-text-primary">Delivered</p>
+              <p class="text-sm text-text-muted">Jan 3</p>
+            </dg-timeline-item>
+          </dg-timeline>
+        </div>
+        <div code>
+          &lt;dg-timeline orientation="horizontal" align="alternate"&gt; ...
+          &lt;/dg-timeline&gt;
+        </div>
+      </docs-example>
+
       <div api class="space-y-3">
         <table class="w-full border-collapse text-sm">
           <thead>
@@ -127,6 +163,21 @@ const EXAMPLES: DocExampleRef[] = [
               <td class="py-2 pr-4 font-mono">align</td>
               <td class="py-2 pr-4 font-mono">DynamoTimeline</td>
               <td class="py-2 font-mono">'left'</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">orientation</td>
+              <td class="py-2 pr-4 font-mono">DynamoTimeline</td>
+              <td class="py-2 font-mono">'vertical'</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">ariaDescribedby</td>
+              <td class="py-2 pr-4 font-mono">DynamoTimeline</td>
+              <td class="py-2 font-mono">undefined</td>
+            </tr>
+            <tr class="border-b border-border">
+              <td class="py-2 pr-4 font-mono">fluid</td>
+              <td class="py-2 pr-4 font-mono">DynamoTimeline</td>
+              <td class="py-2 font-mono">false</td>
             </tr>
             <tr>
               <td class="py-2 pr-4 font-mono">severity</td>

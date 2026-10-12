@@ -236,6 +236,32 @@ describe('DynamoImageGallery', () => {
       expect(componentInstance.index()).toBe(2);
     });
 
+    it('does not wrap past the last thumbnail on ArrowRight when loop is false, unlike the default', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ImageGalleryTestHostComponent,
+        { inputs: { loop: false, index: 2 } },
+      );
+      thumbnails(container)[2]?.focus();
+
+      await userEvent.keyboard('{ArrowRight}');
+
+      expect(document.activeElement).toBe(thumbnails(container)[2]);
+      expect(componentInstance.index()).toBe(2);
+    });
+
+    it('does not wrap past the first thumbnail on ArrowLeft when loop is false', async () => {
+      const { container, componentInstance } = renderDynamoComponent(
+        ImageGalleryTestHostComponent,
+        { inputs: { loop: false } },
+      );
+      thumbnails(container)[0]?.focus();
+
+      await userEvent.keyboard('{ArrowLeft}');
+
+      expect(document.activeElement).toBe(thumbnails(container)[0]);
+      expect(componentInstance.index()).toBe(0);
+    });
+
     it('only the active thumbnail is a tab stop', () => {
       const { container } = renderDynamoComponent(
         ImageGalleryTestHostComponent,
@@ -521,6 +547,67 @@ describe('DynamoImageGallery', () => {
       fixture.detectChanges();
 
       expect(thumbnails(container)[1]?.querySelector('img')).toBeNull();
+    });
+  });
+
+  describe('pt / ariaDescribedby', () => {
+    it('merges pt class onto mainButton/thumbnail/arrow/playToggle', () => {
+      const { container } = renderDynamoComponent(DynamoImageGallery, {
+        inputs: {
+          images: SAMPLE_IMAGES,
+          autoPlay: true,
+          pt: {
+            mainButton: { class: 'pt-mainbutton' },
+            thumbnail: { class: 'pt-thumbnail' },
+            arrow: { class: 'pt-arrow' },
+            playToggle: { class: 'pt-playtoggle' },
+          },
+        },
+      });
+
+      expect(
+        within(container)
+          .getByRole('button', { name: /View fullscreen/ })
+          .classList.contains('pt-mainbutton'),
+      ).toBe(true);
+      expect(thumbnails(container)[0]?.classList.contains('pt-thumbnail')).toBe(
+        true,
+      );
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Previous image' })
+          .classList.contains('pt-arrow'),
+      ).toBe(true);
+      expect(
+        within(container)
+          .getByRole('button', { name: 'Pause' })
+          .classList.contains('pt-playtoggle'),
+      ).toBe(true);
+    });
+
+    it('merges a non-class pt attribute onto root', () => {
+      const { container } = renderDynamoComponent(DynamoImageGallery, {
+        inputs: {
+          images: SAMPLE_IMAGES,
+          pt: { root: { 'data-testid-extra': 'root-el' } },
+        },
+      });
+
+      expect(
+        container.querySelector('[data-testid-extra="root-el"]'),
+      ).not.toBeNull();
+    });
+
+    it('omits aria-describedby by default, forwards it to the viewport when set', () => {
+      const { container } = renderDynamoComponent(DynamoImageGallery, {
+        inputs: { images: SAMPLE_IMAGES, ariaDescribedby: 'hint-id' },
+      });
+
+      expect(
+        container
+          .querySelector('[aria-label="Image gallery"]')
+          ?.getAttribute('aria-describedby'),
+      ).toBe('hint-id');
     });
   });
 
